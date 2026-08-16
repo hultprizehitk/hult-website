@@ -8,13 +8,14 @@
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
+  --font-sans: var(--font-montserrat), var(--font-geist-sans), sans-serif;
+  --font-hult: var(--font-montserrat), sans-serif;
   --font-mono: var(--font-geist-mono);
 }
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --background: #0a0a0a;
+    --background: #000000;
     --foreground: #ededed;
   }
 }
@@ -22,5 +23,71 @@
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-montserrat), -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+}
+
+/* ==========================================================================
+   Ultra-Smooth Physics-Eased Hult Prize 1.5s Intro Sequence
+   ========================================================================== */
+
+/* H Monogram Glide: Holds centered for 0.35s, then glides seamlessly into place */
+@keyframes hultHSlide {
+  0% {
+    transform: translate3d(19.86%, 0, 0);
+  }
+  100% {
+    transform: translate3d(0, 0, 0);
+  }
+}
+
+/* Text & Crest Reveal: Dissolves and slides in with continuous natural deceleration */
+@keyframes hultTextSlide {
+  0% {
+    opacity: 0;
+    transform: translate3d(20px, 0, 0);
+  }
+  100% {
+    opacity: 1;
+    transform: translate3d(0, 0, 0);
+  }
+}
+
+.animate-hult-h {
+  transform: translate3d(19.86%, 0, 0);
+  animation: hultHSlide 0.95s cubic-bezier(0.16, 1, 0.3, 1) 0.35s both;
+  will-change: transform;
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+}
+
+.animate-hult-text {
+  opacity: 0;
+  transform: translate3d(20px, 0, 0);
+  animation: hultTextSlide 0.85s cubic-bezier(0.16, 1, 0.3, 1) 0.55s both;
+  will-change: transform, opacity;
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+}
+
+/* Silky smooth opacity fade for Heritage Institute of Technology text */
+.fade-in-heritage {
+  transition: opacity 0.75s cubic-bezier(0.16, 1, 0.3, 1);
+  will-change: opacity;
+}
+
+/* Respect user's motion preferences */
+@media (prefers-reduced-motion: reduce) {
+  .animate-hult-h {
+    animation: none !important;
+    transform: translate3d(0, 0, 0) !important;
+  }
+  .animate-hult-text {
+    animation: none !important;
+    opacity: 1 !important;
+    transform: translate3d(0, 0, 0) !important;
+  }
+  .fade-in-heritage {
+    transition: none !important;
+    opacity: 1 !important;
+  }
 }
