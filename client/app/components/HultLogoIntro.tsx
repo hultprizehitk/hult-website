@@ -3,6 +3,9 @@
 import React, { useEffect, useState } from "react";
 import Image from "next/image";
 
+const H_PATH =
+  "M 86 75 L 207 76 L 236 83 L 255 94 L 265 104 L 273 116 L 282 143 L 284 158 L 284 263 L 286 265 L 370 263 L 370 161 L 373 137 L 378 119 L 385 105 L 401 88 L 420 79 L 445 75 L 565 75 L 565 557 L 446 557 L 419 551 L 405 544 L 396 537 L 388 528 L 379 512 L 372 487 L 370 469 L 369 368 L 284 369 L 284 475 L 282 489 L 276 510 L 271 520 L 263 531 L 253 540 L 232 551 L 201 557 L 86 557 L 86 75 Z";
+
 interface HultLogoIntroProps {
   className?: string;
   priority?: boolean;
@@ -22,53 +25,77 @@ export default function HultLogoIntro({
 
   return (
     <div
-      className={`relative inline-block select-none overflow-hidden ${className}`}
+      className={`relative select-none ${className}`}
       style={{
         width: "100%",
-        maxWidth: "420px",
+        maxWidth: "480px",
         aspectRatio: "1080 / 659",
       }}
       aria-label="Hult Prize Logo"
     >
       {/* 
-        Container holding both animation layers.
-        The full image size is 1080x659.
-        H monogram is located in the left 57% (center at ~30.14% of total width).
-        Text & Crest are located in the right 43% (starting at ~60.74% of total width).
+        ========================================================================
+        1. Large H Monogram: Outline-to-Fill + Glide Left (0.00s -> 0.80s)
+        ========================================================================
       */}
+      <div className="absolute inset-0 h-full w-full">
+        <svg
+          viewBox="0 0 1080 659"
+          className="w-full h-full overflow-visible"
+          fill="none"
+          xmlns="http://www.w3.org/2000/svg"
+        >
+          <defs>
+            {/* Clip path for the progressive left-to-right fill wipe */}
+            <clipPath id="hFillClip">
+              <rect
+                x="80"
+                y="70"
+                height="495"
+                className={isMounted ? "animate-h-fill-rect" : "w-0"}
+              />
+            </clipPath>
+          </defs>
 
-      {/* Layer 1: The Large 'H' Monogram */}
-      <div
-        className={`absolute inset-0 h-full w-full will-change-transform ${
-          isMounted ? "animate-hult-h" : ""
-        }`}
-        style={{
-          clipPath: "polygon(0% 0%, 57% 0%, 57% 100%, 0% 100%)",
-          WebkitClipPath: "polygon(0% 0%, 57% 0%, 57% 100%, 0% 100%)",
-        }}
-      >
-        <Image
-          src="/Hult-Prize.png"
-          alt="Hult Prize 'H' Monogram"
-          fill
-          sizes="(max-width: 768px) 100vw, 420px"
-          priority={priority}
-          className="object-contain"
-        />
+          {/* H Group: Holds in center, then glides to left from 0.20s to 0.80s */}
+          <g className={isMounted ? "animate-h-translation" : "translate-h-center"}>
+            {/* Solid White Fill Layer (Wiped left-to-right inside the H) */}
+            <path
+              d={H_PATH}
+              fill="#FFFFFF"
+              stroke="none"
+              clipPath="url(#hFillClip)"
+            />
+
+            {/* White Outline Layer (Thin crisp stroke) */}
+            <path
+              d={H_PATH}
+              fill="none"
+              stroke="#FFFFFF"
+              strokeWidth="3.5"
+              strokeLinejoin="round"
+              strokeLinecap="round"
+              className={isMounted ? "animate-h-outline-stroke" : "opacity-0"}
+            />
+          </g>
+        </svg>
       </div>
 
-      {/* Layer 2: The 'Hult Prize' Text and Wheat Logo */}
+      {/* 
+        ========================================================================
+        2. Right Side: "Hult Prize" Typography & Wheat Crest (Reveals 0.45s -> 1.25s)
+        ========================================================================
+      */}
       <div
         className={`absolute inset-0 h-full w-full will-change-[transform,opacity] ${
-          isMounted ? "animate-hult-text" : "opacity-0"
+          isMounted ? "animate-hult-right" : "opacity-0"
         }`}
         style={{
           clipPath: "polygon(57% 0%, 100% 0%, 100% 100%, 57% 100%)",
           WebkitClipPath: "polygon(57% 0%, 100% 0%, 100% 100%, 57% 100%)",
         }}
         onAnimationEnd={(e) => {
-          // Trigger onEnded when the text animation completes
-          if (e.animationName === "hultTextSlide" || e.animationName === "hultTextIntro") {
+          if (e.animationName === "hultRightTextReveal") {
             onEnded?.();
           }
         }}
@@ -77,7 +104,7 @@ export default function HultLogoIntro({
           src="/Hult-Prize.png"
           alt="Hult Prize Text and Crest"
           fill
-          sizes="(max-width: 768px) 100vw, 420px"
+          sizes="(max-width: 640px) 280px, (max-width: 1024px) 360px, 480px"
           priority={priority}
           className="object-contain"
         />
