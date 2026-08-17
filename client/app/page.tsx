@@ -1,38 +1,228 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState, useRef } from "react";
+import Image from "next/image";
 import HultLogoIntro from "./components/HultLogoIntro";
+import ThreeBirds from "./components/ThreeBirds";
+import CloudRevealTransition from "./components/CloudRevealTransition";
 
 export default function Home() {
-  const [introEnded, setIntroEnded] = useState(false);
+  const [introLogoEnded, setIntroLogoEnded] = useState(false);
+  const [isCloudTransitionActive, setIsCloudTransitionActive] = useState(false);
+  const [introOverlayActive, setIntroOverlayActive] = useState(true);
+  const [isLandingRevealed, setIsLandingRevealed] = useState(false);
+
+  // Mouse Parallax coordinates (subtle offsets in pixels)
+  const [mouseOffset, setMouseOffset] = useState({ x: 0, y: 0 });
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  // Trigger Cloud Transition ~400ms after logo intro sequence ends
+  useEffect(() => {
+    if (introLogoEnded) {
+      const timer = setTimeout(() => {
+        setIsCloudTransitionActive(true);
+      }, 400);
+      return () => clearTimeout(timer);
+    }
+  }, [introLogoEnded]);
+
+  // Subtle Mouse Parallax Handler
+  const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
+    if (!containerRef.current) return;
+    const { clientX, clientY } = e;
+    const { innerWidth, innerHeight } = window;
+
+    // Normalized offset from -1 to 1
+    const x = (clientX / innerWidth - 0.5) * 2;
+    const y = (clientY / innerHeight - 0.5) * 2;
+
+    setMouseOffset({ x, y });
+  };
 
   return (
-    <main className="flex min-h-screen w-full flex-col items-center justify-center bg-black px-6 py-16 text-white selection:bg-white selection:text-black overflow-hidden select-none">
-      {/* Centered Composition Container with Optimal Optical Alignment */}
-      <div className="relative flex flex-col items-center justify-center w-full max-w-[300px] sm:max-w-[380px] md:max-w-[440px] lg:max-w-[480px]">
-        {/* Animated Hult Prize Logo (H outline-to-fill + right text reveal) */}
-        <div className="w-full">
-          <HultLogoIntro
-            className="w-full"
-            onEnded={() => setIntroEnded(true)}
+    <div
+      ref={containerRef}
+      onMouseMove={handleMouseMove}
+      className="relative min-h-screen w-full overflow-hidden bg-black font-sans text-white selection:bg-white selection:text-black"
+    >
+      {/* 
+        ========================================================================
+        1. MAIN LANDING PAGE (Features Campus View, Sky Title, Clouds & Birds)
+        ========================================================================
+      */}
+      <div className="relative min-h-screen w-full flex flex-col justify-between">
+        {/* Full-Screen Campus Photograph Background Layer with Micro-Parallax */}
+        <div
+          className="absolute inset-0 z-0 parallax-smooth"
+          style={{
+            transform: `translate3d(${mouseOffset.x * 2}px, ${mouseOffset.y * 1.5}px, 0) scale(1.02)`,
+          }}
+        >
+          <Image
+            src="/heritage-landing.png"
+            alt="Heritage Institute of Technology Campus"
+            fill
+            sizes="100vw"
+            priority
+            className="object-cover object-center animate-landing-hero"
           />
+
+          {/* Very subtle top gradient to ensure navbar clarity */}
+          <div className="pointer-events-none absolute inset-x-0 top-0 h-28 bg-gradient-to-b from-black/55 to-transparent" />
         </div>
 
         {/* 
-          Heritage Institute of Technology Subtitle:
-          - Precisely positioned right beneath the logo graphic baseline
-          - Fixed position (zero layout shift or vertical translation)
-          - Fades in smoothly (0.7s) once the logo reveal finishes
-          - Clean uppercase typography with 0.24em tracking
+          ========================================================================
+          Natural Subtle Cloud Drift Parallax Layers (Over Upper Sky Area)
+          ========================================================================
         */}
-        <p
-          className={`fade-in-heritage -mt-3 sm:-mt-5 md:-mt-6 w-full text-center text-[10px] sm:text-xs md:text-sm font-medium tracking-[0.24em] text-white/90 uppercase select-none ${
-            introEnded ? "opacity-100" : "opacity-0 pointer-events-none"
-          }`}
+        <div
+          className="pointer-events-none absolute inset-x-0 top-0 h-[45%] z-5 overflow-hidden parallax-smooth opacity-20 mix-blend-screen"
+          style={{
+            transform: `translate3d(${mouseOffset.x * 6}px, ${mouseOffset.y * 4}px, 0)`,
+          }}
         >
-          Heritage Institute of Technology
-        </p>
+          {/* Drifting Cloud Layer 1 */}
+          <div className="absolute -inset-x-32 top-4 h-full bg-gradient-to-r from-transparent via-white/40 to-transparent blur-3xl animate-cloud-drift-1" />
+
+          {/* Drifting Cloud Layer 2 */}
+          <div className="absolute -inset-x-40 top-12 h-full bg-gradient-to-r from-transparent via-sky-100/30 to-transparent blur-2xl animate-cloud-drift-2" />
+        </div>
+
+        {/* 
+          ========================================================================
+          Three.js Realistic Bird Flock Animation Layer (Depth & Wing Flapping)
+          ========================================================================
+        */}
+        <ThreeBirds />
+
+        {/* 
+          ========================================================================
+          Upper Sky "HULT PRIZE" Cinematic Bold Typography
+          - Positioned higher in the sky to clear the roofline gracefully
+          - Translucent white/light-blue gradient so clouds remain visible
+          - 1.5s Entrance animation starts when landing page is revealed
+          - Micro-parallax responds smoothly to mouse motion
+          ========================================================================
+        */}
+        <div
+          className={`pointer-events-none absolute inset-x-0 top-[9%] sm:top-[10%] md:top-[11%] lg:top-[12%] xl:top-[13%] z-10 flex items-center justify-center px-4 parallax-smooth ${
+            isLandingRevealed ? "animate-sky-entrance" : "opacity-0"
+          }`}
+          style={{
+            transform: `translate3d(${mouseOffset.x * 4}px, ${mouseOffset.y * 3}px, 0)`,
+          }}
+        >
+          <div className="animate-sky-floating flex items-center justify-center">
+            <h1 className="sky-hult-title text-5xl sm:text-6xl md:text-7xl lg:text-8xl xl:text-[9.5rem] 2xl:text-[11rem] font-bold uppercase tracking-[0.06em] sm:tracking-[0.08em] leading-none text-center select-none">
+              HULT PRIZE
+            </h1>
+          </div>
+        </div>
+
+        {/* 
+          ========================================================================
+          Header Navigation (Stable, Glassmorphic, and Responsive)
+          ========================================================================
+        */}
+        <header className="relative z-20 flex w-full items-center justify-between px-6 py-6 sm:px-12 md:px-16 lg:px-24">
+          <div className="flex items-center gap-3 sm:gap-4 transition-opacity duration-700">
+            {/* Official Hult Prize Logo Image */}
+            <div className="relative h-8 w-28 sm:h-10 sm:w-36">
+              <Image
+                src="/Hult-Prize.png"
+                alt="Hult Prize Logo"
+                fill
+                sizes="(max-width: 640px) 112px, 144px"
+                priority
+                className="object-contain object-left drop-shadow-md"
+              />
+            </div>
+
+            <span className="rounded-full bg-black/40 border border-white/20 px-3 py-1 text-xs font-semibold tracking-wider text-white backdrop-blur-md">
+              HITK 2027
+            </span>
+          </div>
+
+          <nav className="flex items-center gap-4 sm:gap-6">
+            <a
+              href="#about"
+              className="text-sm font-medium text-white/85 drop-shadow transition-colors duration-200 hover:text-white"
+            >
+              About
+            </a>
+            <a
+              href="#challenge"
+              className="text-sm font-medium text-white/85 drop-shadow transition-colors duration-200 hover:text-white"
+            >
+              Challenge
+            </a>
+            <a
+              href="#timeline"
+              className="hidden text-sm font-medium text-white/85 drop-shadow transition-colors duration-200 hover:text-white sm:inline-block"
+            >
+              Timeline
+            </a>
+            <a
+              href="#register"
+              className="rounded-full bg-white px-5 py-2 text-xs font-semibold text-black shadow-lg transition-transform duration-200 hover:scale-[1.03] active:scale-[0.98] sm:text-sm"
+            >
+              Register Now
+            </a>
+          </nav>
+        </header>
+
+        {/* Empty Main Area to allow the photo, sky title, and birds to shine unobstructed */}
+        <main className="flex-1 relative z-10" />
       </div>
-    </main>
+
+      {/* 
+        ========================================================================
+        2. FULL-SCREEN INITIAL LOGO INTRO OVERLAY (Smooth Logo Effect on Black)
+        ========================================================================
+      */}
+      {introOverlayActive && (
+        <div className="fixed inset-0 z-30 flex flex-col items-center justify-center bg-black px-6 py-16 text-center select-none">
+          {/* Centered Composition Container */}
+          <div className="relative flex flex-col items-center justify-center w-full max-w-[300px] sm:max-w-[380px] md:max-w-[440px] lg:max-w-[480px]">
+            {/* Animated Hult Prize Logo */}
+            <div className="w-full">
+              <HultLogoIntro
+                className="w-full"
+                onEnded={() => setIntroLogoEnded(true)}
+              />
+            </div>
+
+            {/* Subtitle Under Logo */}
+            <p
+              className={`fade-in-heritage -mt-3 sm:-mt-5 md:-mt-6 w-full text-center text-[10px] sm:text-xs md:text-sm font-medium tracking-[0.24em] text-white/90 uppercase select-none ${
+                introLogoEnded ? "opacity-100" : "opacity-0 pointer-events-none"
+              }`}
+            >
+              Heritage Institute of Technology
+            </p>
+          </div>
+        </div>
+      )}
+
+      {/* 
+        ========================================================================
+        3. CINEMATIC THREE.JS CLOUD REVEAL TRANSITION OVERLAY
+        - Volumetric fluffy clouds enter from LEFT & RIGHT
+        - 100% full-screen cloud whiteout cover hold (~400ms)
+        - Parting center split curtain reveal: Sky -> HULT PRIZE -> Campus
+        ========================================================================
+      */}
+      <CloudRevealTransition
+        isActive={isCloudTransitionActive}
+        onCovered={() => {
+          setIntroOverlayActive(false);
+          setIsLandingRevealed(true);
+        }}
+        onComplete={() => {
+          setIsCloudTransitionActive(false);
+        }}
+      />
+    </div>
   );
 }

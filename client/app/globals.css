@@ -9,6 +9,7 @@
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   --font-sans: var(--font-montserrat), var(--font-geist-sans), sans-serif;
+  --font-anton: var(--font-anton), Impact, sans-serif;
   --font-mono: var(--font-geist-mono);
 }
 
@@ -18,6 +19,92 @@ body {
   font-family: var(--font-montserrat), -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
   overflow-x: hidden;
   min-height: 100vh;
+}
+
+/* ==========================================================================
+   Upper Sky "HULT PRIZE" Cinematic Typography & Animations
+   ========================================================================== */
+
+.sky-hult-title {
+  font-family: var(--font-anton), Impact, sans-serif;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.78) 0%, rgba(195, 225, 255, 0.40) 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  filter: drop-shadow(0 4px 20px rgba(0, 35, 80, 0.12));
+}
+
+/* 1. HULT PRIZE Entrance: Fades in, slides down slightly, scales 0.96 -> 1.0 (1.5s ease-out) */
+@keyframes hultSkyEntrance {
+  0% {
+    opacity: 0;
+    transform: translate3d(0, -18px, 0) scale(0.96);
+  }
+  100% {
+    opacity: 1;
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+}
+
+/* 2. HULT PRIZE Continuous Gentle Floating Loop (7s ease-in-out) */
+@keyframes hultSkyFloat {
+  0% {
+    transform: translate3d(0, 0, 0);
+  }
+  50% {
+    transform: translate3d(0, -5px, 0);
+  }
+  100% {
+    transform: translate3d(0, 0, 0);
+  }
+}
+
+.animate-sky-entrance {
+  animation: hultSkyEntrance 1.5s cubic-bezier(0.16, 1, 0.3, 1) 0.1s both;
+  will-change: transform, opacity;
+}
+
+.animate-sky-floating {
+  animation: hultSkyFloat 7s ease-in-out infinite;
+  will-change: transform;
+}
+
+/* ==========================================================================
+   Natural Subtle Cloud Drift Parallax Loops
+   ========================================================================== */
+
+@keyframes cloudDriftLayer1 {
+  0% {
+    transform: translate3d(0, 0, 0);
+  }
+  50% {
+    transform: translate3d(-50px, 2px, 0);
+  }
+  100% {
+    transform: translate3d(0, 0, 0);
+  }
+}
+
+@keyframes cloudDriftLayer2 {
+  0% {
+    transform: translate3d(0, 0, 0);
+  }
+  50% {
+    transform: translate3d(45px, -3px, 0);
+  }
+  100% {
+    transform: translate3d(0, 0, 0);
+  }
+}
+
+.animate-cloud-drift-1 {
+  animation: cloudDriftLayer1 65s ease-in-out infinite;
+  will-change: transform;
+}
+
+.animate-cloud-drift-2 {
+  animation: cloudDriftLayer2 85s ease-in-out infinite;
+  will-change: transform;
 }
 
 /* ==========================================================================
@@ -113,6 +200,33 @@ body {
   will-change: opacity;
 }
 
+/* Intro Overlay Fade Out */
+.intro-overlay-fade {
+  transition: opacity 0.8s cubic-bezier(0.65, 0, 0.35, 1), visibility 0.8s;
+}
+
+/* Landing Page Hero Image Entrance */
+@keyframes landingHeroFadeIn {
+  0% {
+    opacity: 0;
+    transform: scale(1.03);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.animate-landing-hero {
+  animation: landingHeroFadeIn 1s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  will-change: transform, opacity;
+}
+
+/* Parallax smoothing */
+.parallax-smooth {
+  transition: transform 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
 /* Respect user's motion preferences */
 @media (prefers-reduced-motion: reduce) {
   .animate-h-translation {
@@ -132,8 +246,19 @@ body {
     opacity: 1 !important;
     transform: translate3d(0, 0, 0) !important;
   }
-  .fade-in-heritage {
+  .fade-in-heritage,
+  .animate-landing-hero,
+  .animate-sky-entrance,
+  .animate-sky-floating,
+  .animate-cloud-drift-1,
+  .animate-cloud-drift-2 {
+    animation: none !important;
     transition: none !important;
     opacity: 1 !important;
+    transform: none !important;
+  }
+  .parallax-smooth {
+    transition: none !important;
+    transform: none !important;
   }
 }
