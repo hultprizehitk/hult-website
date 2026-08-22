@@ -15,8 +15,7 @@ export default function CloudRevealTransition({
   onComplete,
 }: CloudRevealProps) {
   const containerRef = useRef<HTMLDivElement>(null);
-  
-  // Store callbacks in stable refs to avoid resetting the animation loop on parent state updates
+
   const onCoveredRef = useRef(onCovered);
   onCoveredRef.current = onCovered;
 
@@ -33,7 +32,7 @@ export default function CloudRevealTransition({
     coveredFiredRef.current = false;
     completeFiredRef.current = false;
 
-    // 1. Scene, Orthographic Camera, Renderer
+    // 1. Scene, Camera, Renderer
     const scene = new THREE.Scene();
     const width = container.clientWidth || window.innerWidth;
     const height = container.clientHeight || window.innerHeight;
@@ -53,18 +52,19 @@ export default function CloudRevealTransition({
       antialias: true,
       powerPreference: "high-performance",
     });
-    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.5));
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.25));
     renderer.setSize(width, height);
     renderer.domElement.style.position = "absolute";
     renderer.domElement.style.top = "0";
     renderer.domElement.style.left = "0";
     renderer.domElement.style.width = "100%";
     renderer.domElement.style.height = "100%";
+    renderer.domElement.style.pointerEvents = "none";
     container.appendChild(renderer.domElement);
 
-    // 2. High-Fidelity Soft Cloud Puff Texture (Silky Smooth Radial Falloff)
+    // 2. Soft Fluffy Cloud Texture
     const createCloudTexture = () => {
-      const texSize = 512;
+      const texSize = 256;
       const canvas = document.createElement("canvas");
       canvas.width = texSize;
       canvas.height = texSize;
@@ -76,9 +76,9 @@ export default function CloudRevealTransition({
       const drawPuff = (cx: number, cy: number, r: number, a: number) => {
         const g = ctx.createRadialGradient(cx, cy, 0, cx, cy, r);
         g.addColorStop(0, `rgba(255, 255, 255, ${a})`);
-        g.addColorStop(0.35, `rgba(255, 254, 252, ${a * 0.95})`);
-        g.addColorStop(0.7, `rgba(250, 250, 252, ${a * 0.45})`);
-        g.addColorStop(1, "rgba(250, 250, 252, 0)");
+        g.addColorStop(0.4, `rgba(255, 254, 252, ${a * 0.92})`);
+        g.addColorStop(0.75, `rgba(250, 250, 254, ${a * 0.4})`);
+        g.addColorStop(1, "rgba(250, 250, 254, 0)");
         ctx.fillStyle = g;
         ctx.beginPath();
         ctx.arc(cx, cy, r, 0, Math.PI * 2);
@@ -86,15 +86,13 @@ export default function CloudRevealTransition({
       };
 
       const c = texSize / 2;
-      // Core volume
-      drawPuff(c, c, 220, 1.0);
+      drawPuff(c, c, 110, 1.0);
 
-      // Surrounding organic cloud lobes for billowy contours
-      const lobes = 10;
+      const lobes = 8;
       for (let i = 0; i < lobes; i++) {
         const ang = (i / lobes) * Math.PI * 2;
-        const dist = 80 + Math.random() * 50;
-        drawPuff(c + Math.cos(ang) * dist, c + Math.sin(ang) * dist, 110 + Math.random() * 40, 0.9);
+        const dist = 40 + (i % 2) * 20;
+        drawPuff(c + Math.cos(ang) * dist, c + Math.sin(ang) * dist, 60, 0.85);
       }
 
       const tex = new THREE.CanvasTexture(canvas);
@@ -110,57 +108,44 @@ export default function CloudRevealTransition({
       transparent: true,
       opacity: 1,
       depthWrite: false,
-      blending: THREE.NormalBlending,
     });
 
-    // 3. Bilateral Cloud Curtain Groups (Dense Overlapping Formations)
+    // 3. Bilateral Cloud Curtain Groups
     const leftGroup = new THREE.Group();
     const rightGroup = new THREE.Group();
     scene.add(leftGroup);
     scene.add(rightGroup);
 
-    const puffGeo = new THREE.PlaneGeometry(width * 0.65, width * 0.65);
+    const puffGeo = new THREE.PlaneGeometry(width * 0.75, width * 0.75);
 
-    // Left Curtain Puffs: Stacked along the vertical profile, extending rightwards
-    const PUFFS_COUNT = 24;
+    const PUFFS_COUNT = 18;
     for (let i = 0; i < PUFFS_COUNT; i++) {
-      const meshL = new THREE.Mesh(puffGeo, cloudMat);
-      const normalizedY = (i / (PUFFS_COUNT - 1) - 0.5);
-      const lY = normalizedY * height * 1.35 + (Math.random() * 40 - 20);
-      const lX = -width * 0.25 + (Math.random() * 0.45 * width) - (i % 2 === 0 ? 0 : width * 0.15);
-      const scaleL = 1.0 + Math.random() * 0.55;
+      const normalizedY = i / (PUFFS_COUNT - 1) - 0.5;
+      const pY = normalizedY * height * 1.35;
 
-      meshL.position.set(lX, lY, i * 0.2);
-      meshL.scale.set(scaleL, scaleL, 1);
+      // Left curtain
+      const meshL = new THREE.Mesh(puffGeo, cloudMat);
+      const lX = -width * 0.15 + ((i % 3) - 1) * width * 0.12;
+      meshL.position.set(lX, pY, i * 0.1);
+      meshL.scale.set(1.15, 1.15, 1);
       leftGroup.add(meshL);
 
-      // Right Curtain Puffs: Mirrored density
+      // Right curtain
       const meshR = new THREE.Mesh(puffGeo, cloudMat);
-      const rY = normalizedY * height * 1.35 + (Math.random() * 40 - 20);
-      const rX = width * 0.25 - (Math.random() * 0.45 * width) + (i % 2 === 0 ? 0 : width * 0.15);
-      const scaleR = 1.0 + Math.random() * 0.55;
-
-      meshR.position.set(rX, rY, i * 0.2);
-      meshR.scale.set(scaleR, scaleR, 1);
+      const rX = width * 0.15 - ((i % 3) - 1) * width * 0.12;
+      meshR.position.set(rX, pY, i * 0.1);
+      meshR.scale.set(1.15, 1.15, 1);
       rightGroup.add(meshR);
     }
 
-    // Set initial offscreen positions
-    const offscreenDistance = width * 0.95;
+    const offscreenDistance = width * 1.1;
     leftGroup.position.x = -offscreenDistance;
     rightGroup.position.x = offscreenDistance;
 
-    // 4. Silky-Smooth Continuous Motion Timeline
-    // Phase 1 (0.0s -> 1.05s): Left & right formations sweep in and overlap in center
-    // Phase 2 (1.05s -> 1.35s): Seamless 100% full-screen cover hold (triggers onCovered)
-    // Phase 3 (1.35s -> 2.85s): Smooth parting reveal to the sides (smooth deceleration)
-    const DURATION = 2.85;
+    // 4. Continuous Fluid Transition Loop (No Stuck / Freeze Points)
+    const DURATION = 2.4; // 2.4s continuous sweep
     const startTime = performance.now();
     let animationFrameId: number;
-
-    const easeInOutCubic = (t: number) =>
-      t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
-    const easeOutQuint = (t: number) => 1 - Math.pow(1 - t, 3.8);
 
     const animate = () => {
       animationFrameId = requestAnimationFrame(animate);
@@ -168,38 +153,33 @@ export default function CloudRevealTransition({
       const elapsed = (performance.now() - startTime) / 1000;
       const progress = Math.min(elapsed / DURATION, 1.0);
 
-      if (progress < 0.37) {
-        // Stage 1: Closing in smoothly (0.0s -> 1.05s)
-        const t = progress / 0.37;
-        const ease = easeInOutCubic(t);
+      // Smooth continuous closing -> parting trajectory
+      if (progress < 0.44) {
+        // Stage 1: Fluid Closing Sweep (0.0s -> 1.05s)
+        const t = progress / 0.44;
+        // Smooth sine ease-in-out
+        const ease = 0.5 - 0.5 * Math.cos(t * Math.PI);
 
         leftGroup.position.x = THREE.MathUtils.lerp(-offscreenDistance, 0, ease);
         rightGroup.position.x = THREE.MathUtils.lerp(offscreenDistance, 0, ease);
-
         cloudMat.opacity = Math.min(1.0, 0.4 + ease * 0.6);
-      } else if (progress >= 0.37 && progress < 0.47) {
-        // Stage 2: Full Cover Hold (1.05s -> 1.35s)
-        leftGroup.position.x = 0;
-        rightGroup.position.x = 0;
-        cloudMat.opacity = 1.0;
-
+      } else {
+        // Stage 2: Smooth Parting Sweep (1.05s -> 2.4s) without any pause/stuck point
         if (!coveredFiredRef.current) {
           coveredFiredRef.current = true;
           onCoveredRef.current?.();
         }
-      } else {
-        // Stage 3: Smooth Parting Reveal (1.35s -> 2.85s)
-        const t = (progress - 0.47) / 0.53;
-        const ease = easeOutQuint(t);
 
-        // Smooth physical gliding apart toward outer edges
+        const t = (progress - 0.44) / 0.56;
+        // Smooth cubic ease-out for elegant parting
+        const ease = 1 - Math.pow(1 - t, 2.6);
+
         leftGroup.position.x = THREE.MathUtils.lerp(0, -offscreenDistance * 1.15, ease);
         rightGroup.position.x = THREE.MathUtils.lerp(0, offscreenDistance * 1.15, ease);
 
-        // Maintain full opacity through most of the travel, fading gently only at the very end
-        if (t > 0.65) {
-          const fadeProgress = (t - 0.65) / 0.35;
-          cloudMat.opacity = Math.max(0, 1 - fadeProgress);
+        if (t > 0.45) {
+          const fade = (t - 0.45) / 0.55;
+          cloudMat.opacity = Math.max(0, 1 - fade);
         } else {
           cloudMat.opacity = 1.0;
         }
@@ -250,7 +230,7 @@ export default function CloudRevealTransition({
     <div
       ref={containerRef}
       aria-hidden="true"
-      className="pointer-events-auto fixed inset-0 z-50 overflow-hidden select-none"
+      className="pointer-events-none fixed inset-0 z-50 overflow-hidden select-none"
     />
   );
 }

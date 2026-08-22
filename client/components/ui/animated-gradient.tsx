@@ -196,7 +196,19 @@ export function AnimatedGradient({
             ...preset,
             speed: config.speed ?? preset.speed,
         };
-    }, [config]);
+    }, [
+        config.preset,
+        // @ts-ignore
+        config.color1,
+        // @ts-ignore
+        config.color2,
+        // @ts-ignore
+        config.color3,
+        config.speed,
+    ]);
+
+    const paramsRef = useRef(params);
+    paramsRef.current = params;
 
     useEffect(() => {
         if (hasWebGLError) return;
@@ -287,9 +299,9 @@ export function AnimatedGradient({
             const resize = () => {
                 const width = container.clientWidth;
                 const height = container.clientHeight;
-                const pixelRatio = window.devicePixelRatio || 1;
-                canvas.width = width * pixelRatio;
-                canvas.height = height * pixelRatio;
+                const pixelRatio = Math.min(window.devicePixelRatio || 1, 1.25);
+                canvas.width = Math.round(width * pixelRatio);
+                canvas.height = Math.round(height * pixelRatio);
                 canvas.style.width = `${width}px`;
                 canvas.style.height = `${height}px`;
                 gl.viewport(0, 0, canvas.width, canvas.height);
@@ -302,31 +314,32 @@ export function AnimatedGradient({
             startTimeRef.current = performance.now();
 
             const animate = (time: number) => {
+                const p = paramsRef.current;
                 const elapsed = (time - startTimeRef.current) / 1000;
-                const speed = (params.speed / 100) * 5;
+                const speed = (p.speed / 100) * 5;
 
-                gl.uniform1f(uniforms.u_time, elapsed * speed + params.offset * 0.01);
+                gl.uniform1f(uniforms.u_time, elapsed * speed + p.offset * 0.01);
                 gl.uniform2f(uniforms.u_resolution, canvas.width, canvas.height);
                 gl.uniform1f(uniforms.u_pixelRatio, window.devicePixelRatio || 1);
-                gl.uniform1f(uniforms.u_scale, params.scale);
-                gl.uniform1f(uniforms.u_rotation, (params.rotation * Math.PI) / 180);
+                gl.uniform1f(uniforms.u_scale, p.scale);
+                gl.uniform1f(uniforms.u_rotation, (p.rotation * Math.PI) / 180);
 
-                const c1 = hexToRgba(params.color1);
-                const c2 = hexToRgba(params.color2);
-                const c3 = hexToRgba(params.color3);
+                const c1 = hexToRgba(p.color1);
+                const c2 = hexToRgba(p.color2);
+                const c3 = hexToRgba(p.color3);
                 gl.uniform4f(uniforms.u_color1, c1[0], c1[1], c1[2], c1[3]);
                 gl.uniform4f(uniforms.u_color2, c2[0], c2[1], c2[2], c2[3]);
                 gl.uniform4f(uniforms.u_color3, c3[0], c3[1], c3[2], c3[3]);
 
-                gl.uniform1f(uniforms.u_proportion, params.proportion / 100);
-                gl.uniform1f(uniforms.u_softness, params.softness / 100);
-                gl.uniform1f(uniforms.u_shape, PatternShapes[params.shape]);
-                gl.uniform1f(uniforms.u_shapeScale, params.shapeSize / 100);
-                gl.uniform1f(uniforms.u_distortion, params.distortion / 50);
-                gl.uniform1f(uniforms.u_swirl, params.swirl / 100);
+                gl.uniform1f(uniforms.u_proportion, p.proportion / 100);
+                gl.uniform1f(uniforms.u_softness, p.softness / 100);
+                gl.uniform1f(uniforms.u_shape, PatternShapes[p.shape]);
+                gl.uniform1f(uniforms.u_shapeScale, p.shapeSize / 100);
+                gl.uniform1f(uniforms.u_distortion, p.distortion / 50);
+                gl.uniform1f(uniforms.u_swirl, p.swirl / 100);
                 gl.uniform1f(
                     uniforms.u_swirlIterations,
-                    params.swirl === 0 ? 0 : params.swirlIterations
+                    p.swirl === 0 ? 0 : p.swirlIterations
                 );
 
                 gl.drawArrays(gl.TRIANGLES, 0, 6);
@@ -349,7 +362,7 @@ export function AnimatedGradient({
             setHasWebGLError(true);
             return;
         }
-    }, [hasWebGLError, isMounted, params]);
+    }, [hasWebGLError, isMounted]);
 
     if (hasWebGLError) {
         return <WebGLFallback className={cn("absolute inset-0 overflow-hidden", className)} />;

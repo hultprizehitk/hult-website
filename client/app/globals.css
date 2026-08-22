@@ -27,22 +27,23 @@ body {
 
 .sky-hult-title {
   font-family: var(--font-anton), Impact, sans-serif;
-  background: linear-gradient(180deg, rgba(255, 255, 255, 0.78) 0%, rgba(195, 225, 255, 0.40) 100%);
-  -webkit-background-clip: text;
-  background-clip: text;
-  -webkit-text-fill-color: transparent;
-  filter: drop-shadow(0 4px 20px rgba(0, 35, 80, 0.12));
+  color: #ffffff;
+  background: none;
+  -webkit-text-fill-color: #ffffff;
 }
 
-/* 1. HULT PRIZE Entrance: Fades in, slides down slightly, scales 0.96 -> 1.0 (1.5s ease-out) */
+/* 1. Flat 2D Clean Continuous Slide Upward from Rooftop (Single smooth analytical curve) */
 @keyframes hultSkyEntrance {
   0% {
     opacity: 0;
-    transform: translate3d(0, -18px, 0) scale(0.96);
+    transform: translate3d(0, 140px, 0);
+  }
+  14% {
+    opacity: 1;
   }
   100% {
     opacity: 1;
-    transform: translate3d(0, 0, 0) scale(1);
+    transform: translate3d(0, 0, 0);
   }
 }
 
@@ -60,7 +61,7 @@ body {
 }
 
 .animate-sky-entrance {
-  animation: hultSkyEntrance 1.5s cubic-bezier(0.16, 1, 0.3, 1) 0.1s both;
+  animation: hultSkyEntrance 4.0s cubic-bezier(0.16, 1, 0.3, 1) 0.1s both;
   will-change: transform, opacity;
 }
 
