@@ -69,8 +69,54 @@ export default function Home() {
             className="object-cover object-center animate-landing-hero"
           />
 
+          {/* 
+            ====================================================================
+            Vertical Hult Prize Banners on Two Sides of the Building
+            - Positioned relative to the exact coordinate space of the building
+            - z-index: sits right on the building facade (below clouds & birds)
+            - Inherits building parallax so it stays 100% pinned to the walls
+            ====================================================================
+          */}
+          <div className="absolute inset-0 pointer-events-none flex items-center justify-center overflow-hidden z-[1]">
+            <div className="relative aspect-[3344/1882] min-w-full min-h-full w-auto h-auto shrink-0">
+              {/* Left Side Building Banner */}
+              <div 
+                className="absolute top-[32.8%] left-[13.8%] w-[1.7%] h-[48%] transition-transform duration-500 hover:scale-105"
+                style={{
+                  filter: "drop-shadow(2px 4px 10px rgba(0, 0, 0, 0.45))",
+                }}
+              >
+                <Image
+                  src="/hult-banner-vertical.png"
+                  alt="HULT PRIZE HITK 2027 Left Banner"
+                  fill
+                  sizes="40px"
+                  priority
+                  className="object-contain object-top"
+                />
+              </div>
+
+              {/* Right Side Building Banner */}
+              <div 
+                className="absolute top-[32.8%] right-[13.8%] w-[1.7%] h-[48%] transition-transform duration-500 hover:scale-105"
+                style={{
+                  filter: "drop-shadow(-2px 4px 10px rgba(0, 0, 0, 0.45))",
+                }}
+              >
+                <Image
+                  src="/hult-banner-vertical.png"
+                  alt="HULT PRIZE HITK 2027 Right Banner"
+                  fill
+                  sizes="40px"
+                  priority
+                  className="object-contain object-top"
+                />
+              </div>
+            </div>
+          </div>
+
           {/* Very subtle top gradient to ensure navbar clarity */}
-          <div className="pointer-events-none absolute inset-x-0 top-0 h-28 bg-gradient-to-b from-black/55 to-transparent" />
+          <div className="pointer-events-none absolute inset-x-0 top-0 h-28 bg-gradient-to-b from-black/55 to-transparent z-[2]" />
         </div>
 
         {/* 
@@ -128,22 +174,30 @@ export default function Home() {
           ========================================================================
         */}
         <header className="relative z-20 flex w-full items-center justify-between px-4 py-4 sm:px-6 sm:py-5 md:px-8">
-          <div className="flex items-center gap-3 sm:gap-4 transition-opacity duration-700">
+          <div className="flex items-center gap-2.5 sm:gap-3 transition-opacity duration-700">
             {/* Official Hult Prize Logo Image */}
-            <div className="relative h-8 w-28 sm:h-10 sm:w-36">
+            <div className="relative aspect-[1080/659] h-7 sm:h-9 md:h-10">
               <Image
                 src="/Hult-Prize.png"
                 alt="Hult Prize Logo"
                 fill
-                sizes="(max-width: 640px) 112px, 144px"
+                sizes="(max-width: 640px) 46px, 66px"
                 priority
-                className="object-contain object-left drop-shadow-md"
+                className="object-contain drop-shadow-md"
               />
             </div>
 
-            <span className="rounded-full bg-black/40 border border-white/20 px-3 py-1 text-xs font-semibold tracking-wider text-white backdrop-blur-md">
-              HITK 2027
-            </span>
+            {/* Heritage Institute 25 Years Celebration Logo */}
+            <div className="relative aspect-[1024/895] h-7 sm:h-9 md:h-10">
+              <Image
+                src="/hitk-25-logo.png"
+                alt="Heritage Institute of Technology 25 Years Logo"
+                fill
+                sizes="(max-width: 640px) 40px, 56px"
+                priority
+                className="object-contain drop-shadow-md"
+              />
+            </div>
           </div>
 
           <nav className="flex items-center gap-4 sm:gap-6">
