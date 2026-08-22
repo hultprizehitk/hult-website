@@ -5,6 +5,7 @@ import Image from "next/image";
 import HultLogoIntro from "./components/HultLogoIntro";
 import ThreeBirds from "./components/ThreeBirds";
 import CloudRevealTransition from "./components/CloudRevealTransition";
+import AnimatedGradient from "@/components/ui/animated-gradient";
 
 export default function Home() {
   const [introLogoEnded, setIntroLogoEnded] = useState(false);
@@ -183,9 +184,23 @@ export default function Home() {
         ========================================================================
       */}
       {introOverlayActive && (
-        <div className="fixed inset-0 z-30 flex flex-col items-center justify-center bg-black px-6 py-16 text-center select-none">
+        <div className="fixed inset-0 z-30 flex flex-col items-center justify-center bg-black px-6 py-16 text-center select-none overflow-hidden">
+          {/* WebGL Animated Aurora Gradient in Background */}
+          <div className="absolute inset-0 z-0 opacity-75">
+            <AnimatedGradient
+              config={{
+                preset: "Aurora",
+                speed: 18,
+              }}
+              noise={{ opacity: 0.12, scale: 1 }}
+            />
+            {/* Smooth Vignette */}
+            <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-transparent to-black/85 pointer-events-none" />
+            <div className="absolute inset-0 bg-radial from-transparent via-black/40 to-black/90 pointer-events-none" />
+          </div>
+
           {/* Centered Composition Container */}
-          <div className="relative flex flex-col items-center justify-center w-full max-w-[300px] sm:max-w-[380px] md:max-w-[440px] lg:max-w-[480px]">
+          <div className="relative z-10 flex flex-col items-center justify-center w-full max-w-[300px] sm:max-w-[380px] md:max-w-[440px] lg:max-w-[480px]">
             {/* Animated Hult Prize Logo */}
             <div className="w-full">
               <HultLogoIntro
@@ -202,6 +217,17 @@ export default function Home() {
             >
               Heritage Institute of Technology
             </p>
+
+            {/* Skip Intro Option */}
+            <button
+              onClick={() => {
+                setIntroOverlayActive(false);
+                setIsLandingRevealed(true);
+              }}
+              className="mt-8 px-5 py-2 text-xs font-semibold tracking-widest text-white/70 hover:text-white uppercase bg-white/10 hover:bg-white/20 border border-white/20 hover:border-white/40 rounded-full transition-all duration-300 backdrop-blur-md cursor-pointer shadow-lg"
+            >
+              Skip Intro ✕
+            </button>
           </div>
         </div>
       )}
