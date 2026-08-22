@@ -217,17 +217,6 @@ export default function Home() {
             >
               Heritage Institute of Technology
             </p>
-
-            {/* Skip Intro Option */}
-            <button
-              onClick={() => {
-                setIntroOverlayActive(false);
-                setIsLandingRevealed(true);
-              }}
-              className="mt-8 px-5 py-2 text-xs font-semibold tracking-widest text-white/70 hover:text-white uppercase bg-white/10 hover:bg-white/20 border border-white/20 hover:border-white/40 rounded-full transition-all duration-300 backdrop-blur-md cursor-pointer shadow-lg"
-            >
-              Skip Intro ✕
-            </button>
           </div>
         </div>
       )}
