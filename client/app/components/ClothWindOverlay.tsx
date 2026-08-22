@@ -97,60 +97,58 @@ export default function ClothWindOverlay({
         vUv = uv;
         vec3 pos = position;
 
-        // --- Realistic 3D Cylindrical Scroll Unroll Physics ---
-        float vertexY = 1.0 - uv.y; // 0.0 at top rod -> 1.0 at bottom tip
-        float rollPos = clamp(uUnfurlProgress, 0.0, 1.0); // scroll position
-        float dist = vertexY - rollPos; // distance from current rolling edge
+        // --- 3D Cylindrical Scroll Unroll Physics ---
+        float vertexY = 1.0 - uv.y; // 0.0 at top anchor -> 1.0 at bottom chevron
+        float rollPos = clamp(uUnfurlProgress, 0.0, 1.0);
+        float dist = vertexY - rollPos;
 
-        // Scroll cylinder radius: begins thick (~24 units), diminishes as cloth unrolls
-        float rollRadius = 24.0 * max(0.18, (1.0 - rollPos * 0.72));
-        float curlZone = 0.095; // height of the 3D scroll lip
+        // Scroll radius diminishes from thick tube to thin film as cloth unrolls
+        float rollRadius = 18.0 * max(0.15, (1.0 - rollPos * 0.8));
+        float curlZone = 0.075;
 
         vRollGleam = 0.0;
 
         if (dist > 0.0) {
-          // Cloth still wrapped inside the roll cylinder
           vAlpha = 0.0;
           vFoldLighting = 0.0;
         } else if (dist > -curlZone) {
-          // Inside the active 3D scroll roll: wrap mesh into cylinder arc
-          float curlAngle = (-dist / curlZone) * PI * 1.15;
-          
-          // 3D forward cylinder protrusion (+Z toward camera)
+          // Active 3D scroll roll: cylinder arc deformation
+          float curlAngle = (-dist / curlZone) * PI;
           pos.z += sin(curlAngle) * rollRadius;
-          pos.y += (1.0 - cos(curlAngle)) * (rollRadius * 0.55);
+          pos.y += (1.0 - cos(curlAngle)) * (rollRadius * 0.45);
 
-          // Specular gleam across the cylinder curve
-          vRollGleam = pow(max(0.0, sin(curlAngle)), 3.0) * 0.45;
-          vFoldLighting = sin(curlAngle) * 0.32 - 0.08;
-          vAlpha = smoothstep(0.0, 0.012, -dist);
+          vRollGleam = pow(max(0.0, sin(curlAngle)), 2.5) * 0.35;
+          vFoldLighting = sin(curlAngle) * 0.25 - 0.05;
+          vAlpha = smoothstep(0.0, 0.01, -dist);
         } else {
-          // Cloth fully unrolled onto building wall
           vAlpha = 1.0;
           vFoldLighting = 0.0;
         }
 
-        // Hanging elasticity: top is taut & pinned, bottom swings freely
-        float hangingFactor = pow(clamp(vertexY, 0.0, 1.0), 1.4) * smoothstep(0.1, 1.0, uUnfurlProgress);
-        
-        // Edge flutter: outer edges billow slightly more than the reinforced center spine
-        float edgeFlutter = 0.75 + pow(abs(uv.x - 0.5) * 2.0, 1.5) * 0.55;
+        // Hanging freedom: taut at top anchor, gentle sway in the middle,
+        // then tightens again near the bottom (weighted bottom bar/chevron)
+        float rawHang = clamp(vertexY, 0.0, 1.0);
+        float bottomTighten = 1.0 - smoothstep(0.78, 1.0, rawHang); // bottom stays taut/flat
+        float hangingFactor = pow(rawHang, 1.3) * bottomTighten * smoothstep(0.08, 0.85, uUnfurlProgress);
 
-        // Multi-frequency wind simulation (realistic organic turbulence)
-        float speed = uTime * 2.7;
-        float wave1 = sin(vertexY * 7.5 - speed + uv.x * 2.0) * 9.0 * hangingFactor * edgeFlutter;
-        float wave2 = cos(vertexY * 15.0 - speed * 1.3 + uv.x * 2.8) * 3.5 * hangingFactor;
-        float wave3 = sin(vertexY * 3.2 - speed * 0.5) * 4.5 * hangingFactor * uSide;
+        // Top anchor clamping: first 8% of cloth is rigid (pinned to building)
+        float topRigid = smoothstep(0.0, 0.08, rawHang);
+        hangingFactor *= topRigid;
+
+        // Gentle natural wind (not too dramatic)
+        float speed = uTime * 2.5;
+        float wave1 = sin(vertexY * 6.5 - speed + uv.x * 1.5) * 6.0 * hangingFactor;
+        float wave2 = cos(vertexY * 13.0 - speed * 1.2 + uv.x * 2.0) * 2.5 * hangingFactor;
+        float wave3 = sin(vertexY * 3.0 - speed * 0.5) * 3.0 * hangingFactor * uSide;
         
-        // Lateral breeze & subtle mouse sway response
-        float mouseSway = uMouseOffset.x * 6.0 * hangingFactor;
+        float mouseSway = uMouseOffset.x * 4.0 * hangingFactor;
 
         pos.z += (wave1 + wave2) * uWindStrength;
         pos.x += (wave3 + mouseSway) * uWindStrength;
 
-        // Micro-fold anisotropic satin slope lighting
-        float slope = cos(vertexY * 7.5 - speed) * 7.5 * 9.0 * hangingFactor;
-        vFoldLighting += clamp(slope * 0.004, -0.09, 0.09);
+        // Subtle fabric fold lighting
+        float slope = cos(vertexY * 6.5 - speed) * 6.5 * 6.0 * hangingFactor;
+        vFoldLighting += clamp(slope * 0.003, -0.07, 0.07);
 
         gl_Position = projectionMatrix * modelViewMatrix * vec4(pos, 1.0);
       }
@@ -203,32 +201,17 @@ export default function ClothWindOverlay({
       depthWrite: false,
     });
 
-    // Top mounting bar rod geometry (Sleek dark fixture holding the banner)
-    const rodGeo = new THREE.CylinderGeometry(4.5, 4.5, BANNER_W * 1.15, 16);
-    rodGeo.rotateZ(Math.PI / 2);
-    const rodMat = new THREE.MeshBasicMaterial({ color: 0x1f242e });
-
-    // Left Banner Assembly
-    const leftBannerGroup = new THREE.Group();
+    // Left Banner Mesh (no visible rod — banner anchors cleanly to building edge)
     const leftBannerMesh = new THREE.Mesh(bannerGeo, bannerMatLeft);
-    const leftRodMesh = new THREE.Mesh(rodGeo, rodMat);
-    leftRodMesh.position.set(0, 4, 3);
-    leftBannerGroup.add(leftBannerMesh);
-    leftBannerGroup.add(leftRodMesh);
-    leftBannerGroup.position.set(-1150, 333, 5);
-    leftBannerGroup.rotation.z = -0.026;
-    scene.add(leftBannerGroup);
+    leftBannerMesh.position.set(-1150, 333, 5);
+    leftBannerMesh.rotation.z = -0.026;
+    scene.add(leftBannerMesh);
 
-    // Right Banner Assembly
-    const rightBannerGroup = new THREE.Group();
+    // Right Banner Mesh
     const rightBannerMesh = new THREE.Mesh(bannerGeo, bannerMatRight);
-    const rightRodMesh = new THREE.Mesh(rodGeo, rodMat);
-    rightRodMesh.position.set(0, 4, 3);
-    rightBannerGroup.add(rightBannerMesh);
-    rightBannerGroup.add(rightRodMesh);
-    rightBannerGroup.position.set(1150, 333, 5);
-    rightBannerGroup.rotation.z = 0.017;
-    scene.add(rightBannerGroup);
+    rightBannerMesh.position.set(1150, 333, 5);
+    rightBannerMesh.rotation.z = 0.017;
+    scene.add(rightBannerMesh);
 
     // =========================================================================
     // ANIMATION LOOP WITH GRAVITATIONAL SPRING SETTLING
@@ -307,8 +290,6 @@ export default function ClothWindOverlay({
       cancelAnimationFrame(animationFrameId);
 
       bannerGeo.dispose();
-      rodGeo.dispose();
-      rodMat.dispose();
       bannerMatLeft.dispose();
       bannerMatRight.dispose();
       bannerTexture.dispose();
