@@ -14,6 +14,10 @@
   --font-mono: var(--font-geist-mono);
 }
 
+html {
+  scroll-behavior: smooth;
+}
+
 body {
   background-color: #000000;
   color: #ffffff;
@@ -81,6 +85,32 @@ body {
   100% {
     background-position: 0% 50%;
   }
+}
+
+/* ==========================================================================
+   Floating Embers & Petals for Photo Transitions
+   ========================================================================== */
+
+@keyframes floatPetal {
+  0% {
+    transform: translate3d(0, 0, 0) rotate(0deg) scale(0.7);
+    opacity: 0;
+  }
+  25% {
+    opacity: 0.9;
+  }
+  75% {
+    opacity: 0.65;
+  }
+  100% {
+    transform: translate3d(var(--tx, 30px), var(--ty, -180px), 0) rotate(var(--rot, 60deg)) scale(1.15);
+    opacity: 0;
+  }
+}
+
+.floating-petal {
+  animation: floatPetal var(--duration, 6s) cubic-bezier(0.4, 0, 0.2, 1) infinite;
+  will-change: transform, opacity;
 }
 
 /* ==========================================================================

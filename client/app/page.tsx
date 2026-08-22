@@ -7,6 +7,7 @@ import HultLogoIntro from "./components/HultLogoIntro";
 import ThreeBirds from "./components/ThreeBirds";
 import CloudRevealTransition from "./components/CloudRevealTransition";
 import ClothWindOverlay from "./components/ClothWindOverlay";
+import AboutSection from "./components/AboutSection";
 import AnimatedGradient from "@/components/ui/animated-gradient";
 
 export default function Home() {
@@ -47,14 +48,14 @@ export default function Home() {
       suppressHydrationWarning
       ref={containerRef}
       onMouseMove={handleMouseMove}
-      className="relative min-h-screen w-full overflow-hidden bg-black font-sans text-white selection:bg-white selection:text-black"
+      className="relative min-h-screen w-full overflow-x-hidden bg-black font-sans text-white selection:bg-[#f20089] selection:text-white"
     >
       {/* 
         ========================================================================
         1. MAIN LANDING PAGE (Features Campus View, Sky Title, Clouds & Birds)
         ========================================================================
       */}
-      <div className="relative min-h-screen w-full flex flex-col justify-between">
+      <div className="relative min-h-screen w-full flex flex-col justify-between overflow-hidden">
         {/* Full-Screen Campus Photograph Background Layer with Micro-Parallax */}
         <div
           className="absolute inset-0 z-0 parallax-smooth"
@@ -81,7 +82,10 @@ export default function Home() {
           <ClothWindOverlay mouseOffset={mouseOffset} isRevealed={isLandingRevealed} />
 
           {/* Very subtle top gradient to ensure navbar clarity */}
-          <div className="pointer-events-none absolute inset-x-0 top-0 h-28 bg-gradient-to-b from-black/55 to-transparent z-[2]" />
+          <div className="pointer-events-none absolute inset-x-0 top-0 h-20 bg-gradient-to-b from-black/40 to-transparent z-[2]" />
+
+          {/* Slim subtle edge gradient strictly between the seam line */}
+          <div className="pointer-events-none absolute inset-x-0 bottom-0 h-8 sm:h-12 bg-gradient-to-t from-black to-transparent z-[2]" />
         </div>
 
         {/* 
@@ -192,9 +196,31 @@ export default function Home() {
           </nav>
         </header>
 
-        {/* Empty Main Area to allow the photo, sky title, and birds to shine unobstructed */}
-        <main className="flex-1 relative z-10" />
+        {/* Main Area with subtle scroll down indicator */}
+        <main className="flex-1 relative z-10 flex flex-col items-center justify-end pb-8 sm:pb-10">
+          <a
+            href="#about"
+            aria-label="Scroll down to About Us section"
+            className={`group flex flex-col items-center gap-2 transition-all duration-1000 delay-1000 ${
+              isLandingRevealed ? "opacity-75 hover:opacity-100 translate-y-0" : "opacity-0 translate-y-6"
+            }`}
+          >
+            <span className="text-[10px] font-semibold tracking-[0.25em] text-white/70 uppercase select-none group-hover:text-white transition-colors">
+              Explore
+            </span>
+            <div className="w-5 h-9 rounded-full border-2 border-white/40 flex items-start justify-center p-1 group-hover:border-white/80 transition-colors">
+              <span className="w-1 h-2 rounded-full bg-white animate-bounce" />
+            </div>
+          </a>
+        </main>
       </div>
+
+      {/* 
+        ========================================================================
+        ABOUT US SECTION (Features social entrepreneurship, mission, and pillars)
+        ========================================================================
+      */}
+      <AboutSection />
 
       {/* 
         ========================================================================
