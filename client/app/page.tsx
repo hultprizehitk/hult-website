@@ -41,6 +41,7 @@ export default function Home() {
 
   return (
     <div
+      suppressHydrationWarning
       ref={containerRef}
       onMouseMove={handleMouseMove}
       className="relative min-h-screen w-full overflow-hidden bg-black font-sans text-white selection:bg-white selection:text-black"
@@ -125,7 +126,7 @@ export default function Home() {
           Header Navigation (Stable, Glassmorphic, and Responsive)
           ========================================================================
         */}
-        <header className="relative z-20 flex w-full items-center justify-between px-6 py-6 sm:px-12 md:px-16 lg:px-24">
+        <header className="relative z-20 flex w-full items-center justify-between px-4 py-4 sm:px-6 sm:py-5 md:px-8">
           <div className="flex items-center gap-3 sm:gap-4 transition-opacity duration-700">
             {/* Official Hult Prize Logo Image */}
             <div className="relative h-8 w-28 sm:h-10 sm:w-36">

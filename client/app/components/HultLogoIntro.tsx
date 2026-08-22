@@ -25,6 +25,7 @@ export default function HultLogoIntro({
 
   return (
     <div
+      suppressHydrationWarning
       className={`relative select-none ${className}`}
       style={{
         width: "100%",
@@ -87,6 +88,7 @@ export default function HultLogoIntro({
         ========================================================================
       */}
       <div
+        suppressHydrationWarning
         className={`absolute inset-0 h-full w-full will-change-[transform,opacity] ${
           isMounted ? "animate-hult-right" : "opacity-0"
         }`}
