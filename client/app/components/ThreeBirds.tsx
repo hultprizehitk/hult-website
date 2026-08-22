@@ -63,10 +63,10 @@ export default function ThreeBirds() {
 
     const renderer = new THREE.WebGLRenderer({
       alpha: true,
-      antialias: true,
-      powerPreference: "high-performance",
+      antialias: false,
+      powerPreference: "default",
     });
-    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.25));
     renderer.setSize(container.clientWidth, container.clientHeight);
     renderer.domElement.style.pointerEvents = "none";
     renderer.domElement.style.position = "absolute";
@@ -142,8 +142,8 @@ export default function ThreeBirds() {
       }),
     ];
 
-    // Spawn parameters for ~40 birds concentrated in upper sky
-    const TOTAL_BIRDS = 42;
+    // Spawn parameters (24 lightweight bird instances for low GPU footprint)
+    const TOTAL_BIRDS = 24;
     const birds: BirdInstance[] = [];
 
     // Flock group configurations (upper sky elevation headings)

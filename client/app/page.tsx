@@ -139,10 +139,10 @@ export default function Home() {
 
         {/* 
           ========================================================================
-          Three.js Realistic Bird Flock Animation Layer (Depth & Wing Flapping)
+          Three.js Realistic Bird Flock Animation Layer (Only rendered after reveal)
           ========================================================================
         */}
-        <ThreeBirds />
+        {isLandingRevealed && <ThreeBirds />}
 
         {/* 
           ========================================================================

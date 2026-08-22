@@ -42,7 +42,9 @@ export function WebGLFallback({ className }: { className?: string }) {
       className={className}
       style={{
         background:
-          "linear-gradient(135deg, #0a001a 0%, #1a0b2e 50%, #f20089 100%)",
+          "radial-gradient(ellipse at 30% 20%, #f20089 0%, #1a0b2e 45%, #0a001a 100%)",
+        backgroundSize: "200% 200%",
+        animation: "auroraPulse 8s ease-in-out infinite alternate",
       }}
     />
   );
