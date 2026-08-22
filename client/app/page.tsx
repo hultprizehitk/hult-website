@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useRef } from "react";
 import Image from "next/image";
+import Link from "next/link";
 import HultLogoIntro from "./components/HultLogoIntro";
 import ThreeBirds from "./components/ThreeBirds";
 import CloudRevealTransition from "./components/CloudRevealTransition";
@@ -219,12 +220,12 @@ export default function Home() {
             >
               Timeline
             </a>
-            <a
-              href="#register"
-              className="rounded-full bg-white px-5 py-2 text-xs font-semibold text-black shadow-lg transition-transform duration-200 hover:scale-[1.03] active:scale-[0.98] sm:text-sm"
+            <Link
+              href="/register"
+              className="rounded-full bg-[#f20089] hover:bg-[#d8007a] px-5 py-2 text-xs font-semibold text-white shadow-lg shadow-[#f20089]/40 transition-all duration-200 hover:scale-[1.05] active:scale-[0.98] sm:text-sm"
             >
               Register Now
-            </a>
+            </Link>
           </nav>
         </header>
 
