@@ -81,34 +81,34 @@ export default function Home() {
           <div className="absolute inset-0 pointer-events-none flex items-center justify-center overflow-hidden z-[1]">
             <div className="relative aspect-[3344/1882] min-w-full min-h-full w-auto h-auto shrink-0">
               {/* Left Side Building Banner */}
-              <div 
-                className="absolute top-[32.8%] left-[13.8%] w-[1.7%] h-[48%] transition-transform duration-500 hover:scale-105"
+              <div
+                className="absolute top-[32.3%] left-[13.4%] w-[4.4%] h-[46%] rotate-[1.5deg] origin-top transition-transform duration-500 hover:scale-105"
                 style={{
-                  filter: "drop-shadow(2px 4px 10px rgba(0, 0, 0, 0.45))",
+                  filter: "drop-shadow(2px 4px 12px rgba(0, 0, 0, 0.5))",
                 }}
               >
                 <Image
                   src="/hult-banner-vertical.png"
-                  alt="HULT PRIZE HITK 2027 Left Banner"
+                  alt="HULT PRIZE HITK '27 Left Banner"
                   fill
-                  sizes="40px"
+                  sizes="120px"
                   priority
                   className="object-contain object-top"
                 />
               </div>
 
               {/* Right Side Building Banner */}
-              <div 
-                className="absolute top-[32.8%] right-[13.8%] w-[1.7%] h-[48%] transition-transform duration-500 hover:scale-105"
+              <div
+                className="absolute top-[32.3%] right-[13.4%] w-[4.4%] h-[46%] -rotate-[1deg] origin-top transition-transform duration-500 hover:scale-105"
                 style={{
-                  filter: "drop-shadow(-2px 4px 10px rgba(0, 0, 0, 0.45))",
+                  filter: "drop-shadow(-2px 4px 12px rgba(0, 0, 0, 0.5))",
                 }}
               >
                 <Image
                   src="/hult-banner-vertical.png"
-                  alt="HULT PRIZE HITK 2027 Right Banner"
+                  alt="HULT PRIZE HITK '27 Right Banner"
                   fill
-                  sizes="40px"
+                  sizes="120px"
                   priority
                   className="object-contain object-top"
                 />
@@ -155,9 +155,8 @@ export default function Home() {
           ========================================================================
         */}
         <div
-          className={`pointer-events-none absolute inset-x-0 top-[9%] sm:top-[10%] md:top-[11%] lg:top-[12%] xl:top-[13%] z-10 flex items-center justify-center px-4 parallax-smooth ${
-            isLandingRevealed ? "animate-sky-entrance" : "opacity-0"
-          }`}
+          className={`pointer-events-none absolute inset-x-0 top-[9%] sm:top-[10%] md:top-[11%] lg:top-[12%] xl:top-[13%] z-10 flex items-center justify-center px-4 parallax-smooth ${isLandingRevealed ? "animate-sky-entrance" : "opacity-0"
+            }`}
           style={{
             transform: `translate3d(${mouseOffset.x * 4}px, ${mouseOffset.y * 3}px, 0)`,
           }}
@@ -266,9 +265,8 @@ export default function Home() {
 
             {/* Subtitle Under Logo */}
             <p
-              className={`fade-in-heritage -mt-3 sm:-mt-5 md:-mt-6 w-full text-center text-[10px] sm:text-xs md:text-sm font-medium tracking-[0.24em] text-white/90 uppercase select-none ${
-                introLogoEnded ? "opacity-100" : "opacity-0 pointer-events-none"
-              }`}
+              className={`fade-in-heritage -mt-3 sm:-mt-5 md:-mt-6 w-full text-center text-[10px] sm:text-xs md:text-sm font-medium tracking-[0.24em] text-white/90 uppercase select-none ${introLogoEnded ? "opacity-100" : "opacity-0 pointer-events-none"
+                }`}
             >
               Heritage Institute of Technology
             </p>
