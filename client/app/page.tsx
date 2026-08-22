@@ -6,6 +6,7 @@ import Link from "next/link";
 import HultLogoIntro from "./components/HultLogoIntro";
 import ThreeBirds from "./components/ThreeBirds";
 import CloudRevealTransition from "./components/CloudRevealTransition";
+import ClothWindOverlay from "./components/ClothWindOverlay";
 import AnimatedGradient from "@/components/ui/animated-gradient";
 
 export default function Home() {
@@ -72,49 +73,12 @@ export default function Home() {
 
           {/* 
             ====================================================================
-            Vertical Hult Prize Banners on Two Sides of the Building
-            - Positioned relative to the exact coordinate space of the building
-            - z-index: sits right on the building facade (below clouds & birds)
-            - Inherits building parallax so it stays 100% pinned to the walls
+            3D Waving Banners with Three.js Cloth & Drop-Unfurl Physics
+            - Opens & falls gracefully once cloud reveal finishes & title appears
+            - Real-time GLSL cloth wave dynamics with authentic colors preserved
             ====================================================================
           */}
-          <div className="absolute inset-0 pointer-events-none flex items-center justify-center overflow-hidden z-[1]">
-            <div className="relative aspect-[3344/1882] min-w-full min-h-full w-auto h-auto shrink-0">
-              {/* Left Side Building Banner */}
-              <div
-                className="absolute top-[32.3%] left-[13.4%] w-[4.4%] h-[46%] rotate-[1.5deg] origin-top transition-transform duration-500 hover:scale-105"
-                style={{
-                  filter: "drop-shadow(2px 4px 12px rgba(0, 0, 0, 0.5))",
-                }}
-              >
-                <Image
-                  src="/hult-banner-vertical.png"
-                  alt="HULT PRIZE HITK '27 Left Banner"
-                  fill
-                  sizes="120px"
-                  priority
-                  className="object-contain object-top"
-                />
-              </div>
-
-              {/* Right Side Building Banner */}
-              <div
-                className="absolute top-[32.3%] right-[13.4%] w-[4.4%] h-[46%] -rotate-[1deg] origin-top transition-transform duration-500 hover:scale-105"
-                style={{
-                  filter: "drop-shadow(-2px 4px 12px rgba(0, 0, 0, 0.5))",
-                }}
-              >
-                <Image
-                  src="/hult-banner-vertical.png"
-                  alt="HULT PRIZE HITK '27 Right Banner"
-                  fill
-                  sizes="120px"
-                  priority
-                  className="object-contain object-top"
-                />
-              </div>
-            </div>
-          </div>
+          <ClothWindOverlay mouseOffset={mouseOffset} isRevealed={isLandingRevealed} />
 
           {/* Very subtle top gradient to ensure navbar clarity */}
           <div className="pointer-events-none absolute inset-x-0 top-0 h-28 bg-gradient-to-b from-black/55 to-transparent z-[2]" />

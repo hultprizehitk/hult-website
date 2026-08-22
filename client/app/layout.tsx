@@ -1,6 +1,13 @@
 import type { Metadata } from "next";
 import { Montserrat, Geist, Geist_Mono, Anton } from "next/font/google";
+import localFont from "next/font/local";
 import "./globals.css";
+
+const blubly = localFont({
+  src: "../public/Blubly Demo.otf",
+  variable: "--font-blubly",
+  display: "swap",
+});
 
 const montserrat = Montserrat({
   variable: "--font-montserrat",
@@ -39,7 +46,7 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      className={`${montserrat.variable} ${anton.variable} ${geistSans.variable} ${geistMono.variable} h-full antialiased`}
+      className={`${blubly.variable} ${montserrat.variable} ${anton.variable} ${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
       <body className="min-h-full flex flex-col font-sans">{children}</body>
     </html>

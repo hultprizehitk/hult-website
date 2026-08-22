@@ -75,10 +75,11 @@ export default function CloudRevealTransition({
 
       const drawPuff = (cx: number, cy: number, r: number, a: number) => {
         const g = ctx.createRadialGradient(cx, cy, 0, cx, cy, r);
-        g.addColorStop(0, `rgba(255, 255, 255, ${a})`);
-        g.addColorStop(0.4, `rgba(255, 254, 252, ${a * 0.92})`);
-        g.addColorStop(0.75, `rgba(250, 250, 254, ${a * 0.4})`);
-        g.addColorStop(1, "rgba(250, 250, 254, 0)");
+        // Signature Hult Prize Magenta / Fuchsia (#f20089 / #e6007e) with soft outer glow
+        g.addColorStop(0, `rgba(242, 0, 137, ${a * 0.95})`);
+        g.addColorStop(0.35, `rgba(230, 0, 126, ${a * 0.88})`);
+        g.addColorStop(0.7, `rgba(200, 0, 110, ${a * 0.45})`);
+        g.addColorStop(1, "rgba(180, 0, 95, 0)");
         ctx.fillStyle = g;
         ctx.beginPath();
         ctx.arc(cx, cy, r, 0, Math.PI * 2);

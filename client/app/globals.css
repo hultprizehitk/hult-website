@@ -9,6 +9,7 @@
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   --font-sans: var(--font-montserrat), var(--font-geist-sans), sans-serif;
+  --font-blubly: var(--font-blubly), var(--font-anton), Impact, sans-serif;
   --font-anton: var(--font-anton), Impact, sans-serif;
   --font-mono: var(--font-geist-mono);
 }
@@ -26,7 +27,7 @@ body {
    ========================================================================== */
 
 .sky-hult-title {
-  font-family: var(--font-anton), Impact, sans-serif;
+  font-family: var(--font-blubly), var(--font-anton), Impact, sans-serif;
   color: #ffffff;
   background: none;
   -webkit-text-fill-color: #ffffff;
