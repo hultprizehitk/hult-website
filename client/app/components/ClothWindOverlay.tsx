@@ -25,8 +25,6 @@ export default function ClothWindOverlay({
     const container = mountRef.current;
     if (!container) return;
 
-    const prefersReducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-
     // Coordinate space calibrated to background photo: 3344 x 1882
     const WORLD_W = 3344;
     const WORLD_H = 1882;
@@ -249,9 +247,7 @@ export default function ClothWindOverlay({
         const UNFURL_DURATION = 2.4;
         const t = Math.min(1.0, unfurlElapsed / UNFURL_DURATION);
 
-        if (prefersReducedMotion) {
-          unfurlProgress = 1.0;
-        } else if (t < 0.82) {
+        if (t < 0.82) {
           // Gravitational roll-down acceleration (smooth cubic ease)
           const p = t / 0.82;
           unfurlProgress = p * p * (3.0 - 2.0 * p);
@@ -267,18 +263,13 @@ export default function ClothWindOverlay({
         unfurlProgress = 0.0;
       }
 
-      if (!prefersReducedMotion) {
-        bannerUniformsLeft.uTime.value = elapsedTime;
-        bannerUniformsLeft.uMouseOffset.value.set(smoothMouseRef.current.x, smoothMouseRef.current.y);
-        bannerUniformsLeft.uUnfurlProgress.value = unfurlProgress;
+      bannerUniformsLeft.uTime.value = elapsedTime;
+      bannerUniformsLeft.uMouseOffset.value.set(smoothMouseRef.current.x, smoothMouseRef.current.y);
+      bannerUniformsLeft.uUnfurlProgress.value = unfurlProgress;
 
-        bannerUniformsRight.uTime.value = elapsedTime;
-        bannerUniformsRight.uMouseOffset.value.set(smoothMouseRef.current.x, smoothMouseRef.current.y);
-        bannerUniformsRight.uUnfurlProgress.value = unfurlProgress;
-      } else {
-        bannerUniformsLeft.uUnfurlProgress.value = 1.0;
-        bannerUniformsRight.uUnfurlProgress.value = 1.0;
-      }
+      bannerUniformsRight.uTime.value = elapsedTime;
+      bannerUniformsRight.uMouseOffset.value.set(smoothMouseRef.current.x, smoothMouseRef.current.y);
+      bannerUniformsRight.uUnfurlProgress.value = unfurlProgress;
 
       renderer.render(scene, camera);
     };

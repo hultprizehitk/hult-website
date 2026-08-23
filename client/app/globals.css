@@ -271,38 +271,3 @@ body {
   transition: transform 0.35s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
-/* Respect user's motion preferences */
-@media (prefers-reduced-motion: reduce) {
-  .animate-h-translation {
-    animation: none !important;
-    transform: translate3d(0, 0, 0) !important;
-  }
-  .animate-h-fill-rect {
-    animation: none !important;
-    width: 495px !important;
-  }
-  .animate-h-outline-stroke {
-    animation: none !important;
-    opacity: 1 !important;
-  }
-  .animate-hult-right {
-    animation: none !important;
-    opacity: 1 !important;
-    transform: translate3d(0, 0, 0) !important;
-  }
-  .fade-in-heritage,
-  .animate-landing-hero,
-  .animate-sky-entrance,
-  .animate-sky-floating,
-  .animate-cloud-drift-1,
-  .animate-cloud-drift-2 {
-    animation: none !important;
-    transition: none !important;
-    opacity: 1 !important;
-    transform: none !important;
-  }
-  .parallax-smooth {
-    transition: none !important;
-    transform: none !important;
-  }
-}

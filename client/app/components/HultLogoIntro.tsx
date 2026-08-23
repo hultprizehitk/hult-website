@@ -2,6 +2,7 @@
 
 import React, { useEffect, useState } from "react";
 import Image from "next/image";
+import { debug } from "@/lib/debug-logger";
 
 const H_PATH =
   "M 86 75 L 207 76 L 236 83 L 255 94 L 265 104 L 273 116 L 282 143 L 284 158 L 284 263 L 286 265 L 370 263 L 370 161 L 373 137 L 378 119 L 385 105 L 401 88 L 420 79 L 445 75 L 565 75 L 565 557 L 446 557 L 419 551 L 405 544 L 396 537 L 388 528 L 379 512 L 372 487 L 370 469 L 369 368 L 284 369 L 284 475 L 282 489 L 276 510 L 271 520 L 263 531 L 253 540 L 232 551 L 201 557 L 86 557 L 86 75 Z";
@@ -21,6 +22,7 @@ export default function HultLogoIntro({
 
   useEffect(() => {
     setIsMounted(true);
+    debug.log("intro", "HultLogoIntro mounted -> CSS animations starting");
   }, []);
 
   return (
@@ -97,7 +99,12 @@ export default function HultLogoIntro({
           WebkitClipPath: "polygon(57% 0%, 100% 0%, 100% 100%, 57% 100%)",
         }}
         onAnimationEnd={(e) => {
+          debug.log("intro", `animationend fired: ${e.animationName}`);
           if (e.animationName === "hultRightTextReveal") {
+            debug.log(
+              "intro",
+              "hultRightTextReveal ended -> calling onEnded"
+            );
             onEnded?.();
           }
         }}

@@ -9,6 +9,7 @@ import CloudRevealTransition from "./components/CloudRevealTransition";
 import ClothWindOverlay from "./components/ClothWindOverlay";
 import AboutSection from "./components/AboutSection";
 import AnimatedGradient from "@/components/ui/animated-gradient";
+import { debug } from "@/lib/debug-logger";
 
 export default function Home() {
   const [introLogoEnded, setIntroLogoEnded] = useState(false);
@@ -22,12 +23,36 @@ export default function Home() {
 
   // Trigger Cloud Transition ~400ms after logo intro sequence ends
   useEffect(() => {
+    debug.log("intro", "Home mounted");
+    debug.env("intro");
+  }, []);
+
+  useEffect(() => {
     if (introLogoEnded) {
+      debug.log(
+        "intro",
+        "introLogoEnded=true -> scheduling cloud transition in 400ms"
+      );
       const timer = setTimeout(() => {
+        debug.log("intro", "400ms elapsed -> isCloudTransitionActive=true");
         setIsCloudTransitionActive(true);
       }, 400);
       return () => clearTimeout(timer);
     }
+  }, [introLogoEnded]);
+
+  // Watchdog: if intro hasn't ended naturally within 3s, force-end it
+  // so no user is ever trapped on the loading page
+  useEffect(() => {
+    if (introLogoEnded) return;
+    const timer = setTimeout(() => {
+      debug.warn(
+        "intro",
+        "Watchdog: forcing intro end after 3000ms"
+      );
+      setIntroLogoEnded(true);
+    }, 3000);
+    return () => clearTimeout(timer);
   }, [introLogoEnded]);
 
   // Subtle Mouse Parallax Handler
@@ -249,7 +274,13 @@ export default function Home() {
             <div className="w-full">
               <HultLogoIntro
                 className="w-full"
-                onEnded={() => setIntroLogoEnded(true)}
+                onEnded={() => {
+                  debug.log(
+                    "intro",
+                    "HultLogoIntro.onEnded fired -> setIntroLogoEnded(true)"
+                  );
+                  setIntroLogoEnded(true);
+                }}
               />
             </div>
 
@@ -275,10 +306,15 @@ export default function Home() {
       <CloudRevealTransition
         isActive={isCloudTransitionActive}
         onCovered={() => {
+          debug.log(
+            "intro",
+            "Cloud onCovered -> removing intro overlay, revealing landing"
+          );
           setIntroOverlayActive(false);
           setIsLandingRevealed(true);
         }}
         onComplete={() => {
+          debug.log("intro", "Cloud onComplete -> intro sequence finished");
           setIsCloudTransitionActive(false);
         }}
       />

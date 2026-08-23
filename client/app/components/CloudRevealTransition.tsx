@@ -2,6 +2,7 @@
 
 import React, { useEffect, useRef } from "react";
 import * as THREE from "three";
+import { debug } from "@/lib/debug-logger";
 
 interface CloudRevealProps {
   isActive: boolean;
@@ -33,6 +34,10 @@ export default function CloudRevealTransition({
     completeFiredRef.current = false;
 
     // 1. Scene, Camera, Renderer
+    debug.log(
+      "intro",
+      `CloudRevealTransition effect start (container ${container.clientWidth}x${container.clientHeight})`
+    );
     const scene = new THREE.Scene();
     const width = container.clientWidth || window.innerWidth;
     const height = container.clientHeight || window.innerHeight;
@@ -47,11 +52,18 @@ export default function CloudRevealTransition({
     );
     camera.position.z = 100;
 
-    const renderer = new THREE.WebGLRenderer({
-      alpha: true,
-      antialias: true,
-      powerPreference: "high-performance",
-    });
+    let renderer: THREE.WebGLRenderer;
+    try {
+      renderer = new THREE.WebGLRenderer({
+        alpha: true,
+        antialias: true,
+        powerPreference: "high-performance",
+      });
+      debug.log("intro", "Cloud renderer created OK");
+    } catch (err) {
+      debug.error("intro", "THREE.WebGLRenderer creation THREW", err);
+      throw err;
+    }
     renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.25));
     renderer.setSize(width, height);
     renderer.domElement.style.position = "absolute";
@@ -168,6 +180,10 @@ export default function CloudRevealTransition({
         // Stage 2: Smooth Parting Sweep (1.05s -> 2.4s) without any pause/stuck point
         if (!coveredFiredRef.current) {
           coveredFiredRef.current = true;
+          debug.log(
+            "intro",
+            `Cloud COVERED screen at ${elapsed.toFixed(2)}s -> firing onCovered`
+          );
           onCoveredRef.current?.();
         }
 
@@ -190,6 +206,10 @@ export default function CloudRevealTransition({
 
       if (progress >= 1.0 && !completeFiredRef.current) {
         completeFiredRef.current = true;
+        debug.log(
+          "intro",
+          `Cloud transition COMPLETE at ${elapsed.toFixed(2)}s -> firing onComplete`
+        );
         onCompleteRef.current?.();
       }
     };
@@ -211,6 +231,7 @@ export default function CloudRevealTransition({
     window.addEventListener("resize", onResize);
 
     return () => {
+      debug.log("intro", "CloudRevealTransition cleanup -> disposing WebGL resources");
       cancelAnimationFrame(animationFrameId);
       window.removeEventListener("resize", onResize);
 

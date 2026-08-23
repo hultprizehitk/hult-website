@@ -45,12 +45,6 @@ export default function ThreeBirds() {
     if (!containerRef.current) return;
     const container = containerRef.current;
 
-    // Check reduced motion preference
-    const prefersReducedMotion = window.matchMedia(
-      "(prefers-reduced-motion: reduce)"
-    ).matches;
-    if (prefersReducedMotion) return;
-
     // Scene, Camera, Renderer
     const scene = new THREE.Scene();
     const camera = new THREE.PerspectiveCamera(
