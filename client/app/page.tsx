@@ -24,7 +24,17 @@ export default function Home() {
   // Trigger Cloud Transition ~400ms after logo intro sequence ends
   useEffect(() => {
     debug.log("intro", "Home mounted");
+    debug.log("hero", "Hero mounted: Layer 1 (z-0 bg), Layer 2 (z-10 text), Layer 3 (z-15 foreground building)");
+    debug.log("zindex", "Z-Index Hierarchy:", {
+      layer1_bg: 0,
+      layer2_text: 10,
+      layer3_foreground_building: 15,
+      header_nav: 20,
+      main_controls: 20,
+    });
     debug.env("intro");
+    debug.env("hero");
+    debug.env("zindex");
   }, []);
 
   useEffect(() => {
@@ -68,6 +78,52 @@ export default function Home() {
     setMouseOffset({ x, y });
   };
 
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const bgEl = document.getElementById("hero-layer-bg");
+    const textEl = document.getElementById("hero-layer-text");
+    const bldgEl = document.getElementById("hero-layer-building");
+
+    if (bgEl && textEl && bldgEl) {
+      const bgStyle = window.getComputedStyle(bgEl);
+      const textStyle = window.getComputedStyle(textEl);
+      const bldgStyle = window.getComputedStyle(bldgEl);
+      const bldgImg = bldgEl.querySelector("img");
+
+      debug.log("zindex", "[HERO Z-INDEX DIAGNOSTICS]", {
+        isLandingRevealed,
+        layer1_bg: {
+          id: "hero-layer-bg",
+          zIndex: bgStyle.zIndex,
+          position: bgStyle.position,
+          transform: bgStyle.transform,
+        },
+        layer2_text: {
+          id: "hero-layer-text",
+          zIndex: textStyle.zIndex,
+          position: textStyle.position,
+          transform: textStyle.transform,
+          rect: textEl.getBoundingClientRect(),
+        },
+        layer3_building: {
+          id: "hero-layer-building",
+          zIndex: bldgStyle.zIndex,
+          position: bldgStyle.position,
+          transform: bldgStyle.transform,
+          rect: bldgEl.getBoundingClientRect(),
+          img: bldgImg
+            ? {
+                src: bldgImg.currentSrc || bldgImg.src,
+                complete: bldgImg.complete,
+                naturalWidth: bldgImg.naturalWidth,
+                naturalHeight: bldgImg.naturalHeight,
+              }
+            : "No <img> element found inside Layer 3",
+        },
+      });
+    }
+  }, [isLandingRevealed]);
+
   return (
     <div
       suppressHydrationWarning
@@ -81,8 +137,13 @@ export default function Home() {
         ========================================================================
       */}
       <div className="relative min-h-screen w-full flex flex-col justify-between overflow-hidden">
-        {/* Full-Screen Campus Photograph Background Layer with Micro-Parallax */}
+        {/* 
+          ========================================================================
+          LAYER 1: Full-Screen Campus Photograph & Sky Background (z-0)
+          ========================================================================
+        */}
         <div
+          id="hero-layer-bg"
           className="absolute inset-0 z-0 parallax-smooth"
           style={{
             transform: `translate3d(${mouseOffset.x * 2}px, ${mouseOffset.y * 1.5}px, 0) scale(1.02)`,
@@ -90,21 +151,12 @@ export default function Home() {
         >
           <Image
             src="/heritage-landing.png"
-            alt="Heritage Institute of Technology Campus"
+            alt="Heritage Institute of Technology Campus Sky & Background"
             fill
             sizes="100vw"
             priority
             className="object-cover object-center animate-landing-hero"
           />
-
-          {/* 
-            ====================================================================
-            3D Waving Banners with Three.js Cloth & Drop-Unfurl Physics
-            - Opens & falls gracefully once cloud reveal finishes & title appears
-            - Real-time GLSL cloth wave dynamics with authentic colors preserved
-            ====================================================================
-          */}
-          <ClothWindOverlay mouseOffset={mouseOffset} isRevealed={isLandingRevealed} />
 
           {/* Very subtle top gradient to ensure navbar clarity */}
           <div className="pointer-events-none absolute inset-x-0 top-0 h-20 bg-gradient-to-b from-black/40 to-transparent z-[2]" />
@@ -140,14 +192,13 @@ export default function Home() {
 
         {/* 
           ========================================================================
-          Upper Sky "HULT PRIZE" Cinematic Bold Typography
-          - Positioned higher in the sky to clear the roofline gracefully
-          - Translucent white/light-blue gradient so clouds remain visible
-          - 1.5s Entrance animation starts when landing page is revealed
-          - Micro-parallax responds smoothly to mouse motion
+          LAYER 2: Upper Sky "HULT PRIZE" Cinematic Bold Typography (z-10)
+          - Positioned behind the foreground building cutout
+          - Slides up smoothly from behind the roofline when revealed
           ========================================================================
         */}
         <div
+          id="hero-layer-text"
           className={`pointer-events-none absolute inset-x-0 top-[9%] sm:top-[10%] md:top-[11%] lg:top-[12%] xl:top-[13%] z-10 flex items-center justify-center px-4 parallax-smooth ${isLandingRevealed ? "animate-sky-entrance" : "opacity-0"
             }`}
           style={{
@@ -163,7 +214,35 @@ export default function Home() {
 
         {/* 
           ========================================================================
-          Header Navigation (Stable, Glassmorphic, and Responsive)
+          LAYER 3: Foreground Campus Building Cutout Layer (z-15)
+          - Sky area is transparent, keeping building structure opaque on top of text
+          - Micro-parallax transforms match Layer 1 for 100% pixel-perfect alignment
+          - Houses 3D cloth waving banners over the building facade
+          ========================================================================
+        */}
+        <div
+          id="hero-layer-building"
+          className="pointer-events-none absolute inset-0 z-[15] parallax-smooth"
+          style={{
+            transform: `translate3d(${mouseOffset.x * 2}px, ${mouseOffset.y * 1.5}px, 0) scale(1.02)`,
+          }}
+        >
+          <Image
+            src="/heritage-landing_bg_removed.png"
+            alt="Heritage Institute of Technology Campus Building Foreground"
+            fill
+            sizes="100vw"
+            priority
+            className="object-cover object-center animate-landing-hero"
+          />
+
+          {/* 3D Waving Banners with Three.js Cloth & Drop-Unfurl Physics */}
+          <ClothWindOverlay mouseOffset={mouseOffset} isRevealed={isLandingRevealed} />
+        </div>
+
+        {/* 
+          ========================================================================
+          Header Navigation (Stable, Glassmorphic, and Responsive - z-20)
           ========================================================================
         */}
         <header className="relative z-20 flex w-full items-center justify-between px-4 py-4 sm:px-6 sm:py-5 md:px-8">
@@ -221,8 +300,8 @@ export default function Home() {
           </nav>
         </header>
 
-        {/* Main Area with subtle scroll down indicator */}
-        <main className="flex-1 relative z-10 flex flex-col items-center justify-end pb-8 sm:pb-10">
+        {/* Main Area with subtle scroll down indicator (z-20) */}
+        <main className="flex-1 relative z-20 flex flex-col items-center justify-end pb-8 sm:pb-10">
           <a
             href="#about"
             aria-label="Scroll down to About Us section"

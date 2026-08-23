@@ -1,4 +1,4 @@
-export type DebugCategory = "intro";
+export type DebugCategory = "intro" | "hero" | "zindex";
 
 export type DebugLevel = "log" | "info" | "warn" | "error";
 
@@ -10,6 +10,8 @@ export interface DebugCategoryMeta {
 
 export const DEBUG_CATEGORIES: Record<DebugCategory, DebugCategoryMeta> = {
   intro: { id: "intro", label: "INTRO", color: "#f20089" },
+  hero: { id: "hero", label: "HERO", color: "#3b82f6" },
+  zindex: { id: "zindex", label: "Z-INDEX", color: "#10b981" },
 };
 
 const STORAGE_KEY = "hult-debug:categories";
@@ -21,22 +23,13 @@ function ensureInit() {
   if (initialized || typeof window === "undefined") return;
   initialized = true;
 
-  try {
-    const raw = window.localStorage.getItem(STORAGE_KEY);
-    if (raw) {
-      for (const c of JSON.parse(raw) as string[]) {
-        if (c in DEBUG_CATEGORIES) enabled.add(c as DebugCategory);
-      }
-    }
-  } catch {
-    // corrupted storage, start clean
-  }
-
+  // 1. Highest Priority: URL query parameter ?debug=...
   try {
     const param = new URLSearchParams(window.location.search)
       .get("debug")
       ?.trim();
     if (param !== null && param !== undefined) {
+      enabled.clear();
       if (param === "all") {
         for (const c of Object.keys(DEBUG_CATEGORIES)) {
           enabled.add(c as DebugCategory);
@@ -50,10 +43,33 @@ function ensureInit() {
           if (key in DEBUG_CATEGORIES) enabled.add(key);
         }
       }
+      return;
     }
   } catch {
-    // URL parsing unavailable
+    // URL parsing fallback
   }
+
+  // 2. Second Priority: localStorage
+  try {
+    const raw = window.localStorage.getItem(STORAGE_KEY);
+    if (raw) {
+      const parsed = JSON.parse(raw) as string[];
+      if (Array.isArray(parsed) && parsed.length > 0) {
+        enabled.clear();
+        for (const c of parsed) {
+          if (c in DEBUG_CATEGORIES) enabled.add(c as DebugCategory);
+        }
+        return;
+      }
+    }
+  } catch {
+    // localStorage fallback
+  }
+
+  // 3. Default fallback if no query param or localStorage is specified
+  enabled.add("intro");
+  enabled.add("hero");
+  enabled.add("zindex");
 }
 
 function persist() {
