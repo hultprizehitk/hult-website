@@ -11,33 +11,34 @@ import AboutSection from "./components/AboutSection";
 import AnimatedGradient from "@/components/ui/animated-gradient";
 import { debug } from "@/lib/debug-logger";
 
+// In-memory session flag: resets on browser refresh, persists across Next.js route transitions
+let hasIntroPlayedGlobal = false;
+
 export default function Home() {
-  const [introLogoEnded, setIntroLogoEnded] = useState(false);
+  const [introLogoEnded, setIntroLogoEnded] = useState(() => hasIntroPlayedGlobal);
   const [isCloudTransitionActive, setIsCloudTransitionActive] = useState(false);
-  const [introOverlayActive, setIntroOverlayActive] = useState(true);
-  const [isLandingRevealed, setIsLandingRevealed] = useState(false);
+  const [introOverlayActive, setIntroOverlayActive] = useState(() => !hasIntroPlayedGlobal);
+  const [isLandingRevealed, setIsLandingRevealed] = useState(() => hasIntroPlayedGlobal);
+  const [isScrolled, setIsScrolled] = useState(false);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   // Mouse Parallax coordinates (subtle offsets in pixels)
   const [mouseOffset, setMouseOffset] = useState({ x: 0, y: 0 });
   const containerRef = useRef<HTMLDivElement>(null);
 
-  // Trigger Cloud Transition ~400ms after logo intro sequence ends
+  // Scroll listener to update header glassmorphism
   useEffect(() => {
-    debug.log("intro", "Home mounted");
-    debug.log("hero", "Hero mounted: Layer 1 (z-0 bg), Layer 2 (z-10 text), Layer 3 (z-15 foreground building)");
-    debug.log("zindex", "Z-Index Hierarchy:", {
-      layer1_bg: 0,
-      layer2_text: 10,
-      layer3_foreground_building: 15,
-      header_nav: 20,
-      main_controls: 20,
-    });
-    debug.env("intro");
-    debug.env("hero");
-    debug.env("zindex");
+    const handleScroll = () => {
+      setIsScrolled(window.scrollY > 20);
+    };
+    handleScroll();
+    window.addEventListener("scroll", handleScroll, { passive: true });
+    return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
+  // Trigger Cloud Transition ~400ms after logo intro sequence ends (only if intro hasn't already played)
   useEffect(() => {
+    if (hasIntroPlayedGlobal) return;
     if (introLogoEnded) {
       debug.log(
         "intro",
@@ -52,9 +53,8 @@ export default function Home() {
   }, [introLogoEnded]);
 
   // Watchdog: if intro hasn't ended naturally within 3s, force-end it
-  // so no user is ever trapped on the loading page
   useEffect(() => {
-    if (introLogoEnded) return;
+    if (hasIntroPlayedGlobal || introLogoEnded) return;
     const timer = setTimeout(() => {
       debug.warn(
         "intro",
@@ -158,9 +158,6 @@ export default function Home() {
             className="object-cover object-center animate-landing-hero"
           />
 
-          {/* Very subtle top gradient to ensure navbar clarity */}
-          <div className="pointer-events-none absolute inset-x-0 top-0 h-20 bg-gradient-to-b from-black/40 to-transparent z-[2]" />
-
           {/* Slim subtle edge gradient strictly between the seam line */}
           <div className="pointer-events-none absolute inset-x-0 bottom-0 h-8 sm:h-12 bg-gradient-to-t from-black to-transparent z-[2]" />
         </div>
@@ -199,14 +196,14 @@ export default function Home() {
         */}
         <div
           id="hero-layer-text"
-          className={`pointer-events-none absolute inset-x-0 top-[9%] sm:top-[10%] md:top-[11%] lg:top-[12%] xl:top-[13%] z-10 flex items-center justify-center px-4 parallax-smooth ${isLandingRevealed ? "animate-sky-entrance" : "opacity-0"
+          className={`pointer-events-none absolute inset-x-0 top-[9%] sm:top-[10%] md:top-[11%] lg:top-[12%] xl:top-[13%] z-10 flex items-center justify-center px-2 sm:px-4 parallax-smooth ${isLandingRevealed ? "animate-sky-entrance" : "opacity-0"
             }`}
           style={{
             transform: `translate3d(${mouseOffset.x * 4}px, ${mouseOffset.y * 3}px, 0)`,
           }}
         >
           <div className="animate-sky-floating flex items-center justify-center">
-            <h1 className="sky-hult-title text-5xl sm:text-6xl md:text-7xl lg:text-8xl xl:text-[9.5rem] 2xl:text-[11rem] font-bold uppercase tracking-[0.06em] sm:tracking-[0.08em] leading-none text-center select-none">
+            <h1 className="sky-hult-title text-4xl xs:text-5xl sm:text-6xl md:text-7xl lg:text-8xl xl:text-[9.5rem] 2xl:text-[11rem] font-bold uppercase tracking-[0.04em] sm:tracking-[0.08em] leading-none text-center select-none whitespace-nowrap">
               HULT PRIZE
             </h1>
           </div>
@@ -242,13 +239,17 @@ export default function Home() {
 
         {/* 
           ========================================================================
-          Header Navigation (Stable, Glassmorphic, and Responsive - z-20)
+          Constant Header Navigation (100% Pure Transparent, No Blur - z-50)
           ========================================================================
         */}
-        <header className="relative z-20 flex w-full items-center justify-between px-4 py-4 sm:px-6 sm:py-5 md:px-8">
-          <div className="flex items-center gap-2.5 sm:gap-3 transition-opacity duration-700">
-            {/* Official Hult Prize Logo Image */}
-            <div className="relative aspect-[1080/659] h-7 sm:h-9 md:h-10">
+        <header
+          className={`fixed top-0 inset-x-0 z-50 flex w-full items-center justify-between px-4 py-3 sm:px-6 sm:py-3.5 md:px-8 transition-all duration-300 font-[family-name:var(--font-syne)] bg-transparent border-none ${
+            isLandingRevealed ? "opacity-100 translate-y-0" : "opacity-0 -translate-y-4 pointer-events-none"
+          }`}
+        >
+          {/* Brand Logos */}
+          <div className="flex items-center gap-2 sm:gap-3 transition-opacity duration-700">
+            <Link href="/" className="relative aspect-[1080/659] h-7 sm:h-8 md:h-9">
               <Image
                 src="/Hult-Prize.png"
                 alt="Hult Prize Logo"
@@ -257,10 +258,8 @@ export default function Home() {
                 priority
                 className="object-contain drop-shadow-md"
               />
-            </div>
-
-            {/* Heritage Institute 25 Years Celebration Logo */}
-            <div className="relative aspect-[1024/895] h-7 sm:h-9 md:h-10">
+            </Link>
+            <div className="relative aspect-[1024/895] h-7 sm:h-8 md:h-9">
               <Image
                 src="/hitk-25-logo.png"
                 alt="Heritage Institute of Technology 25 Years Logo"
@@ -272,36 +271,110 @@ export default function Home() {
             </div>
           </div>
 
-          <nav className="flex items-center gap-4 sm:gap-6">
+          {/* Desktop Nav Links */}
+          <nav className="hidden md:flex items-center gap-5 lg:gap-6 font-[family-name:var(--font-syne)]">
             <a
               href="#about"
-              className="text-sm font-medium text-white/85 drop-shadow transition-colors duration-200 hover:text-white"
+              className="text-xs sm:text-sm font-semibold tracking-wide text-white/85 drop-shadow transition-colors duration-200 hover:text-white"
             >
               About
             </a>
+            <Link
+              href="/events"
+              className="text-xs sm:text-sm font-semibold tracking-wide text-white/85 drop-shadow transition-colors duration-200 hover:text-white"
+            >
+              Events
+            </Link>
             <a
               href="#challenge"
-              className="text-sm font-medium text-white/85 drop-shadow transition-colors duration-200 hover:text-white"
+              className="text-xs sm:text-sm font-semibold tracking-wide text-white/85 drop-shadow transition-colors duration-200 hover:text-white"
             >
               Challenge
             </a>
             <a
               href="#timeline"
-              className="hidden text-sm font-medium text-white/85 drop-shadow transition-colors duration-200 hover:text-white sm:inline-block"
+              className="text-xs sm:text-sm font-semibold tracking-wide text-white/85 drop-shadow transition-colors duration-200 hover:text-white"
             >
               Timeline
             </a>
             <Link
               href="/register"
-              className="rounded-full bg-[#f20089] hover:bg-[#d8007a] px-5 py-2 text-xs font-semibold text-white shadow-lg shadow-[#f20089]/40 transition-all duration-200 hover:scale-[1.05] active:scale-[0.98] sm:text-sm"
+              className="rounded-full bg-[#f20089] hover:bg-[#d8007a] px-4 sm:px-5 py-1.5 sm:py-2 text-xs sm:text-sm font-bold tracking-wide text-white shadow-lg shadow-[#f20089]/40 transition-all duration-200 hover:scale-[1.05] active:scale-[0.98]"
             >
               Register Now
             </Link>
           </nav>
+
+          {/* Mobile Right Bar: Compact Register + Hamburger Button */}
+          <div className="flex md:hidden items-center gap-2">
+            <Link
+              href="/register"
+              className="rounded-full bg-[#f20089] hover:bg-[#d8007a] px-3.5 py-1.5 text-[11px] font-bold tracking-wide text-white shadow-md shadow-[#f20089]/40 active:scale-95"
+            >
+              Register
+            </Link>
+            <button
+              type="button"
+              onClick={() => setMobileMenuOpen((prev) => !prev)}
+              aria-label="Toggle navigation menu"
+              className="p-1.5 rounded-full bg-white/[0.08] hover:bg-white/[0.15] border border-white/20 text-white transition-colors cursor-pointer"
+            >
+              {mobileMenuOpen ? (
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              ) : (
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5" />
+                </svg>
+              )}
+            </button>
+          </div>
         </header>
 
+        {/* Mobile Slide-Down Menu Overlay */}
+        {mobileMenuOpen && (
+          <div className="fixed inset-x-0 top-[52px] z-45 md:hidden bg-black/95 backdrop-blur-3xl border-b border-white/15 px-6 py-6 shadow-2xl flex flex-col gap-4 font-[family-name:var(--font-syne)] animate-in fade-in slide-in-from-top-2 duration-200">
+            <a
+              href="#about"
+              onClick={() => setMobileMenuOpen(false)}
+              className="text-base font-semibold text-white/90 hover:text-[#f20089] py-2 border-b border-white/5 transition-colors"
+            >
+              About
+            </a>
+            <Link
+              href="/events"
+              onClick={() => setMobileMenuOpen(false)}
+              className="text-base font-semibold text-white/90 hover:text-[#f20089] py-2 border-b border-white/5 transition-colors"
+            >
+              Events Calendar
+            </Link>
+            <a
+              href="#challenge"
+              onClick={() => setMobileMenuOpen(false)}
+              className="text-base font-semibold text-white/90 hover:text-[#f20089] py-2 border-b border-white/5 transition-colors"
+            >
+              Challenge
+            </a>
+            <a
+              href="#timeline"
+              onClick={() => setMobileMenuOpen(false)}
+              className="text-base font-semibold text-white/90 hover:text-[#f20089] py-2 border-b border-white/5 transition-colors"
+            >
+              Timeline
+            </a>
+            <Link
+              href="/register"
+              onClick={() => setMobileMenuOpen(false)}
+              className="mt-2 text-center rounded-full bg-[#f20089] py-3 text-sm font-bold text-white shadow-lg shadow-[#f20089]/40"
+            >
+              Register for OnCampus 2027
+            </Link>
+          </div>
+        )}
+
         {/* Main Area with subtle scroll down indicator (z-20) */}
-        <main className="flex-1 relative z-20 flex flex-col items-center justify-end pb-8 sm:pb-10">
+        <main className="flex-1 relative z-20 flex flex-col items-center justify-end pb-6 sm:pb-10">
           <a
             href="#about"
             aria-label="Scroll down to About Us section"
@@ -385,6 +458,7 @@ export default function Home() {
       <CloudRevealTransition
         isActive={isCloudTransitionActive}
         onCovered={() => {
+          hasIntroPlayedGlobal = true;
           debug.log(
             "intro",
             "Cloud onCovered -> removing intro overlay, revealing landing"
@@ -393,6 +467,7 @@ export default function Home() {
           setIsLandingRevealed(true);
         }}
         onComplete={() => {
+          hasIntroPlayedGlobal = true;
           debug.log("intro", "Cloud onComplete -> intro sequence finished");
           setIsCloudTransitionActive(false);
         }}

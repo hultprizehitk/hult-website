@@ -9,6 +9,10 @@
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   --font-sans: var(--font-montserrat), var(--font-geist-sans), sans-serif;
+  --font-syne: var(--font-syne), sans-serif;
+  --font-pirata: var(--font-pirata), serif;
+  --font-cinzel: var(--font-cinzel), serif;
+  --font-rye: var(--font-rye), serif;
   --font-blubly: var(--font-blubly), var(--font-anton), Impact, sans-serif;
   --font-anton: var(--font-anton), Impact, sans-serif;
   --font-mono: var(--font-geist-mono);

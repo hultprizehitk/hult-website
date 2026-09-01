@@ -7,7 +7,7 @@ export default function AboutSection() {
   return (
     <section
       id="about"
-      className="relative w-full min-h-screen pt-32 pb-14 sm:pb-20 lg:pb-24 px-6 sm:px-12 lg:px-20 overflow-hidden z-10 selection:bg-[#f20089] selection:text-white flex flex-col justify-end items-start"
+      className="relative w-full min-h-screen pt-24 sm:pt-32 pb-8 sm:pb-20 lg:pb-24 px-5 sm:px-12 lg:px-20 overflow-hidden z-10 selection:bg-[#f20089] selection:text-white flex flex-col justify-end items-start"
     >
       {/* 
         ========================================================================
@@ -39,7 +39,7 @@ export default function AboutSection() {
       */}
       <div className="relative z-10 max-w-xl sm:max-w-2xl lg:max-w-3xl flex flex-col items-start text-left">
         {/* Heading */}
-        <h2 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-extrabold tracking-tight text-white mb-4 drop-shadow-[0_4px_18px_rgba(0,0,0,0.95)]">
+        <h2 className="text-2xl sm:text-4xl md:text-5xl lg:text-6xl font-extrabold tracking-tight text-white mb-3 sm:mb-4 drop-shadow-[0_4px_18px_rgba(0,0,0,0.95)] font-[family-name:var(--font-syne)]">
           About{" "}
           <span className="bg-gradient-to-r from-white via-pink-100 to-[#f20089] bg-clip-text text-transparent">
             Us
@@ -47,7 +47,7 @@ export default function AboutSection() {
         </h2>
 
         {/* Direct Statement written cleanly in bottom corner */}
-        <p className="text-sm sm:text-base md:text-lg lg:text-[1.15rem] font-medium leading-relaxed sm:leading-loose text-white/95 font-sans tracking-wide drop-shadow-[0_4px_20px_rgba(0,0,0,0.95)] max-w-2xl">
+        <p className="text-xs sm:text-base md:text-lg lg:text-[1.15rem] font-medium leading-relaxed sm:leading-loose text-white/95 font-sans tracking-wide drop-shadow-[0_4px_20px_rgba(0,0,0,0.95)] max-w-2xl">
           The <span className="font-bold text-white">Hult Prize on Campus</span> at{" "}
           <span className="text-[#f20089] font-semibold">Heritage Institute of Technology</span> is
           world&apos;s largest student-led social entrepreneurship competition. It empowers students to create innovative, entrepreneurial solutions for pressing global challenges. Through workshops, competitions, mentorship, and community initiatives, we foster leadership and impact-driven development on campus.

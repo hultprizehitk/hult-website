@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Montserrat, Geist, Geist_Mono, Anton } from "next/font/google";
+import { Montserrat, Geist, Geist_Mono, Anton, Syne, Pirata_One, Cinzel_Decorative, Rye } from "next/font/google";
 import localFont from "next/font/local";
 import "./globals.css";
 
@@ -18,6 +18,34 @@ const montserrat = Montserrat({
 
 const anton = Anton({
   variable: "--font-anton",
+  subsets: ["latin"],
+  weight: ["400"],
+  display: "swap",
+});
+
+const syne = Syne({
+  variable: "--font-syne",
+  subsets: ["latin"],
+  weight: ["400", "500", "600", "700", "800"],
+  display: "swap",
+});
+
+const pirataOne = Pirata_One({
+  variable: "--font-pirata",
+  subsets: ["latin"],
+  weight: ["400"],
+  display: "swap",
+});
+
+const cinzelDecorative = Cinzel_Decorative({
+  variable: "--font-cinzel",
+  subsets: ["latin"],
+  weight: ["700", "900"],
+  display: "swap",
+});
+
+const rye = Rye({
+  variable: "--font-rye",
   subsets: ["latin"],
   weight: ["400"],
   display: "swap",
@@ -46,7 +74,7 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      className={`${blubly.variable} ${montserrat.variable} ${anton.variable} ${geistSans.variable} ${geistMono.variable} h-full antialiased`}
+      className={`${blubly.variable} ${montserrat.variable} ${anton.variable} ${syne.variable} ${pirataOne.variable} ${cinzelDecorative.variable} ${rye.variable} ${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
       <body className="min-h-full flex flex-col font-sans">{children}</body>
     </html>
