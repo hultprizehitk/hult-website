@@ -41,7 +41,7 @@ export default function HultLogoIntro({
         1. Large H Monogram: Outline-to-Fill + Glide Left (0.00s -> 0.80s)
         ========================================================================
       */}
-      <div className="absolute inset-0 h-full w-full">
+      <div suppressHydrationWarning className="absolute inset-0 h-full w-full">
         <svg
           viewBox="0 0 1080 659"
           className="w-full h-full overflow-visible"

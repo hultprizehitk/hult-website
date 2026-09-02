@@ -1,13 +1,35 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import Image from "next/image";
 import Link from "next/link";
+import { useSession, signOut } from "next-auth/react";
 import AnimatedGradient from "@/components/ui/animated-gradient";
 import DistressedEventsTitle from "../components/DistressedEventsTitle";
 
+interface PublicEvent {
+  _id: string;
+  title: string;
+  tag: string;
+  date: string;
+  venue: string;
+  description: string;
+  link?: string;
+}
+
 export default function EventsPage() {
+  const { data: session, status } = useSession();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [events, setEvents] = useState<PublicEvent[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    fetch("/api/events")
+      .then((res) => (res.ok ? res.json() : { events: [] }))
+      .then((data) => setEvents(data.events || []))
+      .catch((err) => console.error("Error loading events:", err))
+      .finally(() => setLoading(false));
+  }, []);
 
   return (
     <div className="relative min-h-screen w-full bg-black font-sans text-white selection:bg-[#f20089] selection:text-white overflow-x-hidden flex flex-col justify-between">
@@ -37,7 +59,7 @@ export default function EventsPage() {
         HEADER NAVIGATION (100% Identical to Homepage: Logos Left, Nav Right, Transparent)
         ========================================================================
       */}
-      <header className="sticky top-0 z-50 flex w-full items-center justify-between px-4 py-3 sm:px-6 sm:py-3.5 md:px-8 transition-all duration-300 font-[family-name:var(--font-syne)] bg-transparent border-none">
+      <header className="sticky top-0 z-50 flex w-full items-center justify-between px-4 py-3 sm:px-6 sm:py-3.5 md:px-8 transition-all duration-300 font-[family-name:var(--font-google-sans)] bg-transparent border-none">
         {/* Brand Logos */}
         <div className="flex items-center gap-2 sm:gap-3 transition-opacity duration-700">
           <Link href="/" className="relative aspect-[1080/659] h-7 sm:h-8 md:h-9">
@@ -63,7 +85,7 @@ export default function EventsPage() {
         </div>
 
         {/* Desktop Nav Links */}
-        <nav className="hidden md:flex items-center gap-5 lg:gap-6 font-[family-name:var(--font-syne)]">
+        <nav className="hidden md:flex items-center gap-5 lg:gap-6 font-[family-name:var(--font-google-sans)]">
           <Link
             href="/#about"
             className="text-xs sm:text-sm font-semibold tracking-wide text-white/85 drop-shadow transition-colors duration-200 hover:text-white"
@@ -88,22 +110,50 @@ export default function EventsPage() {
           >
             Timeline
           </Link>
-          <Link
-            href="/register"
-            className="rounded-full bg-[#f20089] hover:bg-[#d8007a] px-4 sm:px-5 py-1.5 sm:py-2 text-xs sm:text-sm font-bold tracking-wide text-white shadow-lg shadow-[#f20089]/40 transition-all duration-200 hover:scale-[1.05] active:scale-[0.98]"
-          >
-            Register Now
-          </Link>
+          {status === "authenticated" && session?.user ? (
+            <div className="flex items-center gap-3">
+              <Link
+                href="/register"
+                className="inline-flex items-center gap-1.5 rounded-full border border-[#f20089]/50 bg-[#f20089]/20 px-3.5 py-1.5 text-xs font-bold text-white shadow-sm hover:scale-105 transition-transform"
+              >
+                <span className="h-2 w-2 rounded-full bg-[#f20089] animate-pulse" />
+                {session.user.name?.split(" ")[0]}
+              </Link>
+              <button
+                type="button"
+                onClick={() => signOut()}
+                className="text-xs font-semibold text-white/70 hover:text-white transition-colors cursor-pointer"
+              >
+                Sign Out
+              </button>
+            </div>
+          ) : (
+            <Link
+              href="/register"
+              className="rounded-full bg-[#f20089] hover:bg-[#d8007a] px-4 sm:px-5 py-1.5 sm:py-2 text-xs sm:text-sm font-bold tracking-wide text-white shadow-lg shadow-[#f20089]/40 transition-all duration-200 hover:scale-[1.05] active:scale-[0.98]"
+            >
+              Register Now
+            </Link>
+          )}
         </nav>
 
         {/* Mobile Right Bar: Compact Register + Hamburger Button */}
         <div className="flex md:hidden items-center gap-2">
-          <Link
-            href="/register"
-            className="rounded-full bg-[#f20089] hover:bg-[#d8007a] px-3.5 py-1.5 text-[11px] font-bold tracking-wide text-white shadow-md shadow-[#f20089]/40 active:scale-95"
-          >
-            Register
-          </Link>
+          {status === "authenticated" && session?.user ? (
+            <Link
+              href="/register"
+              className="rounded-full bg-[#f20089]/25 border border-[#f20089]/50 px-3 py-1.5 text-[11px] font-bold tracking-wide text-white shadow-md active:scale-95"
+            >
+              {session.user.name?.split(" ")[0]}
+            </Link>
+          ) : (
+            <Link
+              href="/register"
+              className="rounded-full bg-[#f20089] hover:bg-[#d8007a] px-3.5 py-1.5 text-[11px] font-bold tracking-wide text-white shadow-md shadow-[#f20089]/40 active:scale-95"
+            >
+              Register
+            </Link>
+          )}
           <button
             type="button"
             onClick={() => setMobileMenuOpen((prev) => !prev)}
@@ -125,7 +175,7 @@ export default function EventsPage() {
 
       {/* Mobile Slide-Down Menu Overlay */}
       {mobileMenuOpen && (
-        <div className="fixed inset-x-0 top-[52px] z-45 md:hidden bg-black/95 backdrop-blur-3xl border-b border-white/15 px-6 py-6 shadow-2xl flex flex-col gap-4 font-[family-name:var(--font-syne)] animate-in fade-in slide-in-from-top-2 duration-200">
+        <div className="fixed inset-x-0 top-[52px] z-45 md:hidden bg-black/95 backdrop-blur-3xl border-b border-white/15 px-6 py-6 shadow-2xl flex flex-col gap-4 font-[family-name:var(--font-google-sans)] animate-in fade-in slide-in-from-top-2 duration-200">
           <Link
             href="/#about"
             onClick={() => setMobileMenuOpen(false)}
@@ -166,12 +216,62 @@ export default function EventsPage() {
 
       {/* 
         ========================================================================
-        MAIN SECTION (Pure Distressed Events Typography)
+        MAIN SECTION (Distressed Events Typography & Dynamic Published Events)
         ========================================================================
       */}
-      <main className="relative z-10 flex-1 flex flex-col items-center justify-center max-w-5xl mx-auto px-4 sm:px-6 text-center py-16 sm:py-24">
+      <main className="relative z-10 flex-1 flex flex-col items-center justify-center max-w-6xl mx-auto px-4 sm:px-6 text-center py-16 sm:py-20 w-full">
         {/* Distressed Gothic Spurred Title */}
-        <DistressedEventsTitle text="EVENTS" />
+        <DistressedEventsTitle text="EVENTS" className="mb-8" />
+
+        {/* Dynamic Events Grid */}
+        {loading ? (
+          <div className="py-12 text-white/50 text-xs tracking-widest uppercase animate-pulse">
+            Syncing schedule...
+          </div>
+        ) : events.length > 0 ? (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 w-full text-left mt-4 animate-fadeIn">
+            {events.map((event) => (
+              <div
+                key={event._id}
+                className="group relative overflow-hidden rounded-3xl border border-white/15 bg-white/[0.03] p-6 backdrop-blur-2xl flex flex-col justify-between transition-all duration-300 hover:border-[#f20089]/60 hover:bg-white/[0.06] hover:shadow-[0_15px_35px_rgba(242,0,137,0.2)]"
+              >
+                <div>
+                  <div className="flex items-center justify-between gap-2 mb-3">
+                    <span className="rounded-full bg-[#f20089]/20 border border-[#f20089]/50 px-3 py-0.5 text-[10px] font-bold uppercase tracking-wider text-[#f20089]">
+                      {event.tag}
+                    </span>
+                  </div>
+
+                  <h3 className="text-xl font-bold text-white mb-3 font-[family-name:var(--font-google-sans)] group-hover:text-pink-100 transition-colors">
+                    {event.title}
+                  </h3>
+
+                  <div className="space-y-1.5 text-xs text-neutral-300 mb-4 font-sans">
+                    <div className="flex items-center gap-2">
+                      <span className="text-white/50">📅</span>
+                      <span className="font-semibold text-white">{event.date}</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <span className="text-white/50">📍</span>
+                      <span className="text-white/80">{event.venue}</span>
+                    </div>
+                  </div>
+
+                  <p className="text-xs text-neutral-400 line-clamp-3 leading-relaxed mb-6 font-sans">
+                    {event.description}
+                  </p>
+                </div>
+
+                <Link
+                  href={event.link || "/register"}
+                  className="inline-flex items-center justify-center rounded-full bg-[#f20089] hover:bg-[#d8007a] px-5 py-2 text-xs font-bold text-white shadow-md shadow-[#f20089]/40 transition-all group-hover:scale-[1.02] font-[family-name:var(--font-google-sans)]"
+                >
+                  <span>{event.link ? "Learn More & RSVP →" : "Register for Event →"}</span>
+                </Link>
+              </div>
+            ))}
+          </div>
+        ) : null}
       </main>
 
       {/* Footer */}

@@ -3,7 +3,8 @@
 import { useEffect, useState, useRef } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import HultLogoIntro from "./components/HultLogoIntro";
+import { useSession, signOut } from "next-auth/react";
+import dynamic from "next/dynamic";
 import ThreeBirds from "./components/ThreeBirds";
 import CloudRevealTransition from "./components/CloudRevealTransition";
 import ClothWindOverlay from "./components/ClothWindOverlay";
@@ -11,10 +12,15 @@ import AboutSection from "./components/AboutSection";
 import AnimatedGradient from "@/components/ui/animated-gradient";
 import { debug } from "@/lib/debug-logger";
 
+const HultLogoIntro = dynamic(() => import("./components/HultLogoIntro"), {
+  ssr: false,
+});
+
 // In-memory session flag: resets on browser refresh, persists across Next.js route transitions
 let hasIntroPlayedGlobal = false;
 
 export default function Home() {
+  const { data: session, status } = useSession();
   const [introLogoEnded, setIntroLogoEnded] = useState(() => hasIntroPlayedGlobal);
   const [isCloudTransitionActive, setIsCloudTransitionActive] = useState(false);
   const [introOverlayActive, setIntroOverlayActive] = useState(() => !hasIntroPlayedGlobal);
@@ -243,7 +249,7 @@ export default function Home() {
           ========================================================================
         */}
         <header
-          className={`fixed top-0 inset-x-0 z-50 flex w-full items-center justify-between px-4 py-3 sm:px-6 sm:py-3.5 md:px-8 transition-all duration-300 font-[family-name:var(--font-syne)] bg-transparent border-none ${
+          className={`fixed top-0 inset-x-0 z-50 flex w-full items-center justify-between px-4 py-3 sm:px-6 sm:py-3.5 md:px-8 transition-all duration-300 font-[family-name:var(--font-google-sans)] bg-transparent border-none ${
             isLandingRevealed ? "opacity-100 translate-y-0" : "opacity-0 -translate-y-4 pointer-events-none"
           }`}
         >
@@ -272,7 +278,7 @@ export default function Home() {
           </div>
 
           {/* Desktop Nav Links */}
-          <nav className="hidden md:flex items-center gap-5 lg:gap-6 font-[family-name:var(--font-syne)]">
+          <nav className="hidden md:flex items-center gap-5 lg:gap-6 font-[family-name:var(--font-google-sans)]">
             <a
               href="#about"
               className="text-xs sm:text-sm font-semibold tracking-wide text-white/85 drop-shadow transition-colors duration-200 hover:text-white"
@@ -297,22 +303,54 @@ export default function Home() {
             >
               Timeline
             </a>
-            <Link
-              href="/register"
-              className="rounded-full bg-[#f20089] hover:bg-[#d8007a] px-4 sm:px-5 py-1.5 sm:py-2 text-xs sm:text-sm font-bold tracking-wide text-white shadow-lg shadow-[#f20089]/40 transition-all duration-200 hover:scale-[1.05] active:scale-[0.98]"
-            >
-              Register Now
-            </Link>
+            {status === "authenticated" && session?.user ? (
+              <div className="flex items-center gap-3">
+                <Link
+                  href={
+                    (session.user as { role?: string })?.role === "superadmin"
+                      ? "/portal-hult-8f4b2c1e9a7d/dashboard"
+                      : "/register"
+                  }
+                  className="inline-flex items-center gap-1.5 rounded-full border border-[#f20089]/50 bg-[#f20089]/20 px-3.5 py-1.5 text-xs font-bold text-white shadow-sm hover:scale-105 transition-transform"
+                >
+                  <span className="h-2 w-2 rounded-full bg-[#f20089] animate-pulse" />
+                  {session.user.name?.split(" ")[0]}
+                </Link>
+                <button
+                  type="button"
+                  onClick={() => signOut()}
+                  className="text-xs font-semibold text-white/70 hover:text-white transition-colors cursor-pointer"
+                >
+                  Sign Out
+                </button>
+              </div>
+            ) : (
+              <Link
+                href="/register"
+                className="rounded-full bg-[#f20089] hover:bg-[#d8007a] px-4 sm:px-5 py-1.5 sm:py-2 text-xs sm:text-sm font-bold tracking-wide text-white shadow-lg shadow-[#f20089]/40 transition-all duration-200 hover:scale-[1.05] active:scale-[0.98]"
+              >
+                Register Now
+              </Link>
+            )}
           </nav>
 
           {/* Mobile Right Bar: Compact Register + Hamburger Button */}
           <div className="flex md:hidden items-center gap-2">
-            <Link
-              href="/register"
-              className="rounded-full bg-[#f20089] hover:bg-[#d8007a] px-3.5 py-1.5 text-[11px] font-bold tracking-wide text-white shadow-md shadow-[#f20089]/40 active:scale-95"
-            >
-              Register
-            </Link>
+            {status === "authenticated" && session?.user ? (
+              <Link
+                href="/register"
+                className="rounded-full bg-[#f20089]/25 border border-[#f20089]/50 px-3 py-1.5 text-[11px] font-bold tracking-wide text-white shadow-md active:scale-95"
+              >
+                {session.user.name?.split(" ")[0]}
+              </Link>
+            ) : (
+              <Link
+                href="/register"
+                className="rounded-full bg-[#f20089] hover:bg-[#d8007a] px-3.5 py-1.5 text-[11px] font-bold tracking-wide text-white shadow-md shadow-[#f20089]/40 active:scale-95"
+              >
+                Register
+              </Link>
+            )}
             <button
               type="button"
               onClick={() => setMobileMenuOpen((prev) => !prev)}
@@ -334,7 +372,7 @@ export default function Home() {
 
         {/* Mobile Slide-Down Menu Overlay */}
         {mobileMenuOpen && (
-          <div className="fixed inset-x-0 top-[52px] z-45 md:hidden bg-black/95 backdrop-blur-3xl border-b border-white/15 px-6 py-6 shadow-2xl flex flex-col gap-4 font-[family-name:var(--font-syne)] animate-in fade-in slide-in-from-top-2 duration-200">
+          <div className="fixed inset-x-0 top-[52px] z-45 md:hidden bg-black/95 backdrop-blur-3xl border-b border-white/15 px-6 py-6 shadow-2xl flex flex-col gap-4 font-[family-name:var(--font-google-sans)] animate-in fade-in slide-in-from-top-2 duration-200">
             <a
               href="#about"
               onClick={() => setMobileMenuOpen(false)}

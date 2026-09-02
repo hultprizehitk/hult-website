@@ -1,11 +1,38 @@
 import type { Metadata } from "next";
-import { Montserrat, Geist, Geist_Mono, Anton, Syne, Pirata_One, Cinzel_Decorative, Rye } from "next/font/google";
+import { Montserrat, Geist, Geist_Mono, Anton, Pirata_One, Cinzel_Decorative, Rye } from "next/font/google";
 import localFont from "next/font/local";
 import "./globals.css";
 
 const blubly = localFont({
   src: "../public/Blubly Demo.otf",
   variable: "--font-blubly",
+  display: "swap",
+});
+
+const googleSans = localFont({
+  src: [
+    {
+      path: "../public/fonts/GoogleSans-Regular.ttf",
+      weight: "400",
+      style: "normal",
+    },
+    {
+      path: "../public/fonts/GoogleSans-Medium.ttf",
+      weight: "500",
+      style: "normal",
+    },
+    {
+      path: "../public/fonts/GoogleSans-SemiBold.ttf",
+      weight: "600",
+      style: "normal",
+    },
+    {
+      path: "../public/fonts/GoogleSans-Bold.ttf",
+      weight: "700",
+      style: "normal",
+    },
+  ],
+  variable: "--font-google-sans",
   display: "swap",
 });
 
@@ -20,13 +47,6 @@ const anton = Anton({
   variable: "--font-anton",
   subsets: ["latin"],
   weight: ["400"],
-  display: "swap",
-});
-
-const syne = Syne({
-  variable: "--font-syne",
-  subsets: ["latin"],
-  weight: ["400", "500", "600", "700", "800"],
   display: "swap",
 });
 
@@ -61,6 +81,8 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
 });
 
+import SessionProvider from "./components/SessionProvider";
+
 export const metadata: Metadata = {
   title: "Hult Prize | Heritage Institute of Technology",
   description: "Hult Prize OnCampus at Heritage Institute of Technology",
@@ -74,9 +96,12 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      className={`${blubly.variable} ${montserrat.variable} ${anton.variable} ${syne.variable} ${pirataOne.variable} ${cinzelDecorative.variable} ${rye.variable} ${geistSans.variable} ${geistMono.variable} h-full antialiased`}
+      data-scroll-behavior="smooth"
+      className={`${blubly.variable} ${montserrat.variable} ${anton.variable} ${googleSans.variable} ${pirataOne.variable} ${cinzelDecorative.variable} ${rye.variable} ${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
-      <body className="min-h-full flex flex-col font-sans">{children}</body>
+      <body className="min-h-full flex flex-col font-sans">
+        <SessionProvider>{children}</SessionProvider>
+      </body>
     </html>
   );
 }

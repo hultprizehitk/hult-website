@@ -39,7 +39,7 @@ export default function AboutSection() {
       */}
       <div className="relative z-10 max-w-xl sm:max-w-2xl lg:max-w-3xl flex flex-col items-start text-left">
         {/* Heading */}
-        <h2 className="text-2xl sm:text-4xl md:text-5xl lg:text-6xl font-extrabold tracking-tight text-white mb-3 sm:mb-4 drop-shadow-[0_4px_18px_rgba(0,0,0,0.95)] font-[family-name:var(--font-syne)]">
+        <h2 className="text-2xl sm:text-4xl md:text-5xl lg:text-6xl font-extrabold tracking-tight text-white mb-3 sm:mb-4 drop-shadow-[0_4px_18px_rgba(0,0,0,0.95)] font-[family-name:var(--font-google-sans)]">
           About{" "}
           <span className="bg-gradient-to-r from-white via-pink-100 to-[#f20089] bg-clip-text text-transparent">
             Us
