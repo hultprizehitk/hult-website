@@ -4,6 +4,16 @@ import { connectDB } from "@/lib/mongodb";
 import User from "@/models/User";
 import { parseHeritageEmail } from "@/lib/heritage-parser";
 
+// When deployed to production, ensure NEXTAUTH_URL and AUTH_URL never point to localhost
+if (process.env.NODE_ENV === "production") {
+  if (!process.env.NEXTAUTH_URL || process.env.NEXTAUTH_URL.includes("localhost")) {
+    process.env.NEXTAUTH_URL = "https://www.hultprizehitk.live";
+  }
+  if (!process.env.AUTH_URL || process.env.AUTH_URL.includes("localhost")) {
+    process.env.AUTH_URL = "https://www.hultprizehitk.live";
+  }
+}
+
 export const { handlers, signIn, signOut, auth } = NextAuth({
   providers: [
     Google({
