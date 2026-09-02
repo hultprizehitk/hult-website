@@ -308,7 +308,7 @@ export default function Home() {
                 <Link
                   href={
                     (session.user as { role?: string })?.role === "superadmin"
-                      ? "/portal-hult-8f4b2c1e9a7d/dashboard"
+                      ? "/portal"
                       : "/register"
                   }
                   className="inline-flex items-center gap-1.5 rounded-full border border-[#f20089]/50 bg-[#f20089]/20 px-3.5 py-1.5 text-xs font-bold text-white shadow-sm hover:scale-105 transition-transform"

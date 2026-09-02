@@ -321,7 +321,7 @@ export default function RegisterPage() {
                 <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
                   {(session?.user as { role?: string })?.role === "superadmin" && (
                     <Link
-                      href="/portal-hult-8f4b2c1e9a7d/dashboard"
+                      href="/portal"
                       className="w-full sm:w-auto rounded-full bg-[#f20089] hover:bg-[#d8007a] px-7 py-3 text-xs sm:text-sm font-bold text-white shadow-lg shadow-[#f20089]/40 transition-all hover:scale-105 font-[family-name:var(--font-google-sans)]"
                     >
                       👑 Open Admin Dashboard →
