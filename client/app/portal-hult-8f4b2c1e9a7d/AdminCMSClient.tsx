@@ -467,7 +467,7 @@ export default function AdminCMSClient({ userEmail, passcode, initialTab }: Admi
             type="button"
             onClick={() => {
               setActiveTab("participants");
-              window.history.replaceState(null, "", "/portal-hult-8f4b2c1e9a7d/dashboard");
+              window.history.replaceState(null, "", "/portal-hult-8f4b2c1e9a7d/dashboard/student");
             }}
             className={`rounded-xl px-5 py-2.5 text-xs sm:text-sm font-bold tracking-wide transition-all cursor-pointer font-[family-name:var(--font-google-sans)] whitespace-nowrap ${
               activeTab === "participants"
