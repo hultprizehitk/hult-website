@@ -1,26 +1,14 @@
 import { NextResponse } from "next/server";
-import { auth } from "@/auth";
 import { connectDB } from "@/lib/mongodb";
 import User from "@/models/User";
 import { parseHeritageEmail } from "@/lib/heritage-parser";
-
-const SUPER_ADMINS = [
-  "harsh.raj.iotcs28@heritageit.edu.in",
-  "bhoomi.ladia.aiml28@heritageit.edu.in",
-];
-
-function isCallerSuperAdmin(session: any): boolean {
-  if (!session?.user?.email) return false;
-  const email = session.user.email.toLowerCase().trim();
-  const role = session.user.role;
-  return SUPER_ADMINS.includes(email) || role === "superadmin";
-}
+import { isAuthorizedSuperAdmin, isSuperAdminEmail } from "@/lib/admin-check";
 
 // GET: List all administrators and registered students
-export async function GET() {
+export async function GET(req: Request) {
   try {
-    const session = await auth();
-    if (!isCallerSuperAdmin(session)) {
+    const isSuper = await isAuthorizedSuperAdmin(req);
+    if (!isSuper) {
       return NextResponse.json(
         { error: "Unauthorized: Super Administrator clearance required" },
         { status: 403 }
@@ -58,8 +46,8 @@ export async function GET() {
 // POST: Appoint or update admin role
 export async function POST(req: Request) {
   try {
-    const session = await auth();
-    if (!isCallerSuperAdmin(session)) {
+    const isSuper = await isAuthorizedSuperAdmin(req);
+    if (!isSuper) {
       return NextResponse.json(
         { error: "Unauthorized: Only Super Administrators can grant or revoke admin privileges" },
         { status: 403 }
@@ -85,7 +73,7 @@ export async function POST(req: Request) {
     }
 
     // Safety: Permanent superadmins cannot be modified or demoted
-    if (SUPER_ADMINS.includes(rawEmail) && action === "demote") {
+    if (isSuperAdminEmail(rawEmail) && action === "demote") {
       return NextResponse.json(
         { error: "Super Administrator accounts are permanent and cannot be demoted" },
         { status: 400 }

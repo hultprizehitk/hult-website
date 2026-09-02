@@ -3,18 +3,8 @@
 import React, { useState, useEffect } from "react";
 import Link from "next/link";
 
-interface EventItem {
-  _id: string;
-  title: string;
-  tag: string;
-  date: string;
-  venue: string;
-  description: string;
-  link?: string;
-  isPublished: boolean;
-  order: number;
-  createdAt: string;
-}
+import type { EventItem } from "@/types";
+import { EVENT_TAGS } from "@/lib/constants";
 
 export default function EventsManager() {
   const [events, setEvents] = useState<EventItem[]>([]);

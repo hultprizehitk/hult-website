@@ -5,7 +5,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { useSession, signOut } from "next-auth/react";
 import AnimatedGradient from "@/components/ui/animated-gradient";
-import DistressedEventsTitle from "../components/DistressedEventsTitle";
+import DistressedEventsTitle from "@/components/sections/DistressedEventsTitle";
 
 interface PublicEvent {
   _id: string;

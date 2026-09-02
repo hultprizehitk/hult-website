@@ -2,31 +2,8 @@
 
 import React, { useState, useEffect } from "react";
 import { parseHeritageEmail } from "@/lib/heritage-parser";
-
-interface AdminRecord {
-  _id: string;
-  name: string;
-  email: string;
-  department?: string;
-  year?: string;
-  role: "superadmin" | "admin" | "student";
-  createdAt: string;
-}
-
-interface Participant {
-  _id: string;
-  name: string;
-  email: string;
-  department: string;
-  year: string;
-  role: string;
-  createdAt: string;
-}
-
-const SUPER_ADMINS = [
-  "harsh.raj.iotcs28@heritageit.edu.in",
-  "bhoomi.ladia.aiml28@heritageit.edu.in",
-];
+import { isSuperAdminEmail } from "@/lib/constants";
+import type { AdminRecord, Participant } from "@/types";
 
 interface AdminUserManagerProps {
   currentUserEmail: string;
@@ -110,7 +87,7 @@ export default function AdminUserManager({ currentUserEmail }: AdminUserManagerP
 
   // Revoke admin access
   const handleRevokeAdmin = async (admin: AdminRecord) => {
-    if (SUPER_ADMINS.includes(admin.email.toLowerCase())) {
+    if (isSuperAdminEmail(admin.email)) {
       showToast("error", "Super Administrator accounts cannot be revoked");
       return;
     }
@@ -291,7 +268,7 @@ export default function AdminUserManager({ currentUserEmail }: AdminUserManagerP
                 admins.map((admin) => {
                   const isSuper =
                     admin.role === "superadmin" ||
-                    SUPER_ADMINS.includes(admin.email.toLowerCase());
+                    isSuperAdminEmail(admin.email);
                   const parsed = parseHeritageEmail(admin.email, admin.name);
 
                   return (

@@ -1,20 +1,9 @@
 import { NextResponse } from "next/server";
-import { auth } from "@/auth";
-
-const SUPER_ADMINS = [
-  "harsh.raj.iotcs28@heritageit.edu.in",
-  "bhoomi.ladia.aiml28@heritageit.edu.in",
-];
+import { isAuthorizedAdmin } from "@/lib/admin-check";
 
 // Stealth Gateway: Only authenticates and redirects verified admins to the secret dashboard slug
 export async function GET(req: Request) {
-  const session = await auth();
-  const email = (session?.user?.email || "").toLowerCase().trim();
-  const role = (session?.user as { role?: string })?.role;
-
-  const isAuthorized =
-    SUPER_ADMINS.includes(email) || role === "superadmin" || role === "admin";
-
+  const isAuthorized = await isAuthorizedAdmin(req);
   const baseUrl = req.url ? new URL(req.url).origin : "https://www.hultprizehitk.live";
 
   if (isAuthorized) {

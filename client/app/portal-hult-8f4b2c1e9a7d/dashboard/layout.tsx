@@ -4,11 +4,7 @@ import { auth } from "@/auth";
 import AdminAccessDenied from "../AdminAccessDenied";
 import DashboardNav from "./components/DashboardNav";
 import AnimatedGradient from "@/components/ui/animated-gradient";
-
-const SUPER_ADMINS = [
-  "harsh.raj.iotcs28@heritageit.edu.in",
-  "bhoomi.ladia.aiml28@heritageit.edu.in",
-];
+import { isAuthorizedAdmin, isAuthorizedSuperAdmin } from "@/lib/admin-check";
 
 export const metadata = {
   title: "Admin CMS | Hult Prize HITK",
@@ -26,15 +22,13 @@ export default async function DashboardLayout({
     redirect("/portal-hult-8f4b2c1e9a7d");
   }
 
-  // 2. Validate admin role clearance
-  const userEmail = (session.user.email || "").toLowerCase().trim();
-  const role = (session.user as { role?: string }).role;
-  const isSuperAdmin = SUPER_ADMINS.includes(userEmail) || role === "superadmin";
-  const isAuthorized = isSuperAdmin || role === "admin";
-
+  // 2. Validate admin role clearance directly against database
+  const isAuthorized = await isAuthorizedAdmin();
   if (!isAuthorized) {
     return <AdminAccessDenied userEmail={session.user.email || "Student Account"} />;
   }
+
+  const isSuperAdmin = await isAuthorizedSuperAdmin();
 
   return (
     <div className="relative min-h-screen w-full bg-black font-sans text-white selection:bg-[#f20089] selection:text-white overflow-x-clip">

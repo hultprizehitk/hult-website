@@ -81,7 +81,7 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
 });
 
-import SessionProvider from "./components/SessionProvider";
+import SessionProvider from "@/components/providers/SessionProvider";
 
 export const metadata: Metadata = {
   metadataBase: new URL("https://www.hultprizehitk.live"),

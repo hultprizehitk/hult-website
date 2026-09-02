@@ -3,6 +3,7 @@ import Google from "next-auth/providers/google";
 import { connectDB } from "@/lib/mongodb";
 import User from "@/models/User";
 import { parseHeritageEmail } from "@/lib/heritage-parser";
+import { isSuperAdminEmail } from "@/lib/constants";
 
 // When deployed to production, ensure NEXTAUTH_URL and AUTH_URL never point to localhost
 if (process.env.NODE_ENV === "production") {
@@ -51,13 +52,9 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
           let dbUser = await User.findOne({ email });
           const parsed = parseHeritageEmail(email, user.name);
 
-          const SUPER_ADMINS = [
-            "harsh.raj.iotcs28@heritageit.edu.in",
-            "bhoomi.ladia.aiml28@heritageit.edu.in",
-          ];
-          const isSuperAdmin = SUPER_ADMINS.includes(email);
+          const isSuperAdmin = isSuperAdminEmail(email);
 
-          // If in hardcoded superadmins list, always superadmin
+          // If in superadmins list, always superadmin
           // Otherwise, if dbUser already has role 'admin' or 'superadmin', preserve it!
           let assignedRole: "student" | "admin" | "superadmin" = isSuperAdmin ? "superadmin" : "student";
           if (!isSuperAdmin && dbUser && (dbUser.role === "admin" || dbUser.role === "superadmin")) {
@@ -103,13 +100,10 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
         token.role = (user as { role?: string }).role;
       }
 
-      // Check SUPER_ADMINS whitelist
-      const SUPER_ADMINS = [
-        "harsh.raj.iotcs28@heritageit.edu.in",
-        "bhoomi.ladia.aiml28@heritageit.edu.in",
-      ];
       const email = (token.email || "").toLowerCase().trim();
-      if (SUPER_ADMINS.includes(email)) {
+      const isSuperAdmin = isSuperAdminEmail(email);
+
+      if (isSuperAdmin) {
         token.role = "superadmin";
       } else if (!token.role || token.role === "student") {
         // Query database to see if this user was appointed as admin
@@ -131,12 +125,8 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
     async session({ session, token }) {
       if (session.user && token) {
         session.user.id = token.id as string;
-        const SUPER_ADMINS = [
-          "harsh.raj.iotcs28@heritageit.edu.in",
-          "bhoomi.ladia.aiml28@heritageit.edu.in",
-        ];
         const email = (session.user.email || token.email || "").toLowerCase().trim();
-        const isSuperAdmin = SUPER_ADMINS.includes(email);
+        const isSuperAdmin = isSuperAdminEmail(email);
 
         Object.assign(session.user, {
           department: token.department,

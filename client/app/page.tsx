@@ -5,14 +5,14 @@ import Image from "next/image";
 import Link from "next/link";
 import { useSession, signOut } from "next-auth/react";
 import dynamic from "next/dynamic";
-import ThreeBirds from "./components/ThreeBirds";
-import CloudRevealTransition from "./components/CloudRevealTransition";
-import ClothWindOverlay from "./components/ClothWindOverlay";
-import AboutSection from "./components/AboutSection";
+import ThreeBirds from "@/components/hero/ThreeBirds";
+import CloudRevealTransition from "@/components/hero/CloudRevealTransition";
+import ClothWindOverlay from "@/components/sections/ClothWindOverlay";
+import AboutSection from "@/components/sections/AboutSection";
 import AnimatedGradient from "@/components/ui/animated-gradient";
 import { debug } from "@/lib/debug-logger";
 
-const HultLogoIntro = dynamic(() => import("./components/HultLogoIntro"), {
+const HultLogoIntro = dynamic(() => import("@/components/hero/HultLogoIntro"), {
   ssr: false,
 });
 

@@ -3,15 +3,7 @@
 import React, { useState, useEffect } from "react";
 import { parseHeritageEmail } from "@/lib/heritage-parser";
 
-interface Participant {
-  _id: string;
-  name: string;
-  email: string;
-  department: string;
-  year: string;
-  role: string;
-  createdAt: string;
-}
+import type { Participant } from "@/types";
 
 export default function StudentsDirectory() {
   const [participants, setParticipants] = useState<Participant[]>([]);
