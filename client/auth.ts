@@ -16,6 +16,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
       },
     }),
   ],
+  trustHost: true,
   session: {
     strategy: "jwt",
   },
@@ -45,7 +46,13 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
             "bhoomi.ladia.aiml28@heritageit.edu.in",
           ];
           const isSuperAdmin = SUPER_ADMINS.includes(email);
-          const assignedRole = isSuperAdmin ? "superadmin" : "student";
+
+          // If in hardcoded superadmins list, always superadmin
+          // Otherwise, if dbUser already has role 'admin' or 'superadmin', preserve it!
+          let assignedRole: "student" | "admin" | "superadmin" = isSuperAdmin ? "superadmin" : "student";
+          if (!isSuperAdmin && dbUser && (dbUser.role === "admin" || dbUser.role === "superadmin")) {
+            assignedRole = dbUser.role;
+          }
 
           if (!dbUser) {
             dbUser = await User.create({
@@ -62,6 +69,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
               year: parsed.academicYear,
               role: assignedRole,
             };
+            if (user.image) updates.image = user.image;
             await User.updateOne({ _id: dbUser._id }, updates);
             Object.assign(dbUser, updates);
           }
@@ -93,8 +101,19 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
       const email = (token.email || "").toLowerCase().trim();
       if (SUPER_ADMINS.includes(email)) {
         token.role = "superadmin";
-      } else {
-        token.role = "student";
+      } else if (!token.role || token.role === "student") {
+        // Query database to see if this user was appointed as admin
+        try {
+          await connectDB();
+          const dbUser = await User.findOne({ email }).select("role").lean();
+          if (dbUser?.role === "admin" || dbUser?.role === "superadmin") {
+            token.role = dbUser.role;
+          } else {
+            token.role = "student";
+          }
+        } catch {
+          token.role = token.role || "student";
+        }
       }
 
       return token;
@@ -112,7 +131,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
         Object.assign(session.user, {
           department: token.department,
           year: token.year,
-          role: isSuperAdmin ? "superadmin" : "student",
+          role: isSuperAdmin ? "superadmin" : (token.role || "student"),
         });
       }
       return session;

@@ -84,8 +84,47 @@ const geistMono = Geist_Mono({
 import SessionProvider from "./components/SessionProvider";
 
 export const metadata: Metadata = {
-  title: "Hult Prize | Heritage Institute of Technology",
-  description: "Hult Prize OnCampus at Heritage Institute of Technology",
+  metadataBase: new URL("https://www.hultprizehitk.live"),
+  title: {
+    default: "Hult Prize | Heritage Institute of Technology",
+    template: "%s | Hult Prize HITK",
+  },
+  description: "Official portal for Hult Prize OnCampus at Heritage Institute of Technology, Kolkata. Changing the world through social entrepreneurship.",
+  keywords: [
+    "Hult Prize",
+    "Heritage Institute of Technology",
+    "HITK",
+    "Social Entrepreneurship",
+    "OnCampus",
+    "Startup Competition",
+    "Kolkata",
+  ],
+  authors: [{ name: "Hult Prize HITK Team" }],
+  openGraph: {
+    title: "Hult Prize | Heritage Institute of Technology",
+    description: "Official portal for Hult Prize OnCampus at Heritage Institute of Technology, Kolkata.",
+    url: "https://www.hultprizehitk.live",
+    siteName: "Hult Prize HITK",
+    images: [
+      {
+        url: "/Hult-Prize.png",
+        width: 1200,
+        height: 630,
+        alt: "Hult Prize HITK",
+      },
+    ],
+    locale: "en_US",
+    type: "website",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Hult Prize | Heritage Institute of Technology",
+    description: "Official portal for Hult Prize OnCampus at Heritage Institute of Technology, Kolkata.",
+    images: ["/Hult-Prize.png"],
+  },
+  alternates: {
+    canonical: "https://www.hultprizehitk.live",
+  },
 };
 
 export default function RootLayout({
