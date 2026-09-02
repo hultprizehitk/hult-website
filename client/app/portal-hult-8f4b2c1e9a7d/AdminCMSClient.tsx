@@ -650,12 +650,12 @@ export default function AdminCMSClient({ userEmail, passcode, initialTab }: Admi
                   onChange={(e) => setSelectedYear(e.target.value)}
                   className="w-full rounded-2xl border border-white/15 bg-black/60 px-4 py-2.5 text-xs sm:text-sm text-white outline-none backdrop-blur-xl focus:border-[#f20089]"
                 >
-                  <option value="all">All Years</option>
-                  <option value="1st Year">1st Year</option>
-                  <option value="2nd Year">2nd Year</option>
-                  <option value="3rd Year">3rd Year</option>
-                  <option value="4th Year">4th Year</option>
-                  <option value="Postgraduate">Postgraduate</option>
+                  <option value="all">All Academic Years</option>
+                  <option value="3rd Year">3rd Year (Class of 2028)</option>
+                  <option value="2nd Year">2nd Year (Class of 2029)</option>
+                  <option value="1st Year">1st Year (Class of 2030)</option>
+                  <option value="4th Year">4th Year (Class of 2027)</option>
+                  <option value="Final Year">Final Year (Class of 2026)</option>
                 </select>
               </div>
             </div>
@@ -703,8 +703,8 @@ export default function AdminCMSClient({ userEmail, passcode, initialTab }: Admi
                             </span>
                           </td>
                           <td className="px-5 py-4">
-                            <span className="block text-xs text-white/90 font-medium">Class of {parsed.passingYear}</span>
-                            <span className="text-[10px] text-white/50">{parsed.batch}</span>
+                            <span className="block text-xs font-bold text-white">{parsed.academicYear}</span>
+                            <span className="text-[10px] text-purple-300 font-mono font-medium">Class of {parsed.passingYear}</span>
                           </td>
                           <td className="px-5 py-4 text-white/50">
                             {new Date(student.createdAt).toLocaleDateString("en-IN", {

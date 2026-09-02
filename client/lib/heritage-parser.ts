@@ -45,7 +45,11 @@ export function getAcademicYearOfStudy(passingYear: string): string {
     2030: "1st Year",
   };
 
-  return map[py] || (py > 2028 ? "2nd Year" : "3rd Year");
+  if (map[py]) return map[py];
+  if (py >= 2030) return "1st Year";
+  if (py === 2029) return "2nd Year";
+  if (py === 2028) return "3rd Year";
+  return "4th Year";
 }
 
 export function parseHeritageEmail(email: string, fallbackName?: string | null): ParsedStudentInfo {
@@ -57,7 +61,7 @@ export function parseHeritageEmail(email: string, fallbackName?: string | null):
       branchCode: "HITK",
       branchName: "Heritage Institute of Technology",
       passingYear: "2028",
-      batch: "Class of 2028",
+      batch: "Class of 2028 (3rd Year)",
       academicYear: "3rd Year",
     };
   }
@@ -109,8 +113,8 @@ export function parseHeritageEmail(email: string, fallbackName?: string | null):
 
   const branchName = BRANCH_MAP[branchCode] || `${branchCode} Department`;
   const finalYear = passingYear || "2028";
-  const batch = `Class of ${finalYear}`;
   const academicYear = getAcademicYearOfStudy(finalYear);
+  const batch = `Class of ${finalYear} (${academicYear})`;
 
   return {
     firstName,
