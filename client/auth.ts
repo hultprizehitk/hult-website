@@ -3,7 +3,7 @@ import Google from "next-auth/providers/google";
 import { connectDB } from "@/lib/mongodb";
 import User from "@/models/User";
 import { parseHeritageEmail } from "@/lib/heritage-parser";
-import { isSuperAdminEmail } from "@/lib/constants";
+import { isSuperAdminEmail } from "@/lib/admin-check";
 
 // When deployed to production, ensure NEXTAUTH_URL and AUTH_URL never point to localhost
 if (process.env.NODE_ENV === "production") {

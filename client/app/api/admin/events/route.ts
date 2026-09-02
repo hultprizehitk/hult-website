@@ -68,14 +68,24 @@ export async function PUT(req: Request) {
 
   try {
     const body = await req.json();
-    const { id, ...updates } = body;
+    const { id, title, tag, date, venue, description, link, isPublished, order } = body;
 
     if (!id) {
       return NextResponse.json({ error: "Event ID is required." }, { status: 400 });
     }
 
+    const safeUpdates: Record<string, unknown> = {};
+    if (title !== undefined) safeUpdates.title = String(title).trim();
+    if (tag !== undefined) safeUpdates.tag = String(tag).trim();
+    if (date !== undefined) safeUpdates.date = String(date).trim();
+    if (venue !== undefined) safeUpdates.venue = String(venue).trim();
+    if (description !== undefined) safeUpdates.description = String(description).trim();
+    if (link !== undefined) safeUpdates.link = String(link).trim();
+    if (isPublished !== undefined) safeUpdates.isPublished = Boolean(isPublished);
+    if (order !== undefined) safeUpdates.order = Number(order);
+
     await connectDB();
-    const updated = await Event.findByIdAndUpdate(id, updates, { new: true });
+    const updated = await Event.findByIdAndUpdate(id, safeUpdates, { new: true });
 
     if (!updated) {
       return NextResponse.json({ error: "Event not found." }, { status: 404 });

@@ -2,11 +2,6 @@ import { redirect } from "next/navigation";
 import { auth } from "@/auth";
 import AdminSignInGate from "./AdminSignInGate";
 
-const SUPER_ADMINS = [
-  "harsh.raj.iotcs28@heritageit.edu.in",
-  "bhoomi.ladia.aiml28@heritageit.edu.in",
-];
-
 export default async function PortalRootPage() {
   const session = await auth();
 

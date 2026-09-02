@@ -1,13 +1,28 @@
 import { auth } from "@/auth";
 import { connectDB } from "@/lib/mongodb";
 import User from "@/models/User";
-import { SUPER_ADMINS, isSuperAdminEmail } from "./constants";
 
-export { SUPER_ADMINS, isSuperAdminEmail };
+/**
+ * Reads allowed superadmin emails securely from server-side environment variables (.env).
+ * Never exposed to the client/browser bundle.
+ */
+export function getEnvSuperAdmins(): string[] {
+  const raw = process.env.ADMIN_EMAILS || "";
+  return raw
+    .split(",")
+    .map((e) => e.toLowerCase().trim())
+    .filter(Boolean);
+}
+
+export function isSuperAdminEmail(email?: string | null): boolean {
+  if (!email) return false;
+  const clean = email.toLowerCase().trim();
+  return getEnvSuperAdmins().includes(clean);
+}
 
 /**
  * Validates if the active caller holds verified Administrator clearance.
- * Checks against the live MongoDB database User collection to prevent stale tokens or frontend spoofing.
+ * Checks against server environment variables and live MongoDB database User collection.
  */
 export async function isAuthorizedAdmin(_req?: Request): Promise<boolean> {
   try {
@@ -16,7 +31,7 @@ export async function isAuthorizedAdmin(_req?: Request): Promise<boolean> {
 
     const email = session.user.email.toLowerCase().trim();
 
-    // 1. Permanent Super Admin safeguard
+    // 1. Check server-side environment variable (.env)
     if (isSuperAdminEmail(email)) {
       return true;
     }
@@ -42,7 +57,7 @@ export async function isAuthorizedAdmin(_req?: Request): Promise<boolean> {
 
 /**
  * Validates if the active caller holds verified Super Admin clearance.
- * Checks against live MongoDB database records and permanent registry.
+ * Checks directly against live MongoDB database records and server environment variables.
  */
 export async function isAuthorizedSuperAdmin(_req?: Request): Promise<boolean> {
   try {
@@ -51,7 +66,7 @@ export async function isAuthorizedSuperAdmin(_req?: Request): Promise<boolean> {
 
     const email = session.user.email.toLowerCase().trim();
 
-    // 1. Permanent Super Admin registry check
+    // 1. Check server-side environment variable (.env)
     if (isSuperAdminEmail(email)) {
       return true;
     }

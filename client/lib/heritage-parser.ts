@@ -74,12 +74,13 @@ export function parseHeritageEmail(email: string, fallbackName?: string | null):
   let branchCode = "HITK";
   let passingYear = "";
 
-  if (parts.length >= 3) {
-    // Standard format: [firstName].[lastName].[branch][year]@heritageit.edu.in
-    // Example: harsh.raj.iotcs28@heritageit.edu.in
+  if (parts.length >= 2) {
+    // The last part is always the branch + graduation year (e.g. iotcs28, cse28, aiml29)
+    const branchYearPart = parts[parts.length - 1];
     rawFirst = parts[0];
-    rawLast = parts[1];
-    const branchYearPart = parts.slice(2).join(".");
+    if (parts.length > 2) {
+      rawLast = parts.slice(1, parts.length - 1).join(" ");
+    }
 
     const match = branchYearPart.match(/^([a-zA-Z]+)(\d{2,4})?$/);
     if (match) {
@@ -90,22 +91,17 @@ export function parseHeritageEmail(email: string, fallbackName?: string | null):
     } else {
       branchCode = branchYearPart.toUpperCase();
     }
-  } else if (parts.length === 2) {
-    // Format: [name].[branch][year]
-    rawFirst = parts[0];
-    const match = parts[1].match(/^([a-zA-Z]+)(\d{2,4})?$/);
-    if (match) {
-      branchCode = match[1].toUpperCase();
-      if (match[2]) {
-        passingYear = match[2].length === 2 ? `20${match[2]}` : match[2];
-      }
-    }
   } else {
     rawFirst = localPart;
   }
 
   const capitalize = (str: string) =>
-    str ? str.charAt(0).toUpperCase() + str.slice(1).toLowerCase() : "";
+    str
+      ? str
+          .split(" ")
+          .map((w) => (w ? w.charAt(0).toUpperCase() + w.slice(1).toLowerCase() : ""))
+          .join(" ")
+      : "";
 
   const firstName = rawFirst ? capitalize(rawFirst) : fallbackName?.split(" ")[0] || "Student";
   const lastName = rawLast ? capitalize(rawLast) : fallbackName?.split(" ").slice(1).join(" ") || "";
