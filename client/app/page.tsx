@@ -19,14 +19,42 @@ const HultLogoIntro = dynamic(() => import("@/components/hero/HultLogoIntro"), {
 // In-memory session flag: resets on browser refresh, persists across Next.js route transitions
 let hasIntroPlayedGlobal = false;
 
+function checkHasIntroPlayed(): boolean {
+  if (hasIntroPlayedGlobal) return true;
+  if (typeof window !== "undefined") {
+    try {
+      return sessionStorage.getItem("hult_intro_played") === "true";
+    } catch {
+      return false;
+    }
+  }
+  return false;
+}
+
 export default function Home() {
   const { data: session, status } = useSession();
-  const [introLogoEnded, setIntroLogoEnded] = useState(() => hasIntroPlayedGlobal);
+  const [introLogoEnded, setIntroLogoEnded] = useState(() => checkHasIntroPlayed());
   const [isCloudTransitionActive, setIsCloudTransitionActive] = useState(false);
-  const [introOverlayActive, setIntroOverlayActive] = useState(() => !hasIntroPlayedGlobal);
-  const [isLandingRevealed, setIsLandingRevealed] = useState(() => hasIntroPlayedGlobal);
+  const [introOverlayActive, setIntroOverlayActive] = useState(() => !checkHasIntroPlayed());
+  const [isLandingRevealed, setIsLandingRevealed] = useState(() => checkHasIntroPlayed());
   const [isScrolled, setIsScrolled] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+
+  // If user is already authenticated or intro played in this session, skip intro overlay immediately
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      if (status === "authenticated" || sessionStorage.getItem("hult_intro_played") === "true") {
+        hasIntroPlayedGlobal = true;
+        try {
+          sessionStorage.setItem("hult_intro_played", "true");
+        } catch {}
+        setIntroOverlayActive(false);
+        setIsLandingRevealed(true);
+        setIntroLogoEnded(true);
+        setIsCloudTransitionActive(false);
+      }
+    }
+  }, [status]);
 
   // Mouse Parallax coordinates (subtle offsets in pixels)
   const [mouseOffset, setMouseOffset] = useState({ x: 0, y: 0 });
@@ -44,7 +72,7 @@ export default function Home() {
 
   // Trigger Cloud Transition ~400ms after logo intro sequence ends (only if intro hasn't already played)
   useEffect(() => {
-    if (hasIntroPlayedGlobal) return;
+    if (checkHasIntroPlayed()) return;
     if (introLogoEnded) {
       debug.log(
         "intro",
@@ -305,15 +333,25 @@ export default function Home() {
             </a>
             {status === "authenticated" && session?.user ? (
               <div className="flex items-center gap-3">
+                {((session.user as { role?: string })?.role === "admin" ||
+                  (session.user as { role?: string })?.role === "superadmin") && (
+                  <Link
+                    href="/portal"
+                    className="inline-flex items-center gap-1 rounded-full border border-[#f20089]/60 bg-[#f20089]/25 hover:bg-[#f20089]/40 px-3 py-1.5 text-xs font-bold text-pink-300 hover:text-white transition-all shadow-sm hover:scale-105"
+                  >
+                    <span>
+                      {(session.user as { role?: string })?.role === "superadmin"
+                        ? "👑 Admin CMS"
+                        : "🛡️ Admin CMS"}
+                    </span>
+                  </Link>
+                )}
                 <Link
-                  href={
-                    (session.user as { role?: string })?.role === "superadmin"
-                      ? "/portal"
-                      : "/register"
-                  }
-                  className="inline-flex items-center gap-1.5 rounded-full border border-[#f20089]/50 bg-[#f20089]/20 px-3.5 py-1.5 text-xs font-bold text-white shadow-sm hover:scale-105 transition-transform"
+                  href="/register"
+                  className="inline-flex items-center gap-1.5 rounded-full border border-white/20 bg-white/[0.08] hover:bg-white/[0.15] px-3.5 py-1.5 text-xs font-bold text-white shadow-sm hover:scale-105 transition-all"
+                  title="View Student Profile"
                 >
-                  <span className="h-2 w-2 rounded-full bg-[#f20089] animate-pulse" />
+                  <span className="h-2 w-2 rounded-full bg-emerald-400 animate-pulse" />
                   {session.user.name?.split(" ")[0]}
                 </Link>
                 <button
@@ -337,12 +375,23 @@ export default function Home() {
           {/* Mobile Right Bar: Compact Register + Hamburger Button */}
           <div className="flex md:hidden items-center gap-2">
             {status === "authenticated" && session?.user ? (
-              <Link
-                href="/register"
-                className="rounded-full bg-[#f20089]/25 border border-[#f20089]/50 px-3 py-1.5 text-[11px] font-bold tracking-wide text-white shadow-md active:scale-95"
-              >
-                {session.user.name?.split(" ")[0]}
-              </Link>
+              <div className="flex items-center gap-1.5">
+                {((session.user as { role?: string })?.role === "admin" ||
+                  (session.user as { role?: string })?.role === "superadmin") && (
+                  <Link
+                    href="/portal"
+                    className="rounded-full bg-[#f20089]/30 border border-[#f20089]/60 px-2.5 py-1 text-[11px] font-bold text-pink-200"
+                  >
+                    👑 CMS
+                  </Link>
+                )}
+                <Link
+                  href="/register"
+                  className="rounded-full bg-white/[0.1] border border-white/20 px-3 py-1.5 text-[11px] font-bold tracking-wide text-white shadow-md active:scale-95"
+                >
+                  {session.user.name?.split(" ")[0]}
+                </Link>
+              </div>
             ) : (
               <Link
                 href="/register"
@@ -497,6 +546,11 @@ export default function Home() {
         isActive={isCloudTransitionActive}
         onCovered={() => {
           hasIntroPlayedGlobal = true;
+          if (typeof window !== "undefined") {
+            try {
+              sessionStorage.setItem("hult_intro_played", "true");
+            } catch {}
+          }
           debug.log(
             "intro",
             "Cloud onCovered -> removing intro overlay, revealing landing"
@@ -506,6 +560,11 @@ export default function Home() {
         }}
         onComplete={() => {
           hasIntroPlayedGlobal = true;
+          if (typeof window !== "undefined") {
+            try {
+              sessionStorage.setItem("hult_intro_played", "true");
+            } catch {}
+          }
           debug.log("intro", "Cloud onComplete -> intro sequence finished");
           setIsCloudTransitionActive(false);
         }}

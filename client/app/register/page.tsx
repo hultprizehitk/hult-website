@@ -42,8 +42,18 @@ export default function RegisterPage() {
   const handleGoogleSignIn = () => {
     setIsSigningIn(true);
     setErrorMessage(null);
-    signIn("google", { callbackUrl: "/" });
+    if (typeof window !== "undefined") {
+      try {
+        sessionStorage.setItem("hult_intro_played", "true");
+      } catch {}
+    }
+    signIn("google", { callbackUrl: "/register" });
   };
+
+  // Check user role permissions
+  const userRole = (session?.user as { role?: string })?.role;
+  const isSuperAdmin = userRole === "superadmin";
+  const isAdmin = userRole === "admin" || isSuperAdmin;
 
   return (
     <div className="relative min-h-screen w-full overflow-x-hidden bg-black font-sans text-white selection:bg-[#f20089] selection:text-white flex flex-col justify-between">
@@ -124,8 +134,16 @@ export default function RegisterPage() {
 
           {status === "authenticated" && session?.user ? (
             <div className="flex items-center gap-3">
-              <span className="inline-flex items-center gap-1.5 rounded-full border border-[#f20089]/40 bg-[#f20089]/15 px-3.5 py-1.5 text-xs font-bold text-white shadow-sm">
-                <span className="h-2 w-2 rounded-full bg-[#f20089] animate-pulse" />
+              {isAdmin && (
+                <Link
+                  href="/portal"
+                  className="rounded-full bg-[#f20089]/20 hover:bg-[#f20089]/35 border border-[#f20089]/50 px-3 py-1.5 text-xs font-bold text-pink-300 hover:text-white transition-all shadow-sm flex items-center gap-1.5"
+                >
+                  <span>{isSuperAdmin ? "👑 Admin CMS" : "🛡️ Admin CMS"}</span>
+                </Link>
+              )}
+              <span className="inline-flex items-center gap-1.5 rounded-full border border-white/20 bg-white/[0.08] px-3.5 py-1.5 text-xs font-bold text-white shadow-sm">
+                <span className="h-2 w-2 rounded-full bg-emerald-400 animate-pulse" />
                 {session.user.name?.split(" ")[0] || "Student"}
               </span>
               <button
@@ -250,10 +268,17 @@ export default function RegisterPage() {
                   )}
                 </div>
 
-                {/* Verified Pill */}
-                <div className="inline-flex items-center gap-2 rounded-full border border-emerald-500/40 bg-emerald-500/15 px-3.5 py-1 text-[11px] font-bold text-emerald-300 uppercase tracking-widest mb-3">
-                  <span className="h-2 w-2 rounded-full bg-emerald-400 animate-pulse" />
-                  <span>Verified HITK Scholar</span>
+                {/* Verified Pills: Student Status + Admin Clearance */}
+                <div className="flex items-center justify-center gap-2 mb-3 flex-wrap">
+                  <div className="inline-flex items-center gap-2 rounded-full border border-emerald-500/40 bg-emerald-500/15 px-3.5 py-1 text-[11px] font-bold text-emerald-300 uppercase tracking-widest">
+                    <span className="h-2 w-2 rounded-full bg-emerald-400 animate-pulse" />
+                    <span>Verified HITK Scholar</span>
+                  </div>
+                  {isAdmin && (
+                    <div className="inline-flex items-center gap-1.5 rounded-full border border-[#f20089]/50 bg-[#f20089]/20 px-3.5 py-1 text-[11px] font-bold text-pink-300 uppercase tracking-widest shadow-sm">
+                      <span>{isSuperAdmin ? "👑 Super Admin Clearance" : "🛡️ Admin Clearance"}</span>
+                    </div>
+                  )}
                 </div>
 
                 {/* Student Name */}
@@ -319,12 +344,12 @@ export default function RegisterPage() {
 
                 {/* Action Buttons */}
                 <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
-                  {(session?.user as { role?: string })?.role === "superadmin" && (
+                  {isAdmin && (
                     <Link
                       href="/portal"
-                      className="w-full sm:w-auto rounded-full bg-[#f20089] hover:bg-[#d8007a] px-7 py-3 text-xs sm:text-sm font-bold text-white shadow-lg shadow-[#f20089]/40 transition-all hover:scale-105 font-[family-name:var(--font-google-sans)]"
+                      className="w-full sm:w-auto rounded-full bg-[#f20089] hover:bg-[#d8007a] px-7 py-3 text-xs sm:text-sm font-bold text-white shadow-lg shadow-[#f20089]/40 transition-all hover:scale-105 font-[family-name:var(--font-google-sans)] flex items-center justify-center gap-1.5"
                     >
-                      👑 Open Admin Dashboard →
+                      <span>{isSuperAdmin ? "👑 Open Super Admin CMS →" : "🛡️ Open Admin CMS →"}</span>
                     </Link>
                   )}
                   <Link

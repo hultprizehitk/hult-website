@@ -112,11 +112,25 @@ export default function EventsPage() {
           </Link>
           {status === "authenticated" && session?.user ? (
             <div className="flex items-center gap-3">
+              {((session.user as { role?: string })?.role === "admin" ||
+                (session.user as { role?: string })?.role === "superadmin") && (
+                <Link
+                  href="/portal"
+                  className="inline-flex items-center gap-1 rounded-full border border-[#f20089]/60 bg-[#f20089]/25 hover:bg-[#f20089]/40 px-3 py-1.5 text-xs font-bold text-pink-300 hover:text-white transition-all shadow-sm hover:scale-105"
+                >
+                  <span>
+                    {(session.user as { role?: string })?.role === "superadmin"
+                      ? "👑 Admin CMS"
+                      : "🛡️ Admin CMS"}
+                  </span>
+                </Link>
+              )}
               <Link
                 href="/register"
-                className="inline-flex items-center gap-1.5 rounded-full border border-[#f20089]/50 bg-[#f20089]/20 px-3.5 py-1.5 text-xs font-bold text-white shadow-sm hover:scale-105 transition-transform"
+                className="inline-flex items-center gap-1.5 rounded-full border border-white/20 bg-white/[0.08] hover:bg-white/[0.15] px-3.5 py-1.5 text-xs font-bold text-white shadow-sm hover:scale-105 transition-all"
+                title="View Student Profile"
               >
-                <span className="h-2 w-2 rounded-full bg-[#f20089] animate-pulse" />
+                <span className="h-2 w-2 rounded-full bg-emerald-400 animate-pulse" />
                 {session.user.name?.split(" ")[0]}
               </Link>
               <button
@@ -140,12 +154,23 @@ export default function EventsPage() {
         {/* Mobile Right Bar: Compact Register + Hamburger Button */}
         <div className="flex md:hidden items-center gap-2">
           {status === "authenticated" && session?.user ? (
-            <Link
-              href="/register"
-              className="rounded-full bg-[#f20089]/25 border border-[#f20089]/50 px-3 py-1.5 text-[11px] font-bold tracking-wide text-white shadow-md active:scale-95"
-            >
-              {session.user.name?.split(" ")[0]}
-            </Link>
+            <div className="flex items-center gap-1.5">
+              {((session.user as { role?: string })?.role === "admin" ||
+                (session.user as { role?: string })?.role === "superadmin") && (
+                <Link
+                  href="/portal"
+                  className="rounded-full bg-[#f20089]/30 border border-[#f20089]/60 px-2.5 py-1 text-[11px] font-bold text-pink-200"
+                >
+                  👑 CMS
+                </Link>
+              )}
+              <Link
+                href="/register"
+                className="rounded-full bg-white/[0.1] border border-white/20 px-3 py-1.5 text-[11px] font-bold tracking-wide text-white shadow-md active:scale-95"
+              >
+                {session.user.name?.split(" ")[0]}
+              </Link>
+            </div>
           ) : (
             <Link
               href="/register"
