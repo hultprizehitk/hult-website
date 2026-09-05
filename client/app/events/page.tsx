@@ -126,7 +126,7 @@ export default function EventsPage() {
                 </Link>
               )}
               <Link
-                href="/register"
+                href="/profile"
                 className="inline-flex items-center gap-1.5 rounded-full border border-white/20 bg-white/[0.08] hover:bg-white/[0.15] px-3.5 py-1.5 text-xs font-bold text-white shadow-sm hover:scale-105 transition-all"
                 title="View Student Profile"
               >
@@ -165,7 +165,7 @@ export default function EventsPage() {
                 </Link>
               )}
               <Link
-                href="/register"
+                href="/profile"
                 className="rounded-full bg-white/[0.1] border border-white/20 px-3 py-1.5 text-[11px] font-bold tracking-wide text-white shadow-md active:scale-95"
               >
                 {session.user.name?.split(" ")[0]}

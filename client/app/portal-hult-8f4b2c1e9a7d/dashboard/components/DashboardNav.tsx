@@ -50,7 +50,7 @@ export default function DashboardNav({ userEmail, isSuperAdmin }: DashboardNavPr
             </span>
           )}
           <Link
-            href="/register"
+            href="/profile"
             className="rounded-full bg-white/[0.08] hover:bg-white/15 border border-white/20 px-3 sm:px-3.5 py-1.5 text-xs font-semibold text-white transition-all whitespace-nowrap flex items-center gap-1.5"
           >
             <span>🎓 Student Profile</span>
