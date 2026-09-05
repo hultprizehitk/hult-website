@@ -171,7 +171,7 @@ export default function AdminUserManager({ currentUserEmail }: AdminUserManagerP
       <div className="rounded-3xl border border-white/15 bg-white/[0.03] p-6 sm:p-8 backdrop-blur-2xl shadow-xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div>
           <div className="inline-flex items-center gap-1.5 rounded-full bg-amber-500/15 border border-amber-500/30 px-3 py-0.5 text-[11px] font-bold text-amber-300 uppercase tracking-wider mb-2">
-            <span>👑 Executive Super Admin Control</span>
+            <span>👑 Executive Control</span>
           </div>
           <h2 className="text-xl sm:text-2xl font-bold font-[family-name:var(--font-google-sans)] text-white">
             Administrator Access & Permissions
@@ -182,7 +182,7 @@ export default function AdminUserManager({ currentUserEmail }: AdminUserManagerP
         </div>
         <div className="text-left sm:text-right">
           <span className="block text-[10px] uppercase font-bold text-white/50 tracking-wider">
-            Super Admin Session
+            Administrator Session
           </span>
           <span className="text-xs font-mono text-amber-300">{currentUserEmail}</span>
         </div>
@@ -304,18 +304,18 @@ export default function AdminUserManager({ currentUserEmail }: AdminUserManagerP
                       <td className="px-5 py-4">
                         {isSuper ? (
                           <span className="inline-flex items-center gap-1 rounded-full bg-gradient-to-r from-amber-500/20 to-[#f20089]/20 border border-amber-500/40 px-3 py-0.5 text-[10px] font-extrabold text-amber-300 uppercase tracking-wider">
-                            👑 Super Admin
+                            👑 Executive Administrator
                           </span>
                         ) : (
                           <span className="inline-flex items-center gap-1 rounded-full bg-purple-500/20 border border-purple-500/40 px-3 py-0.5 text-[10px] font-bold text-purple-300 uppercase tracking-wider">
-                            🛡️ Appointed Admin
+                            🛡️ Administrator
                           </span>
                         )}
                       </td>
                       <td className="px-5 py-4 text-right">
                         {isSuper ? (
                           <span className="text-[11px] text-neutral-500 italic">
-                            Permanent Owner
+                            Permanent Lead
                           </span>
                         ) : (
                           <button
@@ -323,7 +323,7 @@ export default function AdminUserManager({ currentUserEmail }: AdminUserManagerP
                             onClick={() => handleRevokeAdmin(admin)}
                             className="rounded-full border border-red-500/30 bg-red-950/20 hover:bg-red-900/40 px-3 py-1 text-[11px] font-semibold text-red-300 transition-all cursor-pointer"
                           >
-                            Revoke Admin
+                            Revoke Access
                           </button>
                         )}
                       </td>

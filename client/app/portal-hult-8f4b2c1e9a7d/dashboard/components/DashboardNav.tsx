@@ -18,7 +18,7 @@ export default function DashboardNav({ userEmail, isSuperAdmin }: DashboardNavPr
     pathname === "/portal-hult-8f4b2c1e9a7d/dashboard" ||
     pathname === "/portal-hult-8f4b2c1e9a7d/dashboard/";
   const isStudents = pathname?.includes("/dashboard/student");
-  const isAdmins = pathname?.includes("/dashboard/user");
+  const isAdmins = pathname?.includes("/dashboard/admin") || pathname?.includes("/dashboard/user");
 
   return (
     <>
@@ -89,7 +89,7 @@ export default function DashboardNav({ userEmail, isSuperAdmin }: DashboardNavPr
           </Link>
 
           <Link
-            href="/portal-hult-8f4b2c1e9a7d/dashboard/student"
+            href="/portal-hult-8f4b2c1e9a7d/dashboard/students"
             className={`rounded-xl px-5 py-2.5 text-xs sm:text-sm font-bold tracking-wide transition-all font-[family-name:var(--font-google-sans)] whitespace-nowrap ${
               isStudents
                 ? "bg-[#f20089] text-white shadow-lg shadow-[#f20089]/30"
@@ -101,14 +101,14 @@ export default function DashboardNav({ userEmail, isSuperAdmin }: DashboardNavPr
 
           {isSuperAdmin && (
             <Link
-              href="/portal-hult-8f4b2c1e9a7d/dashboard/user"
+              href="/portal-hult-8f4b2c1e9a7d/dashboard/admins"
               className={`rounded-xl px-5 py-2.5 text-xs sm:text-sm font-bold tracking-wide transition-all font-[family-name:var(--font-google-sans)] whitespace-nowrap ${
                 isAdmins
                   ? "bg-gradient-to-r from-amber-500 to-[#f20089] text-white shadow-lg shadow-amber-500/20"
                   : "bg-amber-500/10 text-amber-300 hover:bg-amber-500/20 border border-amber-500/30"
               }`}
             >
-              👑 Manage Admins
+              👑 Administrators
             </Link>
           )}
         </nav>
