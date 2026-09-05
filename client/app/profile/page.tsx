@@ -276,9 +276,20 @@ export default function StudentProfilePage() {
                 <h2 className="text-2xl sm:text-3xl font-extrabold text-white font-[family-name:var(--font-google-sans)] mb-1">
                   {studentInfo?.fullName || session.user.name}
                 </h2>
-                <p className="text-xs sm:text-sm text-neutral-300 mb-6 font-mono font-medium tracking-tight">
+                <p className="text-xs sm:text-sm text-neutral-300 mb-5 font-mono font-medium tracking-tight">
                   {session.user.email}
                 </p>
+
+                {/* Email Delivery Tip Notice */}
+                <div className="mb-6 rounded-2xl border border-amber-500/30 bg-amber-500/10 p-3.5 text-left backdrop-blur-xl">
+                  <div className="flex items-start gap-2.5">
+                    <span className="text-amber-400 text-base mt-0.5 shrink-0">📩</span>
+                    <div className="text-xs text-amber-200/90 leading-relaxed">
+                      <span className="font-bold text-amber-300 block mb-0.5">Confirmation Email Sent!</span>
+                      We sent your welcome email. If you do not see it in your Inbox, please check your <strong className="text-white">Spam / Junk folder</strong> and mark it as <strong className="text-amber-300 font-bold">"Not Spam"</strong>.
+                    </div>
+                  </div>
+                </div>
 
                 {/* Student Digital ID Bento Grid */}
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-left mb-6">

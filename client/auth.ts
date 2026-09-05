@@ -4,6 +4,7 @@ import { connectDB } from "@/lib/mongodb";
 import User from "@/models/User";
 import { parseHeritageEmail } from "@/lib/heritage-parser";
 import { isSuperAdminEmail, isAdminRole } from "@/lib/admin-check";
+import { sendRegistrationConfirmationEmail } from "@/lib/email-templates";
 import type { UserRole } from "@/types";
 
 // When deployed to production, ensure NEXTAUTH_URL and AUTH_URL never point to localhost
@@ -70,6 +71,15 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
               department: parsed.branchName,
               year: parsed.academicYear,
               role: assignedRole,
+            });
+
+            // Trigger Brevo welcome / confirmation email for new Google signup
+            sendRegistrationConfirmationEmail({
+              name: dbUser.name,
+              email: dbUser.email,
+              eventName: "Hult Prize HITK 2025-2026",
+            }).catch((emailErr) => {
+              console.error("Failed to send confirmation email on Google OAuth signup:", emailErr);
             });
           } else {
             const updates: Record<string, string> = {

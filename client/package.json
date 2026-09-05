@@ -6,7 +6,8 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "test:email": "npx tsx tests/email-system.test.ts"
   },
   "dependencies": {
     "@types/three": "^0.185.4",

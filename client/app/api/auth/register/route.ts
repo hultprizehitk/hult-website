@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import bcrypt from "bcryptjs";
 import { connectDB } from "@/lib/mongodb";
 import User from "@/models/User";
+import { sendRegistrationConfirmationEmail } from "@/lib/email-templates";
 
 export async function POST(req: Request) {
   try {
@@ -62,6 +63,15 @@ export async function POST(req: Request) {
       department: department?.trim() || "General",
       year: year?.trim() || "1st Year",
       role: "user",
+    });
+
+    // 6. Send transactional confirmation email via Brevo
+    sendRegistrationConfirmationEmail({
+      name: newUser.name,
+      email: newUser.email,
+      eventName: "Hult Prize HITK 2025-2026",
+    }).catch((emailErr) => {
+      console.error("Failed to send confirmation email on manual register:", emailErr);
     });
 
     return NextResponse.json(
