@@ -112,16 +112,19 @@ export default function EventsPage() {
           </Link>
           {status === "authenticated" && session?.user ? (
             <div className="flex items-center gap-3">
-              {((session.user as { role?: string })?.role === "admin" ||
-                (session.user as { role?: string })?.role === "superadmin") && (
+              {["junior_admin", "lead_admin", "master_admin"].includes(
+                (session.user as { role?: string })?.role || ""
+              ) && (
                 <Link
                   href="/portal"
                   className="inline-flex items-center gap-1 rounded-full border border-[#f20089]/60 bg-[#f20089]/25 hover:bg-[#f20089]/40 px-3 py-1.5 text-xs font-bold text-pink-300 hover:text-white transition-all shadow-sm hover:scale-105"
                 >
                   <span>
-                    {(session.user as { role?: string })?.role === "superadmin"
-                      ? "👑 Admin CMS"
-                      : "🛡️ Admin CMS"}
+                    {(session.user as { role?: string })?.role === "master_admin"
+                      ? "👑 Master Admin CMS"
+                      : (session.user as { role?: string })?.role === "lead_admin"
+                      ? "⭐ Lead Admin CMS"
+                      : "🛡️ Junior Admin CMS"}
                   </span>
                 </Link>
               )}
@@ -155,8 +158,9 @@ export default function EventsPage() {
         <div className="flex md:hidden items-center gap-2">
           {status === "authenticated" && session?.user ? (
             <div className="flex items-center gap-1.5">
-              {((session.user as { role?: string })?.role === "admin" ||
-                (session.user as { role?: string })?.role === "superadmin") && (
+              {["junior_admin", "lead_admin", "master_admin"].includes(
+                (session.user as { role?: string })?.role || ""
+              ) && (
                 <Link
                   href="/portal"
                   className="rounded-full bg-[#f20089]/30 border border-[#f20089]/60 px-2.5 py-1 text-[11px] font-bold text-pink-200"

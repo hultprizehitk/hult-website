@@ -2,7 +2,21 @@ import { NextResponse } from "next/server";
 import { connectDB } from "@/lib/mongodb";
 import User from "@/models/User";
 import { parseHeritageEmail } from "@/lib/heritage-parser";
-import { isAuthorizedSuperAdmin, isSuperAdminEmail } from "@/lib/admin-check";
+import { isAuthorizedSuperAdmin, isSuperAdminEmail, ADMIN_ROLES } from "@/lib/admin-check";
+import type { UserRole } from "@/types";
+
+function getRoleLabel(role: string): string {
+  switch (role) {
+    case "master_admin":
+      return "Master Administrator";
+    case "lead_admin":
+      return "Lead Administrator";
+    case "junior_admin":
+      return "Junior Administrator";
+    default:
+      return "Student";
+  }
+}
 
 // GET: List all administrators and registered students
 export async function GET(req: Request) {
@@ -10,16 +24,16 @@ export async function GET(req: Request) {
     const isSuper = await isAuthorizedSuperAdmin(req);
     if (!isSuper) {
       return NextResponse.json(
-        { error: "Unauthorized: Super Administrator clearance required" },
+        { error: "Unauthorized: Master Administrator clearance required" },
         { status: 403 }
       );
     }
 
     await connectDB();
 
-    // Fetch all admins and superadmins
+    // Fetch all admins across all 3 tier roles
     const admins = await User.find({
-      role: { $in: ["admin", "superadmin"] },
+      role: { $in: Array.from(ADMIN_ROLES) },
     })
       .sort({ role: -1, createdAt: -1 })
       .lean();
@@ -49,7 +63,7 @@ export async function POST(req: Request) {
     const isSuper = await isAuthorizedSuperAdmin(req);
     if (!isSuper) {
       return NextResponse.json(
-        { error: "Unauthorized: Only Super Administrators can grant or revoke admin privileges" },
+        { error: "Unauthorized: Only Master Administrators can grant or revoke admin privileges" },
         { status: 403 }
       );
     }
@@ -57,6 +71,7 @@ export async function POST(req: Request) {
     const body = await req.json();
     const rawEmail = (body.email || "").toLowerCase().trim();
     const action = body.action || "promote"; // "promote" | "demote"
+    const requestedRole = (body.role || "lead_admin") as UserRole;
 
     if (!rawEmail) {
       return NextResponse.json(
@@ -72,17 +87,29 @@ export async function POST(req: Request) {
       );
     }
 
-    // Safety: Permanent superadmins cannot be modified or demoted
+    // Safety: Master Admins in env cannot be demoted
     if (isSuperAdminEmail(rawEmail) && action === "demote") {
       return NextResponse.json(
-        { error: "Super Administrator accounts are permanent and cannot be demoted" },
+        { error: "Master Administrator executive accounts are permanent and cannot be demoted" },
         { status: 400 }
       );
     }
 
     await connectDB();
 
-    const targetRole = action === "demote" ? "student" : "admin";
+    const validRoles: UserRole[] = [
+      "master_admin",
+      "lead_admin",
+      "junior_admin",
+    ];
+
+    const targetRole: UserRole =
+      action === "demote"
+        ? "student"
+        : validRoles.includes(requestedRole)
+        ? requestedRole
+        : "lead_admin";
+
     let user = await User.findOne({ email: rawEmail });
 
     if (user) {
@@ -90,7 +117,7 @@ export async function POST(req: Request) {
       user.role = targetRole;
       await user.save();
     } else {
-      // User has not logged in yet -> pre-authorize by creating their account in DB with admin role!
+      // User has not logged in yet -> pre-authorize by creating their account in DB with selected admin role!
       const parsed = parseHeritageEmail(rawEmail);
       user = await User.create({
         name: parsed.fullName || "HITK Appointed Admin",
@@ -106,7 +133,7 @@ export async function POST(req: Request) {
       message:
         action === "demote"
           ? `Revoked admin privileges for ${rawEmail}. User is now a student.`
-          : `Successfully granted Administrator privileges to ${rawEmail}. They can now log in to the admin portal.`,
+          : `Successfully granted ${getRoleLabel(targetRole)} privileges to ${rawEmail}.`,
       user: JSON.parse(JSON.stringify(user)),
     });
   } catch (error) {

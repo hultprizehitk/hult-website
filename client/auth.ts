@@ -3,7 +3,8 @@ import Google from "next-auth/providers/google";
 import { connectDB } from "@/lib/mongodb";
 import User from "@/models/User";
 import { parseHeritageEmail } from "@/lib/heritage-parser";
-import { isSuperAdminEmail } from "@/lib/admin-check";
+import { isSuperAdminEmail, isAdminRole } from "@/lib/admin-check";
+import type { UserRole } from "@/types";
 
 // When deployed to production, ensure NEXTAUTH_URL and AUTH_URL never point to localhost
 if (process.env.NODE_ENV === "production") {
@@ -54,11 +55,11 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
 
           const isSuperAdmin = isSuperAdminEmail(email);
 
-          // If in superadmins list, always superadmin
-          // Otherwise, if dbUser already has role 'admin' or 'superadmin', preserve it!
-          let assignedRole: "student" | "admin" | "superadmin" = isSuperAdmin ? "superadmin" : "student";
-          if (!isSuperAdmin && dbUser && (dbUser.role === "admin" || dbUser.role === "superadmin")) {
-            assignedRole = dbUser.role;
+          // If in admin emails list, default to master_admin
+          // Otherwise, if dbUser already has an authorized admin role, preserve it!
+          let assignedRole: UserRole = isSuperAdmin ? "master_admin" : "student";
+          if (!isSuperAdmin && dbUser && isAdminRole(dbUser.role)) {
+            assignedRole = dbUser.role as UserRole;
           }
 
           if (!dbUser) {
@@ -103,14 +104,14 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
       const email = (token.email || "").toLowerCase().trim();
       const isSuperAdmin = isSuperAdminEmail(email);
 
-      if (isSuperAdmin) {
-        token.role = "superadmin";
+      if (isSuperAdmin && (!token.role || token.role === "student")) {
+        token.role = "master_admin";
       } else if (!token.role || token.role === "student") {
-        // Query database to see if this user was appointed as admin
+        // Query database to see if this user was appointed with an admin role
         try {
           await connectDB();
           const dbUser = await User.findOne({ email }).select("role").lean();
-          if (dbUser?.role === "admin" || dbUser?.role === "superadmin") {
+          if (dbUser?.role && isAdminRole(dbUser.role)) {
             token.role = dbUser.role;
           } else {
             token.role = "student";
@@ -131,7 +132,12 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
         Object.assign(session.user, {
           department: token.department,
           year: token.year,
-          role: isSuperAdmin ? "superadmin" : (token.role || "student"),
+          role:
+            token.role && isAdminRole(token.role as string)
+              ? token.role
+              : isSuperAdmin
+              ? "master_admin"
+              : "student",
         });
       }
       return session;

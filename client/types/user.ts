@@ -1,4 +1,8 @@
-export type UserRole = "student" | "admin" | "superadmin";
+export type UserRole =
+  | "student"
+  | "junior_admin"
+  | "lead_admin"
+  | "master_admin";
 
 export interface Participant {
   _id: string;

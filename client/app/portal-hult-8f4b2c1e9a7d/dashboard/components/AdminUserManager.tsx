@@ -2,16 +2,42 @@
 
 import React, { useState, useEffect } from "react";
 import { parseHeritageEmail } from "@/lib/heritage-parser";
-import type { AdminRecord, Participant } from "@/types";
+import type { AdminRecord, Participant, UserRole } from "@/types";
 
 interface AdminUserManagerProps {
   currentUserEmail: string;
 }
 
+const ROLE_PRESETS = [
+  {
+    role: "junior_admin" as const,
+    label: "Junior Admin",
+    icon: "🛡️",
+    badgeClass: "bg-purple-500/20 border-purple-500/40 text-purple-300",
+    desc: "Junior Admin • Verification and roster support",
+  },
+  {
+    role: "lead_admin" as const,
+    label: "Lead Admin",
+    icon: "⭐",
+    badgeClass: "bg-sky-500/20 border-sky-500/40 text-sky-300",
+    desc: "Lead Admin • Operations, events, and participant management",
+  },
+  {
+    role: "master_admin" as const,
+    label: "Master Admin",
+    icon: "👑",
+    badgeClass: "bg-gradient-to-r from-amber-500/25 to-[#f20089]/25 border-amber-500/40 text-amber-300",
+    desc: "Master Admin • Top-level executive clearance and team oversight",
+  },
+];
+
 export default function AdminUserManager({ currentUserEmail }: AdminUserManagerProps) {
   const [admins, setAdmins] = useState<AdminRecord[]>([]);
   const [participants, setParticipants] = useState<Participant[]>([]);
   const [adminEmailInput, setAdminEmailInput] = useState("");
+  const [selectedRole, setSelectedRole] = useState<"junior_admin" | "lead_admin" | "master_admin">("lead_admin");
+  const [quickPromoteRole, setQuickPromoteRole] = useState<"junior_admin" | "lead_admin" | "master_admin">("junior_admin");
   const [isSubmittingAdmin, setIsSubmittingAdmin] = useState(false);
   const [searchStudentForAdmin, setSearchStudentForAdmin] = useState("");
   const [loading, setLoading] = useState(true);
@@ -54,7 +80,7 @@ export default function AdminUserManager({ currentUserEmail }: AdminUserManagerP
     fetchData();
   }, []);
 
-  // Grant admin access by email
+  // Grant admin access by email with designated role
   const handleGrantAdmin = async (e: React.FormEvent) => {
     e.preventDefault();
     const cleanEmail = adminEmailInput.trim().toLowerCase();
@@ -67,13 +93,13 @@ export default function AdminUserManager({ currentUserEmail }: AdminUserManagerP
       const res = await fetch("/api/admin/users", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email: cleanEmail, action: "promote" }),
+        body: JSON.stringify({ email: cleanEmail, action: "promote", role: selectedRole }),
       });
       const data = await res.json();
       if (!res.ok) {
         showToast("error", data.error || "Failed to appoint admin");
       } else {
-        showToast("success", data.message || `Granted admin access to ${cleanEmail}`);
+        showToast("success", data.message || `Granted ${selectedRole} access to ${cleanEmail}`);
         setAdminEmailInput("");
         fetchData();
       }
@@ -84,10 +110,31 @@ export default function AdminUserManager({ currentUserEmail }: AdminUserManagerP
     }
   };
 
+  // Change existing admin's role
+  const handleChangeRole = async (admin: AdminRecord, newRole: UserRole) => {
+    if (admin.role === newRole) return;
+    try {
+      const res = await fetch("/api/admin/users", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: admin.email, action: "promote", role: newRole }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        showToast("error", data.error || "Failed to update role");
+      } else {
+        showToast("success", data.message || `Updated role for ${admin.name}`);
+        fetchData();
+      }
+    } catch {
+      showToast("error", "Failed to update role");
+    }
+  };
+
   // Revoke admin access
   const handleRevokeAdmin = async (admin: AdminRecord) => {
-    if (admin.role === "superadmin") {
-      showToast("error", "Super Administrator accounts cannot be revoked");
+    if (admin.email.toLowerCase() === currentUserEmail.toLowerCase()) {
+      showToast("error", "You cannot revoke your own active administrator account");
       return;
     }
     if (
@@ -115,11 +162,18 @@ export default function AdminUserManager({ currentUserEmail }: AdminUserManagerP
     }
   };
 
-  // Quick promote student to admin
-  const handleQuickPromote = async (student: Participant) => {
+  // Quick promote student to admin with selected role
+  const handleQuickPromote = async (student: Participant, roleToGrant: "junior_admin" | "lead_admin" | "master_admin") => {
+    const roleLabel =
+      roleToGrant === "master_admin"
+        ? "Master Admin"
+        : roleToGrant === "lead_admin"
+        ? "Lead Admin"
+        : "Junior Admin";
+
     if (
       !window.confirm(
-        `Promote ${student.name} (${student.email}) to Administrator?`
+        `Promote ${student.name} (${student.email}) to ${roleLabel}?`
       )
     )
       return;
@@ -128,13 +182,13 @@ export default function AdminUserManager({ currentUserEmail }: AdminUserManagerP
       const res = await fetch("/api/admin/users", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email: student.email, action: "promote" }),
+        body: JSON.stringify({ email: student.email, action: "promote", role: roleToGrant }),
       });
       const data = await res.json();
       if (!res.ok) {
         showToast("error", data.error || "Failed to promote student");
       } else {
-        showToast("success", `Successfully promoted ${student.name} to Administrator!`);
+        showToast("success", `Successfully appointed ${student.name} as ${roleLabel}!`);
         fetchData();
       }
     } catch {
@@ -145,6 +199,35 @@ export default function AdminUserManager({ currentUserEmail }: AdminUserManagerP
   const adminEmailParsed = adminEmailInput.includes("@heritageit.edu.in")
     ? parseHeritageEmail(adminEmailInput)
     : null;
+
+  const renderRoleBadge = (role: string) => {
+    switch (role) {
+      case "master_admin":
+        return (
+          <span className="inline-flex items-center gap-1.5 rounded-full bg-gradient-to-r from-amber-500/25 to-[#f20089]/25 border border-amber-500/40 px-3 py-0.5 text-[10px] font-extrabold text-amber-300 uppercase tracking-wider shadow-sm">
+            <span>👑 Master Admin</span>
+          </span>
+        );
+      case "lead_admin":
+        return (
+          <span className="inline-flex items-center gap-1.5 rounded-full bg-sky-500/20 border border-sky-500/40 px-3 py-0.5 text-[10px] font-bold text-sky-300 uppercase tracking-wider">
+            <span>⭐ Lead Admin</span>
+          </span>
+        );
+      case "junior_admin":
+        return (
+          <span className="inline-flex items-center gap-1.5 rounded-full bg-purple-500/20 border border-purple-500/40 px-3 py-0.5 text-[10px] font-bold text-purple-300 uppercase tracking-wider">
+            <span>🛡️ Junior Admin</span>
+          </span>
+        );
+      default:
+        return (
+          <span className="inline-flex items-center gap-1.5 rounded-full bg-purple-500/20 border border-purple-500/40 px-3 py-0.5 text-[10px] font-bold text-purple-300 uppercase tracking-wider">
+            <span>🛡️ Junior Admin</span>
+          </span>
+        );
+    }
+  };
 
   return (
     <section className="space-y-8 animate-fadeIn">
@@ -171,34 +254,74 @@ export default function AdminUserManager({ currentUserEmail }: AdminUserManagerP
       <div className="rounded-3xl border border-white/15 bg-white/[0.03] p-6 sm:p-8 backdrop-blur-2xl shadow-xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div>
           <div className="inline-flex items-center gap-1.5 rounded-full bg-amber-500/15 border border-amber-500/30 px-3 py-0.5 text-[11px] font-bold text-amber-300 uppercase tracking-wider mb-2">
-            <span>👑 Executive Control</span>
+            <span>👑 Master Administration</span>
           </div>
           <h2 className="text-xl sm:text-2xl font-bold font-[family-name:var(--font-google-sans)] text-white">
-            Administrator Access & Permissions
+            Administrator Roles & Access Management
           </h2>
           <p className="text-xs text-white/60 mt-1 max-w-2xl">
-            Appoint new administrators by college email. Authorized users gain full access to this CMS upon Google authentication.
+            Manage admin tiers: <strong>Master Admin</strong>, <strong>Lead Admin</strong>, and <strong>Junior Admin</strong>. Authorized users gain immediate access to this CMS upon college Google authentication.
           </p>
         </div>
         <div className="text-left sm:text-right">
           <span className="block text-[10px] uppercase font-bold text-white/50 tracking-wider">
-            Administrator Session
+            Active Master Session
           </span>
           <span className="text-xs font-mono text-amber-300">{currentUserEmail}</span>
         </div>
       </div>
 
       {/* Card 1: Appoint New Administrator Form */}
-      <div className="rounded-3xl border border-white/15 bg-white/[0.03] p-6 sm:p-8 backdrop-blur-2xl shadow-xl">
-        <h3 className="text-lg font-bold text-white font-[family-name:var(--font-google-sans)] mb-2">
-          Appoint New Administrator
-        </h3>
-        <p className="text-xs text-neutral-300 mb-6">
-          Enter an official @heritageit.edu.in email address. If they have not logged in yet, they will be pre-authorized in MongoDB so their first login grants them full admin access.
-        </p>
+      <div className="rounded-3xl border border-white/15 bg-white/[0.03] p-6 sm:p-8 backdrop-blur-2xl shadow-xl space-y-5">
+        <div>
+          <h3 className="text-lg font-bold text-white font-[family-name:var(--font-google-sans)] mb-1">
+            Appoint New Administrator
+          </h3>
+          <p className="text-xs text-neutral-300">
+            Select the designated role tier and enter an official @heritageit.edu.in email address. Pre-authorized accounts gain immediate CMS access upon first Google sign-in.
+          </p>
+        </div>
 
         <form onSubmit={handleGrantAdmin} className="space-y-4">
-          <div className="flex flex-col sm:flex-row items-center gap-3">
+          {/* Role Tier Selector */}
+          <div>
+            <label className="block text-[11px] font-bold uppercase tracking-wider text-white/70 mb-2">
+              Select Administrator Role Tier:
+            </label>
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+              {ROLE_PRESETS.map((item) => {
+                const isSelected = selectedRole === item.role;
+                return (
+                  <button
+                    key={item.role}
+                    type="button"
+                    onClick={() => setSelectedRole(item.role)}
+                    className={`text-left rounded-2xl p-4 border transition-all cursor-pointer ${
+                      isSelected
+                        ? "border-[#f20089] bg-[#f20089]/15 shadow-lg shadow-[#f20089]/20"
+                        : "border-white/10 bg-white/[0.02] hover:bg-white/[0.06] hover:border-white/20"
+                    }`}
+                  >
+                    <div className="flex items-center justify-between gap-2 mb-1.5">
+                      <span className="text-sm font-bold text-white flex items-center gap-1.5">
+                        <span>{item.icon}</span>
+                        <span>{item.label}</span>
+                      </span>
+                      {isSelected && (
+                        <span className="h-2 w-2 rounded-full bg-[#f20089] animate-pulse" />
+                      )}
+                    </div>
+                    <p className="text-[11px] text-white/60 leading-snug">
+                      {item.desc}
+                    </p>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* Email input + submit */}
+          <div className="flex flex-col sm:flex-row items-center gap-3 pt-2">
             <div className="relative w-full flex-1">
               <input
                 type="email"
@@ -215,7 +338,9 @@ export default function AdminUserManager({ currentUserEmail }: AdminUserManagerP
               disabled={isSubmittingAdmin}
               className="w-full sm:w-auto rounded-2xl bg-[#f20089] hover:bg-[#d8007a] disabled:opacity-50 px-8 py-3.5 text-xs sm:text-sm font-bold text-white shadow-lg shadow-[#f20089]/40 transition-all hover:scale-105 cursor-pointer font-[family-name:var(--font-google-sans)] whitespace-nowrap"
             >
-              {isSubmittingAdmin ? "Granting..." : "👑 Grant Admin Access"}
+              {isSubmittingAdmin
+                ? "Appointing..."
+                : `Appoint as ${selectedRole === "master_admin" ? "Master Admin" : selectedRole === "lead_admin" ? "Lead Admin" : "Junior Admin"}`}
             </button>
           </div>
 
@@ -241,9 +366,22 @@ export default function AdminUserManager({ currentUserEmail }: AdminUserManagerP
 
       {/* Card 2: Current Administrators Table */}
       <div className="rounded-3xl border border-white/15 bg-white/[0.03] p-6 sm:p-8 backdrop-blur-2xl shadow-xl space-y-4">
-        <h3 className="text-lg font-bold text-white font-[family-name:var(--font-google-sans)]">
-          Active Administrators ({admins.length})
-        </h3>
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+          <div>
+            <h3 className="text-lg font-bold text-white font-[family-name:var(--font-google-sans)]">
+              Active Administrators ({admins.length})
+            </h3>
+            <p className="text-xs text-white/60">
+              Change administrator roles or revoke access at any time.
+            </p>
+          </div>
+          <div className="flex items-center gap-2 text-[11px] text-white/60">
+            <span>Roles:</span>
+            <span className="text-amber-300 font-semibold">Master Admin</span> •
+            <span className="text-sky-300 font-semibold">Lead Admin</span> •
+            <span className="text-purple-300 font-semibold">Junior Admin</span>
+          </div>
+        </div>
 
         <div className="overflow-x-auto rounded-2xl border border-white/10 bg-white/[0.02]">
           <table className="w-full text-left text-xs text-neutral-300">
@@ -252,20 +390,21 @@ export default function AdminUserManager({ currentUserEmail }: AdminUserManagerP
                 <th className="px-5 py-4">Administrator</th>
                 <th className="px-5 py-4">College Email</th>
                 <th className="px-5 py-4">Department / Year</th>
-                <th className="px-5 py-4">Role Clearance</th>
+                <th className="px-5 py-4">Current Role</th>
+                <th className="px-5 py-4">Change Role</th>
                 <th className="px-5 py-4 text-right">Actions</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-white/5">
               {loading ? (
                 <tr>
-                  <td colSpan={5} className="py-8 text-center text-white/60">
+                  <td colSpan={6} className="py-8 text-center text-white/60">
                     Loading administrators...
                   </td>
                 </tr>
               ) : (
                 admins.map((admin) => {
-                  const isSuper = admin.role === "superadmin";
+                  const isSelf = admin.email.toLowerCase() === currentUserEmail.toLowerCase();
                   const parsed = parseHeritageEmail(admin.email, admin.name);
 
                   return (
@@ -276,8 +415,10 @@ export default function AdminUserManager({ currentUserEmail }: AdminUserManagerP
                       <td className="px-5 py-4 font-bold text-white flex items-center gap-3">
                         <div
                           className={`h-8 w-8 rounded-full flex items-center justify-center text-xs font-extrabold text-white shrink-0 ${
-                            isSuper
+                            admin.role === "master_admin"
                               ? "bg-gradient-to-tr from-amber-500 to-[#f20089] shadow-md shadow-amber-500/30"
+                              : admin.role === "lead_admin"
+                              ? "bg-gradient-to-tr from-sky-400 to-blue-600 shadow-md shadow-sky-500/20"
                               : "bg-gradient-to-tr from-[#f20089] to-purple-600"
                           }`}
                         >
@@ -302,20 +443,25 @@ export default function AdminUserManager({ currentUserEmail }: AdminUserManagerP
                         </span>
                       </td>
                       <td className="px-5 py-4">
-                        {isSuper ? (
-                          <span className="inline-flex items-center gap-1 rounded-full bg-gradient-to-r from-amber-500/20 to-[#f20089]/20 border border-amber-500/40 px-3 py-0.5 text-[10px] font-extrabold text-amber-300 uppercase tracking-wider">
-                            👑 Executive Administrator
-                          </span>
-                        ) : (
-                          <span className="inline-flex items-center gap-1 rounded-full bg-purple-500/20 border border-purple-500/40 px-3 py-0.5 text-[10px] font-bold text-purple-300 uppercase tracking-wider">
-                            🛡️ Administrator
-                          </span>
-                        )}
+                        {renderRoleBadge(admin.role)}
+                      </td>
+                      <td className="px-5 py-4">
+                        <select
+                          value={admin.role}
+                          onChange={(e) =>
+                            handleChangeRole(admin, e.target.value as UserRole)
+                          }
+                          className="rounded-xl border border-white/15 bg-black/70 px-2.5 py-1 text-[11px] text-white outline-none hover:border-[#f20089] focus:border-[#f20089] cursor-pointer"
+                        >
+                          <option value="junior_admin">🛡️ Junior Admin</option>
+                          <option value="lead_admin">⭐ Lead Admin</option>
+                          <option value="master_admin">👑 Master Admin</option>
+                        </select>
                       </td>
                       <td className="px-5 py-4 text-right">
-                        {isSuper ? (
-                          <span className="text-[11px] text-neutral-500 italic">
-                            Permanent Lead
+                        {isSelf ? (
+                          <span className="text-[11px] text-amber-300/80 font-medium">
+                            Current User
                           </span>
                         ) : (
                           <button
@@ -323,7 +469,7 @@ export default function AdminUserManager({ currentUserEmail }: AdminUserManagerP
                             onClick={() => handleRevokeAdmin(admin)}
                             className="rounded-full border border-red-500/30 bg-red-950/20 hover:bg-red-900/40 px-3 py-1 text-[11px] font-semibold text-red-300 transition-all cursor-pointer"
                           >
-                            Revoke Access
+                            Revoke
                           </button>
                         )}
                       </td>
@@ -344,19 +490,30 @@ export default function AdminUserManager({ currentUserEmail }: AdminUserManagerP
               Quick Promote Registered Students
             </h3>
             <p className="text-xs text-neutral-300">
-              Select any registered student to instantly elevate them to Administrator.
+              Select any student and designate their admin tier directly.
             </p>
           </div>
-          <input
-            type="text"
-            placeholder="Filter students by name or email..."
-            value={searchStudentForAdmin}
-            onChange={(e) => setSearchStudentForAdmin(e.target.value)}
-            className="w-full sm:w-64 rounded-2xl border border-white/15 bg-black/60 px-4 py-2 text-xs text-white placeholder-white/40 outline-none backdrop-blur-xl focus:border-[#f20089]"
-          />
+          <div className="flex items-center gap-3 w-full sm:w-auto">
+            <select
+              value={quickPromoteRole}
+              onChange={(e) => setQuickPromoteRole(e.target.value as "junior_admin" | "lead_admin" | "master_admin")}
+              className="rounded-2xl border border-white/15 bg-black/60 px-3 py-2 text-xs text-white outline-none backdrop-blur-xl focus:border-[#f20089] cursor-pointer"
+            >
+              <option value="junior_admin">🛡️ as Junior Admin</option>
+              <option value="lead_admin">⭐ as Lead Admin</option>
+              <option value="master_admin">👑 as Master Admin</option>
+            </select>
+            <input
+              type="text"
+              placeholder="Filter students..."
+              value={searchStudentForAdmin}
+              onChange={(e) => setSearchStudentForAdmin(e.target.value)}
+              className="w-full sm:w-56 rounded-2xl border border-white/15 bg-black/60 px-4 py-2 text-xs text-white placeholder-white/40 outline-none backdrop-blur-xl focus:border-[#f20089]"
+            />
+          </div>
         </div>
 
-        <div className="max-h-60 overflow-y-auto rounded-2xl border border-white/10 divide-y divide-white/5 bg-white/[0.01]">
+        <div className="max-h-64 overflow-y-auto rounded-2xl border border-white/10 divide-y divide-white/5 bg-white/[0.01]">
           {participants
             .filter((p) => {
               const q = searchStudentForAdmin.toLowerCase();
@@ -365,7 +522,7 @@ export default function AdminUserManager({ currentUserEmail }: AdminUserManagerP
             .slice(0, 50)
             .map((student) => {
               const parsed = parseHeritageEmail(student.email, student.name);
-              const isAlreadyAdmin = admins.some(
+              const existingAdmin = admins.find(
                 (a) => a.email.toLowerCase() === student.email.toLowerCase()
               );
 
@@ -383,17 +540,17 @@ export default function AdminUserManager({ currentUserEmail }: AdminUserManagerP
                     </span>
                   </div>
 
-                  {isAlreadyAdmin ? (
-                    <span className="text-[10px] text-amber-300 font-bold uppercase tracking-wider">
-                      ✓ Already Admin
-                    </span>
+                  {existingAdmin ? (
+                    <div className="flex items-center gap-2">
+                      {renderRoleBadge(existingAdmin.role)}
+                    </div>
                   ) : (
                     <button
                       type="button"
-                      onClick={() => handleQuickPromote(student)}
+                      onClick={() => handleQuickPromote(student, quickPromoteRole)}
                       className="rounded-full bg-emerald-600/20 hover:bg-emerald-600/40 border border-emerald-500/40 px-3.5 py-1 text-[11px] font-bold text-emerald-300 transition-all cursor-pointer"
                     >
-                      + Promote to Admin
+                      + Promote ({quickPromoteRole === "master_admin" ? "Master" : quickPromoteRole === "lead_admin" ? "Lead" : "Junior"})
                     </button>
                   )}
                 </div>

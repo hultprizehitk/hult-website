@@ -25,8 +25,18 @@ export default function StudentProfilePage() {
     : null;
 
   const userRole = (session?.user as { role?: string })?.role;
-  const isSuperAdmin = userRole === "superadmin";
-  const isAdmin = userRole === "admin" || isSuperAdmin;
+  const isMasterAdmin = userRole === "master_admin";
+  const isLeadAdmin = userRole === "lead_admin";
+  const isJuniorAdmin = userRole === "junior_admin";
+  const isAdmin = isMasterAdmin || isLeadAdmin || isJuniorAdmin;
+
+  const adminBadgeLabel = isMasterAdmin
+    ? "👑 Master Admin"
+    : isLeadAdmin
+    ? "⭐ Lead Admin"
+    : isJuniorAdmin
+    ? "🛡️ Junior Admin"
+    : "🛡️ Admin";
 
   return (
     <div className="relative min-h-screen w-full overflow-x-hidden bg-black font-sans text-white selection:bg-[#f20089] selection:text-white flex flex-col justify-between">
@@ -102,7 +112,7 @@ export default function StudentProfilePage() {
                   href="/portal"
                   className="rounded-full bg-[#f20089]/20 hover:bg-[#f20089]/35 border border-[#f20089]/50 px-3 py-1.5 text-xs font-bold text-pink-300 hover:text-white transition-all shadow-sm flex items-center gap-1.5"
                 >
-                  <span>{isSuperAdmin ? "👑 Administrators CMS" : "🛡️ Administrator CMS"}</span>
+                  <span>{adminBadgeLabel} CMS</span>
                 </Link>
               )}
               <span className="inline-flex items-center gap-1.5 rounded-full border border-white/20 bg-white/[0.08] px-3.5 py-1.5 text-xs font-bold text-white shadow-sm">
@@ -257,7 +267,7 @@ export default function StudentProfilePage() {
                   </div>
                   {isAdmin && (
                     <div className="inline-flex items-center gap-1.5 rounded-full border border-[#f20089]/50 bg-[#f20089]/20 px-3.5 py-1 text-[11px] font-bold text-pink-300 uppercase tracking-widest shadow-sm">
-                      <span>{isSuperAdmin ? "👑 Administrators Clearance" : "🛡️ Administrator Clearance"}</span>
+                      <span>{adminBadgeLabel} Clearance</span>
                     </div>
                   )}
                 </div>
@@ -330,7 +340,7 @@ export default function StudentProfilePage() {
                       href="/portal"
                       className="w-full sm:w-auto rounded-full bg-[#f20089] hover:bg-[#d8007a] px-7 py-3 text-xs sm:text-sm font-bold text-white shadow-lg shadow-[#f20089]/40 transition-all hover:scale-105 font-[family-name:var(--font-google-sans)] flex items-center justify-center gap-1.5"
                     >
-                      <span>{isSuperAdmin ? "👑 Open Administrators CMS →" : "🛡️ Open Administrator CMS →"}</span>
+                      <span>{adminBadgeLabel} CMS →</span>
                     </Link>
                   )}
                   <Link

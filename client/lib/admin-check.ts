@@ -21,6 +21,29 @@ export function isSuperAdminEmail(email?: string | null): boolean {
 }
 
 /**
+ * Valid administrator roles recognized by the system.
+ */
+export const ADMIN_ROLES = [
+  "junior_admin",
+  "lead_admin",
+  "master_admin",
+] as const;
+
+export const MASTER_ADMIN_ROLES = ["master_admin"] as const;
+
+export function isAdminRole(role?: string | null): boolean {
+  if (!role) return false;
+  return (ADMIN_ROLES as readonly string[]).includes(role);
+}
+
+export function isMasterAdminRole(role?: string | null): boolean {
+  if (!role) return false;
+  return (MASTER_ADMIN_ROLES as readonly string[]).includes(role);
+}
+
+export const isMasterAdminEmail = isSuperAdminEmail;
+
+/**
  * Validates if the active caller holds verified Administrator clearance.
  * Checks against server environment variables and live MongoDB database User collection.
  */
@@ -39,13 +62,13 @@ export async function isAuthorizedAdmin(_req?: Request): Promise<boolean> {
     // 2. Direct database verification
     await connectDB();
     const dbUser = await User.findOne({ email }).select("role").lean();
-    if (dbUser && (dbUser.role === "admin" || dbUser.role === "superadmin")) {
+    if (dbUser && isAdminRole(dbUser.role)) {
       return true;
     }
 
     // 3. Fallback check on session JWT role
     const sessionRole = (session.user as { role?: string }).role;
-    if (sessionRole === "admin" || sessionRole === "superadmin") {
+    if (isAdminRole(sessionRole)) {
       return true;
     }
   } catch (error) {
@@ -56,7 +79,7 @@ export async function isAuthorizedAdmin(_req?: Request): Promise<boolean> {
 }
 
 /**
- * Validates if the active caller holds verified Super Admin clearance.
+ * Validates if the active caller holds verified Master Admin clearance.
  * Checks directly against live MongoDB database records and server environment variables.
  */
 export async function isAuthorizedSuperAdmin(_req?: Request): Promise<boolean> {
@@ -74,7 +97,13 @@ export async function isAuthorizedSuperAdmin(_req?: Request): Promise<boolean> {
     // 2. Direct database verification
     await connectDB();
     const dbUser = await User.findOne({ email }).select("role").lean();
-    if (dbUser && dbUser.role === "superadmin") {
+    if (dbUser && isMasterAdminRole(dbUser.role)) {
+      return true;
+    }
+
+    // 3. Fallback check on session JWT role
+    const sessionRole = (session.user as { role?: string }).role;
+    if (isMasterAdminRole(sessionRole)) {
       return true;
     }
   } catch (error) {
