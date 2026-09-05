@@ -61,7 +61,7 @@ export async function POST(req: Request) {
       password: hashedPassword,
       department: department?.trim() || "General",
       year: year?.trim() || "1st Year",
-      role: "student",
+      role: "user",
     });
 
     return NextResponse.json(

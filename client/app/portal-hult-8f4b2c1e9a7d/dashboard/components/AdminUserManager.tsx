@@ -250,27 +250,6 @@ export default function AdminUserManager({ currentUserEmail }: AdminUserManagerP
         </div>
       )}
 
-      {/* Header / Intro */}
-      <div className="rounded-3xl border border-white/15 bg-white/[0.03] p-6 sm:p-8 backdrop-blur-2xl shadow-xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-        <div>
-          <div className="inline-flex items-center gap-1.5 rounded-full bg-amber-500/15 border border-amber-500/30 px-3 py-0.5 text-[11px] font-bold text-amber-300 uppercase tracking-wider mb-2">
-            <span>👑 Master Administration</span>
-          </div>
-          <h2 className="text-xl sm:text-2xl font-bold font-[family-name:var(--font-google-sans)] text-white">
-            Administrator Roles & Access Management
-          </h2>
-          <p className="text-xs text-white/60 mt-1 max-w-2xl">
-            Manage admin tiers: <strong>Master Admin</strong>, <strong>Lead Admin</strong>, and <strong>Junior Admin</strong>. Authorized users gain immediate access to this CMS upon college Google authentication.
-          </p>
-        </div>
-        <div className="text-left sm:text-right">
-          <span className="block text-[10px] uppercase font-bold text-white/50 tracking-wider">
-            Active Master Session
-          </span>
-          <span className="text-xs font-mono text-amber-300">{currentUserEmail}</span>
-        </div>
-      </div>
-
       {/* Card 1: Appoint New Administrator Form */}
       <div className="rounded-3xl border border-white/15 bg-white/[0.03] p-6 sm:p-8 backdrop-blur-2xl shadow-xl space-y-5">
         <div>

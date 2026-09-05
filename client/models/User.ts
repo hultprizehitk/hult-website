@@ -9,7 +9,7 @@ export interface IUser extends Document {
   department: string;
   year: string;
   role:
-    | "student"
+    | "user"
     | "junior_admin"
     | "lead_admin"
     | "master_admin";
@@ -53,12 +53,12 @@ const UserSchema = new Schema<IUser>(
     role: {
       type: String,
       enum: [
-        "student",
+        "user",
         "junior_admin",
         "lead_admin",
         "master_admin",
       ],
-      default: "student",
+      default: "user",
     },
   },
   {

@@ -39,7 +39,7 @@ export async function GET(req: Request) {
       .lean();
 
     // Fetch all registered students for quick appointment
-    const allStudents = await User.find({ role: "student" })
+    const allStudents = await User.find({ role: "user" })
       .sort({ createdAt: -1 })
       .limit(100)
       .lean();
@@ -105,7 +105,7 @@ export async function POST(req: Request) {
 
     const targetRole: UserRole =
       action === "demote"
-        ? "student"
+        ? "user"
         : validRoles.includes(requestedRole)
         ? requestedRole
         : "lead_admin";
@@ -132,7 +132,7 @@ export async function POST(req: Request) {
       success: true,
       message:
         action === "demote"
-          ? `Revoked admin privileges for ${rawEmail}. User is now a student.`
+          ? `Revoked admin privileges for ${rawEmail}. Role is now user.`
           : `Successfully granted ${getRoleLabel(targetRole)} privileges to ${rawEmail}.`,
       user: JSON.parse(JSON.stringify(user)),
     });

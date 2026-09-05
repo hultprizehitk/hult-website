@@ -1,5 +1,5 @@
 export type UserRole =
-  | "student"
+  | "user"
   | "junior_admin"
   | "lead_admin"
   | "master_admin";

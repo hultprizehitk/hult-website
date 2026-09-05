@@ -57,7 +57,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
 
           // If in admin emails list, default to master_admin
           // Otherwise, if dbUser already has an authorized admin role, preserve it!
-          let assignedRole: UserRole = isSuperAdmin ? "master_admin" : "student";
+          let assignedRole: UserRole = isSuperAdmin ? "master_admin" : "user";
           if (!isSuperAdmin && dbUser && isAdminRole(dbUser.role)) {
             assignedRole = dbUser.role as UserRole;
           }
@@ -104,9 +104,9 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
       const email = (token.email || "").toLowerCase().trim();
       const isSuperAdmin = isSuperAdminEmail(email);
 
-      if (isSuperAdmin && (!token.role || token.role === "student")) {
+      if (isSuperAdmin && (!token.role || token.role === "user")) {
         token.role = "master_admin";
-      } else if (!token.role || token.role === "student") {
+      } else if (!token.role || token.role === "user") {
         // Query database to see if this user was appointed with an admin role
         try {
           await connectDB();
@@ -114,10 +114,10 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
           if (dbUser?.role && isAdminRole(dbUser.role)) {
             token.role = dbUser.role;
           } else {
-            token.role = "student";
+            token.role = "user";
           }
         } catch {
-          token.role = token.role || "student";
+          token.role = token.role || "user";
         }
       }
 
@@ -137,7 +137,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
               ? token.role
               : isSuperAdmin
               ? "master_admin"
-              : "student",
+              : "user",
         });
       }
       return session;

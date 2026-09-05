@@ -352,7 +352,7 @@ export default function Home() {
                 <Link
                   href="/profile"
                   className="inline-flex items-center gap-1.5 rounded-full border border-white/20 bg-white/[0.08] hover:bg-white/[0.15] px-3.5 py-1.5 text-xs font-bold text-white shadow-sm hover:scale-105 transition-all"
-                  title="View Student Profile"
+                  title="View User Profile"
                 >
                   <span className="h-2 w-2 rounded-full bg-emerald-400 animate-pulse" />
                   {session.user.name?.split(" ")[0]}

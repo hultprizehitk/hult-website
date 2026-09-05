@@ -6,7 +6,7 @@ import AdminUserManager from "../components/AdminUserManager";
 import { isAuthorizedSuperAdmin } from "@/lib/admin-check";
 
 export const metadata = {
-  title: "Administrators | Admin CMS",
+  title: "Admin | Admin CMS",
 };
 
 export default async function AdminManagementPage() {
