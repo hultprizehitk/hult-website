@@ -150,7 +150,7 @@ export default function StudentsDirectory() {
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div>
           <h2 className="text-xl sm:text-2xl font-bold font-[family-name:var(--font-google-sans)] text-white">
-            Registered Students ({participants.length})
+            Registered Users ({participants.length})
           </h2>
           <p className="text-xs text-white/60">
             Live participant directory synced in real-time from official Google sign-ins.

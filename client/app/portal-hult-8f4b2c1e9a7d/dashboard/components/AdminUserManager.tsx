@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { parseHeritageEmail } from "@/lib/heritage-parser";
 import type { AdminRecord, Participant, UserRole } from "@/types";
 
@@ -37,6 +37,7 @@ export default function AdminUserManager({ currentUserEmail }: AdminUserManagerP
   const [participants, setParticipants] = useState<Participant[]>([]);
   const [adminEmailInput, setAdminEmailInput] = useState("");
   const [selectedRole, setSelectedRole] = useState<"junior_admin" | "lead_admin" | "master_admin">("lead_admin");
+  const [roleDropdownOpen, setRoleDropdownOpen] = useState(false);
   const [quickPromoteRole, setQuickPromoteRole] = useState<"junior_admin" | "lead_admin" | "master_admin">("junior_admin");
   const [isSubmittingAdmin, setIsSubmittingAdmin] = useState(false);
   const [searchStudentForAdmin, setSearchStudentForAdmin] = useState("");
@@ -76,8 +77,18 @@ export default function AdminUserManager({ currentUserEmail }: AdminUserManagerP
     }
   };
 
+  const dropdownRef = useRef<HTMLDivElement>(null);
+
   useEffect(() => {
     fetchData();
+
+    function handleClickOutside(event: MouseEvent) {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+        setRoleDropdownOpen(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
   // Grant admin access by email with designated role
@@ -250,82 +261,104 @@ export default function AdminUserManager({ currentUserEmail }: AdminUserManagerP
         </div>
       )}
 
-      {/* Card 1: Appoint New Administrator Form */}
-      <div className="rounded-3xl border border-white/15 bg-white/[0.03] p-6 sm:p-8 backdrop-blur-2xl shadow-xl space-y-5">
-        <div>
-          <h3 className="text-lg font-bold text-white font-[family-name:var(--font-google-sans)] mb-1">
-            Appoint New Administrator
+      {/* INVITE USER Card */}
+      <div className="relative mx-auto max-w-xl w-full rounded-3xl border border-white/15 bg-white/[0.03] p-6 sm:p-8 backdrop-blur-2xl shadow-2xl overflow-hidden animate-fadeIn">
+        {/* Iridescent Top Glow */}
+        <div className="pointer-events-none absolute inset-x-0 top-0 h-[1px] bg-gradient-to-r from-transparent via-white/40 to-transparent" />
+        <div className="pointer-events-none absolute -top-16 -right-16 h-40 w-40 rounded-full bg-[#f20089]/15 blur-3xl" />
+        <div className="pointer-events-none absolute -bottom-16 -left-16 h-40 w-40 rounded-full bg-purple-900/20 blur-3xl" />
+
+        <div className="relative z-10 text-center mb-6">
+          <h3 className="text-xl sm:text-2xl font-extrabold uppercase tracking-widest text-white font-[family-name:var(--font-google-sans)] drop-shadow">
+            INVITE USER
           </h3>
-          <p className="text-xs text-neutral-300">
-            Select the designated role tier and enter an official @heritageit.edu.in email address. Pre-authorized accounts gain immediate CMS access upon first Google sign-in.
+          <p className="text-xs text-white/60 mt-1">
+            Designate an administrator role and enter an official college email.
           </p>
         </div>
 
-        <form onSubmit={handleGrantAdmin} className="space-y-4">
-          {/* Role Tier Selector */}
+        <form onSubmit={handleGrantAdmin} className="relative z-10 space-y-4">
+          {/* Email Field */}
           <div>
-            <label className="block text-[11px] font-bold uppercase tracking-wider text-white/70 mb-2">
-              Select Administrator Role Tier:
+            <label className="block text-[11px] font-bold uppercase tracking-wider text-white/70 mb-1.5 font-[family-name:var(--font-google-sans)]">
+              Email Address
             </label>
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-              {ROLE_PRESETS.map((item) => {
-                const isSelected = selectedRole === item.role;
-                return (
-                  <button
-                    key={item.role}
-                    type="button"
-                    onClick={() => setSelectedRole(item.role)}
-                    className={`text-left rounded-2xl p-4 border transition-all cursor-pointer ${
-                      isSelected
-                        ? "border-[#f20089] bg-[#f20089]/15 shadow-lg shadow-[#f20089]/20"
-                        : "border-white/10 bg-white/[0.02] hover:bg-white/[0.06] hover:border-white/20"
-                    }`}
-                  >
-                    <div className="flex items-center justify-between gap-2 mb-1.5">
-                      <span className="text-sm font-bold text-white flex items-center gap-1.5">
-                        <span>{item.icon}</span>
-                        <span>{item.label}</span>
-                      </span>
-                      {isSelected && (
-                        <span className="h-2 w-2 rounded-full bg-[#f20089] animate-pulse" />
-                      )}
-                    </div>
-                    <p className="text-[11px] text-white/60 leading-snug">
-                      {item.desc}
-                    </p>
-                  </button>
-                );
-              })}
-            </div>
+            <input
+              type="email"
+              required
+              placeholder="e.g. rohit.sharma.cse28@heritageit.edu.in"
+              value={adminEmailInput}
+              onChange={(e) => setAdminEmailInput(e.target.value)}
+              className="w-full rounded-2xl border border-white/20 bg-black/60 px-5 py-3 text-xs sm:text-sm text-white placeholder-white/30 outline-none backdrop-blur-xl transition-all focus:border-[#f20089] focus:ring-1 focus:ring-[#f20089]/50 font-mono"
+            />
           </div>
 
-          {/* Email input + submit */}
-          <div className="flex flex-col sm:flex-row items-center gap-3 pt-2">
-            <div className="relative w-full flex-1">
-              <input
-                type="email"
-                required
-                placeholder="e.g. rohit.sharma.cse28@heritageit.edu.in"
-                value={adminEmailInput}
-                onChange={(e) => setAdminEmailInput(e.target.value)}
-                className="w-full rounded-2xl border border-white/20 bg-black/60 px-5 py-3.5 text-xs sm:text-sm text-white placeholder-white/40 outline-none backdrop-blur-xl focus:border-[#f20089] font-mono"
-              />
-            </div>
-
+          {/* Role Dropdown */}
+          <div className="relative" ref={dropdownRef}>
+            <label className="block text-[11px] font-bold uppercase tracking-wider text-white/70 mb-1.5 font-[family-name:var(--font-google-sans)]">
+              Role
+            </label>
             <button
-              type="submit"
-              disabled={isSubmittingAdmin}
-              className="w-full sm:w-auto rounded-2xl bg-[#f20089] hover:bg-[#d8007a] disabled:opacity-50 px-8 py-3.5 text-xs sm:text-sm font-bold text-white shadow-lg shadow-[#f20089]/40 transition-all hover:scale-105 cursor-pointer font-[family-name:var(--font-google-sans)] whitespace-nowrap"
+              type="button"
+              onClick={() => setRoleDropdownOpen((prev) => !prev)}
+              className="w-full flex items-center justify-between rounded-2xl border border-white/20 bg-black/60 px-5 py-3 text-xs sm:text-sm text-white outline-none hover:border-[#f20089]/70 focus:border-[#f20089] cursor-pointer transition-all shadow-md"
             >
-              {isSubmittingAdmin
-                ? "Appointing..."
-                : `Appoint as ${selectedRole === "master_admin" ? "Master Admin" : selectedRole === "lead_admin" ? "Lead Admin" : "Junior Admin"}`}
+              <span className="font-semibold text-white">
+                {selectedRole === "master_admin"
+                  ? "Master Admin"
+                  : selectedRole === "lead_admin"
+                  ? "Lead Admin"
+                  : "Junior Admin"}
+              </span>
+              <svg
+                className={`w-4 h-4 text-[#f20089] transition-transform duration-200 ${
+                  roleDropdownOpen ? "rotate-180" : ""
+                }`}
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2.5"
+                viewBox="0 0 24 24"
+              >
+                <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+              </svg>
             </button>
+
+            {roleDropdownOpen && (
+              <div className="absolute z-30 mt-2 w-full rounded-2xl border border-white/15 bg-black/95 backdrop-blur-3xl shadow-2xl overflow-hidden py-1.5 divide-y divide-white/5 animate-fadeIn">
+                {[
+                  { value: "master_admin" as const, label: "Master Admin" },
+                  { value: "lead_admin" as const, label: "Lead Admin" },
+                  { value: "junior_admin" as const, label: "Junior Admin" },
+                ].map((opt) => {
+                  const isSelected = selectedRole === opt.value;
+                  return (
+                    <button
+                      key={opt.value}
+                      type="button"
+                      onClick={() => {
+                        setSelectedRole(opt.value);
+                        setRoleDropdownOpen(false);
+                      }}
+                      className={`w-full flex items-center gap-2.5 px-5 py-3 text-xs sm:text-sm text-left transition-colors cursor-pointer ${
+                        isSelected
+                          ? "bg-[#f20089]/20 text-white font-bold"
+                          : "text-white/80 hover:bg-white/10 hover:text-white"
+                      }`}
+                    >
+                      <span className="w-4 text-center font-bold text-[#f20089]">
+                        {isSelected ? "✓" : ""}
+                      </span>
+                      <span>{opt.label}</span>
+                    </button>
+                  );
+                })}
+              </div>
+            )}
           </div>
 
-          {/* Email Preview */}
+          {/* Email Identity Preview */}
           {adminEmailParsed && (
-            <div className="rounded-2xl border border-emerald-500/30 bg-emerald-950/20 p-4 animate-fadeIn flex flex-wrap items-center gap-4 text-xs">
+            <div className="rounded-2xl border border-emerald-500/30 bg-emerald-950/20 p-4 animate-fadeIn flex flex-wrap items-center gap-3 text-xs">
               <span className="text-emerald-400 font-bold uppercase tracking-wider text-[10px]">
                 Identity Preview:
               </span>
@@ -340,6 +373,17 @@ export default function AdminUserManager({ currentUserEmail }: AdminUserManagerP
               </span>
             </div>
           )}
+
+          {/* INVITE Button */}
+          <div className="pt-2">
+            <button
+              type="submit"
+              disabled={isSubmittingAdmin}
+              className="rounded-2xl bg-[#f20089] hover:bg-[#d8007a] disabled:opacity-50 px-8 py-3 text-xs sm:text-sm font-bold uppercase tracking-wider text-white shadow-lg shadow-[#f20089]/40 transition-all hover:scale-105 active:scale-95 cursor-pointer font-[family-name:var(--font-google-sans)]"
+            >
+              {isSubmittingAdmin ? "INVITING..." : "INVITE"}
+            </button>
+          </div>
         </form>
       </div>
 

@@ -96,7 +96,7 @@ export default function DashboardNav({ userEmail, isSuperAdmin }: DashboardNavPr
                 : "bg-white/[0.05] text-white/70 hover:text-white hover:bg-white/10"
             }`}
           >
-            👥 Registered Students
+            Users
           </Link>
 
           {isSuperAdmin && (
