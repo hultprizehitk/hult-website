@@ -457,7 +457,7 @@ export default function TeamPage() {
                   : "bg-white/[0.05] text-white/70 hover:text-white hover:bg-white/10 border border-white/10"
               }`}
             >
-              All Divisions ({INITIAL_TEAM_MEMBERS.length})
+              All Divisions {INITIAL_TEAM_MEMBERS.length > 0 ? `(${INITIAL_TEAM_MEMBERS.length})` : ""}
             </button>
 
             {TEAM_SECTIONS.map((sec) => {
@@ -475,7 +475,7 @@ export default function TeamPage() {
                       : "bg-white/[0.05] text-white/70 hover:text-white hover:bg-white/10 border border-white/10"
                   }`}
                 >
-                  {sec.title} ({count})
+                  {sec.title} {count > 0 ? `(${count})` : ""}
                 </button>
               );
             })}
@@ -504,162 +504,192 @@ export default function TeamPage() {
               {/* Spotlight Duo Grid */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6 lg:gap-8">
                 {/* Campus Director Card */}
-                {(activeCategory === "all" || activeCategory === "cd") &&
-                  cdMembers.map((cd) => (
-                    <div
-                      key={cd.id}
-                      className="relative overflow-hidden rounded-[2.5rem] border border-amber-500/30 bg-gradient-to-b from-amber-500/[0.08] via-white/[0.03] to-black/60 p-8 backdrop-blur-2xl shadow-2xl transition-all duration-300 hover:border-amber-400 hover:shadow-[0_20px_50px_rgba(245,158,11,0.15)] flex flex-col justify-between"
-                    >
-                      <div className="pointer-events-none absolute inset-x-0 top-0 h-[1.5px] bg-gradient-to-r from-transparent via-amber-400 to-transparent" />
-                      <div className="pointer-events-none absolute -top-16 -right-16 h-48 w-48 rounded-full bg-amber-500/15 blur-3xl" />
+                {(activeCategory === "all" || activeCategory === "cd") && (
+                  cdMembers.length > 0 ? (
+                    cdMembers.map((cd) => (
+                      <div
+                        key={cd.id}
+                        className="relative overflow-hidden rounded-[2.5rem] border border-amber-500/30 bg-gradient-to-b from-amber-500/[0.08] via-white/[0.03] to-black/60 p-8 backdrop-blur-2xl shadow-2xl transition-all duration-300 hover:border-amber-400 hover:shadow-[0_20px_50px_rgba(245,158,11,0.15)] flex flex-col justify-between"
+                      >
+                        <div className="pointer-events-none absolute inset-x-0 top-0 h-[1.5px] bg-gradient-to-r from-transparent via-amber-400 to-transparent" />
+                        <div className="pointer-events-none absolute -top-16 -right-16 h-48 w-48 rounded-full bg-amber-500/15 blur-3xl" />
 
-                      <div className="relative z-10">
-                        <div className="flex items-center justify-between gap-3 mb-6">
-                          <span className="rounded-full bg-gradient-to-r from-amber-500/25 to-[#f20089]/25 border border-amber-500/40 px-3.5 py-1 text-[11px] font-extrabold uppercase tracking-wider text-amber-300">
-                            Campus Director • CD
-                          </span>
-                          <span className="text-[11px] text-amber-300/80 font-mono font-semibold">
-                            Head of Chapter
-                          </span>
-                        </div>
-
-                        <div className="flex flex-col sm:flex-row items-start sm:items-center gap-5 mb-6">
-                          <div className="h-24 w-24 rounded-3xl p-[2px] bg-gradient-to-tr from-amber-400 via-[#f20089] to-purple-600 shadow-xl overflow-hidden shrink-0">
-                            {cd.image ? (
-                              <img
-                                src={cd.image}
-                                alt={cd.name}
-                                className="h-full w-full rounded-3xl object-cover"
-                              />
-                            ) : (
-                              <div className="h-full w-full rounded-3xl bg-neutral-950 flex items-center justify-center font-[family-name:var(--font-google-sans)] text-2xl font-black text-amber-300">
-                                {cd.name.split(" ").map((n) => n[0]).join("")}
-                              </div>
-                            )}
+                        <div className="relative z-10">
+                          <div className="flex items-center justify-between gap-3 mb-6">
+                            <span className="rounded-full bg-gradient-to-r from-amber-500/25 to-[#f20089]/25 border border-amber-500/40 px-3.5 py-1 text-[11px] font-extrabold uppercase tracking-wider text-amber-300">
+                              Campus Director • CD
+                            </span>
+                            <span className="text-[11px] text-amber-300/80 font-mono font-semibold">
+                              Head of Chapter
+                            </span>
                           </div>
 
-                          <div>
-                            <h3 className="text-2xl sm:text-3xl font-black text-white font-[family-name:var(--font-google-sans)] mb-1">
-                              {cd.name}
-                            </h3>
-                            <p className="text-xs text-white/80 font-medium">
-                              {cd.department}
-                            </p>
-                            <p className="text-xs text-amber-300/80 font-mono mt-0.5">
-                              {cd.academicYear}
-                            </p>
+                          <div className="flex flex-col sm:flex-row items-start sm:items-center gap-5 mb-6">
+                            <div className="h-24 w-24 rounded-3xl p-[2px] bg-gradient-to-tr from-amber-400 via-[#f20089] to-purple-600 shadow-xl overflow-hidden shrink-0">
+                              {cd.image ? (
+                                <img
+                                  src={cd.image}
+                                  alt={cd.name}
+                                  className="h-full w-full rounded-3xl object-cover"
+                                />
+                              ) : (
+                                <div className="h-full w-full rounded-3xl bg-neutral-950 flex items-center justify-center font-[family-name:var(--font-google-sans)] text-2xl font-black text-amber-300">
+                                  {cd.name.split(" ").map((n) => n[0]).join("")}
+                                </div>
+                              )}
+                            </div>
+
+                            <div>
+                              <h3 className="text-2xl sm:text-3xl font-black text-white font-[family-name:var(--font-google-sans)] mb-1">
+                                {cd.name}
+                              </h3>
+                              <p className="text-xs text-white/80 font-medium">
+                                {cd.department}
+                              </p>
+                              <p className="text-xs text-amber-300/80 font-mono mt-0.5">
+                                {cd.academicYear}
+                              </p>
+                            </div>
                           </div>
+
+                          {cd.bio && (
+                            <p className="text-xs sm:text-sm text-white/70 leading-relaxed font-sans mb-6">
+                              "{cd.bio}"
+                            </p>
+                          )}
                         </div>
 
-                        {cd.bio && (
-                          <p className="text-xs sm:text-sm text-white/70 leading-relaxed font-sans mb-6">
-                            "{cd.bio}"
-                          </p>
-                        )}
+                        {/* Socials */}
+                        <div className="relative z-10 pt-4 border-t border-white/10 flex items-center gap-3">
+                          {cd.socials?.linkedin && (
+                            <a
+                              href={cd.socials.linkedin}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="rounded-xl bg-white/[0.05] hover:bg-[#0077b5]/30 border border-white/10 hover:border-[#0077b5]/50 px-3 py-1.5 text-xs font-semibold text-white/80 hover:text-white transition-all flex items-center gap-1.5"
+                            >
+                              <span>LinkedIn</span>
+                            </a>
+                          )}
+                          {cd.socials?.email && (
+                            <a
+                              href={`mailto:${cd.socials.email}`}
+                              className="rounded-xl bg-white/[0.05] hover:bg-[#f20089]/30 border border-white/10 hover:border-[#f20089]/50 px-3 py-1.5 text-xs font-semibold text-white/80 hover:text-white transition-all flex items-center gap-1.5"
+                            >
+                              <span>Email</span>
+                            </a>
+                          )}
+                        </div>
                       </div>
-
-                      {/* Socials */}
-                      <div className="relative z-10 pt-4 border-t border-white/10 flex items-center gap-3">
-                        {cd.socials?.linkedin && (
-                          <a
-                            href={cd.socials.linkedin}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="rounded-xl bg-white/[0.05] hover:bg-[#0077b5]/30 border border-white/10 hover:border-[#0077b5]/50 px-3 py-1.5 text-xs font-semibold text-white/80 hover:text-white transition-all flex items-center gap-1.5"
-                          >
-                            <span>LinkedIn</span>
-                          </a>
-                        )}
-                        {cd.socials?.email && (
-                          <a
-                            href={`mailto:${cd.socials.email}`}
-                            className="rounded-xl bg-white/[0.05] hover:bg-[#f20089]/30 border border-white/10 hover:border-[#f20089]/50 px-3 py-1.5 text-xs font-semibold text-white/80 hover:text-white transition-all flex items-center gap-1.5"
-                          >
-                            <span>Email</span>
-                          </a>
-                        )}
-                      </div>
+                    ))
+                  ) : (
+                    <div className="relative overflow-hidden rounded-[2.5rem] border border-dashed border-amber-500/25 bg-amber-500/[0.02] p-8 sm:p-10 backdrop-blur-xl text-center flex flex-col items-center justify-center min-h-[220px]">
+                      <span className="rounded-full bg-amber-500/10 border border-amber-500/30 px-3.5 py-1 text-[11px] font-extrabold uppercase tracking-wider text-amber-300 mb-3">
+                        Campus Director • CD
+                      </span>
+                      <h3 className="text-xl font-bold text-white font-[family-name:var(--font-google-sans)] mb-1">
+                        Announcement Coming Soon
+                      </h3>
+                      <p className="text-xs text-white/50 max-w-sm leading-relaxed">
+                        The Campus Director appointment for Hult Prize HITK 2026-27 will be officially revealed soon.
+                      </p>
                     </div>
-                  ))}
+                  )
+                )}
 
                 {/* Deputy Campus Director Card */}
-                {(activeCategory === "all" || activeCategory === "dcd") &&
-                  dcdMembers.map((dcd) => (
-                    <div
-                      key={dcd.id}
-                      className="relative overflow-hidden rounded-[2.5rem] border border-sky-500/30 bg-gradient-to-b from-sky-500/[0.08] via-white/[0.03] to-black/60 p-8 backdrop-blur-2xl shadow-2xl transition-all duration-300 hover:border-sky-400 hover:shadow-[0_20px_50px_rgba(56,189,248,0.15)] flex flex-col justify-between"
-                    >
-                      <div className="pointer-events-none absolute inset-x-0 top-0 h-[1.5px] bg-gradient-to-r from-transparent via-sky-400 to-transparent" />
-                      <div className="pointer-events-none absolute -top-16 -right-16 h-48 w-48 rounded-full bg-sky-500/15 blur-3xl" />
+                {(activeCategory === "all" || activeCategory === "dcd") && (
+                  dcdMembers.length > 0 ? (
+                    dcdMembers.map((dcd) => (
+                      <div
+                        key={dcd.id}
+                        className="relative overflow-hidden rounded-[2.5rem] border border-sky-500/30 bg-gradient-to-b from-sky-500/[0.08] via-white/[0.03] to-black/60 p-8 backdrop-blur-2xl shadow-2xl transition-all duration-300 hover:border-sky-400 hover:shadow-[0_20px_50px_rgba(56,189,248,0.15)] flex flex-col justify-between"
+                      >
+                        <div className="pointer-events-none absolute inset-x-0 top-0 h-[1.5px] bg-gradient-to-r from-transparent via-sky-400 to-transparent" />
+                        <div className="pointer-events-none absolute -top-16 -right-16 h-48 w-48 rounded-full bg-sky-500/15 blur-3xl" />
 
-                      <div className="relative z-10">
-                        <div className="flex items-center justify-between gap-3 mb-6">
-                          <span className="rounded-full bg-sky-500/20 border border-sky-500/40 px-3.5 py-1 text-[11px] font-extrabold uppercase tracking-wider text-sky-300">
-                            Deputy Campus Director • DCD
-                          </span>
-                          <span className="text-[11px] text-sky-300/80 font-mono font-semibold">
-                            Executive Co-Lead
-                          </span>
-                        </div>
-
-                        <div className="flex flex-col sm:flex-row items-start sm:items-center gap-5 mb-6">
-                          <div className="h-24 w-24 rounded-3xl p-[2px] bg-gradient-to-tr from-sky-400 via-blue-500 to-[#f20089] shadow-xl overflow-hidden shrink-0">
-                            {dcd.image ? (
-                              <img
-                                src={dcd.image}
-                                alt={dcd.name}
-                                className="h-full w-full rounded-3xl object-cover"
-                              />
-                            ) : (
-                              <div className="h-full w-full rounded-3xl bg-neutral-950 flex items-center justify-center font-[family-name:var(--font-google-sans)] text-2xl font-black text-sky-300">
-                                {dcd.name.split(" ").map((n) => n[0]).join("")}
-                              </div>
-                            )}
+                        <div className="relative z-10">
+                          <div className="flex items-center justify-between gap-3 mb-6">
+                            <span className="rounded-full bg-sky-500/20 border border-sky-500/40 px-3.5 py-1 text-[11px] font-extrabold uppercase tracking-wider text-sky-300">
+                              Deputy Campus Director • DCD
+                            </span>
+                            <span className="text-[11px] text-sky-300/80 font-mono font-semibold">
+                              Executive Co-Lead
+                            </span>
                           </div>
 
-                          <div>
-                            <h3 className="text-2xl sm:text-3xl font-black text-white font-[family-name:var(--font-google-sans)] mb-1">
-                              {dcd.name}
-                            </h3>
-                            <p className="text-xs text-white/80 font-medium">
-                              {dcd.department}
-                            </p>
-                            <p className="text-xs text-sky-300/80 font-mono mt-0.5">
-                              {dcd.academicYear}
-                            </p>
+                          <div className="flex flex-col sm:flex-row items-start sm:items-center gap-5 mb-6">
+                            <div className="h-24 w-24 rounded-3xl p-[2px] bg-gradient-to-tr from-sky-400 via-blue-500 to-[#f20089] shadow-xl overflow-hidden shrink-0">
+                              {dcd.image ? (
+                                <img
+                                  src={dcd.image}
+                                  alt={dcd.name}
+                                  className="h-full w-full rounded-3xl object-cover"
+                                />
+                              ) : (
+                                <div className="h-full w-full rounded-3xl bg-neutral-950 flex items-center justify-center font-[family-name:var(--font-google-sans)] text-2xl font-black text-sky-300">
+                                  {dcd.name.split(" ").map((n) => n[0]).join("")}
+                                </div>
+                              )}
+                            </div>
+
+                            <div>
+                              <h3 className="text-2xl sm:text-3xl font-black text-white font-[family-name:var(--font-google-sans)] mb-1">
+                                {dcd.name}
+                              </h3>
+                              <p className="text-xs text-white/80 font-medium">
+                                {dcd.department}
+                              </p>
+                              <p className="text-xs text-sky-300/80 font-mono mt-0.5">
+                                {dcd.academicYear}
+                              </p>
+                            </div>
                           </div>
+
+                          {dcd.bio && (
+                            <p className="text-xs sm:text-sm text-white/70 leading-relaxed font-sans mb-6">
+                              "{dcd.bio}"
+                            </p>
+                          )}
                         </div>
 
-                        {dcd.bio && (
-                          <p className="text-xs sm:text-sm text-white/70 leading-relaxed font-sans mb-6">
-                            "{dcd.bio}"
-                          </p>
-                        )}
+                        {/* Socials */}
+                        <div className="relative z-10 pt-4 border-t border-white/10 flex items-center gap-3">
+                          {dcd.socials?.linkedin && (
+                            <a
+                              href={dcd.socials.linkedin}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="rounded-xl bg-white/[0.05] hover:bg-[#0077b5]/30 border border-white/10 hover:border-[#0077b5]/50 px-3 py-1.5 text-xs font-semibold text-white/80 hover:text-white transition-all flex items-center gap-1.5"
+                            >
+                              <span>LinkedIn</span>
+                            </a>
+                          )}
+                          {dcd.socials?.email && (
+                            <a
+                              href={`mailto:${dcd.socials.email}`}
+                              className="rounded-xl bg-white/[0.05] hover:bg-[#f20089]/30 border border-white/10 hover:border-[#f20089]/50 px-3 py-1.5 text-xs font-semibold text-white/80 hover:text-white transition-all flex items-center gap-1.5"
+                            >
+                              <span>Email</span>
+                            </a>
+                          )}
+                        </div>
                       </div>
-
-                      {/* Socials */}
-                      <div className="relative z-10 pt-4 border-t border-white/10 flex items-center gap-3">
-                        {dcd.socials?.linkedin && (
-                          <a
-                            href={dcd.socials.linkedin}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="rounded-xl bg-white/[0.05] hover:bg-[#0077b5]/30 border border-white/10 hover:border-[#0077b5]/50 px-3 py-1.5 text-xs font-semibold text-white/80 hover:text-white transition-all flex items-center gap-1.5"
-                          >
-                            <span>LinkedIn</span>
-                          </a>
-                        )}
-                        {dcd.socials?.email && (
-                          <a
-                            href={`mailto:${dcd.socials.email}`}
-                            className="rounded-xl bg-white/[0.05] hover:bg-[#f20089]/30 border border-white/10 hover:border-[#f20089]/50 px-3 py-1.5 text-xs font-semibold text-white/80 hover:text-white transition-all flex items-center gap-1.5"
-                          >
-                            <span>Email</span>
-                          </a>
-                        )}
-                      </div>
+                    ))
+                  ) : (
+                    <div className="relative overflow-hidden rounded-[2.5rem] border border-dashed border-sky-500/25 bg-sky-500/[0.02] p-8 sm:p-10 backdrop-blur-xl text-center flex flex-col items-center justify-center min-h-[220px]">
+                      <span className="rounded-full bg-sky-500/10 border border-sky-500/30 px-3.5 py-1 text-[11px] font-extrabold uppercase tracking-wider text-sky-300 mb-3">
+                        Deputy Campus Director • DCD
+                      </span>
+                      <h3 className="text-xl font-bold text-white font-[family-name:var(--font-google-sans)] mb-1">
+                        Announcement Coming Soon
+                      </h3>
+                      <p className="text-xs text-white/50 max-w-sm leading-relaxed">
+                        The Deputy Campus Director appointment for Hult Prize HITK 2026-27 will be officially revealed soon.
+                      </p>
                     </div>
-                  ))}
+                  )
+                )}
               </div>
             </section>
           )}
@@ -681,9 +711,20 @@ export default function TeamPage() {
                 </p>
               </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-                {eventMembers.map((member) => renderMemberCard(member))}
-              </div>
+              {eventMembers.length > 0 ? (
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                  {eventMembers.map((member) => renderMemberCard(member))}
+                </div>
+              ) : (
+                <div className="rounded-3xl border border-dashed border-emerald-500/20 bg-emerald-500/[0.02] p-8 sm:p-10 text-center backdrop-blur-xl">
+                  <h4 className="text-base font-bold text-white font-[family-name:var(--font-google-sans)] mb-1">
+                    Team Members Being Finalized
+                  </h4>
+                  <p className="text-xs text-white/50 max-w-md mx-auto">
+                    Official appointments for the Event Management Team will be announced soon.
+                  </p>
+                </div>
+              )}
             </section>
           )}
 
@@ -704,9 +745,20 @@ export default function TeamPage() {
                 </p>
               </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-                {workshopMembers.map((member) => renderMemberCard(member))}
-              </div>
+              {workshopMembers.length > 0 ? (
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                  {workshopMembers.map((member) => renderMemberCard(member))}
+                </div>
+              ) : (
+                <div className="rounded-3xl border border-dashed border-amber-500/20 bg-amber-500/[0.02] p-8 sm:p-10 text-center backdrop-blur-xl">
+                  <h4 className="text-base font-bold text-white font-[family-name:var(--font-google-sans)] mb-1">
+                    Team Members Being Finalized
+                  </h4>
+                  <p className="text-xs text-white/50 max-w-md mx-auto">
+                    Official appointments for the Workshop Team will be announced soon.
+                  </p>
+                </div>
+              )}
             </section>
           )}
 
@@ -727,9 +779,20 @@ export default function TeamPage() {
                 </p>
               </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-                {techMembers.map((member) => renderMemberCard(member))}
-              </div>
+              {techMembers.length > 0 ? (
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                  {techMembers.map((member) => renderMemberCard(member))}
+                </div>
+              ) : (
+                <div className="rounded-3xl border border-dashed border-sky-500/20 bg-sky-500/[0.02] p-8 sm:p-10 text-center backdrop-blur-xl">
+                  <h4 className="text-base font-bold text-white font-[family-name:var(--font-google-sans)] mb-1">
+                    Team Members Being Finalized
+                  </h4>
+                  <p className="text-xs text-white/50 max-w-md mx-auto">
+                    Official appointments for the Tech Team will be announced soon.
+                  </p>
+                </div>
+              )}
             </section>
           )}
 
@@ -750,9 +813,20 @@ export default function TeamPage() {
                 </p>
               </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-                {designMembers.map((member) => renderMemberCard(member))}
-              </div>
+              {designMembers.length > 0 ? (
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                  {designMembers.map((member) => renderMemberCard(member))}
+                </div>
+              ) : (
+                <div className="rounded-3xl border border-dashed border-[#f20089]/20 bg-[#f20089]/[0.02] p-8 sm:p-10 text-center backdrop-blur-xl">
+                  <h4 className="text-base font-bold text-white font-[family-name:var(--font-google-sans)] mb-1">
+                    Team Members Being Finalized
+                  </h4>
+                  <p className="text-xs text-white/50 max-w-md mx-auto">
+                    Official appointments for the Design Team will be announced soon.
+                  </p>
+                </div>
+              )}
             </section>
           )}
         </div>
