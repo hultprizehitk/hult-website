@@ -331,6 +331,12 @@ export default function Home() {
             >
               Timeline
             </a>
+            <Link
+              href="/team"
+              className="text-xs sm:text-sm font-semibold tracking-wide text-white/85 drop-shadow transition-colors duration-200 hover:text-[#f20089]"
+            >
+              Team
+            </Link>
             {status === "authenticated" && session?.user ? (
               <div className="flex items-center gap-3">
                 {["junior_admin", "lead_admin", "master_admin"].includes(
@@ -454,6 +460,13 @@ export default function Home() {
             >
               Timeline
             </a>
+            <Link
+              href="/team"
+              onClick={() => setMobileMenuOpen(false)}
+              className="text-base font-semibold text-white/90 hover:text-[#f20089] py-2 border-b border-white/5 transition-colors"
+            >
+              Team
+            </Link>
             <Link
               href="/register"
               onClick={() => setMobileMenuOpen(false)}
