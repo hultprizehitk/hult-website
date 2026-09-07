@@ -14,11 +14,15 @@ interface DashboardNavProps {
 export default function DashboardNav({ userEmail, isSuperAdmin }: DashboardNavProps) {
   const pathname = usePathname();
 
+  const isLiveEvent =
+    pathname?.includes("/dashboard/live-event") || pathname?.includes("/dashboard/live");
   const isEvents =
-    pathname === "/portal-hult-8f4b2c1e9a7d/dashboard" ||
-    pathname === "/portal-hult-8f4b2c1e9a7d/dashboard/";
+    !isLiveEvent &&
+    (pathname === "/portal-hult-8f4b2c1e9a7d/dashboard" ||
+      pathname === "/portal-hult-8f4b2c1e9a7d/dashboard/");
   const isStudents = pathname?.includes("/dashboard/student");
   const isAdmins = pathname?.includes("/dashboard/admin") || pathname?.includes("/dashboard/user");
+
 
   return (
     <>
@@ -85,7 +89,22 @@ export default function DashboardNav({ userEmail, isSuperAdmin }: DashboardNavPr
                 : "bg-white/[0.05] text-white/70 hover:text-white hover:bg-white/10"
             }`}
           >
-            📅 Events Manager
+            Events
+          </Link>
+
+          <Link
+            href="/portal-hult-8f4b2c1e9a7d/dashboard/live-event"
+            className={`relative flex items-center gap-2 rounded-xl px-5 py-2.5 text-xs sm:text-sm font-bold tracking-wide transition-all font-[family-name:var(--font-google-sans)] whitespace-nowrap ${
+              isLiveEvent
+                ? "bg-[#f20089] text-white shadow-lg shadow-[#f20089]/30"
+                : "bg-white/[0.05] text-white/70 hover:text-white hover:bg-white/10"
+            }`}
+          >
+            <span className="relative flex h-2 w-2">
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+              <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+            </span>
+            <span>Live Event</span>
           </Link>
 
           <Link

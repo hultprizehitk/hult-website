@@ -1,15 +1,48 @@
 import mongoose, { Schema, Document, Model } from "mongoose";
 
+export interface ITeamMember {
+  name: string;
+  email?: string;
+  department?: string;
+  phone?: string;
+  roll?: string;
+  joinedAt?: Date;
+}
+
+export interface IRegisteredTeam {
+  id: string;
+  teamCode?: string;
+  teamName: string;
+  ventureName?: string;
+  leadName: string;
+  leadEmail: string;
+  leadPhone?: string;
+  membersCount: number;
+  department: string;
+  members?: ITeamMember[];
+  registeredAt: Date;
+  status: "confirmed" | "pending" | "waitlist";
+}
+
 export interface IEvent extends Document {
   _id: mongoose.Types.ObjectId;
   title: string;
   tag: string;
   date: string;
+  startDate?: string;
+  endDate?: string;
   venue: string;
   description: string;
   link?: string;
   isPublished: boolean;
   order: number;
+  registrationStatus: "open" | "closed" | "extended" | "upcoming";
+  registrationDeadline?: string;
+  maxTeams: number;
+  minTeamMembers: number;
+  maxTeamMembers: number;
+  registeredTeamsCount: number;
+  registeredTeams: IRegisteredTeam[];
   createdAt: Date;
   updatedAt: Date;
 }
@@ -29,6 +62,16 @@ const EventSchema = new Schema<IEvent>(
     date: {
       type: String,
       required: [true, "Event date and time is required"],
+      trim: true,
+    },
+    startDate: {
+      type: String,
+      default: "",
+      trim: true,
+    },
+    endDate: {
+      type: String,
+      default: "",
       trim: true,
     },
     venue: {
@@ -54,6 +97,56 @@ const EventSchema = new Schema<IEvent>(
       type: Number,
       default: 0,
     },
+    registrationStatus: {
+      type: String,
+      enum: ["open", "closed", "extended", "upcoming"],
+      default: "open",
+    },
+    registrationDeadline: {
+      type: String,
+      default: "",
+    },
+    maxTeams: {
+      type: Number,
+      default: 40,
+    },
+    minTeamMembers: {
+      type: Number,
+      default: 3,
+    },
+    maxTeamMembers: {
+      type: Number,
+      default: 5,
+    },
+    registeredTeamsCount: {
+      type: Number,
+      default: 0,
+    },
+    registeredTeams: [
+      {
+        id: { type: String, default: () => new mongoose.Types.ObjectId().toString() },
+        teamCode: { type: String, default: "" },
+        teamName: { type: String, required: true },
+        ventureName: { type: String, default: "" },
+        leadName: { type: String, required: true },
+        leadEmail: { type: String, required: true },
+        leadPhone: { type: String, default: "" },
+        membersCount: { type: Number, default: 4 },
+        department: { type: String, default: "General" },
+        members: [
+          {
+            name: { type: String, default: "" },
+            email: { type: String, default: "" },
+            department: { type: String, default: "" },
+            phone: { type: String, default: "" },
+            roll: { type: String, default: "" },
+            joinedAt: { type: Date, default: Date.now },
+          },
+        ],
+        registeredAt: { type: Date, default: Date.now },
+        status: { type: String, enum: ["confirmed", "pending", "waitlist"], default: "confirmed" },
+      },
+    ],
   },
   {
     timestamps: true,

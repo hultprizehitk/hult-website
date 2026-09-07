@@ -1,0 +1,395 @@
+import { NextResponse } from "next/server";
+import { connectDB } from "@/lib/mongodb";
+import Event from "@/models/Event";
+import { auth } from "@/auth";
+import { sendRegistrationConfirmationEmail } from "@/lib/email-templates";
+
+// Helper to generate a distinctive, memorable Team Code (e.g. HULT-7X9K)
+function generateTeamCode(existingTeams: { teamCode?: string }[] = []): string {
+  const chars = "23456789ABCDEFGHJKLMNPQRSTUVWXYZ";
+  const existing = new Set(
+    existingTeams.map((t) => (t.teamCode || "").toUpperCase())
+  );
+  let code = "";
+  let attempts = 0;
+  do {
+    let suffix = "";
+    for (let i = 0; i < 4; i++) {
+      suffix += chars.charAt(Math.floor(Math.random() * chars.length));
+    }
+    code = `HULT-${suffix}`;
+    attempts++;
+  } while (existing.has(code) && attempts < 100);
+  return code;
+}
+
+// GET: Fetch user's registered teams / events (checks both leadEmail and members.email)
+export async function GET(req: Request) {
+  try {
+    const session = await auth();
+    if (!session?.user?.email) {
+      return NextResponse.json({ registrations: [] }, { status: 200 });
+    }
+
+    const userEmail = session.user.email.toLowerCase().trim();
+    const { searchParams } = new URL(req.url);
+    const eventId = searchParams.get("eventId");
+
+    await connectDB();
+
+    if (eventId) {
+      const event = await Event.findById(eventId);
+      if (!event) {
+        return NextResponse.json({ error: "Event not found" }, { status: 404 });
+      }
+
+      const userTeam = event.registeredTeams?.find(
+        (t: any) =>
+          t.leadEmail?.toLowerCase() === userEmail ||
+          t.members?.some((m: any) => m.email?.toLowerCase() === userEmail)
+      );
+
+      const isLead = userTeam?.leadEmail?.toLowerCase() === userEmail;
+
+      return NextResponse.json(
+        {
+          registered: Boolean(userTeam),
+          isLead,
+          team: userTeam || null,
+          event: {
+            id: event._id,
+            title: event.title,
+            tag: event.tag,
+            date: event.date,
+            venue: event.venue,
+            registrationStatus: event.registrationStatus,
+          },
+        },
+        { status: 200 }
+      );
+    }
+
+    // Fetch all events user has registered for (as lead or member)
+    const eventsWithUser = await Event.find({
+      $or: [
+        { "registeredTeams.leadEmail": userEmail },
+        { "registeredTeams.members.email": userEmail },
+      ],
+    }).sort({ createdAt: -1 });
+
+    const registrations = eventsWithUser.map((ev) => {
+      const team = ev.registeredTeams?.find(
+        (t: any) =>
+          t.leadEmail?.toLowerCase() === userEmail ||
+          t.members?.some((m: any) => m.email?.toLowerCase() === userEmail)
+      );
+      const isLead = team?.leadEmail?.toLowerCase() === userEmail;
+
+      return {
+        eventId: ev._id.toString(),
+        eventTitle: ev.title,
+        eventTag: ev.tag,
+        eventDate: ev.date,
+        eventVenue: ev.venue,
+        isLead,
+        team,
+      };
+    });
+
+    return NextResponse.json({ registrations }, { status: 200 });
+  } catch (error: unknown) {
+    console.error("GET /api/events/register error:", error);
+    return NextResponse.json({ error: "Failed to fetch registrations" }, { status: 500 });
+  }
+}
+
+// POST: Create Team (generates Team Code) OR Join Team (using Team Code)
+export async function POST(req: Request) {
+  try {
+    const session = await auth();
+    if (!session?.user?.email) {
+      return NextResponse.json(
+        {
+          error:
+            "Authentication required. Please sign in with your Heritage Institute college email (@heritageit.edu.in).",
+        },
+        { status: 401 }
+      );
+    }
+
+    const sessionEmail = session.user.email.toLowerCase().trim();
+    if (!sessionEmail.endsWith("@heritageit.edu.in")) {
+      return NextResponse.json(
+        {
+          error:
+            "Access restricted. Only verified Heritage Institute students (@heritageit.edu.in) can participate.",
+        },
+        { status: 403 }
+      );
+    }
+
+    const body = await req.json();
+    const action = body.action || (body.teamCode && !body.teamName ? "join" : "create");
+    const eventId = body.eventId;
+
+    if (!eventId) {
+      return NextResponse.json({ error: "Event ID is required." }, { status: 400 });
+    }
+
+    await connectDB();
+    const event = await Event.findById(eventId);
+
+    if (!event || event.isPublished === false) {
+      return NextResponse.json(
+        { error: "This event is not available or has not been published yet." },
+        { status: 404 }
+      );
+    }
+
+    if (event.registrationStatus === "closed") {
+      return NextResponse.json(
+        { error: "Registrations for this event are currently closed by the organizers." },
+        { status: 400 }
+      );
+    }
+
+    if (event.registrationDeadline) {
+      const deadlineDate = new Date(event.registrationDeadline);
+      if (!isNaN(deadlineDate.getTime()) && deadlineDate.getTime() < Date.now()) {
+        return NextResponse.json(
+          { error: "The registration deadline for this event has passed." },
+          { status: 400 }
+        );
+      }
+    }
+
+    const existingTeams = event.registeredTeams || [];
+
+    // Check if user is already registered in ANY team for this event (as lead or member)
+    const alreadyRegisteredTeam = existingTeams.find(
+      (t: any) =>
+        t.leadEmail?.toLowerCase() === sessionEmail ||
+        t.members?.some((m: any) => m.email?.toLowerCase() === sessionEmail)
+    );
+
+    // =========================================================================
+    // ACTION 1: JOIN TEAM WITH CODE
+    // =========================================================================
+    if (action === "join") {
+      const rawCode = body.teamCode;
+      if (!rawCode || typeof rawCode !== "string" || !rawCode.trim()) {
+        return NextResponse.json(
+          { error: "Please provide a valid Team Invite Code to join." },
+          { status: 400 }
+        );
+      }
+
+      const normalizedCode = rawCode.trim().toUpperCase();
+
+      // Find team with this code in this event
+      const targetTeam = existingTeams.find(
+        (t: any) => (t.teamCode || "").toUpperCase() === normalizedCode
+      );
+
+      if (!targetTeam) {
+        return NextResponse.json(
+          {
+            error: `No team found with Invite Code "${normalizedCode}" for "${event.title}". Please verify the code with your Team Leader.`,
+          },
+          { status: 404 }
+        );
+      }
+
+      // Check if user is already the lead of this team
+      if (targetTeam.leadEmail.toLowerCase() === sessionEmail) {
+        return NextResponse.json(
+          {
+            error: `You are the Team Leader of "${targetTeam.teamName}". Share this code (${targetTeam.teamCode}) with your teammates to invite them.`,
+          },
+          { status: 400 }
+        );
+      }
+
+      // Check if user is already a member of this team
+      if (targetTeam.members?.some((m: any) => m.email?.toLowerCase() === sessionEmail)) {
+        return NextResponse.json(
+          { error: `You have already joined team "${targetTeam.teamName}".` },
+          { status: 400 }
+        );
+      }
+
+      // Check if user is already in another team for this event
+      if (alreadyRegisteredTeam) {
+        return NextResponse.json(
+          {
+            error: `You are already registered in team "${alreadyRegisteredTeam.teamName}" for this event. A student can only be in one team per event.`,
+          },
+          { status: 409 }
+        );
+      }
+
+      // Check team capacity
+      const currentCount = 1 + (targetTeam.members?.length || 0);
+      const targetCapacity = targetTeam.membersCount || event.maxTeamMembers || 5;
+
+      if (currentCount >= targetCapacity) {
+        return NextResponse.json(
+          {
+            error: `Team "${targetTeam.teamName}" has reached its maximum capacity of ${targetCapacity} members.`,
+          },
+          { status: 400 }
+        );
+      }
+
+      // Add new member
+      if (!targetTeam.members) {
+        targetTeam.members = [];
+      }
+
+      const newMember = {
+        name: (body.name || session.user.name || "Student Co-Founder").trim(),
+        email: sessionEmail,
+        phone: (body.phone || body.leadPhone || "").trim(),
+        department: (body.department || "General").trim(),
+        roll: (body.roll || "").trim(),
+        joinedAt: new Date(),
+      };
+
+      targetTeam.members.push(newMember);
+      targetTeam.status = "confirmed";
+
+      await event.save();
+
+      // Dispatch Brevo email notification asynchronously
+      try {
+        await sendRegistrationConfirmationEmail({
+          name: newMember.name,
+          email: sessionEmail,
+          eventName: `${event.title} - Joined Team "${targetTeam.teamName}"`,
+        });
+      } catch (mailErr) {
+        console.warn("Notice: Member confirmation email dispatch failed:", mailErr);
+      }
+
+      return NextResponse.json(
+        {
+          success: true,
+          message: `Congratulations! You have successfully joined team "${targetTeam.teamName}".`,
+          team: targetTeam,
+          event: {
+            id: event._id,
+            title: event.title,
+            tag: event.tag,
+            date: event.date,
+            venue: event.venue,
+          },
+        },
+        { status: 200 }
+      );
+    }
+
+    // =========================================================================
+    // ACTION 2: CREATE TEAM & GENERATE TEAM CODE
+    // =========================================================================
+    const { teamName, ventureName, leadPhone, department, membersCount } = body;
+
+    if (!teamName || !teamName.trim()) {
+      return NextResponse.json({ error: "Team name is required." }, { status: 400 });
+    }
+
+    if (alreadyRegisteredTeam) {
+      return NextResponse.json(
+        {
+          error: `You are already registered in team "${alreadyRegisteredTeam.teamName}" for this event.`,
+        },
+        { status: 409 }
+      );
+    }
+
+    // Check duplicate team name in this event
+    const teamNameConflict = existingTeams.some(
+      (t: { teamName: string }) =>
+        t.teamName.trim().toLowerCase() === teamName.trim().toLowerCase()
+    );
+
+    if (teamNameConflict) {
+      return NextResponse.json(
+        {
+          error: `The team name "${teamName.trim()}" is already registered for this event. Please choose a unique name.`,
+        },
+        { status: 409 }
+      );
+    }
+
+    // Validate target team size bounds
+    const minMembers = event.minTeamMembers || 3;
+    const maxMembers = event.maxTeamMembers || 5;
+    const teamSize = Number(membersCount) || minMembers;
+
+    if (teamSize < minMembers || teamSize > maxMembers) {
+      return NextResponse.json(
+        {
+          error: `Team size violation: This event requires between ${minMembers} and ${maxMembers} members per team.`,
+        },
+        { status: 400 }
+      );
+    }
+
+    // Generate unique Team Code
+    const teamCode = generateTeamCode(existingTeams);
+
+    const verifiedLeadName = (body.leadName || session.user.name || "Student Leader").trim();
+
+    const newTeam = {
+      id: "team_" + Date.now() + "_" + Math.random().toString(36).substring(2, 7),
+      teamCode,
+      teamName: teamName.trim(),
+      ventureName: ventureName ? String(ventureName).trim() : "",
+      leadName: verifiedLeadName,
+      leadEmail: sessionEmail,
+      leadPhone: leadPhone ? String(leadPhone).trim() : "",
+      membersCount: teamSize,
+      department: department ? String(department).trim() : "General",
+      members: [],
+      registeredAt: new Date(),
+      status: "confirmed" as const,
+    };
+
+    event.registeredTeams.push(newTeam);
+    event.registeredTeamsCount = event.registeredTeams.length;
+    await event.save();
+
+    // Dispatch confirmation email to leader with their team code
+    try {
+      await sendRegistrationConfirmationEmail({
+        name: verifiedLeadName,
+        email: sessionEmail,
+        eventName: `${event.title} (Team: ${newTeam.teamName}, Code: ${teamCode})`,
+      });
+    } catch (mailErr) {
+      console.warn("Notice: Lead confirmation email dispatch failed:", mailErr);
+    }
+
+    return NextResponse.json(
+      {
+        success: true,
+        message: `Team "${newTeam.teamName}" created! Share code ${teamCode} with your teammates.`,
+        team: newTeam,
+        event: {
+          id: event._id,
+          title: event.title,
+          tag: event.tag,
+          date: event.date,
+          venue: event.venue,
+        },
+      },
+      { status: 201 }
+    );
+  } catch (error: unknown) {
+    console.error("POST /api/events/register error:", error);
+    return NextResponse.json(
+      { error: "An unexpected error occurred while processing your registration." },
+      { status: 500 }
+    );
+  }
+}

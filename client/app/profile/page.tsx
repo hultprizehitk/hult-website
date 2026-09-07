@@ -13,12 +13,24 @@ export default function StudentProfilePage() {
   const { data: session, status } = useSession();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
+  const [registrations, setRegistrations] = useState<any[]>([]);
+
   // If user is unauthenticated, redirect to registration/login
   useEffect(() => {
     if (status === "unauthenticated") {
       router.replace("/register");
     }
   }, [status, router]);
+
+  // Fetch student's registered events
+  useEffect(() => {
+    if (status === "authenticated") {
+      fetch("/api/events/register")
+        .then((res) => (res.ok ? res.json() : { registrations: [] }))
+        .then((data) => setRegistrations(data.registrations || []))
+        .catch((err) => console.error("Error fetching registered events:", err));
+    }
+  }, [status]);
 
   const studentInfo = session?.user?.email
     ? parseHeritageEmail(session.user.email, session.user.name)
@@ -355,6 +367,50 @@ export default function StudentProfilePage() {
                       </span>
                     </div>
                   </div>
+
+                  {/* Registered Events & Teams Tile */}
+                  {registrations && registrations.length > 0 && (
+                    <div className="rounded-2xl border border-[#f20089]/30 bg-[#f20089]/5 p-4 backdrop-blur-xl sm:col-span-2 space-y-2">
+                      <div className="flex items-center justify-between">
+                        <span className="block text-[10px] uppercase font-extrabold tracking-wider text-[#f20089]">
+                          🏆 My Registered Events ({registrations.length})
+                        </span>
+                        <Link
+                          href="/events"
+                          className="text-[10px] font-bold text-white/70 hover:text-white underline"
+                        >
+                          View All Events →
+                        </Link>
+                      </div>
+
+                      <div className="space-y-2 pt-1">
+                        {registrations.map((reg, idx) => (
+                          <div
+                            key={idx}
+                            className="rounded-xl border border-white/10 bg-black/40 p-3 flex items-center justify-between gap-3 text-xs"
+                          >
+                            <div>
+                              <div className="flex items-center gap-2">
+                                <span className="font-bold text-white">{reg.eventTitle}</span>
+                                <span className="rounded-full bg-[#f20089]/20 border border-[#f20089]/40 px-2 py-0.2 text-[9px] font-bold text-[#f20089] uppercase">
+                                  {reg.eventTag}
+                                </span>
+                              </div>
+                              <span className="text-[11px] text-white/60 block mt-0.5">
+                                Team: <strong className="text-white">{reg.team?.teamName}</strong> ({reg.team?.membersCount} Members)
+                              </span>
+                            </div>
+                            <Link
+                              href="/events"
+                              className="rounded-lg bg-emerald-500/20 border border-emerald-500/40 text-emerald-300 px-2.5 py-1 text-[10px] font-bold whitespace-nowrap hover:bg-emerald-500/30 transition-all"
+                            >
+                              ✓ Pass Confirmed
+                            </Link>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
                 </div>
 
                 {/* Action Buttons */}

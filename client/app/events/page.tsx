@@ -7,21 +7,73 @@ import { useSession, signOut } from "next-auth/react";
 import AnimatedGradient from "@/components/ui/animated-gradient";
 import DistressedEventsTitle from "@/components/sections/DistressedEventsTitle";
 
-interface PublicEvent {
+export interface PublicEvent {
   _id: string;
   title: string;
   tag: string;
   date: string;
+  startDate?: string;
+  endDate?: string;
   venue: string;
   description: string;
   link?: string;
+  registrationStatus?: "open" | "closed" | "extended" | "upcoming";
+  registrationDeadline?: string;
+  registeredTeamsCount?: number;
+  maxTeams?: number;
+  minTeamMembers?: number;
+  maxTeamMembers?: number;
 }
+
+import EventInsideView from "./components/EventInsideView";
 
 export default function EventsPage() {
   const { data: session, status } = useSession();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [events, setEvents] = useState<PublicEvent[]>([]);
   const [loading, setLoading] = useState(true);
+
+  // User event registration tracking: eventId -> registered team data
+  const [userRegistrations, setUserRegistrations] = useState<Record<string, any>>({});
+  const [selectedEventId, setSelectedEventId] = useState<string | null>(null);
+
+  // Sync selectedEventId with URL parameter "?event=[id]"
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const params = new URLSearchParams(window.location.search);
+      const eventIdParam = params.get("event");
+      if (eventIdParam) {
+        setSelectedEventId(eventIdParam);
+      }
+
+      const onPopState = () => {
+        const p = new URLSearchParams(window.location.search);
+        setSelectedEventId(p.get("event"));
+      };
+      window.addEventListener("popstate", onPopState);
+      return () => window.removeEventListener("popstate", onPopState);
+    }
+  }, []);
+
+  const handleSelectEvent = (event: PublicEvent) => {
+    setSelectedEventId(event._id);
+    if (typeof window !== "undefined") {
+      const url = new URL(window.location.href);
+      url.searchParams.set("event", event._id);
+      window.history.pushState({}, "", url.toString());
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    }
+  };
+
+  const handleBackToEvents = () => {
+    setSelectedEventId(null);
+    if (typeof window !== "undefined") {
+      const url = new URL(window.location.href);
+      url.searchParams.delete("event");
+      window.history.pushState({}, "", url.toString());
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    }
+  };
 
   useEffect(() => {
     fetch("/api/events")
@@ -30,6 +82,22 @@ export default function EventsPage() {
       .catch((err) => console.error("Error loading events:", err))
       .finally(() => setLoading(false));
   }, []);
+
+  // Fetch logged-in student's registrations
+  useEffect(() => {
+    if (status === "authenticated" && session?.user?.email) {
+      fetch("/api/events/register")
+        .then((res) => (res.ok ? res.json() : { registrations: [] }))
+        .then((data) => {
+          const map: Record<string, any> = {};
+          (data.registrations || []).forEach((reg: any) => {
+            if (reg.eventId) map[reg.eventId] = reg.team;
+          });
+          setUserRegistrations(map);
+        })
+        .catch((err) => console.error("Error loading user registrations:", err));
+    }
+  }, [status, session]);
 
   return (
     <div className="relative min-h-screen w-full bg-black font-sans text-white selection:bg-[#f20089] selection:text-white overflow-x-hidden flex flex-col justify-between">
@@ -92,12 +160,13 @@ export default function EventsPage() {
           >
             About
           </Link>
-          <Link
-            href="/events"
-            className="text-xs sm:text-sm font-semibold tracking-wide text-white/85 drop-shadow transition-colors duration-200 hover:text-white"
+          <button
+            type="button"
+            onClick={handleBackToEvents}
+            className="text-xs sm:text-sm font-semibold tracking-wide text-white drop-shadow transition-colors duration-200 hover:text-[#f20089] cursor-pointer"
           >
             Events
-          </Link>
+          </button>
           <Link
             href="/#challenge"
             className="text-xs sm:text-sm font-semibold tracking-wide text-white/85 drop-shadow transition-colors duration-200 hover:text-white"
@@ -218,13 +287,16 @@ export default function EventsPage() {
           >
             About
           </Link>
-          <Link
-            href="/events"
-            onClick={() => setMobileMenuOpen(false)}
-            className="text-base font-semibold text-white/90 hover:text-[#f20089] py-2 border-b border-white/5 transition-colors"
+          <button
+            type="button"
+            onClick={() => {
+              setMobileMenuOpen(false);
+              handleBackToEvents();
+            }}
+            className="text-left text-base font-semibold text-white/90 hover:text-[#f20089] py-2 border-b border-white/5 transition-colors cursor-pointer"
           >
             Events
-          </Link>
+          </button>
           <Link
             href="/#challenge"
             onClick={() => setMobileMenuOpen(false)}
@@ -258,62 +330,203 @@ export default function EventsPage() {
 
       {/* 
         ========================================================================
-        MAIN SECTION (Distressed Events Typography & Dynamic Published Events)
+        MAIN CONTENT: IN-PAGE EVENT STUDIO OR EVENTS GRID (ZERO POPUP MODALS)
         ========================================================================
       */}
-      <main className="relative z-10 flex-1 flex flex-col items-center justify-center max-w-6xl mx-auto px-4 sm:px-6 text-center py-16 sm:py-20 w-full">
-        {/* Distressed Gothic Spurred Title */}
-        <DistressedEventsTitle text="EVENTS" className="mb-8" />
+      <main className="relative z-10 flex-1 flex flex-col items-center justify-center max-w-6xl mx-auto px-4 sm:px-6 text-center py-12 sm:py-16 w-full">
+        {selectedEventId ? (
+          (() => {
+            const currentEvent = events.find((e) => e._id === selectedEventId);
 
-        {/* Dynamic Events Grid */}
-        {loading ? (
-          <div className="py-12 text-white/50 text-xs tracking-widest uppercase animate-pulse">
-            Syncing schedule...
-          </div>
-        ) : events.length > 0 ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 w-full text-left mt-4 animate-fadeIn">
-            {events.map((event) => (
-              <div
-                key={event._id}
-                className="group relative overflow-hidden rounded-3xl border border-white/15 bg-white/[0.03] p-6 backdrop-blur-2xl flex flex-col justify-between transition-all duration-300 hover:border-[#f20089]/60 hover:bg-white/[0.06] hover:shadow-[0_15px_35px_rgba(242,0,137,0.2)]"
-              >
-                <div>
-                  <div className="flex items-center justify-between gap-2 mb-3">
-                    <span className="rounded-full bg-[#f20089]/20 border border-[#f20089]/50 px-3 py-0.5 text-[10px] font-bold uppercase tracking-wider text-[#f20089]">
-                      {event.tag}
-                    </span>
+            if (loading) {
+              return (
+                <div className="py-24 text-center space-y-4">
+                  <div className="inline-flex h-10 w-10 animate-spin rounded-full border-2 border-white/20 border-t-[#f20089]" />
+                  <div className="text-white/50 text-xs tracking-widest uppercase animate-pulse">
+                    Loading Event Studio...
                   </div>
-
-                  <h3 className="text-xl font-bold text-white mb-3 font-[family-name:var(--font-google-sans)] group-hover:text-pink-100 transition-colors">
-                    {event.title}
-                  </h3>
-
-                  <div className="space-y-1.5 text-xs text-neutral-300 mb-4 font-sans">
-                    <div className="flex items-center gap-2">
-                      <span className="text-white/50">📅</span>
-                      <span className="font-semibold text-white">{event.date}</span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <span className="text-white/50">📍</span>
-                      <span className="text-white/80">{event.venue}</span>
-                    </div>
-                  </div>
-
-                  <p className="text-xs text-neutral-400 line-clamp-3 leading-relaxed mb-6 font-sans">
-                    {event.description}
-                  </p>
                 </div>
+              );
+            }
 
-                <Link
-                  href={event.link || "/register"}
-                  className="inline-flex items-center justify-center rounded-full bg-[#f20089] hover:bg-[#d8007a] px-5 py-2 text-xs font-bold text-white shadow-md shadow-[#f20089]/40 transition-all group-hover:scale-[1.02] font-[family-name:var(--font-google-sans)]"
-                >
-                  <span>{event.link ? "Learn More & RSVP →" : "Register for Event →"}</span>
-                </Link>
+            if (!currentEvent) {
+              return (
+                <div className="py-20 text-center space-y-4 font-[family-name:var(--font-google-sans)] animate-fadeIn">
+                  <span className="text-4xl block">🔍</span>
+                  <h2 className="text-2xl font-bold text-white">Event Not Found</h2>
+                  <p className="text-xs text-white/60 max-w-md mx-auto">
+                    The event you selected could not be found or may have been updated by the organizing committee.
+                  </p>
+                  <div className="pt-2">
+                    <button
+                      type="button"
+                      onClick={handleBackToEvents}
+                      className="rounded-full bg-[#f20089] hover:bg-[#d8007a] px-6 py-2.5 text-xs font-bold text-white shadow-lg shadow-[#f20089]/30 transition-all cursor-pointer"
+                    >
+                      ← Back to All Events
+                    </button>
+                  </div>
+                </div>
+              );
+            }
+
+            return (
+              <EventInsideView
+                event={currentEvent}
+                sessionUser={session?.user || null}
+                registeredTeam={userRegistrations[currentEvent._id] || null}
+                onBack={handleBackToEvents}
+                onRegisterSuccess={(teamData) => {
+                  setUserRegistrations((prev) => ({
+                    ...prev,
+                    [currentEvent._id]: teamData,
+                  }));
+                }}
+              />
+            );
+          })()
+        ) : (
+          <>
+            {/* Distressed Gothic Spurred Title */}
+            <DistressedEventsTitle text="EVENTS" className="mb-8" />
+
+            {/* Dynamic Events Grid */}
+            {loading ? (
+              <div className="py-12 text-white/50 text-xs tracking-widest uppercase animate-pulse">
+                Syncing schedule...
               </div>
-            ))}
-          </div>
-        ) : null}
+            ) : events.length > 0 ? (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 w-full text-left mt-4 animate-fadeIn">
+                {events.map((event) => (
+                  <div
+                    key={event._id}
+                    onClick={() => handleSelectEvent(event)}
+                    className="group relative overflow-hidden rounded-3xl border border-white/15 bg-white/[0.03] p-6 backdrop-blur-2xl flex flex-col justify-between transition-all duration-300 hover:border-[#f20089]/60 hover:bg-white/[0.06] hover:shadow-[0_15px_35px_rgba(242,0,137,0.2)] cursor-pointer"
+                  >
+                    <div>
+                      <div className="flex items-center justify-between gap-2 mb-3">
+                        <span className="rounded-full bg-[#f20089]/20 border border-[#f20089]/50 px-3 py-0.5 text-[10px] font-bold uppercase tracking-wider text-[#f20089]">
+                          {event.tag}
+                        </span>
+
+                        {event.registrationStatus === "closed" ? (
+                          <span className="rounded-full bg-red-500/20 border border-red-500/40 px-2.5 py-0.5 text-[10px] font-bold text-red-300 uppercase tracking-wider">
+                            Closed
+                          </span>
+                        ) : event.registrationStatus === "extended" ? (
+                          <span className="inline-flex items-center gap-1.5 rounded-full bg-purple-500/20 border border-purple-500/40 px-2.5 py-0.5 text-[10px] font-bold text-purple-300 uppercase tracking-wider">
+                            <span className="h-1.5 w-1.5 rounded-full bg-purple-400 animate-pulse" />
+                            Extended
+                          </span>
+                        ) : (
+                          <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-500/20 border border-emerald-500/40 px-2.5 py-0.5 text-[10px] font-bold text-emerald-300 uppercase tracking-wider">
+                            <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                            Registering
+                          </span>
+                        )}
+                      </div>
+
+                      <h3 className="text-xl font-bold text-white mb-3 font-[family-name:var(--font-google-sans)] group-hover:text-pink-100 transition-colors">
+                        {event.title}
+                      </h3>
+
+                      <div className="space-y-1.5 text-xs text-neutral-300 mb-4 font-sans">
+                        <div className="flex items-center gap-2">
+                          <span className="text-white/50">📅</span>
+                          <span className="font-semibold text-white">{event.date}</span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <span className="text-white/50">📍</span>
+                          <span className="text-white/80">{event.venue}</span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <span className="text-white/50">👥</span>
+                          <span className="text-white/80">
+                            Team Size:{" "}
+                            <strong className="text-white font-semibold">
+                              {event.minTeamMembers || 3} to {event.maxTeamMembers || 5} Members
+                            </strong>
+                          </span>
+                        </div>
+                      </div>
+
+                      <p className="text-xs text-neutral-400 line-clamp-3 leading-relaxed mb-6 font-sans">
+                        {event.description}
+                      </p>
+                    </div>
+
+                    {/* Registration Action Buttons */}
+                    {(() => {
+                      const registeredTeam = userRegistrations[event._id];
+
+                      if (registeredTeam) {
+                        return (
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleSelectEvent(event);
+                            }}
+                            className="inline-flex items-center justify-center gap-1.5 rounded-full bg-emerald-500/20 border border-emerald-500/40 hover:bg-emerald-500/30 px-5 py-2 text-xs font-bold text-emerald-300 shadow-md shadow-emerald-500/20 transition-all cursor-pointer font-[family-name:var(--font-google-sans)] group-hover:scale-[1.02]"
+                          >
+                            <span>✓ Team Registered (View Pass) →</span>
+                          </button>
+                        );
+                      }
+
+                      if (event.registrationStatus === "closed") {
+                        return (
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleSelectEvent(event);
+                            }}
+                            className="inline-flex items-center justify-center rounded-full bg-white/[0.06] hover:bg-white/10 border border-white/10 px-5 py-2 text-xs font-semibold text-white/60 font-[family-name:var(--font-google-sans)] cursor-pointer transition-all"
+                          >
+                            <span>Registrations Closed (View Details) →</span>
+                          </button>
+                        );
+                      }
+
+                      return (
+                        <div className="flex items-center gap-2 flex-wrap w-full">
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleSelectEvent(event);
+                            }}
+                            className="flex-1 inline-flex items-center justify-center rounded-full bg-[#f20089] hover:bg-[#d8007a] px-5 py-2.5 text-xs font-bold text-white shadow-md shadow-[#f20089]/40 transition-all group-hover:scale-[1.02] font-[family-name:var(--font-google-sans)] cursor-pointer"
+                          >
+                            <span>
+                              {event.registrationStatus === "extended"
+                                ? "Register Team (Extended) →"
+                                : "Register Team →"}
+                            </span>
+                          </button>
+
+                          {event.link && event.link.startsWith("http") && (
+                            <a
+                              href={event.link}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              onClick={(e) => e.stopPropagation()}
+                              className="rounded-full bg-white/[0.08] hover:bg-white/15 border border-white/15 px-3.5 py-2.5 text-xs font-semibold text-white/80 hover:text-white transition-all font-[family-name:var(--font-google-sans)] whitespace-nowrap"
+                              title="External event details / RSVP link"
+                            >
+                              <span>RSVP ↗</span>
+                            </a>
+                          )}
+                        </div>
+                      );
+                    })()}
+                  </div>
+                ))}
+              </div>
+            ) : null}
+          </>
+        )}
       </main>
 
       {/* Footer */}
