@@ -402,9 +402,13 @@ export default function StudentProfilePage() {
                             </div>
                             <Link
                               href="/events"
-                              className="rounded-lg bg-emerald-500/20 border border-emerald-500/40 text-emerald-300 px-2.5 py-1 text-[10px] font-bold whitespace-nowrap hover:bg-emerald-500/30 transition-all"
+                              className={`rounded-lg px-2.5 py-1 text-[10px] font-bold whitespace-nowrap transition-all ${
+                                reg.team?.status === "pending"
+                                  ? "bg-amber-500/20 border border-amber-500/40 text-amber-300 hover:bg-amber-500/30"
+                                  : "bg-emerald-500/20 border border-emerald-500/40 text-emerald-300 hover:bg-emerald-500/30"
+                              }`}
                             >
-                              ✓ Pass Confirmed
+                              {reg.team?.status === "pending" ? "⚠️ Roster Incomplete" : "✓ Pass Confirmed"}
                             </Link>
                           </div>
                         ))}

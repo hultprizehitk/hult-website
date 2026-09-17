@@ -44,7 +44,8 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
         console.log(`[Google OAuth Attempt] User email: ${email}`);
 
         // STRICT DOMAIN RESTRICTION: ONLY @heritageit.edu.in
-        if (!email.endsWith("@heritageit.edu.in")) {
+        const domain = email.split("@")[1];
+        if (domain !== "heritageit.edu.in") {
           console.warn(`[Security Alert] Denied Google sign-in for non-heritage domain: ${email}`);
           return "/register?error=DomainRestricted";
         }

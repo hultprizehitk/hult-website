@@ -1,8 +1,10 @@
 import { NextResponse } from "next/server";
+import mongoose from "mongoose";
 import { connectDB } from "@/lib/mongodb";
 import Event from "@/models/Event";
 import { auth } from "@/auth";
 import { sendRegistrationConfirmationEmail } from "@/lib/email-templates";
+import { checkRateLimit, getClientIp } from "@/lib/rate-limit";
 
 // Helper to generate a distinctive, memorable Team Code (e.g. HULT-7X9K)
 function generateTeamCode(existingTeams: { teamCode?: string }[] = []): string {
@@ -38,6 +40,9 @@ export async function GET(req: Request) {
     await connectDB();
 
     if (eventId) {
+      if (!mongoose.Types.ObjectId.isValid(eventId)) {
+        return NextResponse.json({ error: "Invalid event ID format." }, { status: 400 });
+      }
       const event = await Event.findById(eventId);
       if (!event) {
         return NextResponse.json({ error: "Event not found" }, { status: 404 });
@@ -118,7 +123,8 @@ export async function POST(req: Request) {
     }
 
     const sessionEmail = session.user.email.toLowerCase().trim();
-    if (!sessionEmail.endsWith("@heritageit.edu.in")) {
+    const domain = sessionEmail.split("@")[1];
+    if (domain !== "heritageit.edu.in") {
       return NextResponse.json(
         {
           error:
@@ -128,12 +134,27 @@ export async function POST(req: Request) {
       );
     }
 
+    // Rate limiting: max 15 registration actions per minute per student/IP
+    const clientIp = getClientIp(req);
+    const rateCheck = checkRateLimit(`reg_${sessionEmail}_${clientIp}`, {
+      limit: 15,
+      windowMs: 60000,
+    });
+    if (!rateCheck.success) {
+      return NextResponse.json(
+        {
+          error: "Too many registration attempts. Please wait a moment before trying again.",
+        },
+        { status: 429 }
+      );
+    }
+
     const body = await req.json();
     const action = body.action || (body.teamCode && !body.teamName ? "join" : "create");
     const eventId = body.eventId;
 
-    if (!eventId) {
-      return NextResponse.json({ error: "Event ID is required." }, { status: 400 });
+    if (!eventId || typeof eventId !== "string" || !mongoose.Types.ObjectId.isValid(eventId)) {
+      return NextResponse.json({ error: "Valid Event ID is required." }, { status: 400 });
     }
 
     await connectDB();
@@ -256,7 +277,9 @@ export async function POST(req: Request) {
       };
 
       targetTeam.members.push(newMember);
-      targetTeam.status = "confirmed";
+      const minMembers = event.minTeamMembers || 3;
+      const totalJoined = 1 + targetTeam.members.length;
+      targetTeam.status = totalJoined >= minMembers ? "confirmed" : "pending";
 
       await event.save();
 
@@ -324,7 +347,7 @@ export async function POST(req: Request) {
     // Validate target team size bounds
     const minMembers = event.minTeamMembers || 3;
     const maxMembers = event.maxTeamMembers || 5;
-    const teamSize = Number(membersCount) || minMembers;
+    const teamSize = Number(membersCount) || maxMembers;
 
     if (teamSize < minMembers || teamSize > maxMembers) {
       return NextResponse.json(
@@ -352,7 +375,7 @@ export async function POST(req: Request) {
       department: department ? String(department).trim() : "General",
       members: [],
       registeredAt: new Date(),
-      status: "confirmed" as const,
+      status: (1 >= minMembers ? "confirmed" : "pending") as "confirmed" | "pending",
     };
 
     event.registeredTeams.push(newTeam);

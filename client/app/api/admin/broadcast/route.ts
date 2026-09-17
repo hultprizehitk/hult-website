@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { isAuthorizedAdmin } from "@/lib/admin-check";
 import { sendEmail, Recipient } from "@/lib/brevo";
+import { checkRateLimit, getClientIp } from "@/lib/rate-limit";
 
 function unauthorizedResponse() {
   return NextResponse.json({ error: "Not Found" }, { status: 404 });
@@ -13,6 +14,21 @@ function delay(ms: number): Promise<void> {
 export async function POST(req: Request) {
   const isAdmin = await isAuthorizedAdmin(req);
   if (!isAdmin) return unauthorizedResponse();
+
+  // Rate limiting: max 5 bulk broadcasts per 10 minutes per IP
+  const clientIp = getClientIp(req);
+  const rateCheck = checkRateLimit(`admin_broadcast_${clientIp}`, {
+    limit: 5,
+    windowMs: 600000,
+  });
+  if (!rateCheck.success) {
+    return NextResponse.json(
+      {
+        error: "Broadcast rate limit exceeded. Please wait 10 minutes before launching another bulk broadcast.",
+      },
+      { status: 429 }
+    );
+  }
 
   let body: Record<string, unknown>;
   try {

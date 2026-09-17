@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import mongoose from "mongoose";
 import { connectDB } from "@/lib/mongodb";
 import Event from "@/models/Event";
 import { isAuthorizedAdmin } from "@/lib/admin-check";
@@ -119,8 +120,8 @@ export async function PUT(req: Request) {
       extensionHours,
     } = body;
 
-    if (!id) {
-      return NextResponse.json({ error: "Event ID is required." }, { status: 400 });
+    if (!id || typeof id !== "string" || !mongoose.Types.ObjectId.isValid(id)) {
+      return NextResponse.json({ error: "Valid Event ID is required." }, { status: 400 });
     }
 
     await connectDB();
@@ -279,8 +280,8 @@ export async function DELETE(req: Request) {
     const { searchParams } = new URL(req.url);
     const id = searchParams.get("id");
 
-    if (!id) {
-      return NextResponse.json({ error: "Event ID is required." }, { status: 400 });
+    if (!id || typeof id !== "string" || !mongoose.Types.ObjectId.isValid(id)) {
+      return NextResponse.json({ error: "Valid Event ID is required." }, { status: 400 });
     }
 
     await connectDB();

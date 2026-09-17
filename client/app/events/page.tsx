@@ -460,6 +460,9 @@ export default function EventsPage() {
                       const registeredTeam = userRegistrations[event._id];
 
                       if (registeredTeam) {
+                        const totalJoined = 1 + (registeredTeam.members?.length || 0);
+                        const minReq = event.minTeamMembers || 3;
+                        const isComplete = totalJoined >= minReq;
                         return (
                           <button
                             type="button"
@@ -467,9 +470,17 @@ export default function EventsPage() {
                               e.stopPropagation();
                               handleSelectEvent(event);
                             }}
-                            className="inline-flex items-center justify-center gap-1.5 rounded-full bg-emerald-500/20 border border-emerald-500/40 hover:bg-emerald-500/30 px-5 py-2 text-xs font-bold text-emerald-300 shadow-md shadow-emerald-500/20 transition-all cursor-pointer font-[family-name:var(--font-google-sans)] group-hover:scale-[1.02]"
+                            className={`inline-flex items-center justify-center gap-1.5 rounded-full px-5 py-2 text-xs font-bold shadow-md transition-all cursor-pointer font-[family-name:var(--font-google-sans)] group-hover:scale-[1.02] ${
+                              isComplete
+                                ? "bg-emerald-500/20 border border-emerald-500/40 hover:bg-emerald-500/30 text-emerald-300 shadow-emerald-500/20"
+                                : "bg-amber-500/20 border border-amber-500/40 hover:bg-amber-500/30 text-amber-300 shadow-amber-500/20"
+                            }`}
                           >
-                            <span>✓ Team Registered (View Pass) →</span>
+                            <span>
+                              {isComplete
+                                ? "✓ Team Registered (Confirmed) →"
+                                : `⚠️ Roster Incomplete (${totalJoined}/${minReq} Min) →`}
+                            </span>
                           </button>
                         );
                       }
