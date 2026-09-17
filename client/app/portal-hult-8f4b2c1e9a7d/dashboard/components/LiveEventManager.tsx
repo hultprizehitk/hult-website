@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef, useCallback } from "react";
 
 interface SchedulePhase {
   id: string;
@@ -274,6 +274,82 @@ export default function LiveEventManager() {
     }
   }, [attendees]);
 
+  // -------------------------------------------------------------
+  // Cloud Database Synchronization Engine (/api/admin/live)
+  // -------------------------------------------------------------
+  const [cloudSyncing, setCloudSyncing] = useState(false);
+  const [cloudSyncedAt, setCloudSyncedAt] = useState<Date | null>(null);
+  const initialCloudLoadDone = useRef(false);
+
+  // 1. Initial Cloud Fetch & Hydration
+  const loadCloudState = useCallback(async () => {
+    setCloudSyncing(true);
+    try {
+      const res = await fetch("/api/admin/live");
+      if (res.ok) {
+        const data = await res.json();
+        if (data?.liveState) {
+          const ls = data.liveState;
+          if (Array.isArray(ls.phases) && ls.phases.length > 0) {
+            setPhases(ls.phases);
+          }
+          if (Array.isArray(ls.teams) && ls.teams.length > 0) {
+            setTeams(ls.teams);
+          }
+          if (Array.isArray(ls.attendees) && ls.attendees.length > 0) {
+            setAttendees(ls.attendees);
+          }
+          if (ls.timerSeconds !== undefined && ls.timerSeconds > 0) {
+            setTimerSeconds(ls.timerSeconds);
+          }
+          if (ls.activePreset) {
+            setActivePreset(ls.activePreset);
+          }
+          setCloudSyncedAt(new Date());
+        }
+      }
+    } catch (err) {
+      console.warn("Notice: Initial live event cloud sync failed, using local copy:", err);
+    } finally {
+      initialCloudLoadDone.current = true;
+      setCloudSyncing(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    loadCloudState();
+  }, [loadCloudState]);
+
+  // 2. Debounced push to MongoDB cloud
+  useEffect(() => {
+    if (!initialCloudLoadDone.current) return;
+
+    const timer = setTimeout(async () => {
+      try {
+        setCloudSyncing(true);
+        await fetch("/api/admin/live", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            phases,
+            teams,
+            attendees,
+            timerSeconds,
+            timerRunning,
+            activePreset,
+          }),
+        });
+        setCloudSyncedAt(new Date());
+      } catch (err) {
+        console.error("Auto cloud sync error:", err);
+      } finally {
+        setCloudSyncing(false);
+      }
+    }, 1500);
+
+    return () => clearTimeout(timer);
+  }, [phases, teams, attendees, timerSeconds, timerRunning, activePreset]);
+
   const [attendeeSearch, setAttendeeSearch] = useState("");
   const [fastCheckInInput, setFastCheckInInput] = useState("");
 
@@ -443,6 +519,22 @@ export default function LiveEventManager() {
 
         {/* Action Controls */}
         <div className="flex items-center gap-2.5 flex-wrap">
+          <button
+            type="button"
+            onClick={loadCloudState}
+            disabled={cloudSyncing}
+            className="rounded-2xl border border-white/15 bg-white/[0.06] hover:bg-white/[0.12] px-3.5 py-2.5 text-xs font-semibold text-white/90 hover:text-white transition-all flex items-center gap-1.5 cursor-pointer shadow-md"
+            title="Reload from MongoDB database"
+          >
+            <span className={cloudSyncing ? "animate-spin" : ""}>🔄</span>
+            <span>{cloudSyncing ? "Syncing..." : "Sync Cloud"}</span>
+          </button>
+          {cloudSyncedAt && (
+            <span className="hidden sm:inline-flex items-center gap-1.5 rounded-full bg-emerald-500/15 border border-emerald-500/30 px-3 py-1 text-[11px] font-bold text-emerald-300">
+              <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse" />
+              <span>DB Connected</span>
+            </span>
+          )}
           <button
             type="button"
             onClick={() => setProjectorMode(true)}

@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import mongoose from "mongoose";
 import { connectDB } from "@/lib/mongodb";
 import Event from "@/models/Event";
+import Team from "@/models/Team";
 import { auth } from "@/auth";
 import { sendRegistrationConfirmationEmail } from "@/lib/email-templates";
 import { checkRateLimit, getClientIp } from "@/lib/rate-limit";
@@ -25,17 +26,17 @@ function generateTeamCode(existingTeams: { teamCode?: string }[] = []): string {
   return code;
 }
 
-// GET: Fetch user's registered teams / events (checks both leadEmail and members.email)
+// GET: Check registration status of the logged-in user
 export async function GET(req: Request) {
   try {
     const session = await auth();
     if (!session?.user?.email) {
-      return NextResponse.json({ registrations: [] }, { status: 200 });
+      return NextResponse.json({ registered: false, team: null }, { status: 200 });
     }
 
     const userEmail = session.user.email.toLowerCase().trim();
-    const { searchParams } = new URL(req.url);
-    const eventId = searchParams.get("eventId");
+    const url = new URL(req.url);
+    const eventId = url.searchParams.get("eventId");
 
     await connectDB();
 
@@ -48,13 +49,37 @@ export async function GET(req: Request) {
         return NextResponse.json({ error: "Event not found" }, { status: 404 });
       }
 
-      const userTeam = event.registeredTeams?.find(
+      // Check normalized Team collection first
+      const normalizedTeam = await Team.findOne({
+        eventId: event._id,
+        $or: [{ leadEmail: userEmail }, { "members.email": userEmail }],
+      }).lean();
+
+      // Fallback to legacy embedded array if not yet migrated
+      const legacyTeam = event.registeredTeams?.find(
         (t: any) =>
           t.leadEmail?.toLowerCase() === userEmail ||
           t.members?.some((m: any) => m.email?.toLowerCase() === userEmail)
       );
 
-      const isLead = userTeam?.leadEmail?.toLowerCase() === userEmail;
+      const userTeam = normalizedTeam
+        ? {
+            id: normalizedTeam._id.toString(),
+            teamCode: normalizedTeam.teamCode,
+            teamName: normalizedTeam.teamName,
+            ventureName: normalizedTeam.ventureName,
+            leadName: normalizedTeam.lead.name,
+            leadEmail: normalizedTeam.lead.email,
+            leadPhone: normalizedTeam.lead.phone,
+            department: normalizedTeam.department,
+            membersCount: normalizedTeam.membersCount,
+            members: normalizedTeam.members,
+            registeredAt: normalizedTeam.registeredAt,
+            status: normalizedTeam.status,
+          }
+        : legacyTeam;
+
+      const isLead = (userTeam?.leadEmail || (userTeam as any)?.lead?.email)?.toLowerCase() === userEmail;
 
       return NextResponse.json(
         {
@@ -283,6 +308,21 @@ export async function POST(req: Request) {
 
       await event.save();
 
+      // Synchronize join with normalized Team model
+      if (targetTeam.teamCode) {
+        try {
+          await Team.findOneAndUpdate(
+            { teamCode: targetTeam.teamCode.toUpperCase() },
+            {
+              $push: { members: newMember },
+              $set: { status: totalJoined >= minMembers ? "confirmed" : "pending" },
+            }
+          );
+        } catch (teamSyncErr) {
+          console.warn("Normalized team sync notice:", teamSyncErr);
+        }
+      }
+
       // Dispatch Brevo email notification asynchronously
       try {
         await sendRegistrationConfirmationEmail({
@@ -381,6 +421,31 @@ export async function POST(req: Request) {
     event.registeredTeams.push(newTeam);
     event.registeredTeamsCount = event.registeredTeams.length;
     await event.save();
+
+    // Persist to normalized Team collection
+    try {
+      await Team.create({
+        eventId: event._id,
+        teamCode: teamCode.toUpperCase(),
+        teamName: newTeam.teamName,
+        ventureName: newTeam.ventureName,
+        lead: {
+          name: verifiedLeadName,
+          email: sessionEmail,
+          phone: newTeam.leadPhone,
+          department: newTeam.department,
+        },
+        leadEmail: sessionEmail,
+        membersCount: newTeam.membersCount,
+        department: newTeam.department,
+        members: [],
+        status: newTeam.status,
+        checkedIn: false,
+        registeredAt: new Date(),
+      });
+    } catch (teamCreateErr) {
+      console.warn("Normalized Team creation warning:", teamCreateErr);
+    }
 
     // Dispatch confirmation email to leader with their team code
     try {

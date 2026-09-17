@@ -149,11 +149,24 @@ export default function EventsManager() {
     if (typeof window !== "undefined") {
       const params = new URLSearchParams(window.location.search);
       const eventId = params.get("event");
+      const tab = params.get("tab") as "details" | "registration" | "teams" | null;
       if (eventId) {
         setSelectedEventId(eventId);
       }
+      if (tab && ["details", "registration", "teams"].includes(tab)) {
+        setInsideTab(tab);
+      }
     }
   }, []);
+
+  const handleSwitchTab = (tab: "details" | "registration" | "teams") => {
+    setInsideTab(tab);
+    if (typeof window !== "undefined") {
+      const url = new URL(window.location.href);
+      url.searchParams.set("tab", tab);
+      window.history.replaceState(null, "", url.toString());
+    }
+  };
 
   // When selectedEvent changes or events reload, update form data
   useEffect(() => {
@@ -191,6 +204,7 @@ export default function EventsManager() {
     if (typeof window !== "undefined") {
       const url = new URL(window.location.href);
       url.searchParams.set("event", event._id);
+      url.searchParams.set("tab", "details");
       window.history.pushState(null, "", url.toString());
     }
   };
@@ -203,6 +217,7 @@ export default function EventsManager() {
     if (typeof window !== "undefined") {
       const url = new URL(window.location.href);
       url.searchParams.delete("event");
+      url.searchParams.delete("tab");
       window.history.pushState(null, "", url.toString());
     }
   };
@@ -651,7 +666,7 @@ export default function EventsManager() {
             <div className="flex items-center gap-2 pt-4 border-t border-white/10 overflow-x-auto no-scrollbar">
               <button
                 type="button"
-                onClick={() => setInsideTab("details")}
+                onClick={() => handleSwitchTab("details")}
                 className={`rounded-xl px-4 py-2 text-xs font-bold tracking-wide transition-all cursor-pointer font-[family-name:var(--font-google-sans)] whitespace-nowrap ${
                   insideTab === "details"
                     ? "bg-[#f20089] text-white shadow-lg shadow-[#f20089]/30"
@@ -663,7 +678,7 @@ export default function EventsManager() {
 
               <button
                 type="button"
-                onClick={() => setInsideTab("registration")}
+                onClick={() => handleSwitchTab("registration")}
                 className={`rounded-xl px-4 py-2 text-xs font-bold tracking-wide transition-all cursor-pointer font-[family-name:var(--font-google-sans)] whitespace-nowrap flex items-center gap-1.5 ${
                   insideTab === "registration"
                     ? "bg-[#f20089] text-white shadow-lg shadow-[#f20089]/30"
@@ -678,7 +693,7 @@ export default function EventsManager() {
 
               <button
                 type="button"
-                onClick={() => setInsideTab("teams")}
+                onClick={() => handleSwitchTab("teams")}
                 className={`rounded-xl px-4 py-2 text-xs font-bold tracking-wide transition-all cursor-pointer font-[family-name:var(--font-google-sans)] whitespace-nowrap ${
                   insideTab === "teams"
                     ? "bg-[#f20089] text-white shadow-lg shadow-[#f20089]/30"

@@ -12,18 +12,43 @@ export default function TeamPage() {
   const { data: session, status } = useSession();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [activeCategory, setActiveCategory] = useState<"all" | TeamCategory>("all");
+  const [members, setMembers] = useState<TeamMember[]>(INITIAL_TEAM_MEMBERS);
 
-  const cdMembers = INITIAL_TEAM_MEMBERS.filter((m) => m.category === "cd");
-  const dcdMembers = INITIAL_TEAM_MEMBERS.filter((m) => m.category === "dcd");
-  const eventMembers = INITIAL_TEAM_MEMBERS.filter((m) => m.category === "event_management");
-  const workshopMembers = INITIAL_TEAM_MEMBERS.filter((m) => m.category === "workshop");
-  const techMembers = INITIAL_TEAM_MEMBERS.filter((m) => m.category === "tech");
-  const designMembers = INITIAL_TEAM_MEMBERS.filter((m) => m.category === "design");
+  React.useEffect(() => {
+    fetch("/api/content?type=committee")
+      .then((res) => (res.ok ? res.json() : { items: [] }))
+      .then((data) => {
+        if (Array.isArray(data.items) && data.items.length > 0) {
+          const mapped: TeamMember[] = data.items.map((item: any) => ({
+            id: item._id,
+            name: item.title,
+            role: item.subtitle,
+            category: item.category as TeamCategory,
+            department: item.description || "",
+            image: item.image || "/team/placeholder.png",
+            socials: {
+              linkedin: item.links?.linkedin || "",
+              github: item.links?.github || "",
+              email: item.links?.email || "",
+            },
+          }));
+          setMembers(mapped);
+        }
+      })
+      .catch((err) => console.warn("Notice: Using static team data fallback:", err));
+  }, []);
+
+  const cdMembers = members.filter((m) => m.category === "cd");
+  const dcdMembers = members.filter((m) => m.category === "dcd");
+  const eventMembers = members.filter((m) => m.category === "event_management");
+  const workshopMembers = members.filter((m) => m.category === "workshop");
+  const techMembers = members.filter((m) => m.category === "tech");
+  const designMembers = members.filter((m) => m.category === "design");
 
   const filteredMembers =
     activeCategory === "all"
-      ? INITIAL_TEAM_MEMBERS
-      : INITIAL_TEAM_MEMBERS.filter((m) => m.category === activeCategory);
+      ? members
+      : members.filter((m) => m.category === activeCategory);
 
   const getTeamColor = (category: TeamCategory) => {
     switch (category) {

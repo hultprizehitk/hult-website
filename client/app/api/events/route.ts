@@ -6,7 +6,11 @@ import Event from "@/models/Event";
 export async function GET() {
   try {
     await connectDB();
-    const events = await Event.find({ isPublished: true }).sort({ order: 1, createdAt: 1 });
+    // Exclude registeredTeams array to protect student PII (phones, emails, roll numbers, team codes)
+    const events = await Event.find({ isPublished: true })
+      .select("-registeredTeams")
+      .sort({ order: 1, createdAt: 1 })
+      .lean();
     return NextResponse.json({ events }, { status: 200 });
   } catch (error: unknown) {
     console.error("Failed to fetch published events:", error);
