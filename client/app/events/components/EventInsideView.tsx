@@ -33,7 +33,6 @@ export default function EventInsideView({
   // Create Team state
   const [teamName, setTeamName] = useState("");
   const [ventureName, setVentureName] = useState("");
-  const [targetMembersCount, setTargetMembersCount] = useState<number>(minMembers);
   const [leadPhone, setLeadPhone] = useState("");
   const [department, setDepartment] = useState("Computer Science & Engineering");
 
@@ -82,7 +81,7 @@ export default function EventInsideView({
           leadName: sessionUser.name || "Student Leader",
           leadPhone: leadPhone.trim(),
           department: department.trim(),
-          membersCount: targetMembersCount,
+          membersCount: maxMembers,
         }),
       });
 
@@ -185,8 +184,9 @@ export default function EventInsideView({
   // Compute roster counts
   const currentMembersList = registeredTeam ? registeredTeam.members || [] : [];
   const totalJoined = registeredTeam ? 1 + currentMembersList.length : 0;
-  const targetCount = registeredTeam ? registeredTeam.membersCount || minMembers : minMembers;
+  const targetCount = registeredTeam ? registeredTeam.membersCount || maxMembers : maxMembers;
   const openSlotsCount = Math.max(0, targetCount - totalJoined);
+  const isTeamCriteriaMet = totalJoined >= minMembers;
 
   return (
     <div className="w-full text-left space-y-8 animate-fadeIn font-[family-name:var(--font-google-sans)]">
@@ -345,9 +345,17 @@ export default function EventInsideView({
                   <span className={refreshing ? "animate-spin" : ""}>🔄</span>
                   <span>{refreshing ? "Syncing..." : "Refresh Roster"}</span>
                 </button>
-                <span className="rounded-full bg-emerald-500/15 border border-emerald-500/30 px-3 py-1.5 text-xs font-bold text-emerald-300">
-                  Status: {registeredTeam.status || "Confirmed"}
-                </span>
+                {isTeamCriteriaMet ? (
+                  <span className="rounded-full bg-emerald-500/15 border border-emerald-500/30 px-3.5 py-1.5 text-xs font-bold text-emerald-300 flex items-center gap-1.5">
+                    <span className="h-2 w-2 rounded-full bg-emerald-400 animate-pulse" />
+                    <span>✓ Status: Confirmed</span>
+                  </span>
+                ) : (
+                  <span className="rounded-full bg-amber-500/15 border border-amber-500/30 px-3.5 py-1.5 text-xs font-bold text-amber-300 flex items-center gap-1.5">
+                    <span className="h-2 w-2 rounded-full bg-amber-400 animate-pulse" />
+                    <span>⚠️ Incomplete Roster ({totalJoined}/{minMembers} Min Required)</span>
+                  </span>
+                )}
               </div>
             </div>
 
@@ -393,6 +401,26 @@ export default function EventInsideView({
                       <span>Share on WhatsApp</span>
                     </a>
                   </div>
+                </div>
+              </div>
+            )}
+
+            {/* INCOMPLETE ROSTER CRITERIA WARNING */}
+            {!isTeamCriteriaMet && (
+              <div className="rounded-3xl border border-amber-500/40 bg-gradient-to-r from-amber-500/15 via-amber-500/10 to-transparent backdrop-blur-2xl p-5 sm:p-6 text-xs text-amber-200 flex items-start gap-3.5 shadow-[0_10px_30px_rgba(245,158,11,0.15)]">
+                <span className="text-2xl mt-0.5">⚠️</span>
+                <div className="space-y-1.5">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <span className="font-bold text-amber-300 text-sm font-[family-name:var(--font-google-sans)]">
+                      Team Criteria Not Met: {totalJoined} of {minMembers} Minimum Members
+                    </span>
+                    <span className="text-[10px] font-bold uppercase tracking-wider bg-amber-500/20 border border-amber-500/30 px-2 py-0.5 rounded-full text-amber-300">
+                      Roster Incomplete
+                    </span>
+                  </div>
+                  <p className="text-amber-200/90 leading-relaxed font-sans text-xs">
+                    Official Hult Prize rules stipulate a minimum of <strong>{minMembers} members</strong> per team (maximum capacity: {targetCount}). Your team cannot officially confirm registration or submit deliverables until at least <strong>{minMembers - totalJoined} more member(s)</strong> join. Share your Team Invite Code above with your prospective co-founders!
+                  </p>
                 </div>
               </div>
             )}
@@ -523,20 +551,38 @@ export default function EventInsideView({
                 <button
                   type="button"
                   onClick={() => {
-                    const text = `HULT PRIZE REGISTRATION PASS\nEvent: ${event.title}\nTeam: ${registeredTeam.teamName}\nTeam Code: ${registeredTeam.teamCode || "N/A"}\nLeader: ${registeredTeam.leadName} (${registeredTeam.leadEmail})\nMembers Count: ${totalJoined} / ${targetCount}\nVenue: ${event.venue}\nDate: ${event.date}`;
+                    if (!isTeamCriteriaMet) {
+                      alert(`⚠️ Team Roster Incomplete (${totalJoined}/${minMembers} Members)\n\nOfficial Hult Prize rules require at least ${minMembers} members per team to validate your pass. Please share your Team Code (${registeredTeam.teamCode}) with teammates so they can join!`);
+                      return;
+                    }
+                    const text = `HULT PRIZE REGISTRATION PASS\nEvent: ${event.title}\nTeam: ${registeredTeam.teamName}\nTeam Code: ${registeredTeam.teamCode || "N/A"}\nLeader: ${registeredTeam.leadName} (${registeredTeam.leadEmail})\nMembers Count: ${totalJoined} / ${targetCount}\nStatus: Confirmed\nVenue: ${event.venue}\nDate: ${event.date}`;
                     navigator.clipboard.writeText(text);
                     alert("Registration Pass details copied to clipboard!");
                   }}
-                  className="rounded-2xl bg-white/[0.06] hover:bg-white/15 border border-white/10 px-4 py-2.5 text-xs font-semibold text-white/80 hover:text-white transition-all cursor-pointer flex items-center gap-1.5"
+                  className={`rounded-2xl border px-4 py-2.5 text-xs font-semibold transition-all cursor-pointer flex items-center gap-1.5 ${
+                    isTeamCriteriaMet
+                      ? "bg-white/[0.06] hover:bg-white/15 border-white/10 text-white/80 hover:text-white"
+                      : "bg-white/[0.03] border-white/5 text-white/40 hover:text-white/60"
+                  }`}
                 >
                   <span>📋 Copy Pass Info</span>
                 </button>
                 <button
                   type="button"
-                  onClick={() => window.print()}
-                  className="rounded-2xl bg-[#f20089]/20 hover:bg-[#f20089]/30 border border-[#f20089]/40 px-5 py-2.5 text-xs font-bold text-[#f20089] hover:text-white transition-all cursor-pointer flex items-center gap-1.5"
+                  onClick={() => {
+                    if (!isTeamCriteriaMet) {
+                      alert(`⚠️ Team Criteria Not Met\n\nYou have ${totalJoined} member(s). Official passes can only be printed once at least ${minMembers} members have joined your team roster.`);
+                      return;
+                    }
+                    window.print();
+                  }}
+                  className={`rounded-2xl border px-5 py-2.5 text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 ${
+                    isTeamCriteriaMet
+                      ? "bg-[#f20089]/20 hover:bg-[#f20089]/30 border-[#f20089]/40 text-[#f20089] hover:text-white"
+                      : "bg-white/[0.03] border-white/5 text-white/30 cursor-not-allowed"
+                  }`}
                 >
-                  <span>🖨️ Print Pass</span>
+                  <span>🖨️ {isTeamCriteriaMet ? "Print Pass" : `Pass Locked (Needs ${minMembers - totalJoined} More)`}</span>
                 </button>
               </div>
             </div>
@@ -802,33 +848,24 @@ export default function EventInsideView({
                     </div>
                   </div>
 
-                  {/* Target Team Size Selector */}
-                  <div className="pt-2">
-                    <label className="block text-xs font-semibold text-white/80 mb-2">
-                      Total Expected Team Size ({minMembers} to {maxMembers} Members)
-                    </label>
-                    <div className="flex items-center gap-2.5 flex-wrap">
-                      {Array.from(
-                        { length: maxMembers - minMembers + 1 },
-                        (_, i) => minMembers + i
-                      ).map((count) => (
-                        <button
-                          key={count}
-                          type="button"
-                          onClick={() => setTargetMembersCount(count)}
-                          className={`rounded-xl px-5 py-2.5 text-xs font-bold transition-all cursor-pointer border ${
-                            targetMembersCount === count
-                              ? "bg-[#f20089] text-white border-[#f20089] shadow-lg shadow-[#f20089]/30"
-                              : "bg-white/[0.04] text-white/70 border-white/10 hover:bg-white/10"
-                          }`}
-                        >
-                          {count} Members
-                        </button>
-                      ))}
+                  {/* Official Team Size Criteria Notice */}
+                  <div className="rounded-2xl border border-white/10 bg-white/[0.04] p-4 text-xs font-sans">
+                    <div className="flex items-center justify-between flex-wrap gap-3">
+                      <div className="flex items-center gap-2.5">
+                        <span className="text-xl">👥</span>
+                        <div>
+                          <span className="font-bold text-white block font-[family-name:var(--font-google-sans)]">
+                            Team Size Criteria: {minMembers} to {maxMembers} Students
+                          </span>
+                          <span className="text-[11px] text-white/60">
+                            Minimum <strong>{minMembers} members</strong> required for official eligibility. Teams can have up to <strong>{maxMembers} members</strong>.
+                          </span>
+                        </div>
+                      </div>
+                      <span className="rounded-full bg-emerald-500/15 border border-emerald-500/30 px-3 py-1 text-[10px] font-bold text-emerald-300 font-mono">
+                        {minMembers}–{maxMembers} Members
+                      </span>
                     </div>
-                    <span className="text-[10px] text-white/40 mt-1.5 block">
-                      Official Hult constraint: Min {minMembers}, Max {maxMembers} students.
-                    </span>
                   </div>
                 </div>
 
