@@ -21,7 +21,9 @@ export interface IRegisteredTeam {
   department: string;
   members?: ITeamMember[];
   registeredAt: Date;
-  status: "confirmed" | "pending" | "waitlist";
+  status: "confirmed" | "pending" | "waitlist" | "disqualified";
+  checkedIn?: boolean;
+  checkedInAt?: Date;
 }
 
 export interface IEvent extends Document {
@@ -144,7 +146,9 @@ const EventSchema = new Schema<IEvent>(
           },
         ],
         registeredAt: { type: Date, default: Date.now },
-        status: { type: String, enum: ["confirmed", "pending", "waitlist"], default: "confirmed" },
+        status: { type: String, enum: ["confirmed", "pending", "waitlist", "disqualified"], default: "confirmed" },
+        checkedIn: { type: Boolean, default: false },
+        checkedInAt: { type: Date },
       },
     ],
   },

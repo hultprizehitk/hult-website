@@ -21,7 +21,6 @@ export default function DashboardNav({ userEmail, isSuperAdmin }: DashboardNavPr
     (pathname === "/portal-hult-8f4b2c1e9a7d/dashboard" ||
       pathname === "/portal-hult-8f4b2c1e9a7d/dashboard/");
   const isStudents = pathname?.includes("/dashboard/student");
-  const isContent = pathname?.includes("/dashboard/content");
   const isAdmins = pathname?.includes("/dashboard/admin") || pathname?.includes("/dashboard/user");
 
 
@@ -108,16 +107,6 @@ export default function DashboardNav({ userEmail, isSuperAdmin }: DashboardNavPr
             <span>Live Event</span>
           </Link>
 
-          <Link
-            href="/portal-hult-8f4b2c1e9a7d/dashboard/content"
-            className={`rounded-xl px-5 py-2.5 text-xs sm:text-sm font-bold tracking-wide transition-all font-[family-name:var(--font-google-sans)] whitespace-nowrap ${
-              isContent
-                ? "bg-[#f20089] text-white shadow-lg shadow-[#f20089]/30"
-                : "bg-white/[0.05] text-white/70 hover:text-white hover:bg-white/10"
-            }`}
-          >
-            Content CMS
-          </Link>
 
           <Link
             href="/portal-hult-8f4b2c1e9a7d/dashboard/students"
