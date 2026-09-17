@@ -3,16 +3,14 @@
 import React, { useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { useSession, signOut } from "next-auth/react";
+import SiteHeader from "@/components/SiteHeader";
 import AnimatedGradient from "@/components/ui/animated-gradient";
 import { TEAM_SECTIONS, INITIAL_TEAM_MEMBERS } from "@/lib/team-data";
 import type { TeamCategory, TeamMember } from "@/types";
 
 export default function TeamPage() {
-  const { data: session, status } = useSession();
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [activeCategory, setActiveCategory] = useState<"all" | TeamCategory>("all");
-  const [members, setMembers] = useState<TeamMember[]>(INITIAL_TEAM_MEMBERS);
+  const [dbMembers, setDbMembers] = useState<TeamMember[]>([]);
 
   React.useEffect(() => {
     fetch("/api/content?type=committee")
@@ -21,22 +19,25 @@ export default function TeamPage() {
         if (Array.isArray(data.items) && data.items.length > 0) {
           const mapped: TeamMember[] = data.items.map((item: any) => ({
             id: item._id,
+            slug: item.slug || item.title?.toLowerCase().replace(/\s+/g, "-"),
             name: item.title,
             role: item.subtitle,
             category: item.category as TeamCategory,
             department: item.description || "",
-            image: item.image || "/team/placeholder.png",
+            image: item.image || "",
             socials: {
               linkedin: item.links?.linkedin || "",
               github: item.links?.github || "",
               email: item.links?.email || "",
             },
           }));
-          setMembers(mapped);
+          setDbMembers(mapped);
         }
       })
       .catch((err) => console.warn("Notice: Using static team data fallback:", err));
   }, []);
+
+  const members = dbMembers.length > 0 ? dbMembers : INITIAL_TEAM_MEMBERS;
 
   const cdMembers = members.filter((m) => m.category === "cd");
   const dcdMembers = members.filter((m) => m.category === "dcd");
@@ -64,17 +65,29 @@ export default function TeamPage() {
           ring: "from-sky-400 via-blue-500 to-[#f20089]",
           accent: "text-sky-300",
         };
+      case "workshop":
+        return {
+          badge: "bg-amber-500/20 border-amber-500/40 text-amber-300",
+          ring: "from-amber-400 to-orange-600",
+          accent: "text-amber-300",
+        };
       case "event_management":
         return {
           badge: "bg-emerald-500/20 border-emerald-500/40 text-emerald-300",
           ring: "from-emerald-400 to-teal-600",
           accent: "text-emerald-300",
         };
-      case "workshop":
+      case "social_pr":
         return {
-          badge: "bg-amber-500/20 border-amber-500/40 text-amber-300",
-          ring: "from-amber-400 to-orange-600",
-          accent: "text-amber-300",
+          badge: "bg-pink-500/20 border-pink-500/40 text-pink-300",
+          ring: "from-pink-500 via-rose-500 to-purple-600",
+          accent: "text-pink-300",
+        };
+      case "photography":
+        return {
+          badge: "bg-violet-500/20 border-violet-500/40 text-violet-300",
+          ring: "from-violet-500 via-purple-500 to-indigo-600",
+          accent: "text-violet-300",
         };
       case "tech":
         return {
@@ -83,11 +96,17 @@ export default function TeamPage() {
           accent: "text-sky-300",
         };
       case "design":
-      default:
         return {
           badge: "bg-[#f20089]/20 border-[#f20089]/40 text-[#f20089]",
           ring: "from-[#f20089] via-pink-500 to-purple-600",
           accent: "text-[#f20089]",
+        };
+      case "judges_support":
+      default:
+        return {
+          badge: "bg-cyan-500/20 border-cyan-500/40 text-cyan-300",
+          ring: "from-teal-400 via-cyan-500 to-blue-600",
+          accent: "text-cyan-300",
         };
     }
   };
@@ -113,21 +132,41 @@ export default function TeamPage() {
         <div className="relative z-10">
           {/* Avatar / Photo Frame */}
           <div className="flex items-center gap-4 mb-4">
-            <div
-              className={`relative h-16 w-16 sm:h-18 sm:w-18 shrink-0 rounded-2xl p-[2px] bg-gradient-to-tr ${style.ring} shadow-md overflow-hidden`}
-            >
-              {member.image ? (
-                <img
-                  src={member.image}
-                  alt={member.name}
-                  className="h-full w-full rounded-2xl object-cover"
-                />
-              ) : (
-                <div className="h-full w-full rounded-2xl bg-neutral-950/90 flex items-center justify-center font-[family-name:var(--font-google-sans)] text-lg sm:text-xl font-black text-white">
-                  {initials}
-                </div>
-              )}
-            </div>
+            {member.slug ? (
+              <Link
+                href={`/team/${member.slug}`}
+                className={`relative h-16 w-16 sm:h-18 sm:w-18 shrink-0 rounded-2xl p-[2px] bg-gradient-to-tr ${style.ring} shadow-md overflow-hidden hover:scale-105 transition-transform`}
+                title={`View ${member.name}'s 3D ID Profile`}
+              >
+                {member.image ? (
+                  <img
+                    src={member.image}
+                    alt={member.name}
+                    className="h-full w-full rounded-2xl object-cover"
+                  />
+                ) : (
+                  <div className="h-full w-full rounded-2xl bg-neutral-950/90 flex items-center justify-center font-[family-name:var(--font-google-sans)] text-lg sm:text-xl font-black text-white">
+                    {initials}
+                  </div>
+                )}
+              </Link>
+            ) : (
+              <div
+                className={`relative h-16 w-16 sm:h-18 sm:w-18 shrink-0 rounded-2xl p-[2px] bg-gradient-to-tr ${style.ring} shadow-md overflow-hidden`}
+              >
+                {member.image ? (
+                  <img
+                    src={member.image}
+                    alt={member.name}
+                    className="h-full w-full rounded-2xl object-cover"
+                  />
+                ) : (
+                  <div className="h-full w-full rounded-2xl bg-neutral-950/90 flex items-center justify-center font-[family-name:var(--font-google-sans)] text-lg sm:text-xl font-black text-white">
+                    {initials}
+                  </div>
+                )}
+              </div>
+            )}
 
             <div className="min-w-0 flex-1">
               <span
@@ -135,9 +174,18 @@ export default function TeamPage() {
               >
                 {member.role}
               </span>
-              <h4 className="text-base sm:text-lg font-bold text-white truncate font-[family-name:var(--font-google-sans)] group-hover:text-pink-100 transition-colors">
-                {member.name}
-              </h4>
+              {member.slug ? (
+                <Link
+                  href={`/team/${member.slug}`}
+                  className="block text-base sm:text-lg font-bold text-white truncate font-[family-name:var(--font-google-sans)] hover:text-[#f20089] transition-colors"
+                >
+                  {member.name}
+                </Link>
+              ) : (
+                <h4 className="text-base sm:text-lg font-bold text-white truncate font-[family-name:var(--font-google-sans)] group-hover:text-pink-100 transition-colors">
+                  {member.name}
+                </h4>
+              )}
               <p className="text-[11px] text-white/60 truncate">
                 {member.department}
               </p>
@@ -152,9 +200,22 @@ export default function TeamPage() {
           )}
 
           {member.bio && (
-            <p className="text-xs text-white/65 leading-relaxed mb-4 line-clamp-3 font-sans">
+            <p className="text-xs text-white/65 leading-relaxed mb-3 line-clamp-3 font-sans">
               {member.bio}
             </p>
+          )}
+
+          {member.slug && (
+            <div className="mb-3">
+              <Link
+                href={`/team/${member.slug}`}
+                className="inline-flex items-center gap-1.5 rounded-full border border-pink-500/40 bg-pink-500/10 hover:bg-pink-500/25 px-3 py-1 text-[11px] font-bold text-pink-300 hover:text-white transition-all shadow-sm group/btn"
+              >
+                <span>🪪</span>
+                <span>View 3D ID Profile</span>
+                <span className="group-hover/btn:translate-x-0.5 transition-transform">→</span>
+              </Link>
+            </div>
           )}
         </div>
 
@@ -234,193 +295,7 @@ export default function TeamPage() {
       <div className="pointer-events-none fixed top-20 left-1/4 w-[600px] h-[350px] bg-[#f20089]/15 blur-[160px] rounded-full z-0" />
       <div className="pointer-events-none fixed bottom-10 right-10 w-[500px] h-[350px] bg-purple-900/20 blur-[150px] rounded-full z-0" />
 
-      {/* Header Navigation */}
-      <header className="sticky top-0 z-50 flex w-full items-center justify-between px-4 py-3 sm:px-6 sm:py-3.5 md:px-8 transition-all duration-300 font-[family-name:var(--font-google-sans)] bg-black/40 backdrop-blur-2xl border-b border-white/10">
-        {/* Brand Logos */}
-        <div className="flex items-center gap-2 sm:gap-3 transition-opacity duration-700">
-          <Link href="/" className="relative aspect-[1080/659] h-7 sm:h-8 md:h-9">
-            <Image
-              src="/Hult-Prize.png"
-              alt="Hult Prize Logo"
-              fill
-              sizes="(max-width: 640px) 46px, 66px"
-              priority
-              className="object-contain drop-shadow-md"
-            />
-          </Link>
-          <div className="relative aspect-[1024/895] h-7 sm:h-8 md:h-9">
-            <Image
-              src="/hitk-25-logo.png"
-              alt="Heritage Institute of Technology 25 Years Logo"
-              fill
-              sizes="(max-width: 640px) 40px, 56px"
-              priority
-              className="object-contain drop-shadow-md"
-            />
-          </div>
-        </div>
-
-        {/* Desktop Nav Links */}
-        <nav className="hidden md:flex items-center gap-5 lg:gap-6 font-[family-name:var(--font-google-sans)]">
-          <Link
-            href="/#about"
-            className="text-xs sm:text-sm font-semibold tracking-wide text-white/85 drop-shadow transition-colors duration-200 hover:text-white"
-          >
-            About
-          </Link>
-          <Link
-            href="/events"
-            className="text-xs sm:text-sm font-semibold tracking-wide text-white/85 drop-shadow transition-colors duration-200 hover:text-white"
-          >
-            Events
-          </Link>
-          <Link
-            href="/#challenge"
-            className="text-xs sm:text-sm font-semibold tracking-wide text-white/85 drop-shadow transition-colors duration-200 hover:text-white"
-          >
-            Challenge
-          </Link>
-          <Link
-            href="/#timeline"
-            className="text-xs sm:text-sm font-semibold tracking-wide text-white/85 drop-shadow transition-colors duration-200 hover:text-white"
-          >
-            Timeline
-          </Link>
-          <Link
-            href="/team"
-            className="text-xs sm:text-sm font-extrabold tracking-wide text-[#f20089] drop-shadow transition-colors duration-200"
-          >
-            Team
-          </Link>
-
-          {status === "authenticated" && session?.user ? (
-            <div className="flex items-center gap-3">
-              {["junior_admin", "lead_admin", "master_admin"].includes(
-                (session.user as { role?: string })?.role || ""
-              ) && (
-                <Link
-                  href="/portal"
-                  className="inline-flex items-center gap-1 rounded-full border border-[#f20089]/60 bg-[#f20089]/25 hover:bg-[#f20089]/40 px-3 py-1.5 text-xs font-bold text-pink-300 hover:text-white transition-all shadow-sm hover:scale-105"
-                >
-                  <span>
-                    {(session.user as { role?: string })?.role === "master_admin"
-                      ? "Master Admin CMS"
-                      : (session.user as { role?: string })?.role === "lead_admin"
-                      ? "Lead Admin CMS"
-                      : "Junior Admin CMS"}
-                  </span>
-                </Link>
-              )}
-              <Link
-                href="/profile"
-                className="inline-flex items-center gap-1.5 rounded-full border border-white/20 bg-white/[0.08] hover:bg-white/[0.15] px-3.5 py-1.5 text-xs font-bold text-white shadow-sm hover:scale-105 transition-all"
-                title="View User Profile"
-              >
-                <span className="h-2 w-2 rounded-full bg-emerald-400 animate-pulse" />
-                {session.user.name?.split(" ")[0]}
-              </Link>
-              <button
-                type="button"
-                onClick={() => signOut({ callbackUrl: "/" })}
-                className="rounded-full bg-white/[0.08] hover:bg-white/[0.15] border border-white/20 px-3 py-1.5 text-xs font-semibold text-white transition-all"
-              >
-                Sign Out
-              </button>
-            </div>
-          ) : (
-            <Link
-              href="/register"
-              className="rounded-full bg-[#f20089] hover:bg-[#d8007a] px-4 py-1.5 text-xs sm:text-sm font-bold tracking-wide text-white shadow-md shadow-[#f20089]/30 transition-all hover:scale-105 active:scale-95"
-            >
-              Sign In
-            </Link>
-          )}
-        </nav>
-
-        {/* Mobile Menu Button */}
-        <div className="flex items-center gap-3 md:hidden">
-          {status === "authenticated" && session?.user ? (
-            <Link
-              href="/profile"
-              className="rounded-full bg-white/[0.08] px-3 py-1 text-xs font-bold text-white border border-white/20"
-            >
-              {session.user.name?.split(" ")[0]}
-            </Link>
-          ) : (
-            <Link
-              href="/register"
-              className="rounded-full bg-[#f20089] px-3 py-1 text-xs font-bold text-white shadow-md"
-            >
-              Sign In
-            </Link>
-          )}
-
-          <button
-            type="button"
-            onClick={() => setMobileMenuOpen((prev) => !prev)}
-            aria-label="Toggle navigation menu"
-            className="p-1.5 rounded-full bg-white/[0.08] hover:bg-white/[0.15] border border-white/20 text-white transition-colors cursor-pointer"
-          >
-            {mobileMenuOpen ? (
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
-              </svg>
-            ) : (
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5" />
-              </svg>
-            )}
-          </button>
-        </div>
-      </header>
-
-      {/* Mobile Slide-Down Menu Overlay */}
-      {mobileMenuOpen && (
-        <div className="fixed inset-x-0 top-[52px] z-45 md:hidden bg-black/95 backdrop-blur-3xl border-b border-white/15 px-6 py-6 shadow-2xl flex flex-col gap-4 font-[family-name:var(--font-google-sans)] animate-in fade-in slide-in-from-top-2 duration-200">
-          <Link
-            href="/"
-            onClick={() => setMobileMenuOpen(false)}
-            className="text-base font-semibold text-white/90 hover:text-[#f20089] py-2 border-b border-white/5 transition-colors"
-          >
-            Home
-          </Link>
-          <Link
-            href="/#about"
-            onClick={() => setMobileMenuOpen(false)}
-            className="text-base font-semibold text-white/90 hover:text-[#f20089] py-2 border-b border-white/5 transition-colors"
-          >
-            About
-          </Link>
-          <Link
-            href="/events"
-            onClick={() => setMobileMenuOpen(false)}
-            className="text-base font-semibold text-white/90 hover:text-[#f20089] py-2 border-b border-white/5 transition-colors"
-          >
-            Events
-          </Link>
-          <Link
-            href="/#challenge"
-            onClick={() => setMobileMenuOpen(false)}
-            className="text-base font-semibold text-white/90 hover:text-[#f20089] py-2 border-b border-white/5 transition-colors"
-          >
-            Challenge
-          </Link>
-          <Link
-            href="/#timeline"
-            onClick={() => setMobileMenuOpen(false)}
-            className="text-base font-semibold text-white/90 hover:text-[#f20089] py-2 border-b border-white/5 transition-colors"
-          >
-            Timeline
-          </Link>
-          <Link
-            href="/team"
-            onClick={() => setMobileMenuOpen(false)}
-            className="text-base font-bold text-[#f20089] py-2 border-b border-white/5 transition-colors"
-          >
-            Organizing Committee
-          </Link>
-        </div>
-      )}
+      <SiteHeader />
 
       {/* Main Content Area */}
       <main className="relative z-10 flex-1 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 sm:py-16 w-full">
@@ -445,10 +320,10 @@ export default function TeamPage() {
           <div className="grid grid-cols-3 gap-3 sm:gap-6 mt-8 p-4 rounded-2xl bg-white/[0.02] border border-white/10 backdrop-blur-xl max-w-xl mx-auto">
             <div>
               <div className="text-xl sm:text-2xl font-black text-white font-[family-name:var(--font-google-sans)]">
-                6
+                {TEAM_SECTIONS.filter((s) => s.key !== "cd" && s.key !== "dcd").length}
               </div>
               <div className="text-[10px] sm:text-xs text-white/50 uppercase tracking-wider">
-                Teams
+                Divisions
               </div>
             </div>
             <div className="border-x border-white/10">
@@ -482,11 +357,11 @@ export default function TeamPage() {
                   : "bg-white/[0.05] text-white/70 hover:text-white hover:bg-white/10 border border-white/10"
               }`}
             >
-              All Divisions {INITIAL_TEAM_MEMBERS.length > 0 ? `(${INITIAL_TEAM_MEMBERS.length})` : ""}
+              All Divisions {members.length > 0 ? `(${members.length})` : ""}
             </button>
 
             {TEAM_SECTIONS.map((sec) => {
-              const count = INITIAL_TEAM_MEMBERS.filter((m) => m.category === sec.key).length;
+              const count = members.filter((m) => m.category === sec.key).length;
               const isSelected = activeCategory === sec.key;
 
               return (
@@ -550,24 +425,53 @@ export default function TeamPage() {
                           </div>
 
                           <div className="flex flex-col sm:flex-row items-start sm:items-center gap-5 mb-6">
-                            <div className="h-24 w-24 rounded-3xl p-[2px] bg-gradient-to-tr from-amber-400 via-[#f20089] to-purple-600 shadow-xl overflow-hidden shrink-0">
-                              {cd.image ? (
-                                <img
-                                  src={cd.image}
-                                  alt={cd.name}
-                                  className="h-full w-full rounded-3xl object-cover"
-                                />
-                              ) : (
-                                <div className="h-full w-full rounded-3xl bg-neutral-950 flex items-center justify-center font-[family-name:var(--font-google-sans)] text-2xl font-black text-amber-300">
-                                  {cd.name.split(" ").map((n) => n[0]).join("")}
-                                </div>
-                              )}
-                            </div>
+                            {cd.slug ? (
+                              <Link
+                                href={`/team/${cd.slug}`}
+                                className="h-24 w-24 rounded-3xl p-[2px] bg-gradient-to-tr from-amber-400 via-[#f20089] to-purple-600 shadow-xl overflow-hidden shrink-0 hover:scale-105 transition-transform"
+                                title={`View ${cd.name}'s 3D ID Profile`}
+                              >
+                                {cd.image ? (
+                                  <img
+                                    src={cd.image}
+                                    alt={cd.name}
+                                    className="h-full w-full rounded-3xl object-cover"
+                                  />
+                                ) : (
+                                  <div className="h-full w-full rounded-3xl bg-neutral-950 flex items-center justify-center font-[family-name:var(--font-google-sans)] text-2xl font-black text-amber-300">
+                                    {cd.name.split(" ").map((n) => n[0]).join("")}
+                                  </div>
+                                )}
+                              </Link>
+                            ) : (
+                              <div className="h-24 w-24 rounded-3xl p-[2px] bg-gradient-to-tr from-amber-400 via-[#f20089] to-purple-600 shadow-xl overflow-hidden shrink-0">
+                                {cd.image ? (
+                                  <img
+                                    src={cd.image}
+                                    alt={cd.name}
+                                    className="h-full w-full rounded-3xl object-cover"
+                                  />
+                                ) : (
+                                  <div className="h-full w-full rounded-3xl bg-neutral-950 flex items-center justify-center font-[family-name:var(--font-google-sans)] text-2xl font-black text-amber-300">
+                                    {cd.name.split(" ").map((n) => n[0]).join("")}
+                                  </div>
+                                )}
+                              </div>
+                            )}
 
                             <div>
-                              <h3 className="text-2xl sm:text-3xl font-black text-white font-[family-name:var(--font-google-sans)] mb-1">
-                                {cd.name}
-                              </h3>
+                              {cd.slug ? (
+                                <Link
+                                  href={`/team/${cd.slug}`}
+                                  className="block text-2xl sm:text-3xl font-black text-white font-[family-name:var(--font-google-sans)] mb-1 hover:text-amber-300 transition-colors"
+                                >
+                                  {cd.name}
+                                </Link>
+                              ) : (
+                                <h3 className="text-2xl sm:text-3xl font-black text-white font-[family-name:var(--font-google-sans)] mb-1">
+                                  {cd.name}
+                                </h3>
+                              )}
                               <p className="text-xs text-white/80 font-medium">
                                 {cd.department}
                               </p>
@@ -578,9 +482,22 @@ export default function TeamPage() {
                           </div>
 
                           {cd.bio && (
-                            <p className="text-xs sm:text-sm text-white/70 leading-relaxed font-sans mb-6">
+                            <p className="text-xs sm:text-sm text-white/70 leading-relaxed font-sans mb-4">
                               "{cd.bio}"
                             </p>
+                          )}
+
+                          {cd.slug && (
+                            <div className="mb-6">
+                              <Link
+                                href={`/team/${cd.slug}`}
+                                className="inline-flex items-center gap-2 rounded-full border border-amber-400/50 bg-amber-400/15 hover:bg-amber-400/30 px-4 py-1.5 text-xs font-bold text-amber-200 hover:text-white shadow-md shadow-amber-500/20 transition-all hover:scale-105"
+                              >
+                                <span>🪪</span>
+                                <span>View 3D ID Profile</span>
+                                <span>→</span>
+                              </Link>
+                            </div>
                           )}
                         </div>
 
@@ -644,24 +561,53 @@ export default function TeamPage() {
                           </div>
 
                           <div className="flex flex-col sm:flex-row items-start sm:items-center gap-5 mb-6">
-                            <div className="h-24 w-24 rounded-3xl p-[2px] bg-gradient-to-tr from-sky-400 via-blue-500 to-[#f20089] shadow-xl overflow-hidden shrink-0">
-                              {dcd.image ? (
-                                <img
-                                  src={dcd.image}
-                                  alt={dcd.name}
-                                  className="h-full w-full rounded-3xl object-cover"
-                                />
-                              ) : (
-                                <div className="h-full w-full rounded-3xl bg-neutral-950 flex items-center justify-center font-[family-name:var(--font-google-sans)] text-2xl font-black text-sky-300">
-                                  {dcd.name.split(" ").map((n) => n[0]).join("")}
-                                </div>
-                              )}
-                            </div>
+                            {dcd.slug ? (
+                              <Link
+                                href={`/team/${dcd.slug}`}
+                                className="h-24 w-24 rounded-3xl p-[2px] bg-gradient-to-tr from-sky-400 via-blue-500 to-[#f20089] shadow-xl overflow-hidden shrink-0 hover:scale-105 transition-transform"
+                                title={`View ${dcd.name}'s 3D ID Profile`}
+                              >
+                                {dcd.image ? (
+                                  <img
+                                    src={dcd.image}
+                                    alt={dcd.name}
+                                    className="h-full w-full rounded-3xl object-cover"
+                                  />
+                                ) : (
+                                  <div className="h-full w-full rounded-3xl bg-neutral-950 flex items-center justify-center font-[family-name:var(--font-google-sans)] text-2xl font-black text-sky-300">
+                                    {dcd.name.split(" ").map((n) => n[0]).join("")}
+                                  </div>
+                                )}
+                              </Link>
+                            ) : (
+                              <div className="h-24 w-24 rounded-3xl p-[2px] bg-gradient-to-tr from-sky-400 via-blue-500 to-[#f20089] shadow-xl overflow-hidden shrink-0">
+                                {dcd.image ? (
+                                  <img
+                                    src={dcd.image}
+                                    alt={dcd.name}
+                                    className="h-full w-full rounded-3xl object-cover"
+                                  />
+                                ) : (
+                                  <div className="h-full w-full rounded-3xl bg-neutral-950 flex items-center justify-center font-[family-name:var(--font-google-sans)] text-2xl font-black text-sky-300">
+                                    {dcd.name.split(" ").map((n) => n[0]).join("")}
+                                  </div>
+                                )}
+                              </div>
+                            )}
 
                             <div>
-                              <h3 className="text-2xl sm:text-3xl font-black text-white font-[family-name:var(--font-google-sans)] mb-1">
-                                {dcd.name}
-                              </h3>
+                              {dcd.slug ? (
+                                <Link
+                                  href={`/team/${dcd.slug}`}
+                                  className="block text-2xl sm:text-3xl font-black text-white font-[family-name:var(--font-google-sans)] mb-1 hover:text-sky-300 transition-colors"
+                                >
+                                  {dcd.name}
+                                </Link>
+                              ) : (
+                                <h3 className="text-2xl sm:text-3xl font-black text-white font-[family-name:var(--font-google-sans)] mb-1">
+                                  {dcd.name}
+                                </h3>
+                              )}
                               <p className="text-xs text-white/80 font-medium">
                                 {dcd.department}
                               </p>
@@ -672,9 +618,22 @@ export default function TeamPage() {
                           </div>
 
                           {dcd.bio && (
-                            <p className="text-xs sm:text-sm text-white/70 leading-relaxed font-sans mb-6">
+                            <p className="text-xs sm:text-sm text-white/70 leading-relaxed font-sans mb-4">
                               "{dcd.bio}"
                             </p>
+                          )}
+
+                          {dcd.slug && (
+                            <div className="mb-6">
+                              <Link
+                                href={`/team/${dcd.slug}`}
+                                className="inline-flex items-center gap-2 rounded-full border border-sky-400/50 bg-sky-400/15 hover:bg-sky-400/30 px-4 py-1.5 text-xs font-bold text-sky-200 hover:text-white shadow-md shadow-sky-500/20 transition-all hover:scale-105"
+                              >
+                                <span>🪪</span>
+                                <span>View 3D ID Profile</span>
+                                <span>→</span>
+                              </Link>
+                            </div>
                           )}
                         </div>
 
@@ -719,141 +678,47 @@ export default function TeamPage() {
             </section>
           )}
 
-          {/* SECTION 3: EVENT MANAGEMENT TEAM */}
-          {(activeCategory === "all" || activeCategory === "event_management") && (
-            <section className="space-y-6 animate-fadeIn">
-              <div className="border-b border-white/10 pb-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2">
-                <div>
-                  <span className="text-[10px] font-extrabold uppercase tracking-widest text-emerald-400">
-                    Operations & Logistics
-                  </span>
-                  <h2 className="text-2xl sm:text-3xl font-black text-white font-[family-name:var(--font-google-sans)]">
-                    Event Management Team
-                  </h2>
-                </div>
-                <p className="text-xs text-white/50 max-w-sm">
-                  Orchestrating OnCampus qualifiers, stage flow, venue protocols, and guest judge hospitality.
-                </p>
-              </div>
+          {/* DEPARTMENT SECTIONS */}
+          {TEAM_SECTIONS.filter((sec) => sec.key !== "cd" && sec.key !== "dcd").map((sec) => {
+            if (activeCategory !== "all" && activeCategory !== sec.key) return null;
+            const secMembers = members.filter((m) => m.category === sec.key);
 
-              {eventMembers.length > 0 ? (
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-                  {eventMembers.map((member) => renderMemberCard(member))}
-                </div>
-              ) : (
-                <div className="rounded-3xl border border-dashed border-emerald-500/20 bg-emerald-500/[0.02] p-8 sm:p-10 text-center backdrop-blur-xl">
-                  <h4 className="text-base font-bold text-white font-[family-name:var(--font-google-sans)] mb-1">
-                    Team Members Being Finalized
-                  </h4>
-                  <p className="text-xs text-white/50 max-w-md mx-auto">
-                    Official appointments for the Event Management Team will be announced soon.
+            return (
+              <section key={sec.key} className="space-y-6 animate-fadeIn">
+                <div className="border-b border-white/10 pb-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2">
+                  <div>
+                    <span
+                      className="text-[10px] font-extrabold uppercase tracking-widest"
+                      style={{ color: sec.accentColor }}
+                    >
+                      {sec.subtitle}
+                    </span>
+                    <h2 className="text-2xl sm:text-3xl font-black text-white font-[family-name:var(--font-google-sans)]">
+                      {sec.title}
+                    </h2>
+                  </div>
+                  <p className="text-xs text-white/50 max-w-sm">
+                    {sec.description}
                   </p>
                 </div>
-              )}
-            </section>
-          )}
 
-          {/* SECTION 4: WORKSHOP TEAM */}
-          {(activeCategory === "all" || activeCategory === "workshop") && (
-            <section className="space-y-6 animate-fadeIn">
-              <div className="border-b border-white/10 pb-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2">
-                <div>
-                  <span className="text-[10px] font-extrabold uppercase tracking-widest text-amber-400">
-                    Mentorship & Ideation
-                  </span>
-                  <h2 className="text-2xl sm:text-3xl font-black text-white font-[family-name:var(--font-google-sans)]">
-                    Workshop Team
-                  </h2>
-                </div>
-                <p className="text-xs text-white/50 max-w-sm">
-                  Curating founder bootcamps, speaker masterclasses, pitching clinics, and investor networking.
-                </p>
-              </div>
-
-              {workshopMembers.length > 0 ? (
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-                  {workshopMembers.map((member) => renderMemberCard(member))}
-                </div>
-              ) : (
-                <div className="rounded-3xl border border-dashed border-amber-500/20 bg-amber-500/[0.02] p-8 sm:p-10 text-center backdrop-blur-xl">
-                  <h4 className="text-base font-bold text-white font-[family-name:var(--font-google-sans)] mb-1">
-                    Team Members Being Finalized
-                  </h4>
-                  <p className="text-xs text-white/50 max-w-md mx-auto">
-                    Official appointments for the Workshop Team will be announced soon.
-                  </p>
-                </div>
-              )}
-            </section>
-          )}
-
-          {/* SECTION 5: TECH TEAM */}
-          {(activeCategory === "all" || activeCategory === "tech") && (
-            <section className="space-y-6 animate-fadeIn">
-              <div className="border-b border-white/10 pb-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2">
-                <div>
-                  <span className="text-[10px] font-extrabold uppercase tracking-widest text-sky-400">
-                    Engineering & Platforms
-                  </span>
-                  <h2 className="text-2xl sm:text-3xl font-black text-white font-[family-name:var(--font-google-sans)]">
-                    Tech Team
-                  </h2>
-                </div>
-                <p className="text-xs text-white/50 max-w-sm">
-                  Developing the official web application, participant portal, automated email parser, and admin CMS.
-                </p>
-              </div>
-
-              {techMembers.length > 0 ? (
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-                  {techMembers.map((member) => renderMemberCard(member))}
-                </div>
-              ) : (
-                <div className="rounded-3xl border border-dashed border-sky-500/20 bg-sky-500/[0.02] p-8 sm:p-10 text-center backdrop-blur-xl">
-                  <h4 className="text-base font-bold text-white font-[family-name:var(--font-google-sans)] mb-1">
-                    Team Members Being Finalized
-                  </h4>
-                  <p className="text-xs text-white/50 max-w-md mx-auto">
-                    Official appointments for the Tech Team will be announced soon.
-                  </p>
-                </div>
-              )}
-            </section>
-          )}
-
-          {/* SECTION 6: DESIGN TEAM */}
-          {(activeCategory === "all" || activeCategory === "design") && (
-            <section className="space-y-6 animate-fadeIn">
-              <div className="border-b border-white/10 pb-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2">
-                <div>
-                  <span className="text-[10px] font-extrabold uppercase tracking-widest text-[#f20089]">
-                    Creative & Brand Media
-                  </span>
-                  <h2 className="text-2xl sm:text-3xl font-black text-white font-[family-name:var(--font-google-sans)]">
-                    Design Team
-                  </h2>
-                </div>
-                <p className="text-xs text-white/50 max-w-sm">
-                  Directing visual identity, motion graphics, stage visuals, social media creatives, and UI aesthetics.
-                </p>
-              </div>
-
-              {designMembers.length > 0 ? (
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-                  {designMembers.map((member) => renderMemberCard(member))}
-                </div>
-              ) : (
-                <div className="rounded-3xl border border-dashed border-[#f20089]/20 bg-[#f20089]/[0.02] p-8 sm:p-10 text-center backdrop-blur-xl">
-                  <h4 className="text-base font-bold text-white font-[family-name:var(--font-google-sans)] mb-1">
-                    Team Members Being Finalized
-                  </h4>
-                  <p className="text-xs text-white/50 max-w-md mx-auto">
-                    Official appointments for the Design Team will be announced soon.
-                  </p>
-                </div>
-              )}
-            </section>
-          )}
+                {secMembers.length > 0 ? (
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                    {secMembers.map((member) => renderMemberCard(member))}
+                  </div>
+                ) : (
+                  <div className={`rounded-3xl border border-dashed p-8 sm:p-10 text-center backdrop-blur-xl ${sec.borderClass}`}>
+                    <h4 className="text-base font-bold text-white font-[family-name:var(--font-google-sans)] mb-1">
+                      Team Members Being Finalized
+                    </h4>
+                    <p className="text-xs text-white/50 max-w-md mx-auto">
+                      Official appointments for {sec.title} will be announced soon.
+                    </p>
+                  </div>
+                )}
+              </section>
+            );
+          })}
         </div>
       </main>
 

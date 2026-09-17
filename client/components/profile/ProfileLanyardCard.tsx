@@ -21,8 +21,11 @@ interface ProfileLanyardCardProps {
 }
 
 export default function ProfileLanyardCard({ profile, className = "" }: ProfileLanyardCardProps) {
-  // Use /Hult-Prize.png as back of id, and profile image for front
-  const frontImage = profile.image || "/team/bhoomi.jpg";
+  // Use member image if valid, or /Hult-Prize.png as fallback for front
+  const frontImage =
+    profile.image && profile.image !== "/team/placeholder.png"
+      ? profile.image
+      : "/Hult-Prize.png";
   const backImage = "/Hult-Prize.png";
   const lanyardImage = "/assets/lanyard/lanyard.png";
 

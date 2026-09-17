@@ -1,13 +1,17 @@
 export type TeamCategory =
   | "cd"
   | "dcd"
-  | "event_management"
   | "workshop"
+  | "event_management"
+  | "social_pr"
+  | "photography"
   | "tech"
-  | "design";
+  | "design"
+  | "judges_support";
 
 export interface TeamMember {
   id: string;
+  slug?: string; // Maps to /team/[slug] interactive 3D ID Profile
   name: string;
   role: string;
   category: TeamCategory;
