@@ -60,6 +60,10 @@ export default function EventInsideView({
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [copiedCode, setCopiedCode] = useState(false);
 
+  // Conversational step wizard state (Points 1 & 2)
+  const [createStep, setCreateStep] = useState<1 | 2>(1);
+  const [joinStep, setJoinStep] = useState<1 | 2>(1);
+
   // Fetch RSVP status if user has a registered team
   const fetchRsvpStatus = async () => {
     if (!registeredTeam || !event._id) return;
@@ -896,309 +900,432 @@ export default function EventInsideView({
             </div>
 
             {/* =================================================================== */}
-            {/* SUB-FORM 1: CREATE TEAM FORM                                        */}
+            {/* SUB-FORM 1: CONVERSATIONAL STEP-BY-STEP CREATE TEAM WIZARD          */}
             {/* =================================================================== */}
             {registrationMode === "create" && (
               <form onSubmit={handleCreateTeam} className="space-y-6 pt-2 animate-fadeIn">
-                {/* Team Leader Identity */}
-                <div className="rounded-3xl border border-white/15 bg-white/[0.03] p-5 sm:p-6 space-y-4 backdrop-blur-xl shadow-inner">
-                  <div className="flex items-center justify-between">
-                    <span className="text-xs font-bold uppercase tracking-wider text-white flex items-center gap-1.5">
-                      <span>👑</span>
-                      <span>Team Leader (You)</span>
+                {/* Step Progress Bar */}
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between text-xs font-mono">
+                    <span className="text-[#f20089] font-bold tracking-wider uppercase">
+                      🚀 Step {createStep} of 2: {createStep === 1 ? "Startup Concept & Team Name" : "Leader Contact & Verification"}
                     </span>
-                    <span className="text-[10px] text-emerald-400 font-bold bg-emerald-500/15 border border-emerald-500/30 px-2.5 py-0.5 rounded-full">
-                      ✓ Verified College Identity
-                    </span>
+                    <span className="text-white/50">{createStep === 1 ? "50% Completed" : "100% Ready"}</span>
                   </div>
-
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs font-sans">
-                    <div>
-                      <label className="block text-white/60 mb-1">Lead Full Name</label>
-                      <input
-                        type="text"
-                        disabled
-                        value={sessionUser.name || "Student Leader"}
-                        className="w-full rounded-2xl border border-white/10 bg-white/[0.03] px-4 py-2.5 text-white/70 outline-none cursor-not-allowed backdrop-blur-xl text-xs font-medium"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-white/60 mb-1">Lead College Email</label>
-                      <input
-                        type="email"
-                        disabled
-                        value={sessionUser.email || ""}
-                        className="w-full rounded-2xl border border-white/10 bg-white/[0.03] px-4 py-2.5 text-white/70 outline-none cursor-not-allowed backdrop-blur-xl text-xs font-mono"
-                      />
-                    </div>
-                  </div>
-
-                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs font-sans pt-1">
-                    <div>
-                      <label className="block text-white/60 mb-1">College Roll Number</label>
-                      <input
-                        type="text"
-                        placeholder="e.g. 12621001099"
-                        value={leadRoll}
-                        onChange={(e) => setLeadRoll(e.target.value)}
-                        className="w-full rounded-2xl border border-white/15 bg-white/[0.05] hover:bg-white/[0.08] focus:bg-white/[0.1] px-4 py-2.5 text-white placeholder-white/40 outline-none backdrop-blur-xl focus:border-[#f20089] focus:ring-1 focus:ring-[#f20089]/50 shadow-inner transition-all text-xs font-mono"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-white/60 mb-1">WhatsApp / Contact Phone *</label>
-                      <input
-                        type="tel"
-                        required
-                        placeholder="e.g. +91 9876543210"
-                        value={leadPhone}
-                        onChange={(e) => setLeadPhone(e.target.value)}
-                        className="w-full rounded-2xl border border-white/15 bg-white/[0.05] hover:bg-white/[0.08] focus:bg-white/[0.1] px-4 py-2.5 text-white placeholder-white/40 outline-none backdrop-blur-xl focus:border-[#f20089] focus:ring-1 focus:ring-[#f20089]/50 shadow-inner transition-all text-xs font-mono"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-white/60 mb-1">Lead Department / Branch</label>
-                      <select
-                        value={department}
-                        onChange={(e) => setDepartment(e.target.value)}
-                        className="w-full rounded-2xl border border-white/15 bg-white/[0.05] hover:bg-white/[0.08] focus:bg-white/[0.1] px-4 py-2.5 text-white outline-none backdrop-blur-xl focus:border-[#f20089] focus:ring-1 focus:ring-[#f20089]/50 shadow-inner transition-all text-xs"
-                      >
-                        <option className="bg-neutral-900 text-white" value="Computer Science & Engineering">Computer Science & Engineering</option>
-                        <option className="bg-neutral-900 text-white" value="Information Technology">Information Technology</option>
-                        <option className="bg-neutral-900 text-white" value="Electronics & Communication">Electronics & Communication</option>
-                        <option className="bg-neutral-900 text-white" value="Electrical Engineering">Electrical Engineering</option>
-                        <option className="bg-neutral-900 text-white" value="Mechanical Engineering">Mechanical Engineering</option>
-                        <option className="bg-neutral-900 text-white" value="Chemical Engineering">Chemical Engineering</option>
-                        <option className="bg-neutral-900 text-white" value="Biotechnology">Biotechnology</option>
-                        <option className="bg-neutral-900 text-white" value="Civil Engineering">Civil Engineering</option>
-                        <option className="bg-neutral-900 text-white" value="Applied Electronics & Instrumentation">Applied Electronics</option>
-                        <option className="bg-neutral-900 text-white" value="MCA / Management">MCA / Management</option>
-                      </select>
-                    </div>
+                  <div className="h-1.5 w-full bg-white/10 rounded-full overflow-hidden">
+                    <div
+                      className="h-full bg-gradient-to-r from-purple-500 to-[#f20089] transition-all duration-300"
+                      style={{ width: createStep === 1 ? "50%" : "100%" }}
+                    />
                   </div>
                 </div>
 
-                {/* Team & Venture Pitch Info */}
-                <div className="rounded-3xl border border-white/15 bg-white/[0.03] p-5 sm:p-6 space-y-4 backdrop-blur-xl shadow-inner">
-                  <span className="text-xs font-bold uppercase tracking-wider text-white flex items-center gap-1.5">
-                    <span>💡</span>
-                    <span>Team & Venture Pitch Details</span>
-                  </span>
-
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs font-sans">
-                    <div>
-                      <label className="block text-white/70 font-semibold mb-1">Team Name *</label>
-                      <input
-                        type="text"
-                        required
-                        placeholder="e.g. EcoSphere Pioneers"
-                        value={teamName}
-                        onChange={(e) => setTeamName(e.target.value)}
-                        className="w-full rounded-2xl border border-white/15 bg-white/[0.05] hover:bg-white/[0.08] focus:bg-white/[0.1] px-4 py-2.5 text-white placeholder-white/40 outline-none backdrop-blur-xl focus:border-[#f20089] focus:ring-1 focus:ring-[#f20089]/50 shadow-inner transition-all text-xs font-medium"
-                      />
+                {/* STEP 1: STARTUP CONCEPT & TEAM NAME */}
+                {createStep === 1 && (
+                  <div className="rounded-3xl border border-white/20 bg-black/90 p-6 sm:p-8 space-y-6 backdrop-blur-3xl shadow-2xl animate-fadeIn">
+                    <div className="space-y-1">
+                      <span className="text-[11px] font-mono font-bold text-[#f20089] uppercase tracking-widest block">
+                        Step 1: Startup Identity
+                      </span>
+                      <h3 className="text-xl sm:text-2xl font-black text-white font-[family-name:var(--font-google-sans)]">
+                        What is your startup venture & team name?
+                      </h3>
+                      <p className="text-xs text-neutral-400 font-sans leading-relaxed">
+                        Every Hult Prize OnCampus venture starts with a bold name and a mission statement.
+                      </p>
                     </div>
 
-                    <div>
-                      <label className="block text-white/70 font-semibold mb-1">
-                        Venture / Pitch Idea Title
-                      </label>
-                      <input
-                        type="text"
-                        placeholder="e.g. Solar Bio-Pesticide Generator"
-                        value={ventureName}
-                        onChange={(e) => setVentureName(e.target.value)}
-                        className="w-full rounded-2xl border border-white/15 bg-white/[0.05] hover:bg-white/[0.08] focus:bg-white/[0.1] px-4 py-2.5 text-white placeholder-white/40 outline-none backdrop-blur-xl focus:border-[#f20089] focus:ring-1 focus:ring-[#f20089]/50 shadow-inner transition-all text-xs font-medium"
-                      />
+                    <div className="space-y-4 text-xs font-sans">
+                      <div>
+                        <label className="block text-white font-bold text-xs mb-1.5">
+                          Team Name <span className="text-[#f20089]">*</span>
+                        </label>
+                        <input
+                          type="text"
+                          required
+                          placeholder="e.g. EcoSphere Pioneers"
+                          value={teamName}
+                          onChange={(e) => setTeamName(e.target.value)}
+                          onKeyDown={(e) => {
+                            if (e.key === "Enter") {
+                              e.preventDefault();
+                              if (teamName.trim()) setCreateStep(2);
+                            }
+                          }}
+                          className="w-full rounded-2xl border border-white/20 bg-neutral-900/95 hover:bg-neutral-900 focus:bg-black px-4 py-3 text-white placeholder:text-neutral-500 outline-none focus:border-[#f20089] focus:ring-2 focus:ring-[#f20089]/50 shadow-xl transition-all text-sm font-medium"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block text-white font-bold text-xs mb-1.5">
+                          Venture / Pitch Idea Title <span className="text-white/40 font-normal">(Optional draft)</span>
+                        </label>
+                        <input
+                          type="text"
+                          placeholder="e.g. Solar Bio-Pesticide Generator"
+                          value={ventureName}
+                          onChange={(e) => setVentureName(e.target.value)}
+                          onKeyDown={(e) => {
+                            if (e.key === "Enter") {
+                              e.preventDefault();
+                              if (teamName.trim()) setCreateStep(2);
+                            }
+                          }}
+                          className="w-full rounded-2xl border border-white/20 bg-neutral-900/95 hover:bg-neutral-900 focus:bg-black px-4 py-3 text-white placeholder:text-neutral-500 outline-none focus:border-[#f20089] focus:ring-2 focus:ring-[#f20089]/50 shadow-xl transition-all text-sm font-medium"
+                        />
+                      </div>
+                    </div>
+
+                    {/* Official Criteria Badge */}
+                    <div className="rounded-2xl border border-white/10 bg-white/[0.04] p-4 text-xs font-sans">
+                      <div className="flex items-center justify-between flex-wrap gap-3">
+                        <div className="flex items-center gap-2.5">
+                          <span className="text-xl">👥</span>
+                          <div>
+                            <span className="font-bold text-white block">
+                              Target Team Roster: {minMembers} to {maxMembers} Students
+                            </span>
+                            <span className="text-[11px] text-neutral-400">
+                              Minimum <strong>{minMembers} members</strong> required for official pass validation.
+                            </span>
+                          </div>
+                        </div>
+                        <span className="rounded-full bg-emerald-500/15 border border-emerald-500/30 px-3 py-1 text-[10px] font-bold text-emerald-300 font-mono">
+                          {minMembers}–{maxMembers} Members
+                        </span>
+                      </div>
+                    </div>
+
+                    {/* Step 1 Actions */}
+                    <div className="flex items-center justify-between gap-3 pt-2">
+                      <button
+                        type="button"
+                        onClick={onBack}
+                        className="rounded-2xl bg-white/[0.08] hover:bg-white/15 px-5 py-3 text-xs font-semibold text-white/80 transition-all cursor-pointer"
+                      >
+                        Cancel
+                      </button>
+                      <button
+                        type="button"
+                        disabled={!teamName.trim()}
+                        onClick={() => {
+                          if (!teamName.trim()) {
+                            setErrorMessage("Please enter your team name to proceed.");
+                            return;
+                          }
+                          setErrorMessage(null);
+                          setCreateStep(2);
+                        }}
+                        className="rounded-2xl bg-[#f20089] hover:bg-[#d8007a] disabled:opacity-40 px-7 py-3 text-xs font-bold text-white shadow-lg shadow-[#f20089]/30 transition-all cursor-pointer flex items-center gap-2 hover:scale-[1.02] active:scale-95"
+                      >
+                        <span>Continue to Leader Contact →</span>
+                      </button>
                     </div>
                   </div>
+                )}
 
-                  {/* Official Team Size Criteria Notice */}
-                  <div className="rounded-2xl border border-white/10 bg-white/[0.04] p-4 text-xs font-sans">
-                    <div className="flex items-center justify-between flex-wrap gap-3">
-                      <div className="flex items-center gap-2.5">
-                        <span className="text-xl">👥</span>
-                        <div>
-                          <span className="font-bold text-white block font-[family-name:var(--font-google-sans)]">
-                            Team Size Criteria: {minMembers} to {maxMembers} Students
-                          </span>
-                          <span className="text-[11px] text-white/60">
-                            Minimum <strong>{minMembers} members</strong> required for official eligibility. Teams can have up to <strong>{maxMembers} members</strong>.
-                          </span>
-                        </div>
+                {/* STEP 2: LEADER CONTACT & VERIFICATION */}
+                {createStep === 2 && (
+                  <div className="rounded-3xl border border-white/20 bg-black/90 p-6 sm:p-8 space-y-6 backdrop-blur-3xl shadow-2xl animate-fadeIn">
+                    <div className="space-y-1">
+                      <span className="text-[11px] font-mono font-bold text-[#f20089] uppercase tracking-widest block">
+                        Step 2: Team Leader Contact
+                      </span>
+                      <h3 className="text-xl sm:text-2xl font-black text-white font-[family-name:var(--font-google-sans)]">
+                        How can organizers reach you on event day?
+                      </h3>
+                      <p className="text-xs text-neutral-400 font-sans leading-relaxed">
+                        We use WhatsApp to dispatch pitch slot numbers and mentorship updates.
+                      </p>
+                    </div>
+
+                    {/* Verified Identity Badge */}
+                    <div className="rounded-2xl border border-emerald-500/30 bg-emerald-950/30 p-4 flex items-center justify-between gap-3">
+                      <div className="space-y-0.5 text-xs">
+                        <span className="font-bold text-emerald-400 flex items-center gap-1.5">
+                          <span>👑</span>
+                          <span>Verified Leader: {sessionUser.name || "Student Leader"}</span>
+                        </span>
+                        <span className="text-[11px] font-mono text-emerald-300/80 block">
+                          {sessionUser.email}
+                        </span>
                       </div>
-                      <span className="rounded-full bg-emerald-500/15 border border-emerald-500/30 px-3 py-1 text-[10px] font-bold text-emerald-300 font-mono">
-                        {minMembers}–{maxMembers} Members
+                      <span className="text-[10px] font-bold uppercase tracking-wider bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 px-2.5 py-1 rounded-full whitespace-nowrap">
+                        ✓ Verified Institutional ID
                       </span>
                     </div>
-                  </div>
-                </div>
 
-                {/* Info Notice about Code Generation */}
-                <div className="rounded-2xl border border-[#f20089]/30 bg-[#f20089]/10 p-4 text-xs text-neutral-200 flex items-start gap-3">
-                  <span className="text-xl">✨</span>
-                  <div className="space-y-0.5">
-                    <span className="font-bold text-white block">
-                      Automatic Team Invite Code Generation
-                    </span>
-                    <span className="text-white/70 leading-relaxed block font-sans">
-                      When you submit, your team will be created and a unique 6-character Team Code (e.g. <span className="font-mono text-[#f20089] font-bold">HULT-7X9K</span>) will be generated. You can share this code with your co-founders so they can join your team directly.
-                    </span>
-                  </div>
-                </div>
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-xs font-sans">
+                      <div>
+                        <label className="block text-white font-bold text-xs mb-1.5">
+                          WhatsApp / Contact Phone <span className="text-[#f20089]">*</span>
+                        </label>
+                        <input
+                          type="tel"
+                          required
+                          placeholder="e.g. +91 9876543210"
+                          value={leadPhone}
+                          onChange={(e) => setLeadPhone(e.target.value)}
+                          className="w-full rounded-2xl border border-white/20 bg-neutral-900/95 hover:bg-neutral-900 focus:bg-black px-4 py-3 text-white placeholder:text-neutral-500 outline-none focus:border-[#f20089] focus:ring-2 focus:ring-[#f20089]/50 shadow-xl transition-all text-xs font-mono"
+                        />
+                      </div>
 
-                {/* Submit Actions */}
-                <div className="flex items-center justify-end gap-3 pt-4 border-t border-white/10">
-                  <button
-                    type="button"
-                    onClick={onBack}
-                    disabled={loading}
-                    className="rounded-2xl bg-white/[0.08] hover:bg-white/15 px-6 py-3 text-xs font-semibold text-white/80 hover:text-white transition-all cursor-pointer"
-                  >
-                    Cancel
-                  </button>
-                  <button
-                    type="submit"
-                    disabled={loading}
-                    className="rounded-2xl bg-[#f20089] hover:bg-[#d8007a] disabled:opacity-50 px-8 py-3 text-xs font-bold text-white shadow-lg shadow-[#f20089]/30 transition-all cursor-pointer flex items-center gap-2 hover:scale-[1.02] active:scale-95"
-                  >
-                    {loading ? (
-                      <>
-                        <span className="h-3 w-3 rounded-full border-2 border-white/30 border-t-white animate-spin" />
-                        <span>Generating Team Code...</span>
-                      </>
-                    ) : (
-                      <span>Create Team & Generate Invite Code →</span>
-                    )}
-                  </button>
-                </div>
+                      <div>
+                        <label className="block text-white font-bold text-xs mb-1.5">
+                          College Roll Number <span className="text-white/40 font-normal">(Optional)</span>
+                        </label>
+                        <input
+                          type="text"
+                          placeholder="e.g. 12621001099"
+                          value={leadRoll}
+                          onChange={(e) => setLeadRoll(e.target.value)}
+                          className="w-full rounded-2xl border border-white/20 bg-neutral-900/95 hover:bg-neutral-900 focus:bg-black px-4 py-3 text-white placeholder:text-neutral-500 outline-none focus:border-[#f20089] focus:ring-2 focus:ring-[#f20089]/50 shadow-xl transition-all text-xs font-mono"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block text-white font-bold text-xs mb-1.5">
+                          Department / Branch
+                        </label>
+                        <select
+                          value={department}
+                          onChange={(e) => setDepartment(e.target.value)}
+                          className="w-full rounded-2xl border border-white/20 bg-neutral-900/95 hover:bg-neutral-900 focus:bg-black px-4 py-3 text-white outline-none focus:border-[#f20089] focus:ring-2 focus:ring-[#f20089]/50 shadow-xl transition-all text-xs"
+                        >
+                          <option className="bg-neutral-900 text-white" value="Computer Science & Engineering">Computer Science & Engineering</option>
+                          <option className="bg-neutral-900 text-white" value="Information Technology">Information Technology</option>
+                          <option className="bg-neutral-900 text-white" value="Electronics & Communication">Electronics & Communication</option>
+                          <option className="bg-neutral-900 text-white" value="Electrical Engineering">Electrical Engineering</option>
+                          <option className="bg-neutral-900 text-white" value="Mechanical Engineering">Mechanical Engineering</option>
+                          <option className="bg-neutral-900 text-white" value="Chemical Engineering">Chemical Engineering</option>
+                          <option className="bg-neutral-900 text-white" value="Biotechnology">Biotechnology</option>
+                          <option className="bg-neutral-900 text-white" value="Civil Engineering">Civil Engineering</option>
+                          <option className="bg-neutral-900 text-white" value="Applied Electronics & Instrumentation">Applied Electronics</option>
+                          <option className="bg-neutral-900 text-white" value="MCA / Management">MCA / Management</option>
+                        </select>
+                      </div>
+                    </div>
+
+                    {/* Step 2 Actions */}
+                    <div className="flex items-center justify-between gap-3 pt-4 border-t border-white/10">
+                      <button
+                        type="button"
+                        onClick={() => setCreateStep(1)}
+                        disabled={loading}
+                        className="rounded-2xl bg-white/[0.08] hover:bg-white/15 px-5 py-3 text-xs font-semibold text-white/80 transition-all cursor-pointer"
+                      >
+                        ← Back to Step 1
+                      </button>
+
+                      <button
+                        type="submit"
+                        disabled={loading || !leadPhone.trim()}
+                        className="rounded-2xl bg-[#f20089] hover:bg-[#d8007a] disabled:opacity-40 px-8 py-3 text-xs font-bold text-white shadow-lg shadow-[#f20089]/30 transition-all cursor-pointer flex items-center gap-2 hover:scale-[1.02] active:scale-95"
+                      >
+                        {loading ? (
+                          <>
+                            <span className="h-3.5 w-3.5 rounded-full border-2 border-white/30 border-t-white animate-spin" />
+                            <span>Generating Team Code...</span>
+                          </>
+                        ) : (
+                          <span>Create Team & Generate Invite Code 🚀</span>
+                        )}
+                      </button>
+                    </div>
+                  </div>
+                )}
               </form>
             )}
 
             {/* =================================================================== */}
-            {/* SUB-FORM 2: JOIN TEAM FORM (ENTER CODE)                             */}
+            {/* SUB-FORM 2: CONVERSATIONAL STEP-BY-STEP JOIN TEAM WIZARD            */}
             {/* =================================================================== */}
             {registrationMode === "join" && (
               <form onSubmit={handleJoinTeam} className="space-y-6 pt-2 animate-fadeIn">
-                {/* Team Code Entry Box */}
-                <div className="rounded-3xl border border-[#f20089]/40 bg-white/[0.04] p-6 sm:p-7 space-y-3 backdrop-blur-xl shadow-[0_10px_35px_rgba(242,0,137,0.15)]">
-                  <label className="block text-xs font-bold uppercase tracking-wider text-white">
-                    🔑 Enter Team Invite Code *
-                  </label>
-                  <input
-                    type="text"
-                    required
-                    maxLength={12}
-                    placeholder="e.g. HULT-7X9K"
-                    value={joinCode}
-                    onChange={(e) => setJoinCode(e.target.value.toUpperCase())}
-                    className="w-full rounded-2xl border border-white/20 bg-white/[0.08] hover:bg-white/[0.12] focus:bg-white/[0.15] px-4 py-3.5 text-xl sm:text-2xl text-white outline-none focus:border-[#f20089] focus:ring-2 focus:ring-[#f20089]/40 font-mono tracking-widest uppercase font-bold backdrop-blur-xl shadow-inner transition-all"
-                  />
-                  <p className="text-[11px] text-white/50 font-sans">
-                    Enter the exact 6-character code given by your Team Leader. Letters are case-insensitive.
-                  </p>
+                {/* Step Progress Bar */}
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between text-xs font-mono">
+                    <span className="text-[#f20089] font-bold tracking-wider uppercase">
+                      🤝 Step {joinStep} of 2: {joinStep === 1 ? "Enter Invite Code" : "Member Contact & Department"}
+                    </span>
+                    <span className="text-white/50">{joinStep === 1 ? "50% Completed" : "100% Ready"}</span>
+                  </div>
+                  <div className="h-1.5 w-full bg-white/10 rounded-full overflow-hidden">
+                    <div
+                      className="h-full bg-gradient-to-r from-purple-500 to-[#f20089] transition-all duration-300"
+                      style={{ width: joinStep === 1 ? "50%" : "100%" }}
+                    />
+                  </div>
                 </div>
 
-                {/* Member Identity Details */}
-                <div className="rounded-3xl border border-white/15 bg-white/[0.03] p-5 sm:p-6 space-y-4 backdrop-blur-xl shadow-inner">
-                  <div className="flex items-center justify-between">
-                    <span className="text-xs font-bold uppercase tracking-wider text-white flex items-center gap-1.5">
-                      <span>👤</span>
-                      <span>Your Information (Teammate)</span>
-                    </span>
-                    <span className="text-[10px] text-emerald-400 font-bold bg-emerald-500/15 border border-emerald-500/30 px-2.5 py-0.5 rounded-full">
-                      ✓ Verified College Identity
-                    </span>
-                  </div>
+                {/* STEP 1: ENTER TEAM CODE */}
+                {joinStep === 1 && (
+                  <div className="rounded-3xl border border-[#f20089]/50 bg-black/90 p-6 sm:p-8 space-y-6 backdrop-blur-3xl shadow-[0_10px_35px_rgba(242,0,137,0.2)] animate-fadeIn">
+                    <div className="space-y-1">
+                      <span className="text-[11px] font-mono font-bold text-[#f20089] uppercase tracking-widest block">
+                        Step 1: Team Code
+                      </span>
+                      <h3 className="text-xl sm:text-2xl font-black text-white font-[family-name:var(--font-google-sans)]">
+                        Enter your 6-character Team Invite Code
+                      </h3>
+                      <p className="text-xs text-neutral-400 font-sans leading-relaxed">
+                        Enter the team invite code provided by your Team Leader (e.g. <span className="font-mono text-[#f20089]">HULT-7X9K</span>).
+                      </p>
+                    </div>
 
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs font-sans">
                     <div>
-                      <label className="block text-white/60 mb-1">Your Full Name</label>
                       <input
                         type="text"
-                        disabled
-                        value={sessionUser.name || "Student Co-Founder"}
-                        className="w-full rounded-2xl border border-white/10 bg-white/[0.03] px-4 py-2.5 text-white/70 outline-none cursor-not-allowed backdrop-blur-xl text-xs font-medium"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-white/60 mb-1">Your College Email</label>
-                      <input
-                        type="email"
-                        disabled
-                        value={sessionUser.email || ""}
-                        className="w-full rounded-2xl border border-white/10 bg-white/[0.03] px-4 py-2.5 text-white/70 outline-none cursor-not-allowed backdrop-blur-xl text-xs font-mono"
-                      />
-                    </div>
-                  </div>
-
-                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs font-sans pt-1">
-                    <div>
-                      <label className="block text-white/60 mb-1">College Roll Number</label>
-                      <input
-                        type="text"
-                        placeholder="e.g. 12621001099"
-                        value={memberRoll}
-                        onChange={(e) => setMemberRoll(e.target.value)}
-                        className="w-full rounded-2xl border border-white/15 bg-white/[0.05] hover:bg-white/[0.08] focus:bg-white/[0.1] px-4 py-2.5 text-white placeholder-white/40 outline-none backdrop-blur-xl focus:border-[#f20089] focus:ring-1 focus:ring-[#f20089]/50 shadow-inner transition-all text-xs font-mono"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-white/60 mb-1">WhatsApp / Contact Phone *</label>
-                      <input
-                        type="tel"
                         required
-                        placeholder="e.g. +91 9876543210"
-                        value={memberPhone}
-                        onChange={(e) => setMemberPhone(e.target.value)}
-                        className="w-full rounded-2xl border border-white/15 bg-white/[0.05] hover:bg-white/[0.08] focus:bg-white/[0.1] px-4 py-2.5 text-white placeholder-white/40 outline-none backdrop-blur-xl focus:border-[#f20089] focus:ring-1 focus:ring-[#f20089]/50 shadow-inner transition-all text-xs font-mono"
+                        maxLength={12}
+                        placeholder="e.g. HULT-7X9K"
+                        value={joinCode}
+                        onChange={(e) => setJoinCode(e.target.value.toUpperCase())}
+                        onKeyDown={(e) => {
+                          if (e.key === "Enter") {
+                            e.preventDefault();
+                            if (joinCode.trim()) setJoinStep(2);
+                          }
+                        }}
+                        className="w-full rounded-2xl border border-white/20 bg-neutral-900/95 hover:bg-neutral-900 focus:bg-black px-5 py-4 text-2xl sm:text-3xl text-white outline-none focus:border-[#f20089] focus:ring-2 focus:ring-[#f20089]/50 font-mono tracking-widest uppercase font-bold shadow-2xl transition-all"
                       />
                     </div>
-                    <div>
-                      <label className="block text-white/60 mb-1">Your Department / Branch</label>
-                      <select
-                        value={memberDepartment}
-                        onChange={(e) => setMemberDepartment(e.target.value)}
-                        className="w-full rounded-2xl border border-white/15 bg-white/[0.05] hover:bg-white/[0.08] focus:bg-white/[0.1] px-4 py-2.5 text-white outline-none backdrop-blur-xl focus:border-[#f20089] focus:ring-1 focus:ring-[#f20089]/50 shadow-inner transition-all text-xs"
+
+                    <div className="flex items-center justify-between gap-3 pt-2">
+                      <button
+                        type="button"
+                        onClick={onBack}
+                        className="rounded-2xl bg-white/[0.08] hover:bg-white/15 px-5 py-3 text-xs font-semibold text-white/80 transition-all cursor-pointer"
                       >
-                        <option className="bg-neutral-900 text-white" value="Computer Science & Engineering">Computer Science & Engineering</option>
-                        <option className="bg-neutral-900 text-white" value="Information Technology">Information Technology</option>
-                        <option className="bg-neutral-900 text-white" value="Electronics & Communication">Electronics & Communication</option>
-                        <option className="bg-neutral-900 text-white" value="Electrical Engineering">Electrical Engineering</option>
-                        <option className="bg-neutral-900 text-white" value="Mechanical Engineering">Mechanical Engineering</option>
-                        <option className="bg-neutral-900 text-white" value="Chemical Engineering">Chemical Engineering</option>
-                        <option className="bg-neutral-900 text-white" value="Biotechnology">Biotechnology</option>
-                        <option className="bg-neutral-900 text-white" value="Civil Engineering">Civil Engineering</option>
-                        <option className="bg-neutral-900 text-white" value="Applied Electronics & Instrumentation">Applied Electronics</option>
-                        <option className="bg-neutral-900 text-white" value="MCA / Management">MCA / Management</option>
-                      </select>
+                        Cancel
+                      </button>
+
+                      <button
+                        type="button"
+                        disabled={!joinCode.trim()}
+                        onClick={() => {
+                          if (!joinCode.trim()) {
+                            setErrorMessage("Please enter a valid Team Invite Code.");
+                            return;
+                          }
+                          setErrorMessage(null);
+                          setJoinStep(2);
+                        }}
+                        className="rounded-2xl bg-[#f20089] hover:bg-[#d8007a] disabled:opacity-40 px-7 py-3 text-xs font-bold text-white shadow-lg shadow-[#f20089]/30 transition-all cursor-pointer flex items-center gap-2 hover:scale-[1.02] active:scale-95"
+                      >
+                        <span>Next: Enter Contact Info →</span>
+                      </button>
                     </div>
                   </div>
-                </div>
+                )}
 
-                {/* Submit Actions */}
-                <div className="flex items-center justify-end gap-3 pt-4 border-t border-white/10">
-                  <button
-                    type="button"
-                    onClick={onBack}
-                    disabled={loading}
-                    className="rounded-2xl bg-white/[0.08] hover:bg-white/15 px-6 py-3 text-xs font-semibold text-white/80 hover:text-white transition-all cursor-pointer"
-                  >
-                    Cancel
-                  </button>
-                  <button
-                    type="submit"
-                    disabled={loading}
-                    className="rounded-2xl bg-[#f20089] hover:bg-[#d8007a] disabled:opacity-50 px-8 py-3 text-xs font-bold text-white shadow-lg shadow-[#f20089]/30 transition-all cursor-pointer flex items-center gap-2 hover:scale-[1.02] active:scale-95"
-                  >
-                    {loading ? (
-                      <>
-                        <span className="h-3 w-3 rounded-full border-2 border-white/30 border-t-white animate-spin" />
-                        <span>Verifying Team Code...</span>
-                      </>
-                    ) : (
-                      <span>Verify Code & Join Team →</span>
-                    )}
-                  </button>
-                </div>
+                {/* STEP 2: MEMBER CONTACT INFO */}
+                {joinStep === 2 && (
+                  <div className="rounded-3xl border border-white/20 bg-black/90 p-6 sm:p-8 space-y-6 backdrop-blur-3xl shadow-2xl animate-fadeIn">
+                    <div className="space-y-1">
+                      <span className="text-[11px] font-mono font-bold text-[#f20089] uppercase tracking-widest block">
+                        Step 2: Teammate Contact
+                      </span>
+                      <h3 className="text-xl sm:text-2xl font-black text-white font-[family-name:var(--font-google-sans)]">
+                        Provide your phone number for team roster updates
+                      </h3>
+                    </div>
+
+                    {/* Verified Identity Badge */}
+                    <div className="rounded-2xl border border-emerald-500/30 bg-emerald-950/30 p-4 flex items-center justify-between gap-3">
+                      <div className="space-y-0.5 text-xs">
+                        <span className="font-bold text-emerald-400 flex items-center gap-1.5">
+                          <span>👤</span>
+                          <span>Joining Member: {sessionUser.name || "Student Co-Founder"}</span>
+                        </span>
+                        <span className="text-[11px] font-mono text-emerald-300/80 block">
+                          {sessionUser.email}
+                        </span>
+                      </div>
+                      <span className="text-[10px] font-bold uppercase tracking-wider bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 px-2.5 py-1 rounded-full whitespace-nowrap">
+                        ✓ Verified Institutional ID
+                      </span>
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-xs font-sans">
+                      <div>
+                        <label className="block text-white font-bold text-xs mb-1.5">
+                          WhatsApp / Contact Phone <span className="text-[#f20089]">*</span>
+                        </label>
+                        <input
+                          type="tel"
+                          required
+                          placeholder="e.g. +91 9876543210"
+                          value={memberPhone}
+                          onChange={(e) => setMemberPhone(e.target.value)}
+                          className="w-full rounded-2xl border border-white/20 bg-neutral-900/95 hover:bg-neutral-900 focus:bg-black px-4 py-3 text-white placeholder:text-neutral-500 outline-none focus:border-[#f20089] focus:ring-2 focus:ring-[#f20089]/50 shadow-xl transition-all text-xs font-mono"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block text-white font-bold text-xs mb-1.5">
+                          College Roll Number <span className="text-white/40 font-normal">(Optional)</span>
+                        </label>
+                        <input
+                          type="text"
+                          placeholder="e.g. 12621001099"
+                          value={memberRoll}
+                          onChange={(e) => setMemberRoll(e.target.value)}
+                          className="w-full rounded-2xl border border-white/20 bg-neutral-900/95 hover:bg-neutral-900 focus:bg-black px-4 py-3 text-white placeholder:text-neutral-500 outline-none focus:border-[#f20089] focus:ring-2 focus:ring-[#f20089]/50 shadow-xl transition-all text-xs font-mono"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block text-white font-bold text-xs mb-1.5">
+                          Your Department / Branch
+                        </label>
+                        <select
+                          value={memberDepartment}
+                          onChange={(e) => setMemberDepartment(e.target.value)}
+                          className="w-full rounded-2xl border border-white/20 bg-neutral-900/95 hover:bg-neutral-900 focus:bg-black px-4 py-3 text-white outline-none focus:border-[#f20089] focus:ring-2 focus:ring-[#f20089]/50 shadow-xl transition-all text-xs"
+                        >
+                          <option className="bg-neutral-900 text-white" value="Computer Science & Engineering">Computer Science & Engineering</option>
+                          <option className="bg-neutral-900 text-white" value="Information Technology">Information Technology</option>
+                          <option className="bg-neutral-900 text-white" value="Electronics & Communication">Electronics & Communication</option>
+                          <option className="bg-neutral-900 text-white" value="Electrical Engineering">Electrical Engineering</option>
+                          <option className="bg-neutral-900 text-white" value="Mechanical Engineering">Mechanical Engineering</option>
+                          <option className="bg-neutral-900 text-white" value="Chemical Engineering">Chemical Engineering</option>
+                          <option className="bg-neutral-900 text-white" value="Biotechnology">Biotechnology</option>
+                          <option className="bg-neutral-900 text-white" value="Civil Engineering">Civil Engineering</option>
+                          <option className="bg-neutral-900 text-white" value="Applied Electronics & Instrumentation">Applied Electronics</option>
+                          <option className="bg-neutral-900 text-white" value="MCA / Management">MCA / Management</option>
+                        </select>
+                      </div>
+                    </div>
+
+                    {/* Step 2 Actions */}
+                    <div className="flex items-center justify-between gap-3 pt-4 border-t border-white/10">
+                      <button
+                        type="button"
+                        onClick={() => setJoinStep(1)}
+                        disabled={loading}
+                        className="rounded-2xl bg-white/[0.08] hover:bg-white/15 px-5 py-3 text-xs font-semibold text-white/80 transition-all cursor-pointer"
+                      >
+                        ← Back to Step 1
+                      </button>
+
+                      <button
+                        type="submit"
+                        disabled={loading || !memberPhone.trim()}
+                        className="rounded-2xl bg-[#f20089] hover:bg-[#d8007a] disabled:opacity-40 px-8 py-3 text-xs font-bold text-white shadow-lg shadow-[#f20089]/30 transition-all cursor-pointer flex items-center gap-2 hover:scale-[1.02] active:scale-95"
+                      >
+                        {loading ? (
+                          <>
+                            <span className="h-3.5 w-3.5 rounded-full border-2 border-white/30 border-t-white animate-spin" />
+                            <span>Verifying Team Code...</span>
+                          </>
+                        ) : (
+                          <span>Verify Code & Join Team 🤝</span>
+                        )}
+                      </button>
+                    </div>
+                  </div>
+                )}
               </form>
             )}
           </div>
