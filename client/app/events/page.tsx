@@ -27,6 +27,8 @@ export interface PublicEvent {
 }
 
 import EventInsideView from "./components/EventInsideView";
+import LiveAuditoriumHub from "@/components/events/LiveAuditoriumHub";
+import StudentLeaderboard from "@/components/events/StudentLeaderboard";
 
 export default function EventsPage() {
   const { data: session, status } = useSession();
@@ -538,6 +540,16 @@ export default function EventsPage() {
                 ))}
               </div>
             ) : null}
+
+            {/* Point 7: Live Auditorium Agenda & Q&A / Poll Hub */}
+            <div className="mt-16">
+              <LiveAuditoriumHub />
+            </div>
+
+            {/* Point 8: Student Startup Leaderboard & Venture Milestone Showcase */}
+            <div className="mt-16">
+              <StudentLeaderboard />
+            </div>
           </>
         )}
       </main>

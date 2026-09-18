@@ -7,6 +7,8 @@ import { QRCodeSVG } from "qrcode.react";
 import { ExternalLink, Sparkles, RotateCcw, Check, Clipboard, Share2, ShieldCheck, QrCode, AlertTriangle, Crown, User, Building2, Phone, Clock, Users } from "lucide-react";
 import { parseHeritageEmail } from "@/lib/heritage-parser";
 import type { PublicEvent } from "../page";
+import LiveAuditoriumHub from "@/components/events/LiveAuditoriumHub";
+import StudentLeaderboard from "@/components/events/StudentLeaderboard";
 
 interface EventInsideViewProps {
   event: PublicEvent;
@@ -1363,6 +1365,16 @@ export default function EventInsideView({
             )}
           </div>
         )}
+
+        {/* Point 7: Live Auditorium Hub & Stage Q&A/Poll */}
+        <div className="mt-16">
+          <LiveAuditoriumHub />
+        </div>
+
+        {/* Point 8: Student Startup Leaderboard & Milestone Stepper */}
+        <div className="mt-16">
+          <StudentLeaderboard />
+        </div>
       </div>
     </div>
   );
