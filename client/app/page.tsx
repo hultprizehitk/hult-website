@@ -172,6 +172,23 @@ export default function Home() {
     >
       {/* 
         ========================================================================
+        PERMANENT WEBGL ANIMATED BACKGROUND LAYER (Aurora Shader)
+        - Stays active behind the entire site (hero and all sections below)
+        ========================================================================
+      */}
+      <div className="fixed inset-0 pointer-events-none z-0 opacity-40">
+        <AnimatedGradient
+          config={{
+            preset: "Aurora",
+            speed: 14,
+          }}
+          noise={{ opacity: 0.1, scale: 1 }}
+        />
+        <div className="absolute inset-0 bg-radial from-transparent via-black/40 to-black pointer-events-none" />
+      </div>
+
+      {/* 
+        ========================================================================
         1. MAIN LANDING PAGE (Features Campus View, Sky Title, Clouds & Birds)
         ========================================================================
       */}

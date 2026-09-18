@@ -7,12 +7,9 @@ import Link from "next/link";
 export default function SiteFooter() {
   return (
     <footer className="relative w-full bg-black text-white border-t border-white/10 font-[family-name:var(--font-google-sans)] overflow-hidden">
-      {/* Glow highlight */}
-      <div className="pointer-events-none absolute bottom-0 inset-x-0 h-48 bg-gradient-to-t from-[#f20089]/10 to-transparent" />
-
       <div className="relative z-10 max-w-7xl mx-auto px-6 sm:px-10 lg:px-16 pt-16 pb-12 space-y-12">
         <div className="grid grid-cols-1 md:grid-cols-4 gap-10">
-          {/* Col 1: Brand Info */}
+          {/* Col 1: Brand */}
           <div className="space-y-4 md:col-span-1">
             <div className="flex items-center gap-3">
               <div className="relative aspect-[1080/659] h-8">
@@ -34,17 +31,13 @@ export default function SiteFooter() {
             </div>
 
             <p className="text-xs text-white/60 font-sans leading-relaxed">
-              Hult Prize on Campus at Heritage Institute of Technology. Empowering students to build scalable social enterprises that change the world.
+              Hult Prize on Campus at Heritage Institute of Technology. Empowering student founders to create scalable social enterprises.
             </p>
-
-            <span className="inline-block rounded-full bg-[#f20089]/20 border border-[#f20089]/40 px-3 py-1 text-[10px] font-bold text-[#f20089] uppercase tracking-wider">
-              Official Campus Chapter
-            </span>
           </div>
 
-          {/* Col 2: Navigation Links */}
+          {/* Col 2: Navigation */}
           <div className="space-y-3 font-sans">
-            <h4 className="text-xs font-bold uppercase tracking-wider text-white font-[family-name:var(--font-google-sans)]">
+            <h4 className="text-xs font-bold uppercase tracking-wider text-white">
               Navigation
             </h4>
             <ul className="space-y-2 text-xs text-white/70">
@@ -76,10 +69,10 @@ export default function SiteFooter() {
             </ul>
           </div>
 
-          {/* Col 3: Student & Admin Portals */}
+          {/* Col 3: Services */}
           <div className="space-y-3 font-sans">
-            <h4 className="text-xs font-bold uppercase tracking-wider text-white font-[family-name:var(--font-google-sans)]">
-              Portals & Services
+            <h4 className="text-xs font-bold uppercase tracking-wider text-white">
+              Portals
             </h4>
             <ul className="space-y-2 text-xs text-white/70">
               <li>
@@ -99,21 +92,21 @@ export default function SiteFooter() {
               </li>
               <li>
                 <Link href="/portal" className="hover:text-[#f20089] transition-colors">
-                  Admin Management Portal 🔐
+                  Admin Management Portal
                 </Link>
               </li>
             </ul>
           </div>
 
-          {/* Col 4: Venue & Contact */}
+          {/* Col 4: Contact */}
           <div className="space-y-3 font-sans">
-            <h4 className="text-xs font-bold uppercase tracking-wider text-white font-[family-name:var(--font-google-sans)]">
-              Campus Venue & Contact
+            <h4 className="text-xs font-bold uppercase tracking-wider text-white">
+              Campus Venue
             </h4>
             <div className="text-xs text-white/70 space-y-1.5 font-mono">
               <p className="font-semibold text-white">Heritage Institute of Technology</p>
-              <p>Chowbaga Road, Anandapur, PO East Kolkata Township, Kolkata, WB 700107</p>
-              <p className="text-pink-300 pt-1">✉️ hultprizehitk@heritageit.edu.in</p>
+              <p>Chowbaga Road, Anandapur, Kolkata, WB 700107</p>
+              <p className="text-pink-300 pt-1">hultprizehitk@heritageit.edu.in</p>
             </div>
           </div>
         </div>
