@@ -240,11 +240,8 @@ export default function LiveAuditoriumHub() {
             </span>
           </div>
           <h2 className="text-2xl md:text-3xl font-bold tracking-tight">
-            Event Schedule & Auditorium Feed
+            Event Schedule & Stage
           </h2>
-          <p className="text-sm text-neutral-400 mt-1">
-            Follow live keynotes, team pitch rounds, and main stage updates.
-          </p>
         </div>
 
         {/* Tab Switcher */}

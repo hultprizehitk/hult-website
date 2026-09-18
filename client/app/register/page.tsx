@@ -418,8 +418,8 @@ export default function RegisterPage() {
                 <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-white mb-2 font-[family-name:var(--font-google-sans)]">
                   Student Sign In
                 </h1>
-                <p className="text-xs sm:text-sm text-neutral-300 max-w-sm mx-auto mb-8 leading-relaxed">
-                  Sign in using your official Heritage college Google account to participate in Hult Prize HITK 2027.
+                <p className="text-xs sm:text-sm text-neutral-300 max-w-sm mx-auto mb-8 font-sans">
+                  Sign in with your @heritageit.edu.in account.
                 </p>
 
                 {/* Error Banner */}

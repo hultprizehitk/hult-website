@@ -557,8 +557,8 @@ export default function EventInsideView({
                       {event.title} Official Pass
                     </h3>
 
-                    <p className="text-xs sm:text-sm text-white/80 font-sans leading-relaxed">
-                      Your team roster meets the official Hult Prize eligibility standard. Present this scannable digital QR pass at the Auditorium entrance on event day.
+                    <p className="text-xs text-white/70 font-sans">
+                      Scannable digital pass for main stage entry.
                     </p>
 
                     <div className="grid grid-cols-2 gap-3 pt-1 text-xs font-mono">
@@ -602,8 +602,8 @@ export default function EventInsideView({
                       Roster Pending ({totalJoined}/{minMembers})
                     </span>
                   </div>
-                  <p className="text-amber-200/90 leading-relaxed font-sans text-xs">
-                    Official Hult Prize rules stipulate a minimum of <strong>{minMembers} members</strong> per team to unlock your Auditorium Pass. Share your Team Invite Code (<strong className="font-mono text-white">{registeredTeam.teamCode}</strong>) with co-founders to unlock your pass!
+                  <p className="text-amber-200/90 font-sans text-xs">
+                    Needs {minMembers - totalJoined} more member(s) to unlock auditorium pass.
                   </p>
                 </div>
               </div>
@@ -796,8 +796,8 @@ export default function EventInsideView({
               <h2 className="text-2xl sm:text-3xl font-black text-white mt-2">
                 Sign In to Register for {event.title}
               </h2>
-              <p className="text-xs text-white/70 mt-2 max-w-md mx-auto leading-relaxed font-sans">
-                Participation in Hult Prize OnCampus events is exclusively open to verified Heritage Institute of Technology students. Please sign in with your college Google account (<span className="text-[#f20089] font-mono">@heritageit.edu.in</span>) to proceed.
+              <p className="text-xs text-white/70 mt-2 max-w-md mx-auto font-sans">
+                Sign in with your @heritageit.edu.in email to register.
               </p>
             </div>
 
@@ -843,9 +843,6 @@ export default function EventInsideView({
               <h2 className="text-2xl sm:text-3xl font-black text-white mt-2">
                 Team Registration Studio
               </h2>
-              <p className="text-xs text-white/60 mt-1 font-sans">
-                Choose an option below to either create a new venture team or join your co-founders using a Team Code.
-              </p>
             </div>
 
             {/* Error Alert */}
@@ -886,9 +883,8 @@ export default function EventInsideView({
                 <h3 className="text-base font-bold text-white mb-1 font-[family-name:var(--font-google-sans)]">
                   Create a New Team
                 </h3>
-                <p className="text-xs text-white/60 leading-relaxed font-sans">
-                  Become the Team Leader, set your venture idea, and generate a unique{" "}
-                  <strong className="text-pink-300 font-semibold">Team Invite Code</strong> to invite your co-founders.
+                <p className="text-xs text-white/60 font-sans">
+                  Register a new startup team and generate an invite code.
                 </p>
               </button>
 
@@ -920,8 +916,8 @@ export default function EventInsideView({
                 <h3 className="text-base font-bold text-white mb-1 font-[family-name:var(--font-google-sans)]">
                   Join with Team Code
                 </h3>
-                <p className="text-xs text-white/60 leading-relaxed font-sans">
-                  Have a 6-character Team Code from your Team Leader? Enter it here to join your co-founders instantly.
+                <p className="text-xs text-white/60 font-sans">
+                  Enter a 6-character team code to join.
                 </p>
               </button>
             </div>
@@ -957,9 +953,6 @@ export default function EventInsideView({
                       <h3 className="text-xl sm:text-2xl font-bold text-white tracking-tight font-[family-name:var(--font-google-sans)]">
                         What is your startup venture & team name?
                       </h3>
-                      <p className="text-xs text-zinc-400 leading-relaxed font-sans">
-                        Provide a team title and your pitch idea concept for the competition roster.
-                      </p>
                     </div>
 
                     <div className="space-y-4 text-xs">
@@ -1003,23 +996,6 @@ export default function EventInsideView({
                       </div>
                     </div>
 
-                    {/* Minimalist Team Size Criteria */}
-                    <div className="rounded-2xl border border-white/10 bg-white/[0.02] p-4 text-xs">
-                      <div className="flex items-center justify-between flex-wrap gap-3">
-                        <div className="space-y-0.5">
-                          <span className="font-semibold text-white block">
-                            Required Team Roster Capacity
-                          </span>
-                          <span className="text-[11px] text-zinc-400 block">
-                            Minimum {minMembers} to maximum {maxMembers} members per registered team.
-                          </span>
-                        </div>
-                        <span className="rounded-full bg-white/10 border border-white/15 px-3 py-1 text-[10px] font-mono text-zinc-200 font-bold uppercase tracking-wider">
-                          {minMembers}–{maxMembers} Members
-                        </span>
-                      </div>
-                    </div>
-
                     {/* Step 1 Navigation */}
                     <div className="flex items-center justify-between gap-3 pt-2">
                       <button
@@ -1058,9 +1034,6 @@ export default function EventInsideView({
                       <h3 className="text-xl sm:text-2xl font-bold text-white tracking-tight font-[family-name:var(--font-google-sans)]">
                         Team Leader Contact & Credentials
                       </h3>
-                      <p className="text-xs text-zinc-400 leading-relaxed font-sans">
-                        Provide a WhatsApp contact number for pitch schedule notifications and event day communication.
-                      </p>
                     </div>
 
                     {/* Verified Identity Badge (Minimalist Dark Glass) */}

@@ -162,9 +162,6 @@ export default function StudentLeaderboard() {
         <h2 className="text-3xl md:text-4xl font-extrabold tracking-tight">
           Competing Teams & Leaderboard
         </h2>
-        <p className="text-sm text-neutral-400 mt-2">
-          Discover the student startups pitching for the $1M Hult Prize at Heritage Institute.
-        </p>
       </div>
 
       {/* TOP 3 PODIUM CARDS */}
