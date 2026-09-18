@@ -4,6 +4,8 @@ import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import { signIn } from "next-auth/react";
 import { QRCodeSVG } from "qrcode.react";
+import { ExternalLink, Sparkles } from "lucide-react";
+import { parseHeritageEmail } from "@/lib/heritage-parser";
 import type { PublicEvent } from "../page";
 
 interface EventInsideViewProps {
@@ -93,6 +95,17 @@ export default function EventInsideView({
   useEffect(() => {
     fetchRsvpStatus();
   }, [registeredTeam, event._id]);
+
+  // Auto-fill student profile from Heritage institutional identity (Point 3)
+  useEffect(() => {
+    if (sessionUser?.email) {
+      const parsed = parseHeritageEmail(sessionUser.email);
+      if (parsed.branchName) {
+        setDepartment(parsed.branchName);
+        setMemberDepartment(parsed.branchName);
+      }
+    }
+  }, [sessionUser?.email]);
 
   // Read URL params for auto-fill join code (e.g. ?code=HULT-7X9K)
   useEffect(() => {
@@ -387,7 +400,8 @@ export default function EventInsideView({
                 rel="noopener noreferrer"
                 className="inline-flex items-center gap-2 text-xs text-[#f20089] hover:underline font-bold"
               >
-                <span>🔗 External RSVP & Event Page ↗</span>
+                <ExternalLink className="h-3.5 w-3.5 text-[#f20089]" />
+                <span>External RSVP & Event Page</span>
               </a>
             </div>
           )}
@@ -1047,6 +1061,19 @@ export default function EventInsideView({
                       </div>
                       <span className="text-[10px] font-mono font-bold uppercase tracking-wider bg-white/10 text-zinc-200 border border-white/15 px-3 py-1 rounded-full">
                         Verified Institutional Identity
+                      </span>
+                    </div>
+
+                    {/* Auto-fill Identity Micro-Banner */}
+                    <div className="rounded-2xl border border-pink-500/30 bg-pink-500/10 p-3 flex items-center justify-between gap-2 text-xs backdrop-blur-md">
+                      <div className="flex items-center gap-2">
+                        <Sparkles className="h-4 w-4 text-pink-400 shrink-0" />
+                        <span className="text-pink-200 text-[11px] font-mono">
+                          Auto-filled from verified email: <strong className="text-white font-semibold">{parseHeritageEmail(sessionUser?.email || "").fullName}</strong>
+                        </span>
+                      </div>
+                      <span className="text-[10px] uppercase font-bold text-pink-300 font-mono bg-pink-500/20 px-2 py-0.5 rounded-full shrink-0">
+                        Heritage Verified
                       </span>
                     </div>
 
