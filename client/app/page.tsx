@@ -300,7 +300,11 @@ export default function Home() {
           ========================================================================
         */}
         <header
-          className={`fixed top-0 inset-x-0 z-50 flex w-full items-center justify-between px-4 py-3 sm:px-6 sm:py-3.5 md:px-8 transition-all duration-300 font-[family-name:var(--font-google-sans)] bg-transparent border-none ${
+          className={`fixed top-0 inset-x-0 z-50 flex w-full items-center justify-between px-4 py-3 sm:px-6 sm:py-3.5 md:px-8 transition-all duration-300 font-[family-name:var(--font-google-sans)] ${
+            isScrolled
+              ? "bg-black/70 backdrop-blur-xl border-b border-white/10 shadow-2xl py-3"
+              : "bg-transparent border-none py-3.5"
+          } ${
             isLandingRevealed ? "opacity-100 translate-y-0" : "opacity-0 -translate-y-4 pointer-events-none"
           }`}
         >

@@ -127,7 +127,7 @@ export default function EventsPage() {
         HEADER NAVIGATION (100% Identical to Homepage: Logos Left, Nav Right, Transparent)
         ========================================================================
       */}
-      <header className="sticky top-0 z-50 flex w-full items-center justify-between px-4 py-3 sm:px-6 sm:py-3.5 md:px-8 transition-all duration-300 font-[family-name:var(--font-google-sans)] bg-transparent border-none">
+      <header className="fixed top-0 inset-x-0 z-50 flex w-full items-center justify-between px-4 py-3 sm:px-6 sm:py-3.5 md:px-8 transition-all duration-300 font-[family-name:var(--font-google-sans)] bg-black/60 backdrop-blur-md border-b border-white/10">
         {/* Brand Logos */}
         <div className="flex items-center gap-2 sm:gap-3 transition-opacity duration-700">
           <Link href="/" className="relative aspect-[1080/659] h-7 sm:h-8 md:h-9">
@@ -333,7 +333,7 @@ export default function EventsPage() {
         MAIN CONTENT: IN-PAGE EVENT STUDIO OR EVENTS GRID (ZERO POPUP MODALS)
         ========================================================================
       */}
-      <main className="relative z-10 flex-1 flex flex-col items-center justify-center max-w-6xl mx-auto px-4 sm:px-6 text-center py-12 sm:py-16 w-full">
+      <main className="relative z-10 flex-1 flex flex-col items-center justify-center max-w-6xl mx-auto px-4 sm:px-6 text-center pt-20 sm:pt-24 pb-12 sm:pb-16 w-full">
         {selectedEventId ? (
           (() => {
             const currentEvent = events.find((e) => e._id === selectedEventId);

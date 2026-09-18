@@ -16,7 +16,7 @@ export default function SiteHeader({ className = "" }: SiteHeaderProps) {
   return (
     <>
       <header
-        className={`sticky top-0 z-50 flex w-full items-center justify-between px-4 py-3 sm:px-6 sm:py-3.5 md:px-8 transition-all duration-300 font-[family-name:var(--font-google-sans)] bg-black/60 backdrop-blur-md border-b border-white/10 ${className}`}
+        className={`fixed top-0 inset-x-0 z-50 flex w-full items-center justify-between px-4 py-3 sm:px-6 sm:py-3.5 md:px-8 transition-all duration-300 font-[family-name:var(--font-google-sans)] bg-black/60 backdrop-blur-md border-b border-white/10 ${className}`}
       >
         {/* Brand Logos */}
         <div className="flex items-center gap-2 sm:gap-3 transition-opacity duration-700">

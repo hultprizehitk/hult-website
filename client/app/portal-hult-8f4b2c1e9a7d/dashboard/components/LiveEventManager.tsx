@@ -1632,11 +1632,7 @@ export default function LiveEventManager() {
                 {/* Big Center QR Code */}
                 <div className="flex flex-col items-center justify-center p-6 rounded-3xl bg-white backdrop-blur-2xl border border-white/20 shadow-2xl max-w-xs mx-auto">
                   <QRCodeSVG
-                    value={
-                      typeof window !== "undefined"
-                        ? `${window.location.origin}/events/checkin?eventId=${selectedEventId}`
-                        : `https://hultprizehitk.live/events/checkin?eventId=${selectedEventId}`
-                    }
+                    value={`https://hultprizehitk.live/events/checkin?eventId=${selectedEventId}`}
                     size={260}
                     bgColor={"#FFFFFF"}
                     fgColor={"#09090b"}

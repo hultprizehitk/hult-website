@@ -99,7 +99,7 @@ export default function RegisterPage() {
         HEADER NAVIGATION (100% Identical to Homepage: Logos Left, Nav Right, Transparent)
         ========================================================================
       */}
-      <header className="sticky top-0 z-50 flex w-full items-center justify-between px-4 py-3 sm:px-6 sm:py-3.5 md:px-8 transition-all duration-300 font-[family-name:var(--font-google-sans)] bg-transparent border-none">
+      <header className="fixed top-0 inset-x-0 z-50 flex w-full items-center justify-between px-4 py-3 sm:px-6 sm:py-3.5 md:px-8 transition-all duration-300 font-[family-name:var(--font-google-sans)] bg-black/60 backdrop-blur-md border-b border-white/10">
         {/* Brand Logos */}
         <div className="flex items-center gap-2 sm:gap-3 transition-opacity duration-700">
           <Link href="/" className="relative aspect-[1080/659] h-7 sm:h-8 md:h-9">
@@ -264,7 +264,7 @@ export default function RegisterPage() {
       )}
 
       {/* Main Authentication Container */}
-      <main className="relative z-10 flex flex-1 items-center justify-center px-4 py-8 sm:py-12 sm:px-6">
+      <main className="relative z-10 flex flex-1 items-center justify-center px-4 pt-20 sm:pt-24 pb-8 sm:pb-12">
         <div className="w-full max-w-xl sm:max-w-2xl">
           {/* Glassmorphic Auth Card */}
           <div className="relative overflow-hidden rounded-[2.5rem] border border-white/20 bg-white/[0.04] p-6 sm:p-10 md:p-12 shadow-[0_24px_60px_rgba(0,0,0,0.6),inset_0_1.5px_1px_rgba(255,255,255,0.35),inset_0_-1px_1px_rgba(255,255,255,0.1)] backdrop-blur-3xl transition-all duration-500 text-center">

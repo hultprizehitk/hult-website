@@ -3,6 +3,8 @@ import mongoose from "mongoose";
 import { connectDB } from "@/lib/mongodb";
 import Event from "@/models/Event";
 import Team from "@/models/Team";
+import User from "@/models/User";
+import { parseHeritageEmail } from "@/lib/heritage-parser";
 import { auth } from "@/auth";
 import { sendRegistrationConfirmationEmail } from "@/lib/email-templates";
 import { checkRateLimit, getClientIp } from "@/lib/rate-limit";
@@ -183,6 +185,10 @@ export async function POST(req: Request) {
     }
 
     await connectDB();
+    const dbUser = await User.findOne({ email: sessionEmail }).lean();
+    const parsedEmailInfo = parseHeritageEmail(sessionEmail);
+    const officialStudentName = (dbUser?.name || parsedEmailInfo.fullName || "Heritage Student").trim();
+
     const event = await Event.findById(eventId);
 
     if (!event || event.isPublished === false) {
@@ -293,10 +299,10 @@ export async function POST(req: Request) {
       }
 
       const newMember = {
-        name: (body.name || session.user.name || "Student Co-Founder").trim(),
+        name: officialStudentName,
         email: sessionEmail,
         phone: (body.phone || body.leadPhone || "").trim(),
-        department: (body.department || "General").trim(),
+        department: (body.department || parsedEmailInfo.branchName || "General").trim(),
         roll: (body.roll || "").trim(),
         joinedAt: new Date(),
       };
@@ -401,7 +407,7 @@ export async function POST(req: Request) {
     // Generate unique Team Code
     const teamCode = generateTeamCode(existingTeams);
 
-    const verifiedLeadName = (body.leadName || session.user.name || "Student Leader").trim();
+    const verifiedLeadName = officialStudentName;
 
     const newTeam = {
       id: "team_" + Date.now() + "_" + Math.random().toString(36).substring(2, 7),

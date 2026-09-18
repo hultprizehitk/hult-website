@@ -258,9 +258,8 @@ export default function EventInsideView({
 
   // WhatsApp share link generator
   const getWhatsAppShareUrl = (team: any) => {
-    const origin = typeof window !== "undefined" ? window.location.origin : "https://hultprizehitk.com";
-    const inviteUrl = `${origin}/events?event=${event._id}`;
-    const text = `Hey! Join my Hult Prize team *${team.teamName}* for the event *${event.title}* at Heritage Institute.\n\nOpen this link: ${inviteUrl}\nSelect "Join Existing Team" and enter Team Code: *${team.teamCode}*`;
+    const inviteUrl = `https://hultprizehitk.live/events?event=${event._id}&code=${team.teamCode}`;
+    const text = `Hey! Join my Hult Prize team *${team.teamName}* for the event *${event.title}* at Heritage Institute.\n\nOpen this link: ${inviteUrl}\nOr select "Join Existing Team" and enter Team Code: *${team.teamCode}*`;
     return `https://api.whatsapp.com/send?text=${encodeURIComponent(text)}`;
   };
 
@@ -487,7 +486,7 @@ export default function EventInsideView({
                   {/* Scannable Team Invite QR Code */}
                   <div className="flex flex-col items-center justify-center p-3.5 rounded-2xl bg-white backdrop-blur-2xl border border-white/20 shadow-xl self-center md:self-auto">
                     <QRCodeSVG
-                      value={typeof window !== "undefined" ? `${window.location.origin}/events?event=${event._id}&code=${registeredTeam.teamCode}` : `https://hultprizehitk.live/events?event=${event._id}&code=${registeredTeam.teamCode}`}
+                      value={`https://hultprizehitk.live/events?event=${event._id}&code=${registeredTeam.teamCode}`}
                       size={110}
                       bgColor={"#FFFFFF"}
                       fgColor={"#09090b"}
