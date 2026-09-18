@@ -111,8 +111,8 @@ export default async function TeamMemberDetailPage({ params }: TeamDetailPagePro
 
       {/* Main Layout: Unified 3D lanyard space and frosted info card */}
       <div className="relative z-10 mx-auto w-full max-w-7xl px-4 sm:px-8 py-2 flex-1 flex flex-col lg:flex-row items-center justify-between min-h-none lg:min-h-[820px]">
-        {/* 3D Canvas Layer: Top box on mobile, Left half on desktop */}
-        <div className="relative w-full h-[320px] sm:h-[380px] lg:h-full lg:absolute lg:inset-y-0 lg:left-0 lg:w-1/2 z-20 pointer-events-none overflow-visible">
+        {/* 3D Canvas Layer: Top relative box on mobile, Full inset-0 canvas on desktop */}
+        <div className="relative w-full h-[340px] sm:h-[400px] lg:h-full lg:absolute lg:inset-0 lg:w-full z-20 pointer-events-none overflow-visible">
           <ProfileLanyardCard profile={profile} />
         </div>
 
