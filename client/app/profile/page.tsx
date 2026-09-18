@@ -251,10 +251,10 @@ export default function StudentProfilePage() {
       )}
 
       {/* Main Container */}
-      <main className="relative z-10 flex flex-1 items-center justify-center px-4 py-12 sm:px-6">
-        <div className="w-full max-w-lg">
+      <main className="relative z-10 flex flex-1 items-center justify-center px-4 py-8 sm:py-12 sm:px-6">
+        <div className="w-full max-w-xl sm:max-w-2xl">
           {/* Glassmorphic Auth Card */}
-          <div className="relative overflow-hidden rounded-[2.5rem] border border-white/20 bg-white/[0.04] p-8 sm:p-12 shadow-[0_24px_60px_rgba(0,0,0,0.6),inset_0_1.5px_1px_rgba(255,255,255,0.35),inset_0_-1px_1px_rgba(255,255,255,0.1)] backdrop-blur-3xl transition-all duration-500 text-center">
+          <div className="relative overflow-hidden rounded-[2.5rem] border border-white/20 bg-white/[0.04] p-6 sm:p-10 md:p-12 shadow-[0_24px_60px_rgba(0,0,0,0.6),inset_0_1.5px_1px_rgba(255,255,255,0.35),inset_0_-1px_1px_rgba(255,255,255,0.1)] backdrop-blur-3xl transition-all duration-500 text-center">
             {/* Top Iridescent Glass Highlight */}
             <div className="pointer-events-none absolute inset-x-0 top-0 h-[1px] bg-gradient-to-r from-transparent via-white/60 to-transparent" />
 
@@ -387,10 +387,10 @@ export default function StudentProfilePage() {
                         {registrations.map((reg, idx) => (
                           <div
                             key={idx}
-                            className="rounded-xl border border-white/10 bg-black/40 p-3 flex items-center justify-between gap-3 text-xs"
+                            className="rounded-xl border border-white/10 bg-black/40 p-3 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2.5 text-xs"
                           >
                             <div>
-                              <div className="flex items-center gap-2">
+                              <div className="flex items-center gap-2 flex-wrap">
                                 <span className="font-bold text-white">{reg.eventTitle}</span>
                                 <span className="rounded-full bg-[#f20089]/20 border border-[#f20089]/40 px-2 py-0.2 text-[9px] font-bold text-[#f20089] uppercase">
                                   {reg.eventTag}
@@ -417,32 +417,32 @@ export default function StudentProfilePage() {
                   )}
                 </div>
 
-                {/* Action Buttons */}
-                <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
+                {/* Action Buttons Grid */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 w-full pt-2">
                   {isAdmin && (
                     <Link
                       href="/portal"
-                      className="w-full sm:w-auto rounded-full bg-[#f20089] hover:bg-[#d8007a] px-7 py-3 text-xs sm:text-sm font-bold text-white shadow-lg shadow-[#f20089]/40 transition-all hover:scale-105 font-[family-name:var(--font-google-sans)] flex items-center justify-center gap-1.5"
+                      className="w-full rounded-2xl bg-[#f20089] hover:bg-[#d8007a] px-5 py-3 text-xs sm:text-sm font-bold text-white shadow-lg shadow-[#f20089]/40 transition-all hover:scale-[1.02] active:scale-95 font-[family-name:var(--font-google-sans)] flex items-center justify-center gap-1.5"
                     >
                       <span>{adminBadgeLabel} CMS →</span>
                     </Link>
                   )}
                   <Link
                     href="/"
-                    className="w-full sm:w-auto rounded-full border border-white/20 bg-white/[0.06] hover:bg-white/15 px-6 py-3 text-xs sm:text-sm font-semibold text-white transition-all font-[family-name:var(--font-google-sans)]"
+                    className="w-full rounded-2xl border border-white/20 bg-white/[0.06] hover:bg-white/15 px-5 py-3 text-xs sm:text-sm font-semibold text-white transition-all hover:scale-[1.02] active:scale-95 font-[family-name:var(--font-google-sans)] flex items-center justify-center"
                   >
-                    Go to Homepage →
+                    Homepage →
                   </Link>
                   <Link
                     href="/events"
-                    className="w-full sm:w-auto rounded-full border border-white/20 bg-white/[0.06] hover:bg-white/15 px-6 py-3 text-xs sm:text-sm font-semibold text-white transition-all font-[family-name:var(--font-google-sans)]"
+                    className="w-full rounded-2xl border border-white/20 bg-white/[0.06] hover:bg-white/15 px-5 py-3 text-xs sm:text-sm font-semibold text-white transition-all hover:scale-[1.02] active:scale-95 font-[family-name:var(--font-google-sans)] flex items-center justify-center"
                   >
                     View Events
                   </Link>
                   <button
                     type="button"
                     onClick={() => signOut({ callbackUrl: "/register" })}
-                    className="w-full sm:w-auto rounded-full border border-red-500/30 bg-red-950/20 hover:bg-red-900/40 px-5 py-3 text-xs sm:text-sm font-semibold text-red-300 transition-all cursor-pointer font-[family-name:var(--font-google-sans)]"
+                    className="w-full rounded-2xl border border-red-500/30 bg-red-950/20 hover:bg-red-900/40 px-5 py-3 text-xs sm:text-sm font-semibold text-red-300 transition-all cursor-pointer font-[family-name:var(--font-google-sans)] flex items-center justify-center"
                   >
                     Sign Out
                   </button>

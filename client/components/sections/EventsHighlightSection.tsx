@@ -35,7 +35,7 @@ export default function EventsHighlightSection() {
   return (
     <section
       id="events-preview"
-      className="relative w-full py-24 sm:py-32 px-6 sm:px-12 lg:px-20 overflow-hidden z-10 selection:bg-[#f20089] selection:text-white font-[family-name:var(--font-google-sans)]"
+      className="relative w-full py-24 sm:py-32 px-6 sm:px-12 lg:px-20 overflow-hidden z-10 selection:bg-[#f20089] selection:text-white font-[family-name:var(--font-google-sans)] border-y border-white/10 bg-gradient-to-b from-[#f20089]/[0.03] via-white/[0.015] to-black/30 backdrop-blur-[6px] shadow-[0_20px_50px_rgba(0,0,0,0.4)]"
     >
       <div className="relative z-10 max-w-7xl mx-auto space-y-12">
         {/* Section Header */}

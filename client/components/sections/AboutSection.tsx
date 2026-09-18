@@ -9,7 +9,7 @@ export default function AboutSection() {
   return (
     <section
       id="about"
-      className="relative w-full py-24 sm:py-32 px-6 sm:px-12 lg:px-20 overflow-hidden z-10 selection:bg-[#f20089] selection:text-white font-[family-name:var(--font-google-sans)]"
+      className="relative w-full py-24 sm:py-32 px-6 sm:px-12 lg:px-20 overflow-hidden z-10 selection:bg-[#f20089] selection:text-white font-[family-name:var(--font-google-sans)] border-y border-white/10 bg-gradient-to-b from-white/[0.02] via-white/[0.01] to-white/[0.02] backdrop-blur-[6px] shadow-[0_20px_50px_rgba(0,0,0,0.4)]"
     >
       {/* Photo Background Layer with Soft Seamless Radial Blend */}
       <div className="absolute inset-0 z-0 pointer-events-none">

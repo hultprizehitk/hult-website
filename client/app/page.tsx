@@ -14,6 +14,7 @@ import EventsHighlightSection from "@/components/sections/EventsHighlightSection
 import TimelineSection from "@/components/sections/TimelineSection";
 import CtaBannerSection from "@/components/sections/CtaBannerSection";
 import SiteFooter from "@/components/sections/SiteFooter";
+import FadedSectionDivider from "@/components/ui/FadedSectionDivider";
 import AnimatedGradient from "@/components/ui/animated-gradient";
 import { debug } from "@/lib/debug-logger";
 
@@ -524,9 +525,13 @@ export default function Home() {
         ========================================================================
       */}
       <AboutSection />
+      <FadedSectionDivider glowColor="pink" label="Global Challenge Tracks" />
       <ChallengeSection />
+      <FadedSectionDivider glowColor="purple" label="Active Event Series" />
       <EventsHighlightSection />
+      <FadedSectionDivider glowColor="emerald" label="Roadmap to UN HQ" />
       <TimelineSection />
+      <FadedSectionDivider glowColor="cyan" label="Get Started Today" />
       <CtaBannerSection />
       <SiteFooter />
 
