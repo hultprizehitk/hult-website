@@ -1,10 +1,10 @@
 import fs from "fs";
 import path from "path";
-import { sendEmail, Recipient } from "../lib/brevo";
+import { sendEmail, Recipient } from "../lib/mail";
 
-// Basic dotenv reader if BREVO_API_KEY is not already loaded
+// Basic dotenv reader if GOOGLE_WORKSPACE_APP_PASSWORD is not already loaded
 function loadEnv() {
-  if (process.env.BREVO_API_KEY) return;
+  if (process.env.GOOGLE_WORKSPACE_APP_PASSWORD) return;
   const envPaths = [
     path.resolve(__dirname, "../.env"),
     path.resolve(__dirname, "../.env.local"),

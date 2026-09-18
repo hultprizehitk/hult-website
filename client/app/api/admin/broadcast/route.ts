@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { isAuthorizedAdmin } from "@/lib/admin-check";
-import { sendEmail, Recipient } from "@/lib/brevo";
+import { sendEmail, Recipient } from "@/lib/mail";
 import { checkRateLimit, getClientIp } from "@/lib/rate-limit";
 
 function unauthorizedResponse() {

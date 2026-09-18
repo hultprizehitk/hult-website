@@ -1,4 +1,4 @@
-import { sendEmail, SendEmailResult } from "./brevo";
+import { sendEmail, SendEmailResult } from "./mail";
 
 export interface RegistrationConfirmationParams {
   name: string;

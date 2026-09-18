@@ -74,7 +74,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
               role: assignedRole,
             });
 
-            // Trigger Brevo welcome / confirmation email for new Google signup
+            // Trigger Google Workspace welcome / confirmation email for new Google signup
             sendRegistrationConfirmationEmail({
               name: dbUser.name,
               email: dbUser.email,

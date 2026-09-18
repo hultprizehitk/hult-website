@@ -323,7 +323,7 @@ export async function POST(req: Request) {
         }
       }
 
-      // Dispatch Brevo email notification asynchronously
+      // Dispatch Google Workspace email notification asynchronously
       try {
         await sendRegistrationConfirmationEmail({
           name: newMember.name,
