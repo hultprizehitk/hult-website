@@ -6,7 +6,7 @@ import Link from "next/link";
 
 export default function SiteFooter() {
   return (
-    <footer className="relative w-full bg-black text-white border-t border-white/10 font-[family-name:var(--font-google-sans)] overflow-hidden">
+    <footer className="relative w-full bg-[#05000a]/80 backdrop-blur-2xl text-white border-t border-white/10 font-[family-name:var(--font-google-sans)] overflow-hidden">
       <div className="relative z-10 max-w-7xl mx-auto px-6 sm:px-10 lg:px-16 pt-16 pb-12 space-y-12">
         <div className="grid grid-cols-1 md:grid-cols-4 gap-10">
           {/* Col 1: Brand */}

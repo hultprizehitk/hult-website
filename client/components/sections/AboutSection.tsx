@@ -11,19 +11,17 @@ export default function AboutSection() {
       id="about"
       className="relative w-full py-24 sm:py-32 px-6 sm:px-12 lg:px-20 overflow-hidden z-10 selection:bg-[#f20089] selection:text-white font-[family-name:var(--font-google-sans)]"
     >
-      {/* Photo Background Layer with Seamless Vignettes */}
-      <div className="absolute inset-0 z-0">
+      {/* Photo Background Layer with Soft Seamless Radial Blend */}
+      <div className="absolute inset-0 z-0 pointer-events-none">
         <Image
           src="/about-section.png"
           alt="Hult Prize On Campus Ceremony at Heritage Institute of Technology"
           fill
           sizes="100vw"
-          className="object-cover object-center opacity-40 scale-102"
+          className="object-cover object-center opacity-30 mix-blend-screen scale-102"
         />
 
-        <div className="absolute inset-x-0 top-0 h-32 bg-gradient-to-b from-black via-black/80 to-transparent z-[1]" />
-        <div className="absolute inset-x-0 bottom-0 h-32 bg-gradient-to-t from-black via-black/80 to-transparent z-[1]" />
-        <div className="absolute inset-0 bg-radial from-transparent via-black/50 to-black/90 z-[1]" />
+        <div className="absolute inset-0 bg-radial from-transparent via-black/40 to-black/80" />
       </div>
 
       <div className="relative z-10 max-w-7xl mx-auto space-y-16">
