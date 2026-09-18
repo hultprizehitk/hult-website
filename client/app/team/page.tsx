@@ -219,7 +219,7 @@ export default function TeamPage() {
                 href={`/team/${member.slug}`}
                 className="inline-flex items-center gap-1.5 rounded-full border border-pink-500/40 bg-pink-500/10 hover:bg-pink-500/25 px-3 py-1 text-[11px] font-bold text-pink-300 hover:text-white transition-all shadow-sm group/btn"
               >
-                <span>🪪</span>
+                <IdCard className="h-3.5 w-3.5" />
                 <span>View 3D ID Profile</span>
                 <span className="group-hover/btn:translate-x-0.5 transition-transform">→</span>
               </Link>
@@ -646,7 +646,7 @@ export default function TeamPage() {
                                 href={`/team/${cd.slug}`}
                                 className="inline-flex items-center gap-2 rounded-full border border-amber-400/50 bg-amber-400/15 hover:bg-amber-400/30 px-4 py-1.5 text-xs font-bold text-amber-200 hover:text-white shadow-md shadow-amber-500/20 transition-all hover:scale-105"
                               >
-                                <span>🪪</span>
+                                <IdCard className="h-3.5 w-3.5" />
                                 <span>View 3D ID Profile</span>
                                 <span>→</span>
                               </Link>
@@ -782,7 +782,7 @@ export default function TeamPage() {
                                 href={`/team/${dcd.slug}`}
                                 className="inline-flex items-center gap-2 rounded-full border border-sky-400/50 bg-sky-400/15 hover:bg-sky-400/30 px-4 py-1.5 text-xs font-bold text-sky-200 hover:text-white shadow-md shadow-sky-500/20 transition-all hover:scale-105"
                               >
-                                <span>🪪</span>
+                                <IdCard className="h-3.5 w-3.5" />
                                 <span>View 3D ID Profile</span>
                                 <span>→</span>
                               </Link>

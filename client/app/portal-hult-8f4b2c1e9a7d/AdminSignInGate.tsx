@@ -4,6 +4,7 @@ import React from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { signIn } from "next-auth/react";
+import { ShieldCheck, Lock } from "lucide-react";
 import AnimatedGradient from "@/components/ui/animated-gradient";
 
 export default function AdminSignInGate() {
@@ -44,8 +45,8 @@ export default function AdminSignInGate() {
             <div className="pointer-events-none absolute -bottom-16 -left-16 h-48 w-48 rounded-full bg-purple-900/30 blur-3xl" />
 
             {/* Lock Icon Badge */}
-            <div className="relative mx-auto mb-5 flex h-16 w-16 items-center justify-center rounded-2xl bg-white/[0.06] border border-white/20 text-2xl shadow-[0_0_25px_rgba(242,0,137,0.3)]">
-              🛡️
+            <div className="relative mx-auto mb-5 flex h-16 w-16 items-center justify-center rounded-2xl bg-[#f20089]/20 border border-[#f20089]/40 text-[#f20089] shadow-[0_0_25px_rgba(242,0,137,0.3)]">
+              <ShieldCheck className="h-8 w-8" />
             </div>
 
             <span className="inline-flex items-center gap-1.5 rounded-full border border-[#f20089]/40 bg-[#f20089]/15 px-3 py-1 text-[10px] font-extrabold text-[#f20089] uppercase tracking-widest mb-3">
@@ -88,8 +89,9 @@ export default function AdminSignInGate() {
             </button>
 
             {/* Security Notice */}
-            <div className="mt-6 rounded-xl border border-white/10 bg-white/[0.02] p-3 text-[11px] text-white/50 text-left">
-              🔒 <strong>Security Policy:</strong> Only verified administrator accounts listed in the organizing team whitelist are permitted. Unauthorized attempts will be denied.
+            <div className="mt-6 flex items-start gap-2 rounded-xl border border-white/10 bg-white/[0.02] p-3 text-[11px] text-white/50 text-left">
+              <Lock className="h-3.5 w-3.5 text-pink-400 shrink-0 mt-0.5" />
+              <span><strong>Security Policy:</strong> Only verified administrator accounts listed in the organizing team whitelist are permitted. Unauthorized attempts will be denied.</span>
             </div>
           </div>
         </div>

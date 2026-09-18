@@ -4,6 +4,7 @@ import React, { useEffect, useState, Suspense } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import { useSession, signIn } from "next-auth/react";
 import Link from "next/link";
+import { MapPin, AlertTriangle, RotateCcw, CheckCircle2, Crown, User, Check, Clock } from "lucide-react";
 
 function CheckInContent() {
   const searchParams = useSearchParams();
@@ -74,8 +75,8 @@ function CheckInContent() {
         <div className="pointer-events-none absolute -bottom-32 -right-32 h-96 w-96 rounded-full bg-purple-900/30 blur-3xl" />
 
         <div className="relative z-10 max-w-md w-full rounded-3xl border border-white/15 bg-white/[0.04] backdrop-blur-2xl p-8 space-y-6 shadow-2xl">
-          <div className="inline-flex h-16 w-16 items-center justify-center rounded-2xl bg-[#f20089]/20 border border-[#f20089]/40 text-3xl">
-            📍
+          <div className="inline-flex h-16 w-16 items-center justify-center rounded-2xl bg-[#f20089]/20 border border-[#f20089]/40 text-[#f20089]">
+            <MapPin className="h-8 w-8" />
           </div>
 
           <div className="space-y-2">
@@ -123,8 +124,8 @@ function CheckInContent() {
     return (
       <div className="min-h-screen bg-black text-white flex flex-col items-center justify-center p-6 text-center font-[family-name:var(--font-google-sans)] relative">
         <div className="relative z-10 max-w-md w-full rounded-3xl border border-red-500/30 bg-red-950/20 backdrop-blur-2xl p-8 space-y-6 shadow-2xl">
-          <div className="inline-flex h-16 w-16 items-center justify-center rounded-2xl bg-red-500/20 border border-red-500/40 text-3xl">
-            ⚠️
+          <div className="inline-flex h-16 w-16 items-center justify-center rounded-2xl bg-red-500/20 border border-red-500/40 text-red-400">
+            <AlertTriangle className="h-8 w-8" />
           </div>
 
           <div className="space-y-2">
@@ -136,9 +137,10 @@ function CheckInContent() {
             <button
               type="button"
               onClick={performCheckIn}
-              className="w-full rounded-2xl bg-white/10 hover:bg-white/20 border border-white/15 py-3 text-xs font-bold text-white transition-all cursor-pointer"
+              className="w-full inline-flex items-center justify-center gap-2 rounded-2xl bg-white/10 hover:bg-white/20 border border-white/15 py-3 text-xs font-bold text-white transition-all cursor-pointer"
             >
-              Try Again 🔄
+              <RotateCcw className="h-3.5 w-3.5" />
+              <span>Try Again</span>
             </button>
             <Link
               href="/events"
@@ -167,8 +169,8 @@ function CheckInContent() {
 
       <div className="relative z-10 max-w-lg w-full rounded-[2.5rem] border border-emerald-500/40 bg-gradient-to-b from-emerald-950/30 via-white/[0.03] to-black backdrop-blur-3xl p-8 space-y-6 shadow-[0_20px_50px_rgba(16,185,129,0.2)]">
         {/* Success Icon */}
-        <div className="inline-flex h-20 w-20 items-center justify-center rounded-3xl bg-emerald-500/20 border border-emerald-500/50 text-4xl shadow-lg shadow-emerald-500/30 animate-bounce">
-          ✅
+        <div className="inline-flex h-20 w-20 items-center justify-center rounded-3xl bg-emerald-500/20 border border-emerald-500/50 text-emerald-400 shadow-lg shadow-emerald-500/30 animate-bounce">
+          <CheckCircle2 className="h-10 w-10" />
         </div>
 
         {/* Checked In Header */}
@@ -205,16 +207,18 @@ function CheckInContent() {
             {/* Team Lead */}
             <div className="flex items-center justify-between p-2 rounded-xl bg-white/[0.03]">
               <span className="font-medium text-white flex items-center gap-1.5">
-                <span>👑</span>
+                <Crown className="h-3.5 w-3.5 text-amber-400" />
                 <span>{team?.lead?.name || rsvp?.leadEmail}</span>
               </span>
               {checkedInMembers.some((m: any) => m.email.toLowerCase() === team?.leadEmail?.toLowerCase()) ? (
-                <span className="text-[10px] font-bold text-emerald-400 bg-emerald-500/20 px-2 py-0.5 rounded-full">
-                  ✓ Present
+                <span className="inline-flex items-center gap-1 text-[10px] font-bold text-emerald-400 bg-emerald-500/20 px-2 py-0.5 rounded-full">
+                  <Check className="h-3 w-3" />
+                  <span>Present</span>
                 </span>
               ) : (
-                <span className="text-[10px] font-bold text-white/40 bg-white/5 px-2 py-0.5 rounded-full">
-                  ⏳ Pending Scan
+                <span className="inline-flex items-center gap-1 text-[10px] font-bold text-white/40 bg-white/5 px-2 py-0.5 rounded-full">
+                  <Clock className="h-3 w-3" />
+                  <span>Pending Scan</span>
                 </span>
               )}
             </div>
@@ -227,16 +231,18 @@ function CheckInContent() {
               return (
                 <div key={idx} className="flex items-center justify-between p-2 rounded-xl bg-white/[0.03]">
                   <span className="font-medium text-white flex items-center gap-1.5">
-                    <span>👤</span>
+                    <User className="h-3.5 w-3.5 text-sky-400" />
                     <span>{mate.name}</span>
                   </span>
                   {isScanned ? (
-                    <span className="text-[10px] font-bold text-emerald-400 bg-emerald-500/20 px-2 py-0.5 rounded-full">
-                      ✓ Present
+                    <span className="inline-flex items-center gap-1 text-[10px] font-bold text-emerald-400 bg-emerald-500/20 px-2 py-0.5 rounded-full">
+                      <Check className="h-3 w-3" />
+                      <span>Present</span>
                     </span>
                   ) : (
-                    <span className="text-[10px] font-bold text-white/40 bg-white/5 px-2 py-0.5 rounded-full">
-                      ⏳ Pending Scan
+                    <span className="inline-flex items-center gap-1 text-[10px] font-bold text-white/40 bg-white/5 px-2 py-0.5 rounded-full">
+                      <Clock className="h-3 w-3" />
+                      <span>Pending Scan</span>
                     </span>
                   )}
                 </div>

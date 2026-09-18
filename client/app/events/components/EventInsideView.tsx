@@ -4,7 +4,7 @@ import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import { signIn } from "next-auth/react";
 import { QRCodeSVG } from "qrcode.react";
-import { ExternalLink, Sparkles } from "lucide-react";
+import { ExternalLink, Sparkles, RotateCcw, Check, Clipboard, Share2, ShieldCheck, QrCode, AlertTriangle, Crown, User, Building2, Phone, Clock, Users } from "lucide-react";
 import { parseHeritageEmail } from "@/lib/heritage-parser";
 import type { PublicEvent } from "../page";
 
@@ -422,9 +422,9 @@ export default function EventInsideView({
             <div className="flex items-center justify-between border-b border-white/10 pb-4 flex-wrap gap-3">
               <div>
                 <span className="rounded-full bg-emerald-500/20 border border-emerald-500/40 px-3 py-0.5 text-[11px] font-bold text-emerald-300 uppercase tracking-wider">
-                  Confirmed Team Registration Pass
+                  Confirmed Team Registration Studio
                 </span>
-                <h2 className="text-2xl sm:text-3xl font-black text-white mt-1.5">
+                <h2 className="text-2xl sm:text-3xl font-black text-white mt-1.5 font-[family-name:var(--font-google-sans)]">
                   Team {registeredTeam.teamName}
                 </h2>
                 {registeredTeam.ventureName && (
@@ -442,12 +442,13 @@ export default function EventInsideView({
                   className="rounded-full bg-white/[0.08] hover:bg-white/15 border border-white/15 px-3.5 py-1.5 text-xs font-semibold text-white/90 hover:text-white transition-all cursor-pointer flex items-center gap-1.5"
                   title="Click to refresh roster if a teammate just joined"
                 >
+                  <RotateCcw className={`h-3.5 w-3.5 ${refreshing ? "animate-spin text-pink-400" : ""}`} />
                   <span>{refreshing ? "Syncing..." : "Refresh Roster"}</span>
                 </button>
                 {isTeamCriteriaMet ? (
                   <span className="rounded-full bg-emerald-500/15 border border-emerald-500/30 px-3.5 py-1.5 text-xs font-bold text-emerald-300 flex items-center gap-1.5">
                     <span className="h-2 w-2 rounded-full bg-emerald-400 animate-pulse" />
-                    <span>Status: Confirmed</span>
+                    <span>Pass Status: Unlocked & Verified</span>
                   </span>
                 ) : (
                   <span className="rounded-full bg-amber-500/15 border border-amber-500/30 px-3.5 py-1.5 text-xs font-bold text-amber-300 flex items-center gap-1.5">
@@ -458,175 +459,170 @@ export default function EventInsideView({
               </div>
             </div>
 
-            {/* TEAM INVITE CODE BANNER & QR PASS */}
-            {registeredTeam.teamCode && (
-              <div className="relative overflow-hidden rounded-3xl border border-[#f20089]/50 bg-gradient-to-br from-[#f20089]/15 via-white/[0.04] to-purple-950/30 backdrop-blur-2xl p-6 sm:p-7 shadow-[0_10px_35px_rgba(242,0,137,0.2)]">
-                <div className="pointer-events-none absolute -top-12 -right-12 h-36 w-36 rounded-full bg-[#f20089]/25 blur-2xl" />
+            {/* ========================================================================= */}
+            {/* POINT 5: REAL-TIME ROSTER PROGRESS TRACKER & INVITE CODE BANNER            */}
+            {/* ========================================================================= */}
+            <div className="rounded-3xl border border-white/15 bg-white/[0.04] backdrop-blur-2xl p-6 sm:p-7 space-y-4 font-sans shadow-xl">
+              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+                <div>
+                  <span className="text-[10px] text-white/50 uppercase tracking-widest block font-mono font-bold">
+                    Point 5 • Real-Time Roster Progress
+                  </span>
+                  <h3 className="text-lg font-bold text-white font-[family-name:var(--font-google-sans)]">
+                    Team Member Eligibility Tracker
+                  </h3>
+                </div>
+
+                <span className={`text-xs font-mono font-bold px-3 py-1 rounded-full border ${
+                  isTeamCriteriaMet
+                    ? "bg-emerald-500/20 border-emerald-500/40 text-emerald-300"
+                    : "bg-amber-500/20 border-amber-500/40 text-amber-300"
+                }`}>
+                  {totalJoined} / {targetCount} Confirmed Members ({Math.min(100, Math.round((totalJoined / minMembers) * 100))}% Eligible)
+                </span>
+              </div>
+
+              {/* Dynamic Animated Progress Bar */}
+              <div className="space-y-1.5">
+                <div className="w-full bg-white/10 rounded-full h-3 p-0.5 overflow-hidden border border-white/10">
+                  <div
+                    className={`h-full rounded-full transition-all duration-700 shadow-md ${
+                      isTeamCriteriaMet
+                        ? "bg-gradient-to-r from-emerald-400 via-teal-300 to-emerald-500 shadow-emerald-500/50"
+                        : "bg-gradient-to-r from-amber-500 via-pink-500 to-[#f20089]"
+                    }`}
+                    style={{ width: `${Math.min(100, (totalJoined / targetCount) * 100)}%` }}
+                  />
+                </div>
+                <div className="flex items-center justify-between text-[11px] text-white/60 font-mono">
+                  <span>0 Members</span>
+                  <span className="text-amber-300 font-bold">Min Requirement: {minMembers} Members</span>
+                  <span>Max Capacity: {targetCount}</span>
+                </div>
+              </div>
+
+              {/* Invite Code & Instant Share Strip */}
+              {registeredTeam.teamCode && (
+                <div className="pt-3 border-t border-white/10 flex flex-col md:flex-row md:items-center justify-between gap-4">
+                  <div className="flex items-center gap-3">
+                    <span className="text-xs font-mono font-bold text-[#f20089] uppercase tracking-wider">
+                      Team Invite Code:
+                    </span>
+                    <span className="font-mono text-2xl font-black text-white tracking-widest px-3 py-1 rounded-xl bg-white/[0.08] border border-[#f20089]/50 shadow-inner">
+                      {registeredTeam.teamCode}
+                    </span>
+                  </div>
+
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <button
+                      type="button"
+                      onClick={() => handleCopyCode(registeredTeam.teamCode)}
+                      className="rounded-xl bg-white hover:bg-neutral-100 px-3.5 py-1.5 text-xs font-bold text-black shadow-md transition-all cursor-pointer hover:scale-105 active:scale-95 flex items-center gap-1.5"
+                    >
+                      {copiedCode ? <Check className="h-3.5 w-3.5 text-emerald-600" /> : <Clipboard className="h-3.5 w-3.5" />}
+                      <span>{copiedCode ? "Code Copied!" : "Copy Code"}</span>
+                    </button>
+
+                    <a
+                      href={getWhatsAppShareUrl(registeredTeam)}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="rounded-xl bg-[#25D366] hover:bg-[#20bd5a] px-3.5 py-1.5 text-xs font-bold text-white shadow-md shadow-[#25D366]/30 transition-all hover:scale-105 active:scale-95 flex items-center gap-1.5"
+                    >
+                      <Share2 className="h-3.5 w-3.5" />
+                      <span>Share via WhatsApp</span>
+                    </a>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* ========================================================================= */}
+            {/* POINT 6: DYNAMIC DIGITAL AUDITORIUM PASS & VERIFICATION QR CODE            */}
+            {/* ========================================================================= */}
+            {isTeamCriteriaMet ? (
+              <div className="relative overflow-hidden rounded-3xl border border-emerald-500/50 bg-gradient-to-br from-emerald-950/40 via-white/[0.04] to-black p-6 sm:p-8 backdrop-blur-3xl shadow-[0_15px_45px_rgba(16,185,129,0.25)] space-y-6">
+                <div className="pointer-events-none absolute -top-16 -right-16 h-48 w-48 rounded-full bg-emerald-500/20 blur-3xl" />
 
                 <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 relative z-10">
-                  <div className="space-y-3">
-                    <span className="text-[11px] font-bold text-[#f20089] uppercase tracking-widest block font-mono">
-                      🔑 Official Team Invite Code & QR Pass
-                    </span>
-                    <div className="flex items-center gap-4 flex-wrap">
-                      <span className="font-mono text-3xl sm:text-4xl font-black text-white tracking-widest px-4 py-2 rounded-2xl bg-white/[0.08] backdrop-blur-xl border border-[#f20089]/60 shadow-[inset_0_2px_10px_rgba(242,0,137,0.25)]">
-                        {registeredTeam.teamCode}
-                      </span>
+                  <div className="space-y-3 max-w-xl">
+                    <div className="inline-flex items-center gap-2 rounded-full bg-emerald-500/20 border border-emerald-500/40 px-3.5 py-1 text-[11px] font-bold text-emerald-300 uppercase tracking-widest font-mono">
+                      <ShieldCheck className="h-3.5 w-3.5 text-emerald-400" />
+                      <span>Verified Auditorium Pass • Unlocked</span>
                     </div>
-                    <p className="text-xs text-neutral-300 max-w-lg font-sans leading-relaxed">
-                      Share this invite code or show the QR code to your teammates. Scanning the QR or navigating to the link auto-fills your team code.
+
+                    <h3 className="text-2xl sm:text-3xl font-black text-white font-[family-name:var(--font-google-sans)]">
+                      {event.title} Official Pass
+                    </h3>
+
+                    <p className="text-xs sm:text-sm text-white/80 font-sans leading-relaxed">
+                      Your team roster meets the official Hult Prize eligibility standard. Present this scannable digital QR pass at the Auditorium entrance on event day.
                     </p>
 
-                    {/* Quick Share Actions */}
-                    <div className="flex items-center gap-2.5 flex-wrap pt-1">
-                      <button
-                        type="button"
-                        onClick={() => handleCopyCode(registeredTeam.teamCode)}
-                        className="rounded-2xl bg-white hover:bg-neutral-100 px-4 py-2 text-xs font-bold text-black shadow-lg transition-all cursor-pointer hover:scale-105 active:scale-95 flex items-center gap-2"
-                      >
-                        <span>{copiedCode ? "✓" : "📋"}</span>
-                        <span>{copiedCode ? "Copied!" : "Copy Code"}</span>
-                      </button>
-
-                      <a
-                        href={getWhatsAppShareUrl(registeredTeam)}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="rounded-2xl bg-[#25D366] hover:bg-[#20bd5a] px-4 py-2 text-xs font-bold text-white shadow-lg shadow-[#25D366]/30 transition-all hover:scale-105 active:scale-95 flex items-center gap-2"
-                      >
-                        <span>📲</span>
-                        <span>Share WhatsApp</span>
-                      </a>
+                    <div className="grid grid-cols-2 gap-3 pt-1 text-xs font-mono">
+                      <div className="rounded-xl border border-white/10 bg-white/[0.03] p-2.5">
+                        <span className="text-[10px] text-white/50 block uppercase">Team Name</span>
+                        <span className="font-bold text-white block">{registeredTeam.teamName}</span>
+                      </div>
+                      <div className="rounded-xl border border-white/10 bg-white/[0.03] p-2.5">
+                        <span className="text-[10px] text-white/50 block uppercase">Team Leader</span>
+                        <span className="font-bold text-emerald-300 block truncate">{registeredTeam.leadName}</span>
+                      </div>
                     </div>
                   </div>
 
-                  {/* Scannable Team Invite QR Code */}
-                  <div className="flex flex-col items-center justify-center p-3.5 rounded-2xl bg-white backdrop-blur-2xl border border-white/20 shadow-xl self-center md:self-auto">
+                  {/* Scannable Dynamic QR Code */}
+                  <div className="flex flex-col items-center justify-center p-4 rounded-2xl bg-white backdrop-blur-2xl border border-white/30 shadow-2xl shrink-0 self-center md:self-auto">
                     <QRCodeSVG
-                      value={`https://hultprizehitk.live/events?event=${event._id}&code=${registeredTeam.teamCode}`}
-                      size={110}
+                      value={`https://hultprizehitk.live/events/checkin?eventId=${event._id}&teamCode=${registeredTeam.teamCode}`}
+                      size={135}
                       bgColor={"#FFFFFF"}
                       fgColor={"#09090b"}
                       level={"M"}
                     />
-                    <span className="text-[10px] font-bold text-black/70 font-mono mt-1.5 uppercase tracking-wider">
-                      Scan to Join Team
+                    <span className="text-[10px] font-bold text-black/80 font-mono mt-2 uppercase tracking-wider flex items-center gap-1">
+                      <QrCode className="h-3 w-3 text-emerald-600" />
+                      <span>Official Check-In QR</span>
                     </span>
                   </div>
                 </div>
               </div>
-            )}
-
-            {/* HULT ASCEND EVENT RSVP BANNER */}
-            <div className="relative overflow-hidden rounded-3xl border border-purple-500/40 bg-gradient-to-r from-purple-900/30 via-white/[0.04] to-black/40 backdrop-blur-2xl p-6 shadow-xl">
-              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-                <div className="space-y-1">
-                  <div className="flex items-center gap-2">
-                    <span className="text-xl">🏆</span>
-                    <h3 className="text-lg font-bold text-white font-[family-name:var(--font-google-sans)]">
-                      Hult Ascend Event RSVP
-                    </h3>
-                    {rsvpInfo?.rsvpd ? (
-                      <span className="rounded-full bg-emerald-500/20 border border-emerald-500/40 px-2.5 py-0.5 text-[10px] font-bold text-emerald-300 uppercase">
-                        ✓ RSVP Confirmed
-                      </span>
-                    ) : (
-                      <span className="rounded-full bg-amber-500/20 border border-amber-500/40 px-2.5 py-0.5 text-[10px] font-bold text-amber-300 uppercase">
-                        Action Required
-                      </span>
-                    )}
-                  </div>
-                  <p className="text-xs text-white/70 font-sans max-w-xl">
-                    {rsvpInfo?.rsvpd
-                      ? `Your team is RSVP'd for Hult Ascend. On event day, members scan the projected QR code in the auditorium.`
-                      : `Confirm your team's physical attendance for Hult Ascend event day.`}
-                  </p>
-                  {rsvpInfo?.rsvpd && (
-                    <div className="flex items-center gap-3 pt-1 text-xs text-purple-200">
-                      <span>Status: <strong className="text-white uppercase font-mono">{rsvpInfo.status}</strong></span>
-                      <span>•</span>
-                      <span>Attendance Scanned: <strong className="text-emerald-400 font-mono">{rsvpInfo.checkedInCount}/{rsvpInfo.totalRoster}</strong></span>
-                      {rsvpInfo.myCheckIn && (
-                        <span className="text-emerald-300 font-bold bg-emerald-500/20 px-2 py-0.5 rounded-full text-[10px]">
-                          ✓ You are checked in
-                        </span>
-                      )}
-                    </div>
-                  )}
-                </div>
-
-                {!rsvpInfo?.rsvpd ? (
-                  <button
-                    type="button"
-                    onClick={handleRsvp}
-                    disabled={rsvpLoading}
-                    className="rounded-2xl bg-gradient-to-r from-purple-600 to-[#f20089] hover:from-purple-500 hover:to-[#d8007a] px-6 py-3 text-xs font-bold text-white shadow-lg shadow-purple-600/30 transition-all cursor-pointer hover:scale-105 active:scale-95 whitespace-nowrap"
-                  >
-                    {rsvpLoading ? "Confirming RSVP..." : "RSVP My Team Now →"}
-                  </button>
-                ) : (
-                  <Link
-                    href={`/events/checkin?eventId=${event._id}`}
-                    className="rounded-2xl bg-white/10 hover:bg-white/20 border border-white/20 px-5 py-2.5 text-xs font-semibold text-white transition-all cursor-pointer whitespace-nowrap flex items-center gap-1.5"
-                  >
-                    <span>📱 Member Check-In Portal</span>
-                  </Link>
-                )}
-              </div>
-            </div>
-
-            {/* INCOMPLETE ROSTER CRITERIA WARNING */}
-            {!isTeamCriteriaMet && (
+            ) : (
+              /* INCOMPLETE ROSTER CRITERIA WARNING */
               <div className="rounded-3xl border border-amber-500/40 bg-gradient-to-r from-amber-500/15 via-amber-500/10 to-transparent backdrop-blur-2xl p-5 sm:p-6 text-xs text-amber-200 flex items-start gap-3.5 shadow-[0_10px_30px_rgba(245,158,11,0.15)]">
-                <span className="text-2xl mt-0.5">⚠️</span>
+                <AlertTriangle className="h-5 w-5 text-amber-400 shrink-0 mt-0.5" />
                 <div className="space-y-1.5">
                   <div className="flex items-center gap-2 flex-wrap">
                     <span className="font-bold text-amber-300 text-sm font-[family-name:var(--font-google-sans)]">
-                      Team Criteria Not Met: {totalJoined} of {minMembers} Minimum Members
+                      Pass Locked: Needs {minMembers - totalJoined} More Member(s)
                     </span>
-                    <span className="text-[10px] font-bold uppercase tracking-wider bg-amber-500/20 border border-amber-500/30 px-2 py-0.5 rounded-full text-amber-300">
-                      Roster Incomplete
+                    <span className="text-[10px] font-bold uppercase tracking-wider bg-amber-500/20 border border-amber-500/30 px-2 py-0.5 rounded-full text-amber-300 font-mono">
+                      Roster Pending ({totalJoined}/{minMembers})
                     </span>
                   </div>
                   <p className="text-amber-200/90 leading-relaxed font-sans text-xs">
-                    Official Hult Prize rules stipulate a minimum of <strong>{minMembers} members</strong> per team (maximum capacity: {targetCount}). Your team cannot officially confirm registration or submit deliverables until at least <strong>{minMembers - totalJoined} more member(s)</strong> join. Share your Team Invite Code above with your prospective co-founders!
+                    Official Hult Prize rules stipulate a minimum of <strong>{minMembers} members</strong> per team to unlock your Auditorium Pass. Share your Team Invite Code (<strong className="font-mono text-white">{registeredTeam.teamCode}</strong>) with co-founders to unlock your pass!
                   </p>
                 </div>
               </div>
             )}
 
-            {/* LIVE TEAM ROSTER SLOTS */}
-            <div className="rounded-3xl border border-white/15 bg-white/[0.04] backdrop-blur-2xl p-6 sm:p-7 space-y-5 font-sans shadow-[0_20px_50px_rgba(0,0,0,0.3)]">
-              <div className="flex items-center justify-between border-b border-white/10 pb-4 flex-wrap gap-2">
-                <div>
-                  <span className="text-[10px] text-white/50 uppercase tracking-widest block font-mono">
-                    Team Roster Progress
-                  </span>
-                  <span className="text-lg font-bold text-white font-[family-name:var(--font-google-sans)]">
-                    👥 {totalJoined} of {targetCount} Members Confirmed
-                  </span>
-                </div>
-
-                <div className="text-right">
-                  {totalJoined < minMembers ? (
-                    <span className="text-[11px] font-bold text-amber-400 bg-amber-500/15 border border-amber-500/30 px-3 py-1 rounded-full block">
-                      ⚠️ Needs {minMembers - totalJoined} more member(s) for min eligibility
-                    </span>
-                  ) : (
-                    <span className="text-[11px] font-bold text-emerald-400 bg-emerald-500/15 border border-emerald-500/30 px-3 py-1 rounded-full block">
-                      ✓ Official Team Size Requirement Met
-                    </span>
-                  )}
-                </div>
+            {/* LIVE TEAM ROSTER MEMBER SLOTS */}
+            <div className="rounded-3xl border border-white/15 bg-white/[0.04] backdrop-blur-2xl p-6 sm:p-7 space-y-4 font-sans shadow-xl">
+              <div className="flex items-center justify-between border-b border-white/10 pb-3 flex-wrap gap-2">
+                <span className="text-sm font-bold text-white font-[family-name:var(--font-google-sans)] flex items-center gap-2">
+                  <Users className="h-4 w-4 text-pink-400" />
+                  <span>Team Co-Founders ({totalJoined} of {targetCount} Slots Occupied)</span>
+                </span>
               </div>
 
-              {/* Slots Grid */}
+              {/* Member Slots Grid */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                 {/* Slot 1: Team Leader */}
                 <div className="rounded-2xl border border-white/15 bg-white/[0.04] p-4 flex items-start justify-between gap-3 text-xs">
                   <div className="space-y-1">
                     <div className="flex items-center gap-2">
-                      <span className="text-base">👑</span>
+                      <Crown className="h-4 w-4 text-amber-400" />
                       <span className="font-bold text-white text-sm">
                         {registeredTeam.leadName}
                       </span>
@@ -638,12 +634,20 @@ export default function EventInsideView({
                       {registeredTeam.leadEmail}
                     </span>
                     <div className="flex items-center gap-3 pt-1 text-[11px] text-white/50">
-                      <span>🏛️ {registeredTeam.department}</span>
-                      {registeredTeam.leadPhone && <span>📞 {registeredTeam.leadPhone}</span>}
+                      <span className="flex items-center gap-1">
+                        <Building2 className="h-3 w-3 text-sky-400" />
+                        <span>{registeredTeam.department}</span>
+                      </span>
+                      {registeredTeam.leadPhone && (
+                        <span className="flex items-center gap-1">
+                          <Phone className="h-3 w-3 text-emerald-400" />
+                          <span>{registeredTeam.leadPhone}</span>
+                        </span>
+                      )}
                     </div>
                   </div>
                   <span className="text-emerald-400 text-[10px] font-bold bg-emerald-500/15 border border-emerald-500/30 px-2.5 py-0.5 rounded-full whitespace-nowrap">
-                    Joined
+                    Confirmed
                   </span>
                 </div>
 
@@ -655,7 +659,7 @@ export default function EventInsideView({
                   >
                     <div className="space-y-1">
                       <div className="flex items-center gap-2">
-                        <span className="text-base">👤</span>
+                        <User className="h-4 w-4 text-sky-400" />
                         <span className="font-bold text-white text-sm">{mate.name}</span>
                         <span className="text-[10px] font-semibold text-purple-300 bg-purple-500/20 border border-purple-500/40 px-2 py-0.2 rounded-full">
                           Co-Founder #{idx + 2}
@@ -665,12 +669,20 @@ export default function EventInsideView({
                         {mate.email}
                       </span>
                       <div className="flex items-center gap-3 pt-1 text-[11px] text-white/50">
-                        <span>🏛️ {mate.department || "Heritage IT"}</span>
-                        {mate.phone && <span>📞 {mate.phone}</span>}
+                        <span className="flex items-center gap-1">
+                          <Building2 className="h-3 w-3 text-sky-400" />
+                          <span>{mate.department || "Heritage IT"}</span>
+                        </span>
+                        {mate.phone && (
+                          <span className="flex items-center gap-1">
+                            <Phone className="h-3 w-3 text-emerald-400" />
+                            <span>{mate.phone}</span>
+                          </span>
+                        )}
                       </div>
                     </div>
                     <span className="text-emerald-400 text-[10px] font-bold bg-emerald-500/15 border border-emerald-500/30 px-2.5 py-0.5 rounded-full whitespace-nowrap">
-                      Joined
+                      Confirmed
                     </span>
                   </div>
                 ))}
@@ -683,7 +695,7 @@ export default function EventInsideView({
                   >
                     <div className="space-y-1">
                       <div className="flex items-center gap-2">
-                        <span className="text-neutral-500">⏳</span>
+                        <Clock className="h-3.5 w-3.5 text-white/40" />
                         <span className="font-semibold text-white/70">
                           Slot #{totalJoined + idx + 1} Open
                         </span>
