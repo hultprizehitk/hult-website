@@ -2,6 +2,17 @@ import { TeamCategory, TeamMember, TeamSectionConfig } from "@/types";
 
 export const TEAM_SECTIONS: TeamSectionConfig[] = [
   {
+    key: "faculty_coordinator",
+    title: "Faculty Coordinator",
+    subtitle: "Faculty Mentorship & Guidance",
+    badge: "Faculty",
+    accentColor: "#38bdf8",
+    gradientClass: "from-sky-400 via-blue-500 to-indigo-600",
+    borderClass: "border-sky-500/40 hover:border-sky-400",
+    description:
+      "Guiding academic alignment, institutional mentorship, student leadership development, and strategic liaison for Hult Prize OnCampus at Heritage Institute of Technology.",
+  },
+  {
     key: "cd",
     title: "Campus Director",
     subtitle: "Executive Leadership",
@@ -109,6 +120,23 @@ export const TEAM_SECTIONS: TeamSectionConfig[] = [
  * 2. A dedicated 3D Lanyard ID Card page at /team/[slug]
  */
 export const INITIAL_TEAM_MEMBERS: TeamMember[] = [
+  // Faculty Mentorship
+  {
+    id: "jhalak-dutta",
+    slug: "jhalak-dutta",
+    name: "Prof. Jhalak Dutta",
+    role: "Faculty Coordinator",
+    category: "faculty_coordinator",
+    department: "Computer Science & Engineering (CSE)",
+    academicYear: "Faculty Coordinator",
+    bio: "Assistant Professor in the Department of Computer Science & Engineering at Heritage Institute of Technology. Guiding and mentoring student entrepreneurs and researchers through Hult Prize OnCampus at HITK.",
+    socials: {
+      linkedin: "https://www.linkedin.com/in/jhalak-dutta",
+      email: "jhalak.dutta@heritageit.edu",
+    },
+    featured: true,
+  },
+
   // Executive Leadership
   {
     id: "pratyush-sarkar",

@@ -75,6 +75,26 @@ export const PROFILES_DATA: Record<string, ProfileData> = {
       themeColor: "#00d2ff",
     },
   },
+  "jhalak-dutta": {
+    slug: "jhalak-dutta",
+    name: "Prof. Jhalak Dutta",
+    designation: "Faculty Coordinator",
+    quote: "Fostering academic excellence, student innovation, and guiding young minds to create sustainable global impact through social entrepreneurship.",
+    image: "/team/placeholder.png",
+    department: "Computer Science & Engineering (CSE)",
+    academicYear: "Faculty Coordinator",
+    bio: "Assistant Professor in the Department of Computer Science & Engineering at Heritage Institute of Technology. Serving as the official Faculty Coordinator for Hult Prize OnCampus at HITK, actively mentoring student innovators, researchers, and entrepreneurial ventures.",
+    socialLinks: {
+      linkedin: "https://www.linkedin.com/in/jhalak-dutta",
+      email: "jhalak.dutta@heritageit.edu",
+    },
+    lanyard: {
+      frontImage: "/team/placeholder.png",
+      backImage: "/Hult-Prize.png",
+      lanyardImage: "/assets/lanyard/lanyard.png",
+      themeColor: "#00d2ff",
+    },
+  },
 };
 
 /**

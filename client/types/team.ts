@@ -1,4 +1,5 @@
 export type TeamCategory =
+  | "faculty_coordinator"
   | "cd"
   | "dcd"
   | "workshop"

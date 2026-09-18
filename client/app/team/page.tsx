@@ -39,6 +39,7 @@ export default function TeamPage() {
 
   const members = dbMembers.length > 0 ? dbMembers : INITIAL_TEAM_MEMBERS;
 
+  const facultyMembers = members.filter((m) => m.category === "faculty_coordinator");
   const cdMembers = members.filter((m) => m.category === "cd");
   const dcdMembers = members.filter((m) => m.category === "dcd");
   const eventMembers = members.filter((m) => m.category === "event_management");
@@ -53,6 +54,12 @@ export default function TeamPage() {
 
   const getTeamColor = (category: TeamCategory) => {
     switch (category) {
+      case "faculty_coordinator":
+        return {
+          badge: "bg-sky-500/20 border-sky-500/40 text-sky-300",
+          ring: "from-sky-400 via-blue-500 to-indigo-600",
+          accent: "text-sky-300",
+        };
       case "cd":
         return {
           badge: "bg-gradient-to-r from-amber-500/20 to-[#f20089]/20 border-amber-500/40 text-amber-300",
@@ -384,6 +391,151 @@ export default function TeamPage() {
 
         {/* Team Sections Layout */}
         <div className="space-y-16 sm:space-y-20">
+          {/* FACULTY MENTORSHIP & COORDINATION */}
+          {(activeCategory === "all" || activeCategory === "faculty_coordinator") && facultyMembers.length > 0 && (
+            <section className="space-y-8 animate-fadeIn">
+              <div className="border-b border-white/10 pb-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2">
+                <div>
+                  <span className="text-[10px] font-extrabold uppercase tracking-widest text-sky-400">
+                    Faculty Mentorship
+                  </span>
+                  <h2 className="text-2xl sm:text-3xl font-black text-white font-[family-name:var(--font-google-sans)]">
+                    Faculty Coordinator
+                  </h2>
+                </div>
+                <span className="text-xs text-white/50 font-mono">
+                  Heritage Institute of Technology
+                </span>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 lg:gap-8">
+                {facultyMembers.map((fac) => (
+                  <div
+                    key={fac.id}
+                    className="relative overflow-hidden rounded-[2.5rem] border border-sky-500/30 bg-gradient-to-b from-sky-500/[0.08] via-white/[0.03] to-black/60 p-8 backdrop-blur-2xl shadow-2xl transition-all duration-300 hover:border-sky-400 hover:shadow-[0_20px_50px_rgba(56,189,248,0.15)] flex flex-col justify-between"
+                  >
+                    <div className="pointer-events-none absolute inset-x-0 top-0 h-[1.5px] bg-gradient-to-r from-transparent via-sky-400 to-transparent" />
+                    <div className="pointer-events-none absolute -top-16 -right-16 h-48 w-48 rounded-full bg-sky-500/15 blur-3xl" />
+
+                    <div className="relative z-10">
+                      <div className="flex items-center justify-between gap-3 mb-6">
+                        <span className="rounded-full bg-gradient-to-r from-sky-500/25 to-blue-600/25 border border-sky-500/40 px-3.5 py-1 text-[11px] font-extrabold uppercase tracking-wider text-sky-300">
+                          Faculty Coordinator
+                        </span>
+                        <span className="text-[11px] text-sky-300/80 font-mono font-semibold">
+                          Assistant Professor, CSE
+                        </span>
+                      </div>
+
+                      <div className="flex flex-col sm:flex-row items-start sm:items-center gap-5 mb-6">
+                        {fac.slug ? (
+                          <Link
+                            href={`/team/${fac.slug}`}
+                            className="h-24 w-24 rounded-3xl p-[2px] bg-gradient-to-tr from-sky-400 via-blue-500 to-indigo-600 shadow-xl overflow-hidden shrink-0 hover:scale-105 transition-transform"
+                            title={`View ${fac.name}'s 3D ID Profile`}
+                          >
+                            {fac.image ? (
+                              <img
+                                src={fac.image}
+                                alt={fac.name}
+                                className="h-full w-full rounded-3xl object-cover"
+                              />
+                            ) : (
+                              <div className="h-full w-full rounded-3xl bg-neutral-950 flex items-center justify-center font-[family-name:var(--font-google-sans)] text-2xl font-black text-sky-300">
+                                JD
+                              </div>
+                            )}
+                          </Link>
+                        ) : (
+                          <div className="h-24 w-24 rounded-3xl p-[2px] bg-gradient-to-tr from-sky-400 via-blue-500 to-indigo-600 shadow-xl overflow-hidden shrink-0">
+                            {fac.image ? (
+                              <img
+                                src={fac.image}
+                                alt={fac.name}
+                                className="h-full w-full rounded-3xl object-cover"
+                              />
+                            ) : (
+                              <div className="h-full w-full rounded-3xl bg-neutral-950 flex items-center justify-center font-[family-name:var(--font-google-sans)] text-2xl font-black text-sky-300">
+                                JD
+                              </div>
+                            )}
+                          </div>
+                        )}
+
+                        <div>
+                          {fac.slug ? (
+                            <Link
+                              href={`/team/${fac.slug}`}
+                              className="text-2xl font-black text-white hover:text-sky-300 transition-colors font-[family-name:var(--font-google-sans)] block"
+                            >
+                              {fac.name}
+                            </Link>
+                          ) : (
+                            <h3 className="text-2xl font-black text-white font-[family-name:var(--font-google-sans)]">
+                              {fac.name}
+                            </h3>
+                          )}
+                          <p className="text-xs text-sky-300/80 font-medium">
+                            {fac.department}
+                          </p>
+                          <div className="mt-2 inline-flex items-center gap-1.5 rounded-full bg-sky-500/10 border border-sky-500/30 px-3 py-0.5 text-[11px] text-sky-300 font-mono">
+                            🏛️ Faculty Mentor
+                          </div>
+                        </div>
+                      </div>
+
+                      {fac.bio && (
+                        <p className="text-sm text-white/75 leading-relaxed mb-6 font-sans">
+                          {fac.bio}
+                        </p>
+                      )}
+
+                      {fac.slug && (
+                        <div className="mb-6">
+                          <Link
+                            href={`/team/${fac.slug}`}
+                            className="inline-flex items-center gap-2 rounded-2xl border border-sky-500/40 bg-sky-500/10 hover:bg-sky-500/25 px-4 py-2 text-xs font-bold text-sky-300 hover:text-white transition-all shadow-md group/id"
+                          >
+                            <span>🪪</span>
+                            <span>View Interactive 3D ID Badge</span>
+                            <span className="group-hover/id:translate-x-1 transition-transform">→</span>
+                          </Link>
+                        </div>
+                      )}
+                    </div>
+
+                    <div className="relative z-10 pt-4 border-t border-white/10 flex items-center gap-3">
+                      {fac.socials?.linkedin && (
+                        <a
+                          href={fac.socials.linkedin}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="h-10 w-10 rounded-2xl bg-white/[0.05] hover:bg-[#0077b5] border border-white/10 flex items-center justify-center text-white/80 hover:text-white transition-all"
+                          aria-label={`${fac.name} LinkedIn`}
+                        >
+                          <svg className="w-4 h-4 fill-current" viewBox="0 0 24 24">
+                            <path d="M19 3a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h14m-.5 15.5v-5.3a3.26 3.26 0 0 0-3.26-3.26c-.85 0-1.84.52-2.28 1.3v-1.11h-2.79v8.37h2.79v-4.93c0-.77.62-1.4 1.39-1.4a1.4 1.4 0 0 1 1.4 1.4v4.93h2.75M6.88 8.56a1.68 1.68 0 0 0 1.68-1.68c0-.93-.75-1.69-1.68-1.69a1.69 1.69 0 0 0-1.69 1.69c0 .93.76 1.68 1.69 1.68m1.39 9.94v-8.37H5.5v8.37h2.77z" />
+                          </svg>
+                        </a>
+                      )}
+                      {fac.socials?.email && (
+                        <a
+                          href={`mailto:${fac.socials.email}`}
+                          className="h-10 w-10 rounded-2xl bg-white/[0.05] hover:bg-sky-500 border border-white/10 flex items-center justify-center text-white/80 hover:text-white transition-all"
+                          aria-label={`Email ${fac.name}`}
+                        >
+                          <svg className="w-4 h-4 fill-none stroke-current" strokeWidth="2" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M21.75 6.75v10.5a2.25 2.25 0 01-2.25 2.25h-15a2.25 2.25 0 01-2.25-2.25V6.75m19.5 0A2.25 2.25 0 0019.5 4.5h-15a2.25 2.25 0 00-2.25 2.25m19.5 0v.243a2.25 2.25 0 01-1.07 1.916l-7.5 4.615a2.25 2.25 0 01-2.36 0L3.32 8.91a2.25 2.25 0 01-1.07-1.916V6.75" />
+                          </svg>
+                        </a>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </section>
+          )}
+
           {/* SECTION 1 & 2: EXECUTIVE LEADERSHIP (CD & DCD) */}
           {(activeCategory === "all" || activeCategory === "cd" || activeCategory === "dcd") && (
             <section className="space-y-8 animate-fadeIn">
