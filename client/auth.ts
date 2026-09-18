@@ -124,6 +124,9 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
     },
     async jwt({ token, user }) {
       if (user) {
+        const email = (user.email || token.email || "").toLowerCase().trim();
+        const parsed = parseHeritageEmail(email);
+        token.name = parsed.fullName || user.name;
         token.id = user.id;
         token.department = (user as { department?: string }).department;
         token.year = (user as { year?: string }).year;
@@ -131,6 +134,10 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
       }
 
       const email = (token.email || "").toLowerCase().trim();
+      if (email) {
+        const parsed = parseHeritageEmail(email);
+        token.name = parsed.fullName || (token.name as string);
+      }
       const isSuperAdmin = isSuperAdminEmail(email);
 
       if (isSuperAdmin && (!token.role || token.role === "user")) {
@@ -139,7 +146,10 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
         // Query database to see if this user was appointed with an admin role
         try {
           await connectDB();
-          const dbUser = await User.findOne({ email }).select("role").lean();
+          const dbUser = await User.findOne({ email }).select("role name").lean();
+          if (dbUser?.name) {
+            token.name = dbUser.name;
+          }
           if (dbUser?.role && isAdminRole(dbUser.role)) {
             token.role = dbUser.role;
           } else {
@@ -156,7 +166,10 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
       if (session.user && token) {
         session.user.id = token.id as string;
         const email = (session.user.email || token.email || "").toLowerCase().trim();
+        const parsed = parseHeritageEmail(email);
         const isSuperAdmin = isSuperAdminEmail(email);
+
+        session.user.name = (token.name as string) || parsed.fullName || session.user.name;
 
         Object.assign(session.user, {
           department: token.department,

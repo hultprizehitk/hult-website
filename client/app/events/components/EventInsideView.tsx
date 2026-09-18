@@ -903,18 +903,18 @@ export default function EventInsideView({
             {/* SUB-FORM 1: CONVERSATIONAL STEP-BY-STEP CREATE TEAM WIZARD          */}
             {/* =================================================================== */}
             {registrationMode === "create" && (
-              <form onSubmit={handleCreateTeam} className="space-y-6 pt-2 animate-fadeIn">
-                {/* Step Progress Bar */}
+              <form onSubmit={handleCreateTeam} className="space-y-6 pt-2 animate-fadeIn font-sans">
+                {/* Minimalist Step Tracker */}
                 <div className="space-y-2">
                   <div className="flex items-center justify-between text-xs font-mono">
-                    <span className="text-[#f20089] font-bold tracking-wider uppercase">
-                      🚀 Step {createStep} of 2: {createStep === 1 ? "Startup Concept & Team Name" : "Leader Contact & Verification"}
+                    <span className="text-[#f20089] font-bold tracking-widest uppercase">
+                      STEP {createStep.toString().padStart(2, "0")} / 02 — {createStep === 1 ? "VENTURE DETAILS" : "LEADER CONTACT"}
                     </span>
-                    <span className="text-white/50">{createStep === 1 ? "50% Completed" : "100% Ready"}</span>
+                    <span className="text-zinc-400 font-mono text-[11px]">{createStep === 1 ? "50%" : "100%"}</span>
                   </div>
-                  <div className="h-1.5 w-full bg-white/10 rounded-full overflow-hidden">
+                  <div className="h-1 w-full bg-white/10 rounded-full overflow-hidden">
                     <div
-                      className="h-full bg-gradient-to-r from-purple-500 to-[#f20089] transition-all duration-300"
+                      className="h-full bg-[#f20089] transition-all duration-300"
                       style={{ width: createStep === 1 ? "50%" : "100%" }}
                     />
                   </div>
@@ -922,22 +922,22 @@ export default function EventInsideView({
 
                 {/* STEP 1: STARTUP CONCEPT & TEAM NAME */}
                 {createStep === 1 && (
-                  <div className="rounded-3xl border border-white/20 bg-black/90 p-6 sm:p-8 space-y-6 backdrop-blur-3xl shadow-2xl animate-fadeIn">
+                  <div className="rounded-3xl border border-white/15 bg-[#09090b] p-6 sm:p-8 space-y-6 backdrop-blur-2xl shadow-2xl animate-fadeIn">
                     <div className="space-y-1">
-                      <span className="text-[11px] font-mono font-bold text-[#f20089] uppercase tracking-widest block">
-                        Step 1: Startup Identity
+                      <span className="text-[10px] font-mono font-bold text-[#f20089] uppercase tracking-widest block">
+                        Phase 01
                       </span>
-                      <h3 className="text-xl sm:text-2xl font-black text-white font-[family-name:var(--font-google-sans)]">
+                      <h3 className="text-xl sm:text-2xl font-bold text-white tracking-tight font-[family-name:var(--font-google-sans)]">
                         What is your startup venture & team name?
                       </h3>
-                      <p className="text-xs text-neutral-400 font-sans leading-relaxed">
-                        Every Hult Prize OnCampus venture starts with a bold name and a mission statement.
+                      <p className="text-xs text-zinc-400 leading-relaxed font-sans">
+                        Provide a team title and your pitch idea concept for the competition roster.
                       </p>
                     </div>
 
-                    <div className="space-y-4 text-xs font-sans">
+                    <div className="space-y-4 text-xs">
                       <div>
-                        <label className="block text-white font-bold text-xs mb-1.5">
+                        <label className="block text-zinc-200 font-semibold text-xs mb-1.5">
                           Team Name <span className="text-[#f20089]">*</span>
                         </label>
                         <input
@@ -952,13 +952,13 @@ export default function EventInsideView({
                               if (teamName.trim()) setCreateStep(2);
                             }
                           }}
-                          className="w-full rounded-2xl border border-white/20 bg-neutral-900/95 hover:bg-neutral-900 focus:bg-black px-4 py-3 text-white placeholder:text-neutral-500 outline-none focus:border-[#f20089] focus:ring-2 focus:ring-[#f20089]/50 shadow-xl transition-all text-sm font-medium"
+                          className="w-full rounded-2xl border border-white/15 bg-[#121216] focus:bg-[#16161c] px-4 py-3 text-white placeholder:text-zinc-600 outline-none focus:border-[#f20089] focus:ring-1 focus:ring-[#f20089] transition-all text-xs font-medium"
                         />
                       </div>
 
                       <div>
-                        <label className="block text-white font-bold text-xs mb-1.5">
-                          Venture / Pitch Idea Title <span className="text-white/40 font-normal">(Optional draft)</span>
+                        <label className="block text-zinc-200 font-semibold text-xs mb-1.5">
+                          Venture / Pitch Idea Title <span className="text-zinc-500 font-normal">(Optional)</span>
                         </label>
                         <input
                           type="text"
@@ -971,37 +971,34 @@ export default function EventInsideView({
                               if (teamName.trim()) setCreateStep(2);
                             }
                           }}
-                          className="w-full rounded-2xl border border-white/20 bg-neutral-900/95 hover:bg-neutral-900 focus:bg-black px-4 py-3 text-white placeholder:text-neutral-500 outline-none focus:border-[#f20089] focus:ring-2 focus:ring-[#f20089]/50 shadow-xl transition-all text-sm font-medium"
+                          className="w-full rounded-2xl border border-white/15 bg-[#121216] focus:bg-[#16161c] px-4 py-3 text-white placeholder:text-zinc-600 outline-none focus:border-[#f20089] focus:ring-1 focus:ring-[#f20089] transition-all text-xs font-medium"
                         />
                       </div>
                     </div>
 
-                    {/* Official Criteria Badge */}
-                    <div className="rounded-2xl border border-white/10 bg-white/[0.04] p-4 text-xs font-sans">
+                    {/* Minimalist Team Size Criteria */}
+                    <div className="rounded-2xl border border-white/10 bg-white/[0.02] p-4 text-xs">
                       <div className="flex items-center justify-between flex-wrap gap-3">
-                        <div className="flex items-center gap-2.5">
-                          <span className="text-xl">👥</span>
-                          <div>
-                            <span className="font-bold text-white block">
-                              Target Team Roster: {minMembers} to {maxMembers} Students
-                            </span>
-                            <span className="text-[11px] text-neutral-400">
-                              Minimum <strong>{minMembers} members</strong> required for official pass validation.
-                            </span>
-                          </div>
+                        <div className="space-y-0.5">
+                          <span className="font-semibold text-white block">
+                            Required Team Roster Capacity
+                          </span>
+                          <span className="text-[11px] text-zinc-400 block">
+                            Minimum {minMembers} to maximum {maxMembers} members per registered team.
+                          </span>
                         </div>
-                        <span className="rounded-full bg-emerald-500/15 border border-emerald-500/30 px-3 py-1 text-[10px] font-bold text-emerald-300 font-mono">
+                        <span className="rounded-full bg-white/10 border border-white/15 px-3 py-1 text-[10px] font-mono text-zinc-200 font-bold uppercase tracking-wider">
                           {minMembers}–{maxMembers} Members
                         </span>
                       </div>
                     </div>
 
-                    {/* Step 1 Actions */}
+                    {/* Step 1 Navigation */}
                     <div className="flex items-center justify-between gap-3 pt-2">
                       <button
                         type="button"
                         onClick={onBack}
-                        className="rounded-2xl bg-white/[0.08] hover:bg-white/15 px-5 py-3 text-xs font-semibold text-white/80 transition-all cursor-pointer"
+                        className="rounded-2xl bg-white/5 hover:bg-white/10 border border-white/10 px-5 py-3 text-xs font-medium text-zinc-300 transition-all cursor-pointer"
                       >
                         Cancel
                       </button>
@@ -1016,7 +1013,7 @@ export default function EventInsideView({
                           setErrorMessage(null);
                           setCreateStep(2);
                         }}
-                        className="rounded-2xl bg-[#f20089] hover:bg-[#d8007a] disabled:opacity-40 px-7 py-3 text-xs font-bold text-white shadow-lg shadow-[#f20089]/30 transition-all cursor-pointer flex items-center gap-2 hover:scale-[1.02] active:scale-95"
+                        className="rounded-2xl bg-[#f20089] hover:bg-[#d8007a] disabled:opacity-40 px-7 py-3 text-xs font-bold text-white shadow-lg shadow-[#f20089]/20 transition-all cursor-pointer flex items-center gap-2 hover:scale-[1.01] active:scale-95"
                       >
                         <span>Continue to Leader Contact →</span>
                       </button>
@@ -1026,38 +1023,37 @@ export default function EventInsideView({
 
                 {/* STEP 2: LEADER CONTACT & VERIFICATION */}
                 {createStep === 2 && (
-                  <div className="rounded-3xl border border-white/20 bg-black/90 p-6 sm:p-8 space-y-6 backdrop-blur-3xl shadow-2xl animate-fadeIn">
+                  <div className="rounded-3xl border border-white/15 bg-[#09090b] p-6 sm:p-8 space-y-6 backdrop-blur-2xl shadow-2xl animate-fadeIn">
                     <div className="space-y-1">
-                      <span className="text-[11px] font-mono font-bold text-[#f20089] uppercase tracking-widest block">
-                        Step 2: Team Leader Contact
+                      <span className="text-[10px] font-mono font-bold text-[#f20089] uppercase tracking-widest block">
+                        Phase 02
                       </span>
-                      <h3 className="text-xl sm:text-2xl font-black text-white font-[family-name:var(--font-google-sans)]">
-                        How can organizers reach you on event day?
+                      <h3 className="text-xl sm:text-2xl font-bold text-white tracking-tight font-[family-name:var(--font-google-sans)]">
+                        Team Leader Contact & Credentials
                       </h3>
-                      <p className="text-xs text-neutral-400 font-sans leading-relaxed">
-                        We use WhatsApp to dispatch pitch slot numbers and mentorship updates.
+                      <p className="text-xs text-zinc-400 leading-relaxed font-sans">
+                        Provide a WhatsApp contact number for pitch schedule notifications and event day communication.
                       </p>
                     </div>
 
-                    {/* Verified Identity Badge */}
-                    <div className="rounded-2xl border border-emerald-500/30 bg-emerald-950/30 p-4 flex items-center justify-between gap-3">
+                    {/* Verified Identity Badge (Minimalist Dark Glass) */}
+                    <div className="rounded-2xl border border-white/15 bg-white/[0.03] p-4 flex items-center justify-between gap-3 flex-wrap">
                       <div className="space-y-0.5 text-xs">
-                        <span className="font-bold text-emerald-400 flex items-center gap-1.5">
-                          <span>👑</span>
-                          <span>Verified Leader: {sessionUser.name || "Student Leader"}</span>
+                        <span className="font-semibold text-white block">
+                          Team Leader: {sessionUser.name || "Student Leader"}
                         </span>
-                        <span className="text-[11px] font-mono text-emerald-300/80 block">
+                        <span className="text-[11px] font-mono text-zinc-400 block">
                           {sessionUser.email}
                         </span>
                       </div>
-                      <span className="text-[10px] font-bold uppercase tracking-wider bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 px-2.5 py-1 rounded-full whitespace-nowrap">
-                        ✓ Verified Institutional ID
+                      <span className="text-[10px] font-mono font-bold uppercase tracking-wider bg-white/10 text-zinc-200 border border-white/15 px-3 py-1 rounded-full">
+                        Verified Institutional Identity
                       </span>
                     </div>
 
-                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-xs font-sans">
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-xs">
                       <div>
-                        <label className="block text-white font-bold text-xs mb-1.5">
+                        <label className="block text-zinc-200 font-semibold text-xs mb-1.5">
                           WhatsApp / Contact Phone <span className="text-[#f20089]">*</span>
                         </label>
                         <input
@@ -1066,31 +1062,31 @@ export default function EventInsideView({
                           placeholder="e.g. +91 9876543210"
                           value={leadPhone}
                           onChange={(e) => setLeadPhone(e.target.value)}
-                          className="w-full rounded-2xl border border-white/20 bg-neutral-900/95 hover:bg-neutral-900 focus:bg-black px-4 py-3 text-white placeholder:text-neutral-500 outline-none focus:border-[#f20089] focus:ring-2 focus:ring-[#f20089]/50 shadow-xl transition-all text-xs font-mono"
+                          className="w-full rounded-2xl border border-white/15 bg-[#121216] focus:bg-[#16161c] px-4 py-3 text-white placeholder:text-zinc-600 outline-none focus:border-[#f20089] focus:ring-1 focus:ring-[#f20089] transition-all text-xs font-mono"
                         />
                       </div>
 
                       <div>
-                        <label className="block text-white font-bold text-xs mb-1.5">
-                          College Roll Number <span className="text-white/40 font-normal">(Optional)</span>
+                        <label className="block text-zinc-200 font-semibold text-xs mb-1.5">
+                          College Roll Number <span className="text-zinc-500 font-normal">(Optional)</span>
                         </label>
                         <input
                           type="text"
                           placeholder="e.g. 12621001099"
                           value={leadRoll}
                           onChange={(e) => setLeadRoll(e.target.value)}
-                          className="w-full rounded-2xl border border-white/20 bg-neutral-900/95 hover:bg-neutral-900 focus:bg-black px-4 py-3 text-white placeholder:text-neutral-500 outline-none focus:border-[#f20089] focus:ring-2 focus:ring-[#f20089]/50 shadow-xl transition-all text-xs font-mono"
+                          className="w-full rounded-2xl border border-white/15 bg-[#121216] focus:bg-[#16161c] px-4 py-3 text-white placeholder:text-zinc-600 outline-none focus:border-[#f20089] focus:ring-1 focus:ring-[#f20089] transition-all text-xs font-mono"
                         />
                       </div>
 
                       <div>
-                        <label className="block text-white font-bold text-xs mb-1.5">
+                        <label className="block text-zinc-200 font-semibold text-xs mb-1.5">
                           Department / Branch
                         </label>
                         <select
                           value={department}
                           onChange={(e) => setDepartment(e.target.value)}
-                          className="w-full rounded-2xl border border-white/20 bg-neutral-900/95 hover:bg-neutral-900 focus:bg-black px-4 py-3 text-white outline-none focus:border-[#f20089] focus:ring-2 focus:ring-[#f20089]/50 shadow-xl transition-all text-xs"
+                          className="w-full rounded-2xl border border-white/15 bg-[#121216] focus:bg-[#16161c] px-4 py-3 text-white outline-none focus:border-[#f20089] focus:ring-1 focus:ring-[#f20089] transition-all text-xs"
                         >
                           <option className="bg-neutral-900 text-white" value="Computer Science & Engineering">Computer Science & Engineering</option>
                           <option className="bg-neutral-900 text-white" value="Information Technology">Information Technology</option>
@@ -1112,15 +1108,15 @@ export default function EventInsideView({
                         type="button"
                         onClick={() => setCreateStep(1)}
                         disabled={loading}
-                        className="rounded-2xl bg-white/[0.08] hover:bg-white/15 px-5 py-3 text-xs font-semibold text-white/80 transition-all cursor-pointer"
+                        className="rounded-2xl bg-white/5 hover:bg-white/10 border border-white/10 px-5 py-3 text-xs font-medium text-zinc-300 transition-all cursor-pointer"
                       >
-                        ← Back to Step 1
+                        ← Back to Step 01
                       </button>
 
                       <button
                         type="submit"
                         disabled={loading || !leadPhone.trim()}
-                        className="rounded-2xl bg-[#f20089] hover:bg-[#d8007a] disabled:opacity-40 px-8 py-3 text-xs font-bold text-white shadow-lg shadow-[#f20089]/30 transition-all cursor-pointer flex items-center gap-2 hover:scale-[1.02] active:scale-95"
+                        className="rounded-2xl bg-[#f20089] hover:bg-[#d8007a] disabled:opacity-40 px-8 py-3 text-xs font-bold text-white shadow-lg shadow-[#f20089]/20 transition-all cursor-pointer flex items-center gap-2 hover:scale-[1.01] active:scale-95"
                       >
                         {loading ? (
                           <>
@@ -1128,7 +1124,7 @@ export default function EventInsideView({
                             <span>Generating Team Code...</span>
                           </>
                         ) : (
-                          <span>Create Team & Generate Invite Code 🚀</span>
+                          <span>Create Team & Generate Invite Code →</span>
                         )}
                       </button>
                     </div>
@@ -1141,18 +1137,18 @@ export default function EventInsideView({
             {/* SUB-FORM 2: CONVERSATIONAL STEP-BY-STEP JOIN TEAM WIZARD            */}
             {/* =================================================================== */}
             {registrationMode === "join" && (
-              <form onSubmit={handleJoinTeam} className="space-y-6 pt-2 animate-fadeIn">
-                {/* Step Progress Bar */}
+              <form onSubmit={handleJoinTeam} className="space-y-6 pt-2 animate-fadeIn font-sans">
+                {/* Minimalist Step Tracker */}
                 <div className="space-y-2">
                   <div className="flex items-center justify-between text-xs font-mono">
-                    <span className="text-[#f20089] font-bold tracking-wider uppercase">
-                      🤝 Step {joinStep} of 2: {joinStep === 1 ? "Enter Invite Code" : "Member Contact & Department"}
+                    <span className="text-[#f20089] font-bold tracking-widest uppercase">
+                      STEP {joinStep.toString().padStart(2, "0")} / 02 — {joinStep === 1 ? "TEAM CODE" : "MEMBER CONTACT"}
                     </span>
-                    <span className="text-white/50">{joinStep === 1 ? "50% Completed" : "100% Ready"}</span>
+                    <span className="text-zinc-400 font-mono text-[11px]">{joinStep === 1 ? "50%" : "100%"}</span>
                   </div>
-                  <div className="h-1.5 w-full bg-white/10 rounded-full overflow-hidden">
+                  <div className="h-1 w-full bg-white/10 rounded-full overflow-hidden">
                     <div
-                      className="h-full bg-gradient-to-r from-purple-500 to-[#f20089] transition-all duration-300"
+                      className="h-full bg-[#f20089] transition-all duration-300"
                       style={{ width: joinStep === 1 ? "50%" : "100%" }}
                     />
                   </div>
@@ -1160,16 +1156,16 @@ export default function EventInsideView({
 
                 {/* STEP 1: ENTER TEAM CODE */}
                 {joinStep === 1 && (
-                  <div className="rounded-3xl border border-[#f20089]/50 bg-black/90 p-6 sm:p-8 space-y-6 backdrop-blur-3xl shadow-[0_10px_35px_rgba(242,0,137,0.2)] animate-fadeIn">
+                  <div className="rounded-3xl border border-white/15 bg-[#09090b] p-6 sm:p-8 space-y-6 backdrop-blur-2xl shadow-2xl animate-fadeIn">
                     <div className="space-y-1">
-                      <span className="text-[11px] font-mono font-bold text-[#f20089] uppercase tracking-widest block">
-                        Step 1: Team Code
+                      <span className="text-[10px] font-mono font-bold text-[#f20089] uppercase tracking-widest block">
+                        Phase 01
                       </span>
-                      <h3 className="text-xl sm:text-2xl font-black text-white font-[family-name:var(--font-google-sans)]">
+                      <h3 className="text-xl sm:text-2xl font-bold text-white tracking-tight font-[family-name:var(--font-google-sans)]">
                         Enter your 6-character Team Invite Code
                       </h3>
-                      <p className="text-xs text-neutral-400 font-sans leading-relaxed">
-                        Enter the team invite code provided by your Team Leader (e.g. <span className="font-mono text-[#f20089]">HULT-7X9K</span>).
+                      <p className="text-xs text-zinc-400 leading-relaxed font-sans">
+                        Enter the team invite code provided by your Team Leader (e.g. <span className="font-mono text-[#f20089] font-bold">HULT-7X9K</span>).
                       </p>
                     </div>
 
@@ -1187,7 +1183,7 @@ export default function EventInsideView({
                             if (joinCode.trim()) setJoinStep(2);
                           }
                         }}
-                        className="w-full rounded-2xl border border-white/20 bg-neutral-900/95 hover:bg-neutral-900 focus:bg-black px-5 py-4 text-2xl sm:text-3xl text-white outline-none focus:border-[#f20089] focus:ring-2 focus:ring-[#f20089]/50 font-mono tracking-widest uppercase font-bold shadow-2xl transition-all"
+                        className="w-full rounded-2xl border border-white/15 bg-[#121216] focus:bg-[#16161c] px-5 py-4 text-2xl sm:text-3xl text-white outline-none focus:border-[#f20089] focus:ring-1 focus:ring-[#f20089] font-mono tracking-widest uppercase font-bold shadow-2xl transition-all"
                       />
                     </div>
 
@@ -1195,7 +1191,7 @@ export default function EventInsideView({
                       <button
                         type="button"
                         onClick={onBack}
-                        className="rounded-2xl bg-white/[0.08] hover:bg-white/15 px-5 py-3 text-xs font-semibold text-white/80 transition-all cursor-pointer"
+                        className="rounded-2xl bg-white/5 hover:bg-white/10 border border-white/10 px-5 py-3 text-xs font-medium text-zinc-300 transition-all cursor-pointer"
                       >
                         Cancel
                       </button>
@@ -1211,7 +1207,7 @@ export default function EventInsideView({
                           setErrorMessage(null);
                           setJoinStep(2);
                         }}
-                        className="rounded-2xl bg-[#f20089] hover:bg-[#d8007a] disabled:opacity-40 px-7 py-3 text-xs font-bold text-white shadow-lg shadow-[#f20089]/30 transition-all cursor-pointer flex items-center gap-2 hover:scale-[1.02] active:scale-95"
+                        className="rounded-2xl bg-[#f20089] hover:bg-[#d8007a] disabled:opacity-40 px-7 py-3 text-xs font-bold text-white shadow-lg shadow-[#f20089]/20 transition-all cursor-pointer flex items-center gap-2 hover:scale-[1.01] active:scale-95"
                       >
                         <span>Next: Enter Contact Info →</span>
                       </button>
@@ -1221,35 +1217,34 @@ export default function EventInsideView({
 
                 {/* STEP 2: MEMBER CONTACT INFO */}
                 {joinStep === 2 && (
-                  <div className="rounded-3xl border border-white/20 bg-black/90 p-6 sm:p-8 space-y-6 backdrop-blur-3xl shadow-2xl animate-fadeIn">
+                  <div className="rounded-3xl border border-white/15 bg-[#09090b] p-6 sm:p-8 space-y-6 backdrop-blur-2xl shadow-2xl animate-fadeIn">
                     <div className="space-y-1">
-                      <span className="text-[11px] font-mono font-bold text-[#f20089] uppercase tracking-widest block">
-                        Step 2: Teammate Contact
+                      <span className="text-[10px] font-mono font-bold text-[#f20089] uppercase tracking-widest block">
+                        Phase 02
                       </span>
-                      <h3 className="text-xl sm:text-2xl font-black text-white font-[family-name:var(--font-google-sans)]">
-                        Provide your phone number for team roster updates
+                      <h3 className="text-xl sm:text-2xl font-bold text-white tracking-tight font-[family-name:var(--font-google-sans)]">
+                        Teammate Contact Details & Department
                       </h3>
                     </div>
 
                     {/* Verified Identity Badge */}
-                    <div className="rounded-2xl border border-emerald-500/30 bg-emerald-950/30 p-4 flex items-center justify-between gap-3">
+                    <div className="rounded-2xl border border-white/15 bg-white/[0.03] p-4 flex items-center justify-between gap-3 flex-wrap">
                       <div className="space-y-0.5 text-xs">
-                        <span className="font-bold text-emerald-400 flex items-center gap-1.5">
-                          <span>👤</span>
-                          <span>Joining Member: {sessionUser.name || "Student Co-Founder"}</span>
+                        <span className="font-semibold text-white block">
+                          Joining Member: {sessionUser.name || "Student Co-Founder"}
                         </span>
-                        <span className="text-[11px] font-mono text-emerald-300/80 block">
+                        <span className="text-[11px] font-mono text-zinc-400 block">
                           {sessionUser.email}
                         </span>
                       </div>
-                      <span className="text-[10px] font-bold uppercase tracking-wider bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 px-2.5 py-1 rounded-full whitespace-nowrap">
-                        ✓ Verified Institutional ID
+                      <span className="text-[10px] font-mono font-bold uppercase tracking-wider bg-white/10 text-zinc-200 border border-white/15 px-3 py-1 rounded-full">
+                        Verified Institutional Identity
                       </span>
                     </div>
 
-                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-xs font-sans">
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-xs">
                       <div>
-                        <label className="block text-white font-bold text-xs mb-1.5">
+                        <label className="block text-zinc-200 font-semibold text-xs mb-1.5">
                           WhatsApp / Contact Phone <span className="text-[#f20089]">*</span>
                         </label>
                         <input
@@ -1258,31 +1253,31 @@ export default function EventInsideView({
                           placeholder="e.g. +91 9876543210"
                           value={memberPhone}
                           onChange={(e) => setMemberPhone(e.target.value)}
-                          className="w-full rounded-2xl border border-white/20 bg-neutral-900/95 hover:bg-neutral-900 focus:bg-black px-4 py-3 text-white placeholder:text-neutral-500 outline-none focus:border-[#f20089] focus:ring-2 focus:ring-[#f20089]/50 shadow-xl transition-all text-xs font-mono"
+                          className="w-full rounded-2xl border border-white/15 bg-[#121216] focus:bg-[#16161c] px-4 py-3 text-white placeholder:text-zinc-600 outline-none focus:border-[#f20089] focus:ring-1 focus:ring-[#f20089] transition-all text-xs font-mono"
                         />
                       </div>
 
                       <div>
-                        <label className="block text-white font-bold text-xs mb-1.5">
-                          College Roll Number <span className="text-white/40 font-normal">(Optional)</span>
+                        <label className="block text-zinc-200 font-semibold text-xs mb-1.5">
+                          College Roll Number <span className="text-zinc-500 font-normal">(Optional)</span>
                         </label>
                         <input
                           type="text"
                           placeholder="e.g. 12621001099"
                           value={memberRoll}
                           onChange={(e) => setMemberRoll(e.target.value)}
-                          className="w-full rounded-2xl border border-white/20 bg-neutral-900/95 hover:bg-neutral-900 focus:bg-black px-4 py-3 text-white placeholder:text-neutral-500 outline-none focus:border-[#f20089] focus:ring-2 focus:ring-[#f20089]/50 shadow-xl transition-all text-xs font-mono"
+                          className="w-full rounded-2xl border border-white/15 bg-[#121216] focus:bg-[#16161c] px-4 py-3 text-white placeholder:text-zinc-600 outline-none focus:border-[#f20089] focus:ring-1 focus:ring-[#f20089] transition-all text-xs font-mono"
                         />
                       </div>
 
                       <div>
-                        <label className="block text-white font-bold text-xs mb-1.5">
-                          Your Department / Branch
+                        <label className="block text-zinc-200 font-semibold text-xs mb-1.5">
+                          Department / Branch
                         </label>
                         <select
                           value={memberDepartment}
                           onChange={(e) => setMemberDepartment(e.target.value)}
-                          className="w-full rounded-2xl border border-white/20 bg-neutral-900/95 hover:bg-neutral-900 focus:bg-black px-4 py-3 text-white outline-none focus:border-[#f20089] focus:ring-2 focus:ring-[#f20089]/50 shadow-xl transition-all text-xs"
+                          className="w-full rounded-2xl border border-white/15 bg-[#121216] focus:bg-[#16161c] px-4 py-3 text-white outline-none focus:border-[#f20089] focus:ring-1 focus:ring-[#f20089] transition-all text-xs"
                         >
                           <option className="bg-neutral-900 text-white" value="Computer Science & Engineering">Computer Science & Engineering</option>
                           <option className="bg-neutral-900 text-white" value="Information Technology">Information Technology</option>
@@ -1304,15 +1299,15 @@ export default function EventInsideView({
                         type="button"
                         onClick={() => setJoinStep(1)}
                         disabled={loading}
-                        className="rounded-2xl bg-white/[0.08] hover:bg-white/15 px-5 py-3 text-xs font-semibold text-white/80 transition-all cursor-pointer"
+                        className="rounded-2xl bg-white/5 hover:bg-white/10 border border-white/10 px-5 py-3 text-xs font-medium text-zinc-300 transition-all cursor-pointer"
                       >
-                        ← Back to Step 1
+                        ← Back to Step 01
                       </button>
 
                       <button
                         type="submit"
                         disabled={loading || !memberPhone.trim()}
-                        className="rounded-2xl bg-[#f20089] hover:bg-[#d8007a] disabled:opacity-40 px-8 py-3 text-xs font-bold text-white shadow-lg shadow-[#f20089]/30 transition-all cursor-pointer flex items-center gap-2 hover:scale-[1.02] active:scale-95"
+                        className="rounded-2xl bg-[#f20089] hover:bg-[#d8007a] disabled:opacity-40 px-8 py-3 text-xs font-bold text-white shadow-lg shadow-[#f20089]/20 transition-all cursor-pointer flex items-center gap-2 hover:scale-[1.01] active:scale-95"
                       >
                         {loading ? (
                           <>
@@ -1320,7 +1315,7 @@ export default function EventInsideView({
                             <span>Verifying Team Code...</span>
                           </>
                         ) : (
-                          <span>Verify Code & Join Team 🤝</span>
+                          <span>Verify Code & Join Team →</span>
                         )}
                       </button>
                     </div>
