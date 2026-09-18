@@ -1,8 +1,9 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import { signIn } from "next-auth/react";
+import { QRCodeSVG } from "qrcode.react";
 import type { PublicEvent } from "../page";
 
 interface EventInsideViewProps {
@@ -34,18 +35,98 @@ export default function EventInsideView({
   const [teamName, setTeamName] = useState("");
   const [ventureName, setVentureName] = useState("");
   const [leadPhone, setLeadPhone] = useState("");
+  const [leadRoll, setLeadRoll] = useState("");
   const [department, setDepartment] = useState("Computer Science & Engineering");
 
   // Join Team state
   const [joinCode, setJoinCode] = useState("");
   const [memberPhone, setMemberPhone] = useState("");
+  const [memberRoll, setMemberRoll] = useState("");
   const [memberDepartment, setMemberDepartment] = useState("Computer Science & Engineering");
+
+  // RSVP State
+  const [rsvpInfo, setRsvpInfo] = useState<{
+    rsvpd: boolean;
+    status?: string;
+    myCheckIn?: boolean;
+    checkedInCount?: number;
+    totalRoster?: number;
+  } | null>(null);
+  const [rsvpLoading, setRsvpLoading] = useState(false);
 
   // General state
   const [loading, setLoading] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [copiedCode, setCopiedCode] = useState(false);
+
+  // Fetch RSVP status if user has a registered team
+  const fetchRsvpStatus = async () => {
+    if (!registeredTeam || !event._id) return;
+    try {
+      const res = await fetch(`/api/events/rsvp?eventId=${event._id}`);
+      if (res.ok) {
+        const data = await res.json();
+        if (data.rsvpd) {
+          const checkedInCount = data.rsvp?.checkedInMembers?.length || 0;
+          const totalRoster = 1 + (registeredTeam?.members?.length || 0);
+          setRsvpInfo({
+            rsvpd: true,
+            status: data.status,
+            myCheckIn: data.myCheckIn,
+            checkedInCount,
+            totalRoster,
+          });
+        } else {
+          setRsvpInfo({ rsvpd: false });
+        }
+      }
+    } catch (err) {
+      console.error("Failed to fetch RSVP status:", err);
+    }
+  };
+
+  useEffect(() => {
+    fetchRsvpStatus();
+  }, [registeredTeam, event._id]);
+
+  // Read URL params for auto-fill join code (e.g. ?code=HULT-7X9K)
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const params = new URLSearchParams(window.location.search);
+      const codeParam = params.get("code");
+      if (codeParam) {
+        setJoinCode(codeParam.toUpperCase().trim());
+        setRegistrationMode("join");
+      }
+    }
+  }, []);
+
+  // Handle RSVP action
+  const handleRsvp = async () => {
+    if (!sessionUser?.email || !event._id) return;
+    setRsvpLoading(true);
+    setErrorMessage(null);
+
+    try {
+      const res = await fetch("/api/events/rsvp", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ eventId: event._id }),
+      });
+
+      const data = await res.json();
+      if (!res.ok) {
+        throw new Error(data.error || "Failed to RSVP.");
+      }
+
+      await fetchRsvpStatus();
+    } catch (err: any) {
+      setErrorMessage(err.message || "Failed to RSVP.");
+    } finally {
+      setRsvpLoading(false);
+    }
+  };
 
   // Handle Create Team submit
   const handleCreateTeam = async (e: React.FormEvent) => {
@@ -80,6 +161,7 @@ export default function EventInsideView({
           ventureName: ventureName.trim(),
           leadName: sessionUser.name || "Student Leader",
           leadPhone: leadPhone.trim(),
+          leadRoll: leadRoll.trim(),
           department: department.trim(),
           membersCount: maxMembers,
         }),
@@ -130,6 +212,7 @@ export default function EventInsideView({
           eventId: event._id,
           teamCode: joinCode.trim().toUpperCase(),
           phone: memberPhone.trim(),
+          roll: memberRoll.trim(),
           department: memberDepartment.trim(),
         }),
       });
@@ -359,51 +442,122 @@ export default function EventInsideView({
               </div>
             </div>
 
-            {/* TEAM INVITE CODE BANNER (The Core Requested Feature) */}
+            {/* TEAM INVITE CODE BANNER & QR PASS */}
             {registeredTeam.teamCode && (
               <div className="relative overflow-hidden rounded-3xl border border-[#f20089]/50 bg-gradient-to-br from-[#f20089]/15 via-white/[0.04] to-purple-950/30 backdrop-blur-2xl p-6 sm:p-7 shadow-[0_10px_35px_rgba(242,0,137,0.2)]">
                 <div className="pointer-events-none absolute -top-12 -right-12 h-36 w-36 rounded-full bg-[#f20089]/25 blur-2xl" />
 
-                <div className="flex flex-col md:flex-row md:items-center justify-between gap-5 relative z-10">
-                  <div className="space-y-1.5">
+                <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 relative z-10">
+                  <div className="space-y-3">
                     <span className="text-[11px] font-bold text-[#f20089] uppercase tracking-widest block font-mono">
-                      🔑 Official Team Invite Code
+                      🔑 Official Team Invite Code & QR Pass
                     </span>
-                    <div className="flex items-center gap-3 flex-wrap">
-                      <span className="font-mono text-3xl sm:text-4xl font-black text-white tracking-widest px-4 py-1.5 rounded-2xl bg-white/[0.08] backdrop-blur-xl border border-[#f20089]/60 shadow-[inset_0_2px_10px_rgba(242,0,137,0.25)]">
+                    <div className="flex items-center gap-4 flex-wrap">
+                      <span className="font-mono text-3xl sm:text-4xl font-black text-white tracking-widest px-4 py-2 rounded-2xl bg-white/[0.08] backdrop-blur-xl border border-[#f20089]/60 shadow-[inset_0_2px_10px_rgba(242,0,137,0.25)]">
                         {registeredTeam.teamCode}
                       </span>
                     </div>
-                    <p className="text-xs text-neutral-300 max-w-lg pt-1 font-sans">
-                      Share this invite code with your teammates. They can navigate to this event and select{" "}
-                      <strong className="text-white font-semibold">Join Existing Team</strong> to enter this code and join your roster.
+                    <p className="text-xs text-neutral-300 max-w-lg font-sans leading-relaxed">
+                      Share this invite code or show the QR code to your teammates. Scanning the QR or navigating to the link auto-fills your team code.
                     </p>
+
+                    {/* Quick Share Actions */}
+                    <div className="flex items-center gap-2.5 flex-wrap pt-1">
+                      <button
+                        type="button"
+                        onClick={() => handleCopyCode(registeredTeam.teamCode)}
+                        className="rounded-2xl bg-white hover:bg-neutral-100 px-4 py-2 text-xs font-bold text-black shadow-lg transition-all cursor-pointer hover:scale-105 active:scale-95 flex items-center gap-2"
+                      >
+                        <span>{copiedCode ? "✓" : "📋"}</span>
+                        <span>{copiedCode ? "Copied!" : "Copy Code"}</span>
+                      </button>
+
+                      <a
+                        href={getWhatsAppShareUrl(registeredTeam)}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="rounded-2xl bg-[#25D366] hover:bg-[#20bd5a] px-4 py-2 text-xs font-bold text-white shadow-lg shadow-[#25D366]/30 transition-all hover:scale-105 active:scale-95 flex items-center gap-2"
+                      >
+                        <span>📲</span>
+                        <span>Share WhatsApp</span>
+                      </a>
+                    </div>
                   </div>
 
-                  {/* Quick Share Actions */}
-                  <div className="flex items-center gap-2.5 flex-wrap">
-                    <button
-                      type="button"
-                      onClick={() => handleCopyCode(registeredTeam.teamCode)}
-                      className="rounded-2xl bg-white hover:bg-neutral-100 px-5 py-2.5 text-xs font-bold text-black shadow-lg transition-all cursor-pointer hover:scale-105 active:scale-95 flex items-center gap-2"
-                    >
-                      <span>{copiedCode ? "✓" : "📋"}</span>
-                      <span>{copiedCode ? "Copied to Clipboard!" : "Copy Team Code"}</span>
-                    </button>
-
-                    <a
-                      href={getWhatsAppShareUrl(registeredTeam)}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="rounded-2xl bg-[#25D366] hover:bg-[#20bd5a] px-5 py-2.5 text-xs font-bold text-white shadow-lg shadow-[#25D366]/30 transition-all hover:scale-105 active:scale-95 flex items-center gap-2"
-                    >
-                      <span>📲</span>
-                      <span>Share on WhatsApp</span>
-                    </a>
+                  {/* Scannable Team Invite QR Code */}
+                  <div className="flex flex-col items-center justify-center p-3.5 rounded-2xl bg-white backdrop-blur-2xl border border-white/20 shadow-xl self-center md:self-auto">
+                    <QRCodeSVG
+                      value={typeof window !== "undefined" ? `${window.location.origin}/events?event=${event._id}&code=${registeredTeam.teamCode}` : `https://hultprizehitk.live/events?event=${event._id}&code=${registeredTeam.teamCode}`}
+                      size={110}
+                      bgColor={"#FFFFFF"}
+                      fgColor={"#09090b"}
+                      level={"M"}
+                    />
+                    <span className="text-[10px] font-bold text-black/70 font-mono mt-1.5 uppercase tracking-wider">
+                      Scan to Join Team
+                    </span>
                   </div>
                 </div>
               </div>
             )}
+
+            {/* HULT ASCEND EVENT RSVP BANNER */}
+            <div className="relative overflow-hidden rounded-3xl border border-purple-500/40 bg-gradient-to-r from-purple-900/30 via-white/[0.04] to-black/40 backdrop-blur-2xl p-6 shadow-xl">
+              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                <div className="space-y-1">
+                  <div className="flex items-center gap-2">
+                    <span className="text-xl">🏆</span>
+                    <h3 className="text-lg font-bold text-white font-[family-name:var(--font-google-sans)]">
+                      Hult Ascend Event RSVP
+                    </h3>
+                    {rsvpInfo?.rsvpd ? (
+                      <span className="rounded-full bg-emerald-500/20 border border-emerald-500/40 px-2.5 py-0.5 text-[10px] font-bold text-emerald-300 uppercase">
+                        ✓ RSVP Confirmed
+                      </span>
+                    ) : (
+                      <span className="rounded-full bg-amber-500/20 border border-amber-500/40 px-2.5 py-0.5 text-[10px] font-bold text-amber-300 uppercase">
+                        Action Required
+                      </span>
+                    )}
+                  </div>
+                  <p className="text-xs text-white/70 font-sans max-w-xl">
+                    {rsvpInfo?.rsvpd
+                      ? `Your team is RSVP'd for Hult Ascend. On event day, members scan the projected QR code in the auditorium.`
+                      : `Confirm your team's physical attendance for Hult Ascend event day.`}
+                  </p>
+                  {rsvpInfo?.rsvpd && (
+                    <div className="flex items-center gap-3 pt-1 text-xs text-purple-200">
+                      <span>Status: <strong className="text-white uppercase font-mono">{rsvpInfo.status}</strong></span>
+                      <span>•</span>
+                      <span>Attendance Scanned: <strong className="text-emerald-400 font-mono">{rsvpInfo.checkedInCount}/{rsvpInfo.totalRoster}</strong></span>
+                      {rsvpInfo.myCheckIn && (
+                        <span className="text-emerald-300 font-bold bg-emerald-500/20 px-2 py-0.5 rounded-full text-[10px]">
+                          ✓ You are checked in
+                        </span>
+                      )}
+                    </div>
+                  )}
+                </div>
+
+                {!rsvpInfo?.rsvpd ? (
+                  <button
+                    type="button"
+                    onClick={handleRsvp}
+                    disabled={rsvpLoading}
+                    className="rounded-2xl bg-gradient-to-r from-purple-600 to-[#f20089] hover:from-purple-500 hover:to-[#d8007a] px-6 py-3 text-xs font-bold text-white shadow-lg shadow-purple-600/30 transition-all cursor-pointer hover:scale-105 active:scale-95 whitespace-nowrap"
+                  >
+                    {rsvpLoading ? "Confirming RSVP..." : "RSVP My Team Now →"}
+                  </button>
+                ) : (
+                  <Link
+                    href={`/events/checkin?eventId=${event._id}`}
+                    className="rounded-2xl bg-white/10 hover:bg-white/20 border border-white/20 px-5 py-2.5 text-xs font-semibold text-white transition-all cursor-pointer whitespace-nowrap flex items-center gap-1.5"
+                  >
+                    <span>📱 Member Check-In Portal</span>
+                  </Link>
+                )}
+              </div>
+            </div>
 
             {/* INCOMPLETE ROSTER CRITERIA WARNING */}
             {!isTeamCriteriaMet && (
@@ -780,7 +934,17 @@ export default function EventInsideView({
                     </div>
                   </div>
 
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs font-sans pt-1">
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs font-sans pt-1">
+                    <div>
+                      <label className="block text-white/60 mb-1">College Roll Number</label>
+                      <input
+                        type="text"
+                        placeholder="e.g. 12621001099"
+                        value={leadRoll}
+                        onChange={(e) => setLeadRoll(e.target.value)}
+                        className="w-full rounded-2xl border border-white/15 bg-white/[0.05] hover:bg-white/[0.08] focus:bg-white/[0.1] px-4 py-2.5 text-white placeholder-white/40 outline-none backdrop-blur-xl focus:border-[#f20089] focus:ring-1 focus:ring-[#f20089]/50 shadow-inner transition-all text-xs font-mono"
+                      />
+                    </div>
                     <div>
                       <label className="block text-white/60 mb-1">WhatsApp / Contact Phone *</label>
                       <input
@@ -967,7 +1131,17 @@ export default function EventInsideView({
                     </div>
                   </div>
 
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs font-sans pt-1">
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs font-sans pt-1">
+                    <div>
+                      <label className="block text-white/60 mb-1">College Roll Number</label>
+                      <input
+                        type="text"
+                        placeholder="e.g. 12621001099"
+                        value={memberRoll}
+                        onChange={(e) => setMemberRoll(e.target.value)}
+                        className="w-full rounded-2xl border border-white/15 bg-white/[0.05] hover:bg-white/[0.08] focus:bg-white/[0.1] px-4 py-2.5 text-white placeholder-white/40 outline-none backdrop-blur-xl focus:border-[#f20089] focus:ring-1 focus:ring-[#f20089]/50 shadow-inner transition-all text-xs font-mono"
+                      />
+                    </div>
                     <div>
                       <label className="block text-white/60 mb-1">WhatsApp / Contact Phone *</label>
                       <input

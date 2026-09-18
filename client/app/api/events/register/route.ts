@@ -434,6 +434,7 @@ export async function POST(req: Request) {
           email: sessionEmail,
           phone: newTeam.leadPhone,
           department: newTeam.department,
+          roll: (body.roll || body.leadRoll || "").trim(),
         },
         leadEmail: sessionEmail,
         membersCount: newTeam.membersCount,

@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect, useMemo, useCallback } from "react";
 import Link from "next/link";
+import { QRCodeSVG } from "qrcode.react";
 
 interface TeamMember {
   name: string;
@@ -72,6 +73,11 @@ export default function LiveEventManager() {
   // Modals & Inspection
   const [inspectingTeam, setInspectingTeam] = useState<RegisteredTeam | null>(null);
   const [showAddTeamModal, setShowAddTeamModal] = useState(false);
+  const [showQrProjector, setShowQrProjector] = useState(false);
+  const [showGraceModal, setShowGraceModal] = useState(false);
+  const [graceTeam, setGraceTeam] = useState<RegisteredTeam | null>(null);
+  const [graceNote, setGraceNote] = useState("");
+  const [graceLoading, setGraceLoading] = useState(false);
   const [actionLoadingId, setActionLoadingId] = useState<string | null>(null);
   const [toast, setToast] = useState<{ message: string; type: "success" | "error" } | null>(null);
 
@@ -434,6 +440,43 @@ export default function LiveEventManager() {
   };
 
   // -------------------------------------------------------------
+  // Admin Grace Clearance Handler (/lgic)
+  // -------------------------------------------------------------
+  const handleGraceClearance = async (action: "approve" | "revoke") => {
+    if (!selectedEventId || !graceTeam) return;
+    setGraceLoading(true);
+
+    try {
+      const res = await fetch("/api/lgic", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          eventId: selectedEventId,
+          teamCode: graceTeam.teamCode,
+          action,
+          note: graceNote.trim(),
+        }),
+      });
+
+      const data = await res.json();
+      if (res.ok && data.success) {
+        showToast(data.message || `Grace clearance ${action}d successfully!`);
+        setShowGraceModal(false);
+        setGraceNote("");
+        setGraceTeam(null);
+        fetchTeamsForEvent(selectedEventId);
+      } else {
+        showToast(data.error || `Failed to ${action} grace clearance.`, "error");
+      }
+    } catch (err) {
+      console.error("Grace clearance error:", err);
+      showToast("Network error executing grace clearance.", "error");
+    } finally {
+      setGraceLoading(false);
+    }
+  };
+
+  // -------------------------------------------------------------
   // Filtered Teams Computation
   // -------------------------------------------------------------
   const filteredTeams = useMemo(() => {
@@ -740,8 +783,18 @@ export default function LiveEventManager() {
 
               <button
                 type="button"
+                onClick={() => setShowQrProjector(true)}
+                className="rounded-xl bg-gradient-to-r from-purple-600 to-[#f20089] hover:from-purple-500 hover:to-[#d8007a] px-3.5 py-2 text-xs font-bold text-white shadow-md shadow-purple-600/30 transition-all hover:scale-105 flex items-center gap-1.5 cursor-pointer font-[family-name:var(--font-google-sans)]"
+                title="Open fullscreen check-in QR code for screen projector"
+              >
+                <span>📺</span>
+                <span>Project Check-In QR</span>
+              </button>
+
+              <button
+                type="button"
                 onClick={() => setShowAddTeamModal(true)}
-                className="rounded-xl bg-gradient-to-r from-[#f20089] to-purple-600 hover:from-[#ff1a9b] hover:to-purple-500 px-4 py-2 text-xs font-bold text-white shadow-md shadow-[#f20089]/30 transition-all hover:scale-105 flex items-center gap-1.5 cursor-pointer font-[family-name:var(--font-google-sans)]"
+                className="rounded-xl bg-white/[0.1] hover:bg-white/20 border border-white/20 px-4 py-2 text-xs font-bold text-white transition-all hover:scale-105 flex items-center gap-1.5 cursor-pointer font-[family-name:var(--font-google-sans)]"
               >
                 <span>+</span>
                 <span>Register Team</span>
@@ -1188,6 +1241,18 @@ export default function LiveEventManager() {
                     <div className="flex items-center gap-2">
                       <button
                         type="button"
+                        onClick={() => {
+                          setGraceTeam(team);
+                          setShowGraceModal(true);
+                        }}
+                        className="rounded-xl bg-purple-500/20 hover:bg-purple-500/30 text-purple-200 border border-purple-500/40 px-3 py-1.5 text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5"
+                        title="Issue or revoke admin grace clearance for Hult Ascend"
+                      >
+                        <span>🛡️ Grace</span>
+                      </button>
+
+                      <button
+                        type="button"
                         disabled={actionLoadingId === team.id}
                         onClick={() => handleToggleCheckIn(team)}
                         className={`rounded-xl px-3.5 py-1.5 text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 ${
@@ -1535,6 +1600,141 @@ export default function LiveEventManager() {
                     </button>
                   </div>
                 </form>
+              </div>
+            </div>
+          )}
+          {/* ========================================================================= */}
+          {/* MODAL 2: PROJECTOR CHECK-IN QR MODAL                                      */}
+          {/* ========================================================================= */}
+          {showQrProjector && selectedEventId && (
+            <div className="fixed inset-0 z-50 bg-black/90 backdrop-blur-3xl flex items-center justify-center p-4 animate-fadeIn">
+              <div className="relative overflow-hidden rounded-[2.5rem] border border-purple-500/50 bg-gradient-to-b from-purple-950/40 via-black to-neutral-950 p-8 sm:p-12 max-w-xl w-full text-center space-y-6 shadow-[0_25px_60px_rgba(242,0,137,0.3)]">
+                <button
+                  type="button"
+                  onClick={() => setShowQrProjector(false)}
+                  className="absolute top-6 right-6 h-10 w-10 rounded-full bg-white/10 hover:bg-white/20 text-white font-bold flex items-center justify-center transition-all cursor-pointer"
+                >
+                  ✕
+                </button>
+
+                <div className="space-y-2">
+                  <span className="rounded-full bg-purple-500/20 border border-purple-500/40 px-3.5 py-1 text-[11px] font-bold text-purple-300 uppercase tracking-widest font-mono">
+                    Official Auditorium Projection QR
+                  </span>
+                  <h2 className="text-2xl sm:text-3xl font-black text-white font-[family-name:var(--font-google-sans)]">
+                    {eventMeta?.title || "Hult Ascend Check-In"}
+                  </h2>
+                  <p className="text-xs text-white/60 font-sans">
+                    Scan with any phone camera or QR scanner app to mark physical attendance.
+                  </p>
+                </div>
+
+                {/* Big Center QR Code */}
+                <div className="flex flex-col items-center justify-center p-6 rounded-3xl bg-white backdrop-blur-2xl border border-white/20 shadow-2xl max-w-xs mx-auto">
+                  <QRCodeSVG
+                    value={
+                      typeof window !== "undefined"
+                        ? `${window.location.origin}/events/checkin?eventId=${selectedEventId}`
+                        : `https://hultprizehitk.live/events/checkin?eventId=${selectedEventId}`
+                    }
+                    size={260}
+                    bgColor={"#FFFFFF"}
+                    fgColor={"#09090b"}
+                    level={"H"}
+                  />
+                  <span className="text-xs font-bold text-black/80 font-mono mt-3 uppercase tracking-wider">
+                    SCAN TO CHECK IN
+                  </span>
+                </div>
+
+                {/* Action Buttons */}
+                <div className="flex items-center justify-center gap-3 flex-wrap pt-2">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (document.documentElement.requestFullscreen) {
+                        document.documentElement.requestFullscreen();
+                      }
+                    }}
+                    className="rounded-2xl bg-white/10 hover:bg-white/20 border border-white/20 px-5 py-2.5 text-xs font-bold text-white transition-all cursor-pointer flex items-center gap-2"
+                  >
+                    <span>📺</span>
+                    <span>Fullscreen Projection</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => window.print()}
+                    className="rounded-2xl bg-gradient-to-r from-[#f20089] to-purple-600 hover:from-[#ff1a9b] hover:to-purple-500 px-6 py-2.5 text-xs font-bold text-white shadow-lg transition-all cursor-pointer flex items-center gap-2"
+                  >
+                    <span>🖨️</span>
+                    <span>Save as PDF / Print</span>
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* ========================================================================= */}
+          {/* MODAL 3: ADMIN GRACE CLEARANCE MODAL (/lgic)                              */}
+          {/* ========================================================================= */}
+          {showGraceModal && graceTeam && (
+            <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-2xl flex items-center justify-center p-4 animate-fadeIn">
+              <div className="relative overflow-hidden rounded-[2rem] border border-purple-500/40 bg-neutral-900 p-6 sm:p-8 max-w-md w-full space-y-5 shadow-2xl">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowGraceModal(false);
+                    setGraceTeam(null);
+                  }}
+                  className="absolute top-5 right-5 text-white/50 hover:text-white text-lg cursor-pointer"
+                >
+                  ✕
+                </button>
+
+                <div className="space-y-1">
+                  <span className="rounded-full bg-purple-500/20 border border-purple-500/40 px-3 py-0.5 text-[10px] font-bold text-purple-300 uppercase font-mono">
+                    🛡️ Admin Grace Clearance (/lgic)
+                  </span>
+                  <h3 className="text-xl font-bold text-white">
+                    Team {graceTeam.teamName} ({graceTeam.teamCode})
+                  </h3>
+                  <p className="text-xs text-white/60 font-sans leading-relaxed">
+                    Approve team attendance manually for real-world edge cases (illness, phone failure, last-minute swap).
+                  </p>
+                </div>
+
+                <div className="space-y-2">
+                  <label className="block text-xs font-mono text-white/70">
+                    Reason / Note (Optional):
+                  </label>
+                  <input
+                    type="text"
+                    value={graceNote}
+                    onChange={(e) => setGraceNote(e.target.value)}
+                    placeholder="e.g. Member absent due to illness, approved by lead admin"
+                    className="w-full rounded-xl border border-white/15 bg-white/[0.06] px-3.5 py-2.5 text-xs text-white placeholder-white/30 focus:border-[#f20089] focus:outline-none"
+                  />
+                </div>
+
+                <div className="flex items-center justify-end gap-2 pt-3 border-t border-white/10">
+                  <button
+                    type="button"
+                    disabled={graceLoading}
+                    onClick={() => handleGraceClearance("revoke")}
+                    className="rounded-xl bg-rose-500/20 hover:bg-rose-500/30 text-rose-300 border border-rose-500/40 px-4 py-2 text-xs font-bold transition-all cursor-pointer"
+                  >
+                    Revoke Grace
+                  </button>
+                  <button
+                    type="button"
+                    disabled={graceLoading}
+                    onClick={() => handleGraceClearance("approve")}
+                    className="rounded-xl bg-purple-600 hover:bg-purple-500 px-5 py-2 text-xs font-bold text-white shadow-lg transition-all cursor-pointer"
+                  >
+                    {graceLoading ? "Processing..." : "Approve Grace Clearance →"}
+                  </button>
+                </div>
               </div>
             </div>
           )}
