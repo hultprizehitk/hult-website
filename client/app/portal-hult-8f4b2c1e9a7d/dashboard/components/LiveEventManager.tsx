@@ -3,6 +3,7 @@
 import React, { useState, useEffect, useMemo, useCallback } from "react";
 import Link from "next/link";
 import { QRCodeSVG } from "qrcode.react";
+import { Plus, RefreshCw, X, Calendar, MapPin, Users, Download, Tv, Printer, Search, Clipboard, Lightbulb, Mail, Phone, Shield, Trash2, Check } from "lucide-react";
 
 interface TeamMember {
   name: string;
@@ -574,14 +575,16 @@ export default function LiveEventManager() {
                   href="/portal-hult-8f4b2c1e9a7d/dashboard"
                   className="rounded-2xl bg-gradient-to-r from-[#f20089] to-purple-600 hover:from-[#ff1a9b] hover:to-purple-500 px-5 py-2.5 text-xs font-bold text-white shadow-lg shadow-[#f20089]/30 transition-all hover:scale-105 flex items-center gap-2 font-[family-name:var(--font-google-sans)]"
                 >
-                  <span>➕ Create New Event in Events Manager</span>
+                  <Plus className="h-4 w-4" />
+                  <span>Create New Event in Events Manager</span>
                 </Link>
                 <button
                   type="button"
                   onClick={fetchEvents}
                   className="rounded-2xl bg-white/[0.08] hover:bg-white/15 border border-white/20 px-4 py-2.5 text-xs font-semibold text-white/90 hover:text-white transition-all flex items-center gap-1.5 cursor-pointer backdrop-blur-md"
                 >
-                  <span>🔄 Refresh Events</span>
+                  <RefreshCw className="h-4 w-4" />
+                  <span>Refresh Events</span>
                 </button>
               </div>
             </div>
@@ -626,7 +629,7 @@ export default function LiveEventManager() {
             </div>
           ) : filteredEventsList.length === 0 ? (
             <div className="rounded-3xl border border-white/15 bg-gradient-to-b from-white/[0.06] via-white/[0.02] to-transparent p-12 text-center backdrop-blur-2xl shadow-xl">
-              <div className="text-4xl mb-3">📅</div>
+              <Calendar className="h-10 w-10 text-[#f20089] mx-auto mb-3" />
               <h3 className="text-lg font-bold text-white font-[family-name:var(--font-google-sans)] mb-2">
                 No Events Found
               </h3>
@@ -678,11 +681,11 @@ export default function LiveEventManager() {
                     {/* Venue & Date */}
                     <div className="space-y-1.5 text-xs text-white/70 mb-4 font-mono">
                       <div className="flex items-center gap-2">
-                        <span>📍</span>
+                        <MapPin className="h-3 w-3 text-pink-400" />
                         <span className="truncate">{ev.venue}</span>
                       </div>
                       <div className="flex items-center gap-2">
-                        <span>🗓️</span>
+                        <Calendar className="h-3 w-3 text-pink-400" />
                         <span>{ev.date}</span>
                       </div>
                     </div>
@@ -767,7 +770,7 @@ export default function LiveEventManager() {
                 className="rounded-xl bg-white/[0.08] hover:bg-white/15 border border-white/20 px-3.5 py-2 text-xs font-semibold text-white/90 hover:text-white transition-all flex items-center gap-1.5 cursor-pointer"
                 title="Sync team registrations from database"
               >
-                <span>🔄</span>
+                <RefreshCw className="h-3.5 w-3.5" />
                 <span>Sync Data</span>
               </button>
 
@@ -777,7 +780,7 @@ export default function LiveEventManager() {
                 className="rounded-xl bg-white/[0.08] hover:bg-white/15 border border-white/20 px-3.5 py-2 text-xs font-semibold text-white/90 hover:text-white transition-all flex items-center gap-1.5 cursor-pointer"
                 title="Export registered teams and attendance to CSV"
               >
-                <span>📥</span>
+                <Download className="h-3.5 w-3.5" />
                 <span>Export CSV</span>
               </button>
 
@@ -787,7 +790,7 @@ export default function LiveEventManager() {
                 className="rounded-xl bg-gradient-to-r from-purple-600 to-[#f20089] hover:from-purple-500 hover:to-[#d8007a] px-3.5 py-2 text-xs font-bold text-white shadow-md shadow-purple-600/30 transition-all hover:scale-105 flex items-center gap-1.5 cursor-pointer font-[family-name:var(--font-google-sans)]"
                 title="Open fullscreen check-in QR code for screen projector"
               >
-                <span>📺</span>
+                <Tv className="h-3.5 w-3.5" />
                 <span>Project Check-In QR</span>
               </button>
 
@@ -830,12 +833,12 @@ export default function LiveEventManager() {
 
                 <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-white/70 font-mono mt-2">
                   <span className="flex items-center gap-1">
-                    <span>📍</span>
+                    <MapPin className="h-3.5 w-3.5 text-pink-400" />
                     <span>{eventMeta?.venue || selectedEvent?.venue}</span>
                   </span>
                   <span>•</span>
                   <span className="flex items-center gap-1">
-                    <span>🗓️</span>
+                    <Calendar className="h-3.5 w-3.5 text-pink-400" />
                     <span>{eventMeta?.date || selectedEvent?.date}</span>
                   </span>
                 </div>
@@ -855,7 +858,7 @@ export default function LiveEventManager() {
             <div className="rounded-3xl border border-white/15 bg-gradient-to-b from-white/[0.08] via-white/[0.04] to-white/[0.01] p-5 backdrop-blur-2xl shadow-xl hover:border-white/25 transition-all">
               <div className="flex items-center justify-between text-xs text-white/60 uppercase tracking-wider mb-2 font-mono">
                 <span>Registered Teams</span>
-                <span className="text-pink-300">👥</span>
+                <Users className="h-4 w-4 text-pink-300" />
               </div>
               <div className="text-2xl sm:text-3xl font-black text-white font-[family-name:var(--font-google-sans)] mb-1">
                 {stats.total}
@@ -1078,7 +1081,7 @@ export default function LiveEventManager() {
                           className="h-7 w-7 rounded-lg bg-white/[0.08] hover:bg-white/15 flex items-center justify-center text-white/60 hover:text-white transition-colors text-xs cursor-pointer"
                           title="Copy Team Code"
                         >
-                          📋
+                          <Clipboard className="h-3.5 w-3.5" />
                         </button>
                       </div>
 
@@ -1140,7 +1143,7 @@ export default function LiveEventManager() {
                       </h3>
                       {team.ventureName ? (
                         <div className="flex items-center gap-1.5 text-xs text-[#f20089] font-medium mb-2">
-                          <span>💡</span>
+                          <Lightbulb className="h-3.5 w-3.5 text-[#f20089]" />
                           <span className="truncate">{team.ventureName}</span>
                         </div>
                       ) : (
@@ -1176,7 +1179,7 @@ export default function LiveEventManager() {
                           href={`mailto:${team.lead.email}`}
                           className="hover:text-[#f20089] transition-colors flex items-center gap-1"
                         >
-                          <span>✉️</span>
+                          <Mail className="h-3.5 w-3.5 text-pink-400" />
                           <span className="truncate max-w-[180px]">{team.lead.email}</span>
                         </a>
                         {team.lead.phone && (
@@ -1184,7 +1187,7 @@ export default function LiveEventManager() {
                             href={`tel:${team.lead.phone}`}
                             className="hover:text-emerald-400 transition-colors flex items-center gap-1"
                           >
-                            <span>📞</span>
+                            <Phone className="h-3.5 w-3.5 text-emerald-400" />
                             <span>{team.lead.phone}</span>
                           </a>
                         )}
@@ -1248,7 +1251,8 @@ export default function LiveEventManager() {
                         className="rounded-xl bg-purple-500/20 hover:bg-purple-500/30 text-purple-200 border border-purple-500/40 px-3 py-1.5 text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5"
                         title="Issue or revoke admin grace clearance for Hult Ascend"
                       >
-                        <span>🛡️ Grace</span>
+                        <Shield className="h-3.5 w-3.5 text-purple-400" />
+                        <span>Grace</span>
                       </button>
 
                       <button
@@ -1280,7 +1284,7 @@ export default function LiveEventManager() {
                         className="h-8 w-8 rounded-xl bg-white/[0.05] hover:bg-rose-500/20 border border-white/15 hover:border-rose-500/40 text-white/50 hover:text-rose-300 transition-all flex items-center justify-center text-xs cursor-pointer"
                         title="Remove team"
                       >
-                        🗑️
+                        <Trash2 className="h-3.5 w-3.5" />
                       </button>
                     </div>
                   </div>
@@ -1321,8 +1325,9 @@ export default function LiveEventManager() {
                     {inspectingTeam.teamName}
                   </h2>
                   {inspectingTeam.ventureName && (
-                    <p className="text-sm text-[#f20089] font-medium mt-1">
-                      💡 Project: {inspectingTeam.ventureName}
+                    <p className="text-sm text-[#f20089] font-medium mt-1 inline-flex items-center gap-1.5">
+                      <Lightbulb className="h-3.5 w-3.5 text-[#f20089]" />
+                      <span>Project: {inspectingTeam.ventureName}</span>
                     </p>
                   )}
                   <p className="text-xs text-white/50 font-mono mt-1">
@@ -1654,7 +1659,7 @@ export default function LiveEventManager() {
                     }}
                     className="rounded-2xl bg-white/10 hover:bg-white/20 border border-white/20 px-5 py-2.5 text-xs font-bold text-white transition-all cursor-pointer flex items-center gap-2"
                   >
-                    <span>📺</span>
+                    <Tv className="h-4 w-4" />
                     <span>Fullscreen Projection</span>
                   </button>
 
@@ -1663,7 +1668,7 @@ export default function LiveEventManager() {
                     onClick={() => window.print()}
                     className="rounded-2xl bg-gradient-to-r from-[#f20089] to-purple-600 hover:from-[#ff1a9b] hover:to-purple-500 px-6 py-2.5 text-xs font-bold text-white shadow-lg transition-all cursor-pointer flex items-center gap-2"
                   >
-                    <span>🖨️</span>
+                    <Printer className="h-4 w-4" />
                     <span>Save as PDF / Print</span>
                   </button>
                 </div>
@@ -1689,8 +1694,9 @@ export default function LiveEventManager() {
                 </button>
 
                 <div className="space-y-1">
-                  <span className="rounded-full bg-purple-500/20 border border-purple-500/40 px-3 py-0.5 text-[10px] font-bold text-purple-300 uppercase font-mono">
-                    🛡️ Admin Grace Clearance (/lgic)
+                  <span className="inline-flex items-center gap-1 rounded-full bg-purple-500/20 border border-purple-500/40 px-3 py-0.5 text-[10px] font-bold text-purple-300 uppercase font-mono">
+                    <Shield className="h-3 w-3 text-purple-400" />
+                    <span>Admin Grace Clearance (/lgic)</span>
                   </span>
                   <h3 className="text-xl font-bold text-white">
                     Team {graceTeam.teamName} ({graceTeam.teamCode})

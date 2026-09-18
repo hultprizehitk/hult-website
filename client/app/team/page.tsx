@@ -3,6 +3,7 @@
 import React, { useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
+import { GraduationCap, Building2, IdCard } from "lucide-react";
 import SiteHeader from "@/components/SiteHeader";
 import AnimatedGradient from "@/components/ui/animated-gradient";
 import { TEAM_SECTIONS, INITIAL_TEAM_MEMBERS } from "@/lib/team-data";
@@ -201,7 +202,7 @@ export default function TeamPage() {
 
           {member.academicYear && (
             <div className="inline-flex items-center gap-1.5 rounded-xl bg-white/[0.03] border border-white/10 px-2.5 py-1 text-[11px] text-white/70 font-mono mb-3">
-              <span>🎓</span>
+              <GraduationCap className="h-3 w-3 text-pink-400" />
               <span>{member.academicYear}</span>
             </div>
           )}
@@ -479,7 +480,7 @@ export default function TeamPage() {
                             {fac.department}
                           </p>
                           <div className="mt-2 inline-flex items-center gap-1.5 rounded-full bg-sky-500/10 border border-sky-500/30 px-3 py-0.5 text-[11px] text-sky-300 font-mono">
-                            🏛️ Faculty Mentor
+                            <Building2 className="h-3 w-3 text-sky-400" /> Faculty Mentor
                           </div>
                         </div>
                       </div>
@@ -496,7 +497,7 @@ export default function TeamPage() {
                             href={`/team/${fac.slug}`}
                             className="inline-flex items-center gap-2 rounded-2xl border border-sky-500/40 bg-sky-500/10 hover:bg-sky-500/25 px-4 py-2 text-xs font-bold text-sky-300 hover:text-white transition-all shadow-md group/id"
                           >
-                            <span>🪪</span>
+                            <IdCard className="h-4 w-4 text-sky-400" />
                             <span>View Interactive 3D ID Badge</span>
                             <span className="group-hover/id:translate-x-1 transition-transform">→</span>
                           </Link>

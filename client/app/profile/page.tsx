@@ -5,6 +5,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useSession, signOut } from "next-auth/react";
+import { Shield } from "lucide-react";
 import AnimatedGradient from "@/components/ui/animated-gradient";
 import { parseHeritageEmail } from "@/lib/heritage-parser";
 
@@ -43,12 +44,12 @@ export default function StudentProfilePage() {
   const isAdmin = isMasterAdmin || isLeadAdmin || isJuniorAdmin;
 
   const adminBadgeLabel = isMasterAdmin
-    ? "👑 Master Admin"
+    ? "Master Admin"
     : isLeadAdmin
-    ? "⭐ Lead Admin"
+    ? "Lead Admin"
     : isJuniorAdmin
-    ? "🛡️ Junior Admin"
-    : "🛡️ Admin";
+    ? "Junior Admin"
+    : "Admin";
 
   return (
     <div className="relative min-h-screen w-full overflow-x-hidden bg-black font-sans text-white selection:bg-[#f20089] selection:text-white flex flex-col justify-between">
@@ -162,9 +163,10 @@ export default function StudentProfilePage() {
               {isAdmin && (
                 <Link
                   href="/portal"
-                  className="rounded-full bg-[#f20089]/30 border border-[#f20089]/60 px-2.5 py-1 text-[11px] font-bold text-pink-200"
+                  className="inline-flex items-center gap-1 rounded-full bg-[#f20089]/20 border border-[#f20089]/50 px-2.5 py-1 text-[11px] font-bold text-pink-200"
                 >
-                  👑 CMS
+                  <Shield className="h-3 w-3 text-[#f20089]" />
+                  <span>CMS</span>
                 </Link>
               )}
               <button
@@ -306,78 +308,75 @@ export default function StudentProfilePage() {
                 </p>
 
                 {/* Email Delivery Tip Notice */}
-                <div className="mb-6 rounded-2xl border border-amber-500/30 bg-amber-500/10 p-3.5 text-left backdrop-blur-xl">
-                  <div className="flex items-start gap-2.5">
-                    <span className="text-amber-400 text-base mt-0.5 shrink-0">📩</span>
-                    <div className="text-xs text-amber-200/90 leading-relaxed">
-                      <span className="font-bold text-amber-300 block mb-0.5">Confirmation Email Sent!</span>
-                      We sent your welcome email. If you do not see it in your Inbox, please check your <strong className="text-white">Spam / Junk folder</strong> and mark it as <strong className="text-amber-300 font-bold">"Not Spam"</strong>.
-                    </div>
+                <div className="mb-6 rounded-2xl border border-white/10 bg-[#121216] p-4 text-left shadow-lg">
+                  <div className="text-xs text-zinc-300 leading-relaxed">
+                    <span className="font-bold text-white block mb-0.5 font-[family-name:var(--font-google-sans)]">Welcome Email Dispatched</span>
+                    If you do not see your confirmation email in your Inbox, please inspect your <strong className="text-white">Spam / Junk folder</strong> and mark it as <strong className="text-white font-bold">"Not Spam"</strong>.
                   </div>
                 </div>
 
                 {/* Student Digital ID Bento Grid */}
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-left mb-6">
                   {/* Branch / Department Tile */}
-                  <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-4 backdrop-blur-xl">
-                    <span className="block text-[10px] uppercase font-extrabold tracking-wider text-white/50 mb-1">
-                      Department / Branch
+                  <div className="rounded-2xl border border-white/10 bg-[#121216] p-4">
+                    <span className="block text-[10px] font-mono uppercase font-bold tracking-widest text-zinc-400 mb-1">
+                      DEPARTMENT / BRANCH
                     </span>
                     <span className="text-sm font-bold text-white block leading-snug font-[family-name:var(--font-google-sans)]">
                       {studentInfo?.branchName || "General Engineering"}
                     </span>
                     {studentInfo?.branchCode && (
-                      <span className="inline-block mt-2 rounded-md bg-[#f20089]/20 border border-[#f20089]/40 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-[#f20089]">
-                        Code: {studentInfo.branchCode}
+                      <span className="inline-block mt-2 rounded-md bg-[#f20089]/15 border border-[#f20089]/30 px-2 py-0.5 text-[10px] font-mono font-bold uppercase tracking-wider text-[#f20089]">
+                        CODE: {studentInfo.branchCode}
                       </span>
                     )}
                   </div>
 
                   {/* Current Year of Study & Passing Year Tile */}
-                  <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-4 backdrop-blur-xl">
-                    <span className="block text-[10px] uppercase font-extrabold tracking-wider text-white/50 mb-1">
-                      Current Year of Study
+                  <div className="rounded-2xl border border-white/10 bg-[#121216] p-4">
+                    <span className="block text-[10px] font-mono uppercase font-bold tracking-widest text-zinc-400 mb-1">
+                      CURRENT YEAR OF STUDY
                     </span>
                     <span className="text-sm font-bold text-white block leading-snug font-[family-name:var(--font-google-sans)]">
                       {studentInfo?.academicYear || "3rd Year"}
                     </span>
-                    <div className="flex items-center gap-1.5 mt-2 flex-wrap">
-                      <span className="rounded-md bg-purple-500/20 border border-purple-500/40 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-purple-300">
+                    <div className="flex items-center gap-1.5 mt-2 flex-wrap font-mono">
+                      <span className="rounded-md bg-white/10 border border-white/15 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-zinc-200">
                         {studentInfo?.batch || "Class of 2028"}
                       </span>
-                      <span className="rounded-md bg-white/[0.06] border border-white/10 px-2 py-0.5 text-[10px] font-bold text-white/70">
-                        Passing: {studentInfo?.passingYear || "2028"}
+                      <span className="rounded-md bg-white/5 border border-white/10 px-2 py-0.5 text-[10px] font-bold text-zinc-400">
+                        PASSING: {studentInfo?.passingYear || "2028"}
                       </span>
                     </div>
                   </div>
 
                   {/* Campus Affiliation */}
-                  <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-4 backdrop-blur-xl sm:col-span-2">
+                  <div className="rounded-2xl border border-white/10 bg-[#121216] p-4 sm:col-span-2">
                     <div className="flex items-center justify-between gap-2">
                       <div>
-                        <span className="block text-[10px] uppercase font-extrabold tracking-wider text-white/50 mb-0.5">
-                          Institution
+                        <span className="block text-[10px] font-mono uppercase font-bold tracking-widest text-zinc-400 mb-0.5">
+                          INSTITUTION
                         </span>
-                        <span className="text-xs font-semibold text-white/90">
+                        <span className="text-xs font-semibold text-white">
                           Heritage Institute of Technology, Kolkata
                         </span>
                       </div>
-                      <span className="rounded-full bg-emerald-500/15 border border-emerald-500/30 px-2.5 py-1 text-[10px] font-bold text-emerald-300">
-                        ● Eligible 2027
+                      <span className="rounded-full bg-white/10 border border-white/15 px-3 py-1 text-[10px] font-mono font-bold text-zinc-200">
+                        Eligible 2027
                       </span>
                     </div>
                   </div>
 
                   {/* Registered Events & Teams Tile */}
                   {registrations && registrations.length > 0 && (
-                    <div className="rounded-2xl border border-[#f20089]/30 bg-[#f20089]/5 p-4 backdrop-blur-xl sm:col-span-2 space-y-2">
+                    <div className="rounded-2xl border border-white/15 bg-[#121216] p-4 sm:col-span-2 space-y-3">
                       <div className="flex items-center justify-between">
-                        <span className="block text-[10px] uppercase font-extrabold tracking-wider text-[#f20089]">
-                          🏆 My Registered Events ({registrations.length})
+                        <span className="block text-[10px] font-mono font-bold uppercase tracking-widest text-[#f20089]">
+                          MY REGISTERED EVENTS ({registrations.length})
                         </span>
                         <Link
                           href="/events"
-                          className="text-[10px] font-bold text-white/70 hover:text-white underline"
+                          className="text-[10px] font-mono font-bold text-zinc-400 hover:text-white"
                         >
                           View All Events →
                         </Link>
@@ -387,28 +386,28 @@ export default function StudentProfilePage() {
                         {registrations.map((reg, idx) => (
                           <div
                             key={idx}
-                            className="rounded-xl border border-white/10 bg-black/40 p-3 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2.5 text-xs"
+                            className="rounded-xl border border-white/10 bg-[#09090b] p-3 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2.5 text-xs"
                           >
                             <div>
                               <div className="flex items-center gap-2 flex-wrap">
                                 <span className="font-bold text-white">{reg.eventTitle}</span>
-                                <span className="rounded-full bg-[#f20089]/20 border border-[#f20089]/40 px-2 py-0.2 text-[9px] font-bold text-[#f20089] uppercase">
+                                <span className="rounded-full bg-[#f20089]/15 border border-[#f20089]/30 px-2 py-0.5 text-[9px] font-mono font-bold text-[#f20089] uppercase">
                                   {reg.eventTag}
                                 </span>
                               </div>
-                              <span className="text-[11px] text-white/60 block mt-0.5">
+                              <span className="text-[11px] text-zinc-400 block mt-0.5 font-mono">
                                 Team: <strong className="text-white">{reg.team?.teamName}</strong> ({reg.team?.membersCount} Members)
                               </span>
                             </div>
                             <Link
                               href="/events"
-                              className={`rounded-lg px-2.5 py-1 text-[10px] font-bold whitespace-nowrap transition-all ${
+                              className={`rounded-lg px-2.5 py-1 text-[10px] font-mono font-bold whitespace-nowrap transition-all ${
                                 reg.team?.status === "pending"
-                                  ? "bg-amber-500/20 border border-amber-500/40 text-amber-300 hover:bg-amber-500/30"
-                                  : "bg-emerald-500/20 border border-emerald-500/40 text-emerald-300 hover:bg-emerald-500/30"
+                                  ? "bg-white/10 border border-white/15 text-zinc-300 hover:bg-white/15"
+                                  : "bg-[#f20089]/20 border border-[#f20089]/40 text-pink-300 hover:bg-[#f20089]/30"
                               }`}
                             >
-                              {reg.team?.status === "pending" ? "⚠️ Roster Incomplete" : "✓ Pass Confirmed"}
+                              {reg.team?.status === "pending" ? "Roster Incomplete" : "Pass Confirmed"}
                             </Link>
                           </div>
                         ))}

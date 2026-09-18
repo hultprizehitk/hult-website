@@ -48,7 +48,7 @@ export function getRegistrationConfirmationHtml({
           <tr>
             <td style="padding: 36px 32px;">
               <h2 style="margin:0 0 16px 0; font-size: 22px; font-weight: 700; color: #ffffff;">
-                Registration Confirmed! 🎉
+                Registration Confirmed
               </h2>
               
               <p style="margin:0 0 20px 0; font-size: 15px; line-height: 1.6; color: #d4d4d8;">
@@ -305,7 +305,7 @@ export async function sendWelcomeEmail(params: WelcomeEmailParams): Promise<Send
   const htmlContent = getWelcomeEmailHtml(params);
   return sendEmail({
     to: [{ email: params.email, name: params.name }],
-    subject: `Welcome to Hult Prize HITK, ${params.name}! 🎉`,
+    subject: `Welcome to Hult Prize HITK, ${params.name}!`,
     htmlContent,
   });
 }

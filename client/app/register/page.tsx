@@ -5,6 +5,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useSession, signIn, signOut } from "next-auth/react";
+import { Mail, Lock, Shield } from "lucide-react";
 import AnimatedGradient from "@/components/ui/animated-gradient";
 import { parseHeritageEmail } from "@/lib/heritage-parser";
 
@@ -67,12 +68,12 @@ export default function RegisterPage() {
   const isAdmin = isMasterAdmin || isLeadAdmin || isJuniorAdmin;
 
   const adminBadgeLabel = isMasterAdmin
-    ? "👑 Master Admin"
+    ? "Master Admin"
     : isLeadAdmin
-    ? "⭐ Lead Admin"
+    ? "Lead Admin"
     : isJuniorAdmin
-    ? "🛡️ Junior Admin"
-    : "🛡️ Admin";
+    ? "Junior Admin"
+    : "Admin";
 
   return (
     <div className="relative min-h-screen w-full overflow-x-hidden bg-black font-sans text-white selection:bg-[#f20089] selection:text-white flex flex-col justify-between">
@@ -302,7 +303,7 @@ export default function RegisterPage() {
 
                 {/* Student Name */}
                 <h2 className="text-2xl sm:text-3xl font-extrabold text-white font-[family-name:var(--font-google-sans)] mb-1">
-                  {studentInfo?.fullName || session.user.name}
+                  {studentInfo?.fullName || (session.user.email ? parseHeritageEmail(session.user.email).fullName : "") || session.user.name}
                 </h2>
                 <p className="text-xs sm:text-sm text-neutral-300 mb-5 font-mono font-medium tracking-tight">
                   {session.user.email}
@@ -311,7 +312,7 @@ export default function RegisterPage() {
                 {/* Email Delivery Tip Notice */}
                 <div className="mb-6 rounded-2xl border border-amber-500/30 bg-amber-500/10 p-3.5 text-left backdrop-blur-xl">
                   <div className="flex items-start gap-2.5">
-                    <span className="text-amber-400 text-base mt-0.5 shrink-0">📩</span>
+                    <Mail className="h-4 w-4 text-amber-400 mt-0.5 shrink-0" />
                     <div className="text-xs text-amber-200/90 leading-relaxed">
                       <span className="font-bold text-amber-300 block mb-0.5">Confirmation Email Sent!</span>
                       We sent your welcome email. If you do not see it in your Inbox, please check your <strong className="text-white">Spam / Junk folder</strong> and mark it as <strong className="text-amber-300 font-bold">"Not Spam"</strong>.
@@ -485,7 +486,7 @@ export default function RegisterPage() {
                 {/* Domain Policy Notice */}
                 <div className="mt-8 rounded-2xl border border-white/10 bg-white/[0.02] p-4 text-left space-y-2">
                   <div className="flex items-center gap-2 text-xs font-bold text-white">
-                    <span>🔒</span>
+                    <Lock className="h-3.5 w-3.5 text-white/70" />
                     <span>Domain Restricted Access</span>
                   </div>
                   <p className="text-[11px] text-white/60 leading-relaxed">

@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
+import { Copy, Download, X } from "lucide-react";
 import { parseHeritageEmail } from "@/lib/heritage-parser";
 
 import type { Participant } from "@/types";
@@ -138,10 +139,11 @@ export default function StudentsDirectory() {
         >
           <span>{statusMessage.text}</span>
           <button
+            type="button"
             onClick={() => setStatusMessage(null)}
-            className="text-white/60 hover:text-white text-xs cursor-pointer"
+            className="text-white/60 hover:text-white"
           >
-            ✕
+            <X className="h-4 w-4" />
           </button>
         </div>
       )}
@@ -161,16 +163,18 @@ export default function StudentsDirectory() {
           <button
             type="button"
             onClick={copyAllEmails}
-            className="rounded-full bg-white/[0.08] hover:bg-white/15 border border-white/20 px-4 py-2.5 text-xs sm:text-sm font-semibold text-white transition-all cursor-pointer font-[family-name:var(--font-google-sans)]"
+            className="inline-flex items-center gap-1.5 rounded-full bg-white/[0.08] hover:bg-white/15 border border-white/20 px-4 py-2.5 text-xs sm:text-sm font-semibold text-white transition-all cursor-pointer font-[family-name:var(--font-google-sans)]"
           >
-            📋 Copy Emails
+            <Copy className="h-4 w-4 text-white/80" />
+            <span>Copy Emails</span>
           </button>
           <button
             type="button"
             onClick={exportToCSV}
-            className="rounded-full bg-emerald-600 hover:bg-emerald-500 px-5 sm:px-6 py-2.5 text-xs sm:text-sm font-bold text-white shadow-lg shadow-emerald-600/30 transition-all hover:scale-105 cursor-pointer font-[family-name:var(--font-google-sans)]"
+            className="inline-flex items-center gap-1.5 rounded-full bg-emerald-600 hover:bg-emerald-500 px-5 sm:px-6 py-2.5 text-xs sm:text-sm font-bold text-white shadow-lg shadow-emerald-600/30 transition-all hover:scale-105 cursor-pointer font-[family-name:var(--font-google-sans)]"
           >
-            📥 Export to CSV
+            <Download className="h-4 w-4 text-white" />
+            <span>Export to CSV</span>
           </button>
         </div>
       </div>

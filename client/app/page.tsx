@@ -375,10 +375,10 @@ export default function Home() {
                   >
                     <span>
                       {(session.user as { role?: string })?.role === "master_admin"
-                        ? "👑 Master Admin CMS"
+                        ? "Master Admin CMS"
                         : (session.user as { role?: string })?.role === "lead_admin"
-                        ? "⭐ Lead Admin CMS"
-                        : "🛡️ Junior Admin CMS"}
+                        ? "Lead Admin CMS"
+                        : "Junior Admin CMS"}
                     </span>
                   </Link>
                 )}
@@ -419,7 +419,7 @@ export default function Home() {
                     href="/portal"
                     className="rounded-full bg-[#f20089]/30 border border-[#f20089]/60 px-2.5 py-1 text-[11px] font-bold text-pink-200"
                   >
-                    👑 CMS
+                    CMS
                   </Link>
                 )}
                 <Link

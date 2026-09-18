@@ -82,23 +82,23 @@ export default function SiteHeader({ className = "" }: SiteHeaderProps) {
               ) && (
                 <Link
                   href="/portal"
-                  className="inline-flex items-center gap-1 rounded-full border border-[#f20089]/60 bg-[#f20089]/25 hover:bg-[#f20089]/40 px-3 py-1.5 text-xs font-bold text-pink-300 hover:text-white transition-all shadow-sm hover:scale-105"
+                  className="inline-flex items-center gap-1 rounded-full border border-[#f20089]/60 bg-[#f20089]/20 hover:bg-[#f20089]/30 px-3 py-1.5 text-xs font-mono font-bold text-pink-300 hover:text-white transition-all shadow-sm hover:scale-[1.02]"
                 >
                   <span>
                     {(session.user as { role?: string })?.role === "master_admin"
-                      ? "👑 Master Admin CMS"
+                      ? "Master Admin CMS"
                       : (session.user as { role?: string })?.role === "lead_admin"
-                      ? "⭐ Lead Admin CMS"
-                      : "🛡️ Junior Admin CMS"}
+                      ? "Lead Admin CMS"
+                      : "Junior Admin CMS"}
                   </span>
                 </Link>
               )}
               <Link
                 href="/profile"
-                className="inline-flex items-center gap-1.5 rounded-full border border-white/20 bg-white/[0.08] hover:bg-white/[0.15] px-3.5 py-1.5 text-xs font-bold text-white shadow-sm hover:scale-105 transition-all"
+                className="inline-flex items-center gap-1.5 rounded-full border border-white/20 bg-white/10 hover:bg-white/15 px-3.5 py-1.5 text-xs font-bold text-white shadow-sm hover:scale-[1.02] transition-all"
                 title="View User Profile"
               >
-                <span className="h-2 w-2 rounded-full bg-emerald-400 animate-pulse" />
+                <span className="h-1.5 w-1.5 rounded-full bg-[#f20089]" />
                 {session.user.name?.split(" ")[0]}
               </Link>
               <button
@@ -128,9 +128,9 @@ export default function SiteHeader({ className = "" }: SiteHeaderProps) {
               ) && (
                 <Link
                   href="/portal"
-                  className="rounded-full bg-[#f20089]/30 border border-[#f20089]/60 px-2.5 py-1 text-[11px] font-bold text-pink-200"
+                  className="rounded-full bg-[#f20089]/20 border border-[#f20089]/50 px-2.5 py-1 text-[10px] font-mono font-bold text-pink-200 uppercase tracking-wider"
                 >
-                  👑 CMS
+                  Admin CMS
                 </Link>
               )}
               <Link

@@ -4,6 +4,7 @@ import React, { useState, useEffect } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { useSession, signOut } from "next-auth/react";
+import { Search, Calendar, MapPin, Users, Shield } from "lucide-react";
 import AnimatedGradient from "@/components/ui/animated-gradient";
 import DistressedEventsTitle from "@/components/sections/DistressedEventsTitle";
 
@@ -192,14 +193,14 @@ export default function EventsPage() {
               ) && (
                 <Link
                   href="/portal"
-                  className="inline-flex items-center gap-1 rounded-full border border-[#f20089]/60 bg-[#f20089]/25 hover:bg-[#f20089]/40 px-3 py-1.5 text-xs font-bold text-pink-300 hover:text-white transition-all shadow-sm hover:scale-105"
+                  className="inline-flex items-center gap-1 rounded-full border border-[#f20089]/60 bg-[#f20089]/20 hover:bg-[#f20089]/30 px-3 py-1.5 text-xs font-mono font-bold text-pink-300 hover:text-white transition-all shadow-sm hover:scale-[1.02]"
                 >
                   <span>
                     {(session.user as { role?: string })?.role === "master_admin"
-                      ? "👑 Master Admin CMS"
+                      ? "Master Admin CMS"
                       : (session.user as { role?: string })?.role === "lead_admin"
-                      ? "⭐ Lead Admin CMS"
-                      : "🛡️ Junior Admin CMS"}
+                      ? "Lead Admin CMS"
+                      : "Junior Admin CMS"}
                   </span>
                 </Link>
               )}
@@ -238,9 +239,10 @@ export default function EventsPage() {
               ) && (
                 <Link
                   href="/portal"
-                  className="rounded-full bg-[#f20089]/30 border border-[#f20089]/60 px-2.5 py-1 text-[11px] font-bold text-pink-200"
+                  className="inline-flex items-center gap-1 rounded-full bg-[#f20089]/30 border border-[#f20089]/60 px-2.5 py-1 text-[11px] font-bold text-pink-200"
                 >
-                  👑 CMS
+                  <Shield className="h-3 w-3 text-[#f20089]" />
+                  <span>CMS</span>
                 </Link>
               )}
               <Link
@@ -352,7 +354,7 @@ export default function EventsPage() {
             if (!currentEvent) {
               return (
                 <div className="py-20 text-center space-y-4 font-[family-name:var(--font-google-sans)] animate-fadeIn">
-                  <span className="text-4xl block">🔍</span>
+                  <Search className="h-10 w-10 text-[#f20089] mx-auto mb-2" />
                   <h2 className="text-2xl font-bold text-white">Event Not Found</h2>
                   <p className="text-xs text-white/60 max-w-md mx-auto">
                     The event you selected could not be found or may have been updated by the organizing committee.
@@ -432,15 +434,15 @@ export default function EventsPage() {
 
                       <div className="space-y-1.5 text-xs text-neutral-300 mb-4 font-sans">
                         <div className="flex items-center gap-2">
-                          <span className="text-white/50">📅</span>
+                          <Calendar className="h-3.5 w-3.5 text-white/50" />
                           <span className="font-semibold text-white">{event.date}</span>
                         </div>
                         <div className="flex items-center gap-2">
-                          <span className="text-white/50">📍</span>
+                          <MapPin className="h-3.5 w-3.5 text-white/50" />
                           <span className="text-white/80">{event.venue}</span>
                         </div>
                         <div className="flex items-center gap-2">
-                          <span className="text-white/50">👥</span>
+                          <Users className="h-3.5 w-3.5 text-white/50" />
                           <span className="text-white/80">
                             Team Size:{" "}
                             <strong className="text-white font-semibold">
@@ -478,8 +480,8 @@ export default function EventsPage() {
                           >
                             <span>
                               {isComplete
-                                ? "✓ Team Registered (Confirmed) →"
-                                : `⚠️ Roster Incomplete (${totalJoined}/${minReq} Min) →`}
+                                ? "Team Registered (Confirmed) →"
+                                : `Roster Incomplete (${totalJoined}/${minReq} Min) →`}
                             </span>
                           </button>
                         );

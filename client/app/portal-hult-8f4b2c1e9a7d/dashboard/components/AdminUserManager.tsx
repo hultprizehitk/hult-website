@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useRef } from "react";
+import { Shield, Star, Crown, User, Building2, GraduationCap } from "lucide-react";
 import { parseHeritageEmail } from "@/lib/heritage-parser";
 import type { AdminRecord, Participant, UserRole } from "@/types";
 
@@ -12,21 +13,21 @@ const ROLE_PRESETS = [
   {
     role: "junior_admin" as const,
     label: "Junior Admin",
-    icon: "🛡️",
+    icon: Shield,
     badgeClass: "bg-purple-500/20 border-purple-500/40 text-purple-300",
     desc: "Junior Admin • Verification and roster support",
   },
   {
     role: "lead_admin" as const,
     label: "Lead Admin",
-    icon: "⭐",
+    icon: Star,
     badgeClass: "bg-sky-500/20 border-sky-500/40 text-sky-300",
     desc: "Lead Admin • Operations, events, and participant management",
   },
   {
     role: "master_admin" as const,
     label: "Master Admin",
-    icon: "👑",
+    icon: Crown,
     badgeClass: "bg-gradient-to-r from-amber-500/25 to-[#f20089]/25 border-amber-500/40 text-amber-300",
     desc: "Master Admin • Top-level executive clearance and team oversight",
   },
@@ -216,25 +217,29 @@ export default function AdminUserManager({ currentUserEmail }: AdminUserManagerP
       case "master_admin":
         return (
           <span className="inline-flex items-center gap-1.5 rounded-full bg-gradient-to-r from-amber-500/25 to-[#f20089]/25 border border-amber-500/40 px-3 py-0.5 text-[10px] font-extrabold text-amber-300 uppercase tracking-wider shadow-sm">
-            <span>👑 Master Admin</span>
+            <Crown className="h-3 w-3 text-amber-400" />
+            <span>Master Admin</span>
           </span>
         );
       case "lead_admin":
         return (
           <span className="inline-flex items-center gap-1.5 rounded-full bg-sky-500/20 border border-sky-500/40 px-3 py-0.5 text-[10px] font-bold text-sky-300 uppercase tracking-wider">
-            <span>⭐ Lead Admin</span>
+            <Star className="h-3 w-3 text-sky-400" />
+            <span>Lead Admin</span>
           </span>
         );
       case "junior_admin":
         return (
           <span className="inline-flex items-center gap-1.5 rounded-full bg-purple-500/20 border border-purple-500/40 px-3 py-0.5 text-[10px] font-bold text-purple-300 uppercase tracking-wider">
-            <span>🛡️ Junior Admin</span>
+            <Shield className="h-3 w-3 text-purple-400" />
+            <span>Junior Admin</span>
           </span>
         );
       default:
         return (
           <span className="inline-flex items-center gap-1.5 rounded-full bg-purple-500/20 border border-purple-500/40 px-3 py-0.5 text-[10px] font-bold text-purple-300 uppercase tracking-wider">
-            <span>🛡️ Junior Admin</span>
+            <Shield className="h-3 w-3 text-purple-400" />
+            <span>Junior Admin</span>
           </span>
         );
     }
@@ -362,14 +367,14 @@ export default function AdminUserManager({ currentUserEmail }: AdminUserManagerP
               <span className="text-emerald-400 font-bold uppercase tracking-wider text-[10px]">
                 Identity Preview:
               </span>
-              <span className="font-semibold text-white">
-                👤 {adminEmailParsed.fullName}
+              <span className="font-semibold text-white inline-flex items-center gap-1">
+                <User className="h-3 w-3 text-emerald-400" /> {adminEmailParsed.fullName}
               </span>
-              <span className="text-emerald-300">
-                🏛️ {adminEmailParsed.branchName} ({adminEmailParsed.branchCode})
+              <span className="text-emerald-300 inline-flex items-center gap-1">
+                <Building2 className="h-3 w-3 text-emerald-400" /> {adminEmailParsed.branchName} ({adminEmailParsed.branchCode})
               </span>
-              <span className="text-purple-300">
-                🎓 {adminEmailParsed.academicYear} ({adminEmailParsed.batch})
+              <span className="text-purple-300 inline-flex items-center gap-1">
+                <GraduationCap className="h-3 w-3 text-purple-400" /> {adminEmailParsed.academicYear} ({adminEmailParsed.batch})
               </span>
             </div>
           )}
@@ -474,11 +479,11 @@ export default function AdminUserManager({ currentUserEmail }: AdminUserManagerP
                           onChange={(e) =>
                             handleChangeRole(admin, e.target.value as UserRole)
                           }
-                          className="rounded-xl border border-white/15 bg-black/70 px-2.5 py-1 text-[11px] text-white outline-none hover:border-[#f20089] focus:border-[#f20089] cursor-pointer"
+                          className="rounded-xl border border-white/15 bg-[#121216] px-2.5 py-1 text-[11px] text-white outline-none hover:border-[#f20089] focus:border-[#f20089] cursor-pointer"
                         >
-                          <option value="junior_admin">🛡️ Junior Admin</option>
-                          <option value="lead_admin">⭐ Lead Admin</option>
-                          <option value="master_admin">👑 Master Admin</option>
+                          <option value="junior_admin">Junior Admin</option>
+                          <option value="lead_admin">Lead Admin</option>
+                          <option value="master_admin">Master Admin</option>
                         </select>
                       </td>
                       <td className="px-5 py-4 text-right">
@@ -520,11 +525,11 @@ export default function AdminUserManager({ currentUserEmail }: AdminUserManagerP
             <select
               value={quickPromoteRole}
               onChange={(e) => setQuickPromoteRole(e.target.value as "junior_admin" | "lead_admin" | "master_admin")}
-              className="rounded-2xl border border-white/15 bg-black/60 px-3 py-2 text-xs text-white outline-none backdrop-blur-xl focus:border-[#f20089] cursor-pointer"
+              className="rounded-2xl border border-white/15 bg-[#121216] px-3 py-2 text-xs text-white outline-none focus:border-[#f20089] cursor-pointer"
             >
-              <option value="junior_admin">🛡️ as Junior Admin</option>
-              <option value="lead_admin">⭐ as Lead Admin</option>
-              <option value="master_admin">👑 as Master Admin</option>
+              <option value="junior_admin">as Junior Admin</option>
+              <option value="lead_admin">as Lead Admin</option>
+              <option value="master_admin">as Master Admin</option>
             </select>
             <input
               type="text"

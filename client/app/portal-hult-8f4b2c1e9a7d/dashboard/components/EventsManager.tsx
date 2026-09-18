@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import Link from "next/link";
+import { Calendar, MapPin, Users, X } from "lucide-react";
 
 import type { EventItem, RegisteredTeamItem } from "@/types";
 
@@ -553,10 +554,11 @@ export default function EventsManager() {
         >
           <span>{statusMessage.text}</span>
           <button
+            type="button"
             onClick={() => setStatusMessage(null)}
             className="text-white/60 hover:text-white text-xs cursor-pointer p-1"
           >
-            ✕
+            <X className="h-4 w-4" />
           </button>
         </div>
       )}
@@ -648,12 +650,12 @@ export default function EventsManager() {
                 {selectedEvent.title}
               </h1>
               <div className="flex items-center gap-3 text-xs text-white/60 mt-1.5 flex-wrap">
-                <span>📅 {selectedEvent.date}</span>
+                <span className="inline-flex items-center gap-1"><Calendar className="h-3.5 w-3.5 text-pink-400" /> {selectedEvent.date}</span>
                 <span>•</span>
-                <span>📍 {selectedEvent.venue}</span>
+                <span className="inline-flex items-center gap-1"><MapPin className="h-3.5 w-3.5 text-pink-400" /> {selectedEvent.venue}</span>
                 <span>•</span>
-                <span className="text-white font-medium">
-                  👥 {selectedEvent.registeredTeamsCount || selectedEvent.registeredTeams?.length || 0} Teams Registered
+                <span className="text-white font-medium inline-flex items-center gap-1">
+                  <Users className="h-3.5 w-3.5 text-pink-400" /> {selectedEvent.registeredTeamsCount || selectedEvent.registeredTeams?.length || 0} Teams Registered
                 </span>
                 <span>•</span>
                 <span className="text-[#f20089] font-medium">
@@ -854,7 +856,7 @@ export default function EventsManager() {
                   {eventFormData.date && (
                     <div className="rounded-2xl border border-white/15 bg-white/[0.04] backdrop-blur-xl px-4 py-2.5 flex items-center justify-between gap-2 text-xs flex-wrap shadow-inner">
                       <div className="flex items-center gap-2 text-white/70">
-                        <span className="text-[#f20089] font-bold">📅 Schedule Summary:</span>
+                        <span className="text-[#f20089] font-bold inline-flex items-center gap-1"><Calendar className="h-3.5 w-3.5" /> Schedule Summary:</span>
                         <span className="font-semibold text-white">{eventFormData.date}</span>
                       </div>
                     </div>
@@ -1531,7 +1533,7 @@ export default function EventsManager() {
                 {eventFormData.date && (
                   <div className="rounded-2xl border border-white/15 bg-white/[0.04] backdrop-blur-xl px-4 py-2.5 flex items-center justify-between gap-2 text-xs flex-wrap shadow-inner">
                     <div className="flex items-center gap-2 text-white/70">
-                      <span className="text-[#f20089] font-bold">📅 Schedule Summary:</span>
+                      <span className="text-[#f20089] font-bold inline-flex items-center gap-1"><Calendar className="h-3.5 w-3.5" /> Schedule Summary:</span>
                       <span className="font-semibold text-white">{eventFormData.date}</span>
                     </div>
                   </div>
@@ -1721,11 +1723,11 @@ export default function EventsManager() {
                       {/* Schedule & Venue Meta */}
                       <div className="space-y-1 text-xs text-white/70 mb-3.5 font-sans">
                         <div className="flex items-center gap-2">
-                          <span className="text-white/40">📅 Date:</span>
+                          <Calendar className="h-3.5 w-3.5 text-white/40" />
                           <span className="font-semibold text-white">{event.date}</span>
                         </div>
                         <div className="flex items-center gap-2">
-                          <span className="text-white/40">📍 Venue:</span>
+                          <MapPin className="h-3.5 w-3.5 text-white/40" />
                           <span>{event.venue}</span>
                         </div>
                       </div>
@@ -1738,7 +1740,7 @@ export default function EventsManager() {
                       {/* Roster, Cutoff & Member Limits Strip */}
                       <div className="flex items-center justify-between gap-3 py-2.5 px-3.5 rounded-2xl bg-white/[0.04] border border-white/15 backdrop-blur-xl shadow-inner text-xs mb-5 flex-wrap">
                         <div className="flex items-center gap-2">
-                          <span className="text-white/40">👥</span>
+                          <Users className="h-3.5 w-3.5 text-white/40" />
                           <span className="font-bold text-white">
                             {registeredCount} Registered {registeredCount === 1 ? "Team" : "Teams"}
                           </span>

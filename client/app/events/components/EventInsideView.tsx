@@ -330,7 +330,7 @@ export default function EventInsideView({
             )}
 
             <span className="rounded-full bg-purple-500/15 border border-purple-500/30 px-3 py-1 text-[11px] font-bold text-purple-200">
-              👥 Team Size: {minMembers} to {maxMembers} Members
+              Team Size: {minMembers} to {maxMembers} Members
             </span>
           </div>
 
@@ -346,7 +346,7 @@ export default function EventInsideView({
                 Schedule & Time
               </span>
               <span className="font-semibold text-white block text-xs sm:text-sm">
-                📅 {event.date}
+                {event.date}
               </span>
             </div>
 
@@ -355,7 +355,7 @@ export default function EventInsideView({
                 Venue Location
               </span>
               <span className="font-semibold text-white block text-xs sm:text-sm">
-                📍 {event.venue}
+                {event.venue}
               </span>
             </div>
 
@@ -364,7 +364,7 @@ export default function EventInsideView({
                 Team Size Limits
               </span>
               <span className="font-bold text-[#f20089] block text-xs sm:text-sm">
-                👥 {minMembers} to {maxMembers} Students / Team
+                {minMembers} to {maxMembers} Students / Team
               </span>
             </div>
           </div>
@@ -408,14 +408,14 @@ export default function EventInsideView({
             <div className="flex items-center justify-between border-b border-white/10 pb-4 flex-wrap gap-3">
               <div>
                 <span className="rounded-full bg-emerald-500/20 border border-emerald-500/40 px-3 py-0.5 text-[11px] font-bold text-emerald-300 uppercase tracking-wider">
-                  ✓ Confirmed Team Registration Pass
+                  Confirmed Team Registration Pass
                 </span>
                 <h2 className="text-2xl sm:text-3xl font-black text-white mt-1.5">
                   Team {registeredTeam.teamName}
                 </h2>
                 {registeredTeam.ventureName && (
                   <p className="text-xs text-[#f20089] font-medium mt-0.5">
-                    💡 Venture Pitch: {registeredTeam.ventureName}
+                    Venture Pitch: {registeredTeam.ventureName}
                   </p>
                 )}
               </div>
@@ -428,18 +428,17 @@ export default function EventInsideView({
                   className="rounded-full bg-white/[0.08] hover:bg-white/15 border border-white/15 px-3.5 py-1.5 text-xs font-semibold text-white/90 hover:text-white transition-all cursor-pointer flex items-center gap-1.5"
                   title="Click to refresh roster if a teammate just joined"
                 >
-                  <span className={refreshing ? "animate-spin" : ""}>🔄</span>
                   <span>{refreshing ? "Syncing..." : "Refresh Roster"}</span>
                 </button>
                 {isTeamCriteriaMet ? (
                   <span className="rounded-full bg-emerald-500/15 border border-emerald-500/30 px-3.5 py-1.5 text-xs font-bold text-emerald-300 flex items-center gap-1.5">
                     <span className="h-2 w-2 rounded-full bg-emerald-400 animate-pulse" />
-                    <span>✓ Status: Confirmed</span>
+                    <span>Status: Confirmed</span>
                   </span>
                 ) : (
                   <span className="rounded-full bg-amber-500/15 border border-amber-500/30 px-3.5 py-1.5 text-xs font-bold text-amber-300 flex items-center gap-1.5">
                     <span className="h-2 w-2 rounded-full bg-amber-400 animate-pulse" />
-                    <span>⚠️ Incomplete Roster ({totalJoined}/{minMembers} Min Required)</span>
+                    <span>Incomplete Roster ({totalJoined}/{minMembers} Min Required)</span>
                   </span>
                 )}
               </div>
@@ -722,13 +721,13 @@ export default function EventInsideView({
                       : "bg-white/[0.03] border-white/5 text-white/40 hover:text-white/60"
                   }`}
                 >
-                  <span>📋 Copy Pass Info</span>
+                  <span>Copy Pass Info</span>
                 </button>
                 <button
                   type="button"
                   onClick={() => {
                     if (!isTeamCriteriaMet) {
-                      alert(`⚠️ Team Criteria Not Met\n\nYou have ${totalJoined} member(s). Official passes can only be printed once at least ${minMembers} members have joined your team roster.`);
+                      alert(`Team Criteria Not Met\n\nYou have ${totalJoined} member(s). Official passes can only be printed once at least ${minMembers} members have joined your team roster.`);
                       return;
                     }
                     window.print();
@@ -739,7 +738,7 @@ export default function EventInsideView({
                       : "bg-white/[0.03] border-white/5 text-white/30 cursor-not-allowed"
                   }`}
                 >
-                  <span>🖨️ {isTeamCriteriaMet ? "Print Pass" : `Pass Locked (Needs ${minMembers - totalJoined} More)`}</span>
+                  <span>{isTeamCriteriaMet ? "Print Pass" : `Pass Locked (Needs ${minMembers - totalJoined} More)`}</span>
                 </button>
               </div>
             </div>
@@ -747,8 +746,8 @@ export default function EventInsideView({
         ) : event.registrationStatus === "closed" ? (
           /* STATE B: REGISTRATION CLOSED */
           <div className="py-8 text-center space-y-3">
-            <div className="inline-flex h-12 w-12 items-center justify-center rounded-full bg-white/[0.06] text-xl">
-              🔒
+            <div className="inline-flex items-center justify-center rounded-full bg-white/[0.06] px-4 py-1 text-xs text-white/70 font-mono">
+              Restricted Access
             </div>
             <h2 className="text-xl font-bold text-white">Registrations Closed</h2>
             <p className="text-xs text-white/60 max-w-md mx-auto">
@@ -758,8 +757,8 @@ export default function EventInsideView({
         ) : !sessionUser ? (
           /* STATE C: UNAUTHENTICATED IN-PAGE PROMPT */
           <div className="py-8 text-center space-y-4 animate-fadeIn">
-            <div className="inline-flex h-16 w-16 items-center justify-center rounded-full bg-[#f20089]/20 border border-[#f20089]/40 text-2xl shadow-lg shadow-[#f20089]/20">
-              🎓
+            <div className="inline-flex items-center justify-center rounded-full bg-[#f20089]/20 border border-[#f20089]/40 px-4 py-1 text-xs font-bold text-pink-300 font-mono">
+              Student Clearance
             </div>
 
             <div>
@@ -845,7 +844,7 @@ export default function EventInsideView({
                 }`}
               >
                 <div className="flex items-center justify-between mb-2.5">
-                  <span className="text-3xl">👑</span>
+                  <span className="text-xs font-mono font-bold uppercase tracking-widest text-pink-400 bg-pink-500/10 border border-pink-500/30 px-2.5 py-0.5 rounded-full">Lead</span>
                   {registrationMode === "create" ? (
                     <span className="text-[10px] uppercase font-bold text-[#f20089] bg-[#f20089]/20 border border-[#f20089]/40 px-3 py-0.5 rounded-full">
                       Selected
@@ -879,7 +878,7 @@ export default function EventInsideView({
                 }`}
               >
                 <div className="flex items-center justify-between mb-2.5">
-                  <span className="text-3xl">🤝</span>
+                  <span className="text-xs font-mono font-bold uppercase tracking-widest text-purple-400 bg-purple-500/10 border border-purple-500/30 px-2.5 py-0.5 rounded-full">Member</span>
                   {registrationMode === "join" ? (
                     <span className="text-[10px] uppercase font-bold text-[#f20089] bg-[#f20089]/20 border border-[#f20089]/40 px-3 py-0.5 rounded-full">
                       Selected
