@@ -4,7 +4,7 @@ import { connectDB } from "@/lib/mongodb";
 import User from "@/models/User";
 import { parseHeritageEmail } from "@/lib/heritage-parser";
 import { isSuperAdminEmail, isAdminRole } from "@/lib/admin-check";
-import { sendRegistrationConfirmationEmail } from "@/lib/email-templates";
+import { sendWelcomeEmail } from "@/lib/email-templates";
 import type { UserRole } from "@/types";
 
 // When deployed to production, ensure NEXTAUTH_URL and AUTH_URL never point to localhost
@@ -72,23 +72,41 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
               department: parsed.branchName,
               year: parsed.academicYear,
               role: assignedRole,
+              welcomeEmailSent: true,
             });
 
-            // Trigger Google Workspace welcome / confirmation email for new Google signup
-            sendRegistrationConfirmationEmail({
+            // Trigger Google Workspace official welcome email for new account creation
+            sendWelcomeEmail({
               name: dbUser.name,
               email: dbUser.email,
-              eventName: "Hult Prize HITK 2025-2026",
+              department: dbUser.department,
+              year: dbUser.year,
+              role: dbUser.role,
             }).catch((emailErr) => {
-              console.error("Failed to send confirmation email on Google OAuth signup:", emailErr);
+              console.error("[Google Workspace SMTP] Failed to send welcome email on account creation:", emailErr);
             });
           } else {
-            const updates: Record<string, string> = {
+            const updates: Record<string, any> = {
               department: parsed.branchName,
               year: parsed.academicYear,
               role: assignedRole,
             };
             if (user.image) updates.image = user.image;
+
+            // If user has not yet received their first-time welcome email, send it now
+            if (!dbUser.welcomeEmailSent) {
+              updates.welcomeEmailSent = true;
+              sendWelcomeEmail({
+                name: dbUser.name || parsed.fullName || user.name || "HITK Innovator",
+                email: dbUser.email,
+                department: dbUser.department || parsed.branchName,
+                year: dbUser.year || parsed.academicYear,
+                role: dbUser.role,
+              }).catch((emailErr) => {
+                console.error("[Google Workspace SMTP] Failed to send welcome email on first login:", emailErr);
+              });
+            }
+
             await User.updateOne({ _id: dbUser._id }, updates);
             Object.assign(dbUser, updates);
           }

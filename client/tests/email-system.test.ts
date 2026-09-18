@@ -1,7 +1,7 @@
 import fs from "fs";
 import path from "path";
 import { sendEmail } from "../lib/mail";
-import { getRegistrationConfirmationHtml } from "../lib/email-templates";
+import { getRegistrationConfirmationHtml, getWelcomeEmailHtml } from "../lib/email-templates";
 
 function loadEnv() {
   const envPaths = [
@@ -46,7 +46,7 @@ async function runEmailTests() {
     }
   }
 
-  // Test 1: HTML Template Generation & Branding
+  // Test 1: HTML Template Generation & Branding (Registration Confirmation)
   try {
     const html = getRegistrationConfirmationHtml({
       name: "Test Student",
@@ -60,6 +60,27 @@ async function runEmailTests() {
     assert(html.includes("#e6007e"), "HTML template contains Hult Prize brand accent color");
   } catch (err) {
     assert(false, `HTML Template Generation threw error: ${err}`);
+  }
+
+  // Test 1b: Welcome Email Template Generation & Metadata
+  try {
+    const welcomeHtml = getWelcomeEmailHtml({
+      name: "Rahul Sharma",
+      email: "rahul.sharma.cse26@heritageit.edu.in",
+      department: "Computer Science and Engineering",
+      year: "3rd Year",
+    });
+
+    assert(welcomeHtml.includes("Rahul Sharma"), "Welcome email contains user's name");
+    assert(welcomeHtml.includes("rahul.sharma.cse26@heritageit.edu.in"), "Welcome email contains user's email");
+    assert(welcomeHtml.includes("Computer Science and Engineering"), "Welcome email contains department");
+    assert(welcomeHtml.includes("3rd Year"), "Welcome email contains academic year");
+    assert(welcomeHtml.includes("Hult-Prize.png"), "Welcome email includes Hult Prize logo");
+    assert(welcomeHtml.includes("hitk-25-logo.png"), "Welcome email includes Heritage Institute of Technology logo");
+    assert(welcomeHtml.includes("/events"), "Welcome email includes link to browse competitions");
+    assert(!welcomeHtml.includes("Access Tier"), "Welcome email has access tier removed for clean presentation");
+  } catch (err) {
+    assert(false, `Welcome Email Template Generation threw error: ${err}`);
   }
 
   // Test 2: Missing provider credentials error handling

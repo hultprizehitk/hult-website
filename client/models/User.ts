@@ -13,6 +13,7 @@ export interface IUser extends Document {
     | "junior_admin"
     | "lead_admin"
     | "master_admin";
+  welcomeEmailSent?: boolean;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -59,6 +60,10 @@ const UserSchema = new Schema<IUser>(
         "master_admin",
       ],
       default: "user",
+    },
+    welcomeEmailSent: {
+      type: Boolean,
+      default: false,
     },
   },
   {
