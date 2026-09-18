@@ -9,6 +9,11 @@ import ThreeBirds from "@/components/hero/ThreeBirds";
 import CloudRevealTransition from "@/components/hero/CloudRevealTransition";
 import ClothWindOverlay from "@/components/sections/ClothWindOverlay";
 import AboutSection from "@/components/sections/AboutSection";
+import ChallengeSection from "@/components/sections/ChallengeSection";
+import EventsHighlightSection from "@/components/sections/EventsHighlightSection";
+import TimelineSection from "@/components/sections/TimelineSection";
+import CtaBannerSection from "@/components/sections/CtaBannerSection";
+import SiteFooter from "@/components/sections/SiteFooter";
 import AnimatedGradient from "@/components/ui/animated-gradient";
 import { debug } from "@/lib/debug-logger";
 
@@ -498,10 +503,15 @@ export default function Home() {
 
       {/* 
         ========================================================================
-        ABOUT US SECTION (Features social entrepreneurship, mission, and pillars)
+        LANDING PAGE SECTIONS (About, Challenge, Events, Timeline, CTA, Footer)
         ========================================================================
       */}
       <AboutSection />
+      <ChallengeSection />
+      <EventsHighlightSection />
+      <TimelineSection />
+      <CtaBannerSection />
+      <SiteFooter />
 
       {/* 
         ========================================================================
