@@ -221,7 +221,6 @@ export default function ContentManager() {
               disabled={actionLoading}
               className="rounded-2xl border border-amber-500/40 bg-amber-500/10 hover:bg-amber-500/20 px-4 py-2.5 text-xs font-bold text-amber-300 transition-all cursor-pointer flex items-center gap-1.5"
             >
-              <span>⚡</span>
               <span>{actionLoading ? "Seeding..." : "Seed Default Committee"}</span>
             </button>
           )}
@@ -231,14 +230,13 @@ export default function ContentManager() {
             onClick={() => setShowAddModal(true)}
             className="rounded-2xl bg-[#f20089] hover:bg-[#d8007a] px-5 py-2.5 text-xs font-bold text-white shadow-lg shadow-[#f20089]/30 transition-all hover:scale-105 active:scale-95 cursor-pointer font-[family-name:var(--font-google-sans)] flex items-center gap-1.5"
           >
-            <span>+</span>
-            <span>Add New {activeTab === "committee" ? "Member" : activeTab === "announcement" ? "Announcement" : "Sponsor"}</span>
+            <span>+ Add New {activeTab === "committee" ? "Member" : activeTab === "announcement" ? "Announcement" : "Sponsor"}</span>
           </button>
         </div>
       </div>
 
       {/* Navigation Sub-Tabs */}
-      <div className="flex items-center gap-2 border-b border-white/10 pb-3">
+      <div className="flex items-center gap-2 border-b border-white/10 pb-3 overflow-x-auto no-scrollbar flex-nowrap">
         <button
           type="button"
           onClick={() => setActiveTab("committee")}
@@ -248,7 +246,7 @@ export default function ContentManager() {
               : "bg-white/[0.05] text-white/70 hover:text-white hover:bg-white/10"
           }`}
         >
-          👥 Organizing Committee
+          Organizing Committee
         </button>
         <button
           type="button"
@@ -259,7 +257,7 @@ export default function ContentManager() {
               : "bg-white/[0.05] text-white/70 hover:text-white hover:bg-white/10"
           }`}
         >
-          📢 Flash Announcements
+          Flash Announcements
         </button>
         <button
           type="button"
@@ -270,7 +268,7 @@ export default function ContentManager() {
               : "bg-white/[0.05] text-white/70 hover:text-white hover:bg-white/10"
           }`}
         >
-          🤝 Sponsors & Partners
+          Sponsors & Partners
         </button>
       </div>
 
@@ -278,12 +276,12 @@ export default function ContentManager() {
       <div className="rounded-3xl border border-white/15 bg-white/[0.03] backdrop-blur-2xl p-5 sm:p-6 shadow-2xl">
         {loading ? (
           <div className="py-12 text-center text-xs text-white/60">
-            <span className="inline-block animate-spin text-xl mb-2">🔄</span>
+            <div className="w-5 h-5 border-2 border-white/20 border-t-white rounded-full animate-spin mx-auto mb-2" />
             <p>Loading {activeTab} records...</p>
           </div>
         ) : items.length === 0 ? (
           <div className="py-12 text-center space-y-3">
-            <span className="text-3xl">📭</span>
+            <div className="text-[11px] font-mono text-white/40 uppercase tracking-widest">[No Records]</div>
             <h3 className="text-base font-bold text-white">No {activeTab} items found in database</h3>
             <p className="text-xs text-white/60 max-w-sm mx-auto">
               {activeTab === "committee"

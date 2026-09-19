@@ -4,6 +4,7 @@ import { connectDB } from "@/lib/mongodb";
 import SiteContent from "@/models/SiteContent";
 import { isAuthorizedAdmin } from "@/lib/admin-check";
 import { TEAM_SECTIONS, INITIAL_TEAM_MEMBERS } from "@/lib/team-data";
+import { logAdminAction } from "@/lib/audit-logger";
 
 function unauthorizedResponse() {
   return NextResponse.json({ error: "Not Found" }, { status: 404 });
@@ -81,6 +82,13 @@ export async function POST(req: Request) {
         await SiteContent.insertMany(seedDocs);
       }
 
+      await logAdminAction({
+        req,
+        action: "seed_default_committee",
+        targetType: "content",
+        details: { count: seedDocs.length },
+      });
+
       return NextResponse.json(
         { success: true, message: `Seeded ${seedDocs.length} default committee members!`, count: seedDocs.length },
         { status: 201 }
@@ -106,6 +114,14 @@ export async function POST(req: Request) {
       accentColor: accentColor || "#f20089",
       order: Number(order) || 0,
       isActive: true,
+    });
+
+    await logAdminAction({
+      req,
+      action: "cms_create",
+      targetType: "content",
+      targetId: newItem._id.toString(),
+      details: { contentType, title: newItem.title, category: newItem.category },
     });
 
     return NextResponse.json({ success: true, item: newItem }, { status: 201 });
@@ -140,6 +156,14 @@ export async function PUT(req: Request) {
       return NextResponse.json({ error: "Content item not found." }, { status: 404 });
     }
 
+    await logAdminAction({
+      req,
+      action: "cms_update",
+      targetType: "content",
+      targetId: id,
+      details: { updatedFields: Object.keys(updateFields) },
+    });
+
     return NextResponse.json({ success: true, item: updated }, { status: 200 });
   } catch (error: unknown) {
     console.error("PUT /api/admin/content error:", error);
@@ -166,6 +190,14 @@ export async function DELETE(req: Request) {
     if (!deleted) {
       return NextResponse.json({ error: "Content item not found." }, { status: 404 });
     }
+
+    await logAdminAction({
+      req,
+      action: "cms_delete",
+      targetType: "content",
+      targetId: id,
+      details: { title: deleted.title, contentType: deleted.contentType },
+    });
 
     return NextResponse.json({ success: true, message: "Item deleted successfully." }, { status: 200 });
   } catch (error: unknown) {

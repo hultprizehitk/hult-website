@@ -5,7 +5,6 @@ import Image from "next/image";
 import { useSearchParams, useRouter } from "next/navigation";
 import { useSession, signIn } from "next-auth/react";
 import Link from "next/link";
-import { MapPin, AlertTriangle, RotateCcw, CheckCircle2, Crown, User, Check, Clock } from "lucide-react";
 
 function CheckInContent() {
   const searchParams = useSearchParams();
@@ -76,15 +75,8 @@ function CheckInContent() {
         <div className="pointer-events-none absolute -bottom-32 -right-32 h-96 w-96 rounded-full bg-purple-900/30 blur-3xl" />
 
         <div className="relative z-10 max-w-md w-full rounded-3xl border border-white/15 bg-white/[0.04] backdrop-blur-2xl p-8 space-y-6 shadow-2xl">
-          <div className="relative mx-auto h-32 w-32 sm:h-40 sm:w-40 flex items-center justify-center">
-            <Image
-              src="/assets/bento/qr-scanner-3d.png"
-              alt="3D QR Scanner"
-              width={160}
-              height={160}
-              unoptimized
-              className="object-contain drop-shadow-[0_12px_35px_rgba(242,0,137,0.7)] hover:scale-110 transition-transform duration-300"
-            />
+          <div className="relative mx-auto h-20 w-20 rounded-3xl border-2 border-dashed border-[#f20089]/60 bg-[#f20089]/10 flex items-center justify-center font-mono text-xs font-bold text-[#f20089] shadow-[0_0_30px_rgba(242,0,137,0.3)]">
+            [SCAN]
           </div>
 
           <div className="space-y-2">
@@ -132,8 +124,8 @@ function CheckInContent() {
     return (
       <div className="min-h-screen bg-black text-white flex flex-col items-center justify-center p-6 text-center font-[family-name:var(--font-google-sans)] relative">
         <div className="relative z-10 max-w-md w-full rounded-3xl border border-red-500/30 bg-red-950/20 backdrop-blur-2xl p-8 space-y-6 shadow-2xl">
-          <div className="inline-flex h-16 w-16 items-center justify-center rounded-2xl bg-red-500/20 border border-red-500/40 text-red-400">
-            <AlertTriangle className="h-8 w-8" />
+          <div className="inline-flex h-16 w-16 items-center justify-center rounded-2xl bg-red-500/20 border border-red-500/40 text-red-400 font-mono text-xl font-black">
+            !
           </div>
 
           <div className="space-y-2">
@@ -145,10 +137,9 @@ function CheckInContent() {
             <button
               type="button"
               onClick={performCheckIn}
-              className="w-full inline-flex items-center justify-center gap-2 rounded-2xl bg-white/10 hover:bg-white/20 border border-white/15 py-3 text-xs font-bold text-white transition-all cursor-pointer"
+              className="w-full inline-flex items-center justify-center gap-2 rounded-2xl bg-white/10 hover:bg-white/20 border border-white/15 py-3 text-xs font-bold text-white transition-all cursor-pointer font-mono uppercase tracking-wider"
             >
-              <RotateCcw className="h-3.5 w-3.5" />
-              <span>Try Again</span>
+              <span>[RETRY CHECK-IN]</span>
             </button>
             <Link
               href="/events"
@@ -177,8 +168,8 @@ function CheckInContent() {
 
       <div className="relative z-10 max-w-lg w-full rounded-[2.5rem] border border-emerald-500/40 bg-gradient-to-b from-emerald-950/30 via-white/[0.03] to-black backdrop-blur-3xl p-8 space-y-6 shadow-[0_20px_50px_rgba(16,185,129,0.2)]">
         {/* Success Icon */}
-        <div className="inline-flex h-20 w-20 items-center justify-center rounded-3xl bg-emerald-500/20 border border-emerald-500/50 text-emerald-400 shadow-lg shadow-emerald-500/30 animate-bounce">
-          <CheckCircle2 className="h-10 w-10" />
+        <div className="inline-flex h-20 w-20 items-center justify-center rounded-3xl bg-emerald-500/20 border border-emerald-500/50 text-emerald-400 shadow-lg shadow-emerald-500/30 font-mono text-3xl font-black">
+          ✓
         </div>
 
         {/* Checked In Header */}
@@ -198,7 +189,7 @@ function CheckInContent() {
         <div className="rounded-2xl border border-white/10 bg-white/[0.04] p-4 space-y-3 font-sans text-left">
           <div className="flex items-center justify-between text-xs">
             <span className="font-bold text-white">Auditorium Team Roster</span>
-            <span className="font-mono text-emerald-400 font-bold">
+            <span className="font-mono text-emerald-400 font-bold tabular-nums">
               {checkedInMembers.length} / {totalRosterCount} Members Present
             </span>
           </div>
@@ -214,19 +205,17 @@ function CheckInContent() {
           <div className="space-y-2 pt-1 text-xs">
             {/* Team Lead */}
             <div className="flex items-center justify-between p-2 rounded-xl bg-white/[0.03]">
-              <span className="font-medium text-white flex items-center gap-1.5">
-                <Crown className="h-3.5 w-3.5 text-amber-400" />
+              <span className="font-medium text-white flex items-center gap-2">
+                <span className="text-[9px] font-mono font-bold text-amber-400 bg-amber-500/10 border border-amber-500/30 rounded px-1.5 py-0.5">LEAD</span>
                 <span>{team?.lead?.name || rsvp?.leadEmail}</span>
               </span>
               {checkedInMembers.some((m: any) => m.email.toLowerCase() === team?.leadEmail?.toLowerCase()) ? (
-                <span className="inline-flex items-center gap-1 text-[10px] font-bold text-emerald-400 bg-emerald-500/20 px-2 py-0.5 rounded-full">
-                  <Check className="h-3 w-3" />
-                  <span>Present</span>
+                <span className="inline-flex items-center gap-1 text-[10px] font-bold text-emerald-400 bg-emerald-500/20 px-2 py-0.5 rounded-full font-mono">
+                  <span>PRESENT</span>
                 </span>
               ) : (
-                <span className="inline-flex items-center gap-1 text-[10px] font-bold text-white/40 bg-white/5 px-2 py-0.5 rounded-full">
-                  <Clock className="h-3 w-3" />
-                  <span>Pending Scan</span>
+                <span className="inline-flex items-center gap-1 text-[10px] font-bold text-white/40 bg-white/5 px-2 py-0.5 rounded-full font-mono">
+                  <span>PENDING SCAN</span>
                 </span>
               )}
             </div>
@@ -238,19 +227,17 @@ function CheckInContent() {
               );
               return (
                 <div key={idx} className="flex items-center justify-between p-2 rounded-xl bg-white/[0.03]">
-                  <span className="font-medium text-white flex items-center gap-1.5">
-                    <User className="h-3.5 w-3.5 text-sky-400" />
+                  <span className="font-medium text-white flex items-center gap-2">
+                    <span className="text-[9px] font-mono font-bold text-sky-400 bg-sky-500/10 border border-sky-500/30 rounded px-1.5 py-0.5">MEMBER</span>
                     <span>{mate.name}</span>
                   </span>
                   {isScanned ? (
-                    <span className="inline-flex items-center gap-1 text-[10px] font-bold text-emerald-400 bg-emerald-500/20 px-2 py-0.5 rounded-full">
-                      <Check className="h-3 w-3" />
-                      <span>Present</span>
+                    <span className="inline-flex items-center gap-1 text-[10px] font-bold text-emerald-400 bg-emerald-500/20 px-2 py-0.5 rounded-full font-mono">
+                      <span>PRESENT</span>
                     </span>
                   ) : (
-                    <span className="inline-flex items-center gap-1 text-[10px] font-bold text-white/40 bg-white/5 px-2 py-0.5 rounded-full">
-                      <Clock className="h-3 w-3" />
-                      <span>Pending Scan</span>
+                    <span className="inline-flex items-center gap-1 text-[10px] font-bold text-white/40 bg-white/5 px-2 py-0.5 rounded-full font-mono">
+                      <span>PENDING SCAN</span>
                     </span>
                   )}
                 </div>

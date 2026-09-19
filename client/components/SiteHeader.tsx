@@ -1,22 +1,53 @@
 "use client";
 
-import { useState } from "react";
+import React, { useState, useEffect } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { useSession, signOut } from "next-auth/react";
 
 interface SiteHeaderProps {
   className?: string;
+  transparentUntilScroll?: boolean;
+  isLandingRevealed?: boolean;
 }
 
-export default function SiteHeader({ className = "" }: SiteHeaderProps) {
+export default function SiteHeader({
+  className = "",
+  transparentUntilScroll = false,
+  isLandingRevealed = true,
+}: SiteHeaderProps) {
   const { data: session, status } = useSession();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [isScrolled, setIsScrolled] = useState(false);
+
+  useEffect(() => {
+    if (!transparentUntilScroll) return;
+    const handleScroll = () => {
+      setIsScrolled(window.scrollY > 20);
+    };
+    handleScroll();
+    window.addEventListener("scroll", handleScroll, { passive: true });
+    return () => window.removeEventListener("scroll", handleScroll);
+  }, [transparentUntilScroll]);
+
+  const headerBgClass = transparentUntilScroll
+    ? isScrolled
+      ? "bg-black/75 backdrop-blur-xl border-b border-white/10 shadow-2xl py-3"
+      : "bg-transparent border-none py-3.5"
+    : "bg-black/75 backdrop-blur-xl border-b border-white/10 shadow-lg py-3";
+
+  const visibilityClass = isLandingRevealed
+    ? "opacity-100 translate-y-0"
+    : "opacity-0 -translate-y-4 pointer-events-none";
+
+  const userRole = (session?.user as { role?: string })?.role || "";
+  const isAdmin = ["junior_admin", "lead_admin", "master_admin"].includes(userRole);
 
   return (
     <>
       <header
-        className={`fixed top-0 inset-x-0 z-50 flex w-full items-center justify-between px-4 py-3 sm:px-6 sm:py-3.5 md:px-8 transition-all duration-300 font-[family-name:var(--font-google-sans)] bg-black/60 backdrop-blur-md border-b border-white/10 ${className}`}
+        style={{ top: "var(--banner-height, 0px)" }}
+        className={`fixed inset-x-0 z-50 flex w-full items-center justify-between px-4 sm:px-6 md:px-8 transition-all duration-300 font-[family-name:var(--font-google-sans)] ${headerBgClass} ${visibilityClass} ${className}`}
       >
         {/* Brand Logos */}
         <div className="flex items-center gap-2 sm:gap-3 transition-opacity duration-700">
@@ -40,64 +71,35 @@ export default function SiteHeader({ className = "" }: SiteHeaderProps) {
               className="object-contain drop-shadow-md"
             />
           </div>
-          <div className="relative h-9 sm:h-10 w-9 sm:w-10 shrink-0">
-            <Image
-              src="/assets/bento/heritage-h-emblem.png"
-              alt="Heritage 3D H Emblem"
-              width={40}
-              height={40}
-              unoptimized
-              className="object-contain drop-shadow-[0_6px_15px_rgba(242,0,137,0.6)] hover:scale-110 transition-transform duration-300"
-            />
-          </div>
         </div>
 
         {/* Desktop Nav Links */}
         <nav className="hidden md:flex items-center gap-5 lg:gap-6 font-[family-name:var(--font-google-sans)]">
-          <Link
-            href="/#about"
-            className="text-xs sm:text-sm font-semibold tracking-wide text-white/85 drop-shadow transition-colors duration-200 hover:text-white"
-          >
-            About
-          </Link>
           <Link
             href="/events"
             className="text-xs sm:text-sm font-semibold tracking-wide text-white/85 drop-shadow transition-colors duration-200 hover:text-white"
           >
             Events
           </Link>
-          <Link
-            href="/#challenge"
-            className="text-xs sm:text-sm font-semibold tracking-wide text-white/85 drop-shadow transition-colors duration-200 hover:text-white"
-          >
-            Challenge
-          </Link>
-          <Link
-            href="/#timeline"
-            className="text-xs sm:text-sm font-semibold tracking-wide text-white/85 drop-shadow transition-colors duration-200 hover:text-white"
-          >
-            Timeline
-          </Link>
+
           <Link
             href="/team"
-            className="text-xs sm:text-sm font-semibold tracking-wide text-white/85 drop-shadow transition-colors duration-200 hover:text-[#f20089]"
+            className="text-xs sm:text-sm font-semibold tracking-wide text-white/85 drop-shadow transition-colors duration-200 hover:text-white"
           >
             Team
           </Link>
 
           {status === "authenticated" && session?.user ? (
             <div className="flex items-center gap-3">
-              {["junior_admin", "lead_admin", "master_admin"].includes(
-                (session.user as { role?: string })?.role || ""
-              ) && (
+              {isAdmin && (
                 <Link
                   href="/portal"
                   className="inline-flex items-center gap-1 rounded-full border border-[#f20089]/60 bg-[#f20089]/20 hover:bg-[#f20089]/30 px-3 py-1.5 text-xs font-mono font-bold text-pink-300 hover:text-white transition-all shadow-sm hover:scale-[1.02]"
                 >
                   <span>
-                    {(session.user as { role?: string })?.role === "master_admin"
+                    {userRole === "master_admin"
                       ? "Master Admin CMS"
-                      : (session.user as { role?: string })?.role === "lead_admin"
+                      : userRole === "lead_admin"
                       ? "Lead Admin CMS"
                       : "Junior Admin CMS"}
                   </span>
@@ -133,9 +135,7 @@ export default function SiteHeader({ className = "" }: SiteHeaderProps) {
         <div className="flex md:hidden items-center gap-2">
           {status === "authenticated" && session?.user ? (
             <div className="flex items-center gap-1.5">
-              {["junior_admin", "lead_admin", "master_admin"].includes(
-                (session.user as { role?: string })?.role || ""
-              ) && (
+              {isAdmin && (
                 <Link
                   href="/portal"
                   className="rounded-full bg-[#f20089]/20 border border-[#f20089]/50 px-2.5 py-1 text-[10px] font-mono font-bold text-pink-200 uppercase tracking-wider"
@@ -179,53 +179,60 @@ export default function SiteHeader({ className = "" }: SiteHeaderProps) {
 
       {/* Mobile Slide-Down Menu Overlay */}
       {mobileMenuOpen && (
-        <div className="fixed inset-x-0 top-[52px] z-40 md:hidden bg-black/95 backdrop-blur-3xl border-b border-white/15 px-6 py-6 shadow-2xl flex flex-col gap-4 font-[family-name:var(--font-google-sans)] animate-in fade-in slide-in-from-top-2 duration-200">
-          <Link
-            href="/#about"
-            onClick={() => setMobileMenuOpen(false)}
-            className="text-base font-semibold text-white/90 hover:text-[#f20089] py-2 border-b border-white/5 transition-colors"
-          >
-            About
-          </Link>
+        <div
+          style={{ top: "calc(var(--banner-height, 0px) + 52px)" }}
+          className="fixed inset-x-0 z-40 md:hidden bg-black/95 backdrop-blur-3xl border-b border-white/15 px-6 py-6 shadow-2xl flex flex-col gap-4 font-[family-name:var(--font-google-sans)] animate-in fade-in slide-in-from-top-2 duration-200"
+        >
           <Link
             href="/events"
             onClick={() => setMobileMenuOpen(false)}
             className="text-base font-semibold text-white/90 hover:text-[#f20089] py-2 border-b border-white/5 transition-colors"
           >
-            Events
-          </Link>
-          <Link
-            href="/#challenge"
-            onClick={() => setMobileMenuOpen(false)}
-            className="text-base font-semibold text-white/90 hover:text-[#f20089] py-2 border-b border-white/5 transition-colors"
-          >
-            Challenge
-          </Link>
-          <Link
-            href="/#timeline"
-            onClick={() => setMobileMenuOpen(false)}
-            className="text-base font-semibold text-white/90 hover:text-[#f20089] py-2 border-b border-white/5 transition-colors"
-          >
-            Timeline
+            Events Calendar
           </Link>
           <Link
             href="/team"
             onClick={() => setMobileMenuOpen(false)}
             className="text-base font-semibold text-white/90 hover:text-[#f20089] py-2 border-b border-white/5 transition-colors"
           >
-            Team
+            Organizing Team
+          </Link>
+          <Link
+            href="/register"
+            onClick={() => setMobileMenuOpen(false)}
+            className="text-base font-semibold text-white/90 hover:text-[#f20089] py-2 border-b border-white/5 transition-colors"
+          >
+            Team Registration
           </Link>
           {status === "authenticated" && (
-            <button
-              type="button"
-              onClick={() => {
-                setMobileMenuOpen(false);
-                signOut();
-              }}
-              className="text-left text-base font-semibold text-red-400 py-2 transition-colors cursor-pointer"
-            >
-              Sign Out
-            </button>
+            <>
+              <Link
+                href="/profile"
+                onClick={() => setMobileMenuOpen(false)}
+                className="text-base font-semibold text-white/90 hover:text-[#f20089] py-2 border-b border-white/5 transition-colors"
+              >
+                Student Profile & Pass
+              </Link>
+              {isAdmin && (
+                <Link
+                  href="/portal"
+                  onClick={() => setMobileMenuOpen(false)}
+                  className="text-base font-semibold text-pink-300 hover:text-white py-2 border-b border-white/5 transition-colors"
+                >
+                  Admin CMS Portal
+                </Link>
+              )}
+              <button
+                type="button"
+                onClick={() => {
+                  setMobileMenuOpen(false);
+                  signOut();
+                }}
+                className="text-left text-base font-semibold text-red-400 py-2 transition-colors cursor-pointer"
+              >
+                Sign Out
+              </button>
+            </>
           )}
         </div>
       )}

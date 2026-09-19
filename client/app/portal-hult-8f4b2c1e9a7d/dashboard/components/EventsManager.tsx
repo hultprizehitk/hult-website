@@ -2,7 +2,6 @@
 
 import React, { useState, useEffect } from "react";
 import Link from "next/link";
-import { Calendar, MapPin, Users, X } from "lucide-react";
 
 import type { EventItem, RegisteredTeamItem } from "@/types";
 
@@ -556,9 +555,9 @@ export default function EventsManager() {
           <button
             type="button"
             onClick={() => setStatusMessage(null)}
-            className="text-white/60 hover:text-white text-xs cursor-pointer p-1"
+            className="text-white/60 hover:text-white text-xs cursor-pointer p-1 font-mono"
           >
-            <X className="h-4 w-4" />
+            ✕
           </button>
         </div>
       )}
@@ -649,16 +648,16 @@ export default function EventsManager() {
               <h1 className="text-2xl sm:text-3xl font-black text-white font-[family-name:var(--font-google-sans)]">
                 {selectedEvent.title}
               </h1>
-              <div className="flex items-center gap-3 text-xs text-white/60 mt-1.5 flex-wrap">
-                <span className="inline-flex items-center gap-1"><Calendar className="h-3.5 w-3.5 text-pink-400" /> {selectedEvent.date}</span>
+              <div className="flex items-center gap-3 text-xs text-white/60 mt-1.5 flex-wrap font-mono">
+                <span className="inline-flex items-center gap-1.5"><span className="text-[9px] text-pink-400 font-bold border border-pink-500/30 bg-pink-500/10 px-1.5 py-0.5 rounded">DATE</span> {selectedEvent.date}</span>
                 <span>•</span>
-                <span className="inline-flex items-center gap-1"><MapPin className="h-3.5 w-3.5 text-pink-400" /> {selectedEvent.venue}</span>
+                <span className="inline-flex items-center gap-1.5"><span className="text-[9px] text-pink-400 font-bold border border-pink-500/30 bg-pink-500/10 px-1.5 py-0.5 rounded">HALL</span> {selectedEvent.venue}</span>
                 <span>•</span>
-                <span className="text-white font-medium inline-flex items-center gap-1">
-                  <Users className="h-3.5 w-3.5 text-pink-400" /> {selectedEvent.registeredTeamsCount || selectedEvent.registeredTeams?.length || 0} Teams Registered
+                <span className="text-white font-medium inline-flex items-center gap-1.5">
+                  <span className="text-[9px] text-pink-400 font-bold border border-pink-500/30 bg-pink-500/10 px-1.5 py-0.5 rounded">TEAMS</span> {selectedEvent.registeredTeamsCount || selectedEvent.registeredTeams?.length || 0} Teams Registered
                 </span>
                 <span>•</span>
-                <span className="text-[#f20089] font-medium">
+                <span className="text-[#f20089] font-medium font-sans">
                   Team Size: {selectedEvent.minTeamMembers || 3} to {selectedEvent.maxTeamMembers || 5} Members
                 </span>
               </div>
@@ -855,8 +854,8 @@ export default function EventsManager() {
 
                   {eventFormData.date && (
                     <div className="rounded-2xl border border-white/15 bg-white/[0.04] backdrop-blur-xl px-4 py-2.5 flex items-center justify-between gap-2 text-xs flex-wrap shadow-inner">
-                      <div className="flex items-center gap-2 text-white/70">
-                        <span className="text-[#f20089] font-bold inline-flex items-center gap-1"><Calendar className="h-3.5 w-3.5" /> Schedule Summary:</span>
+                      <div className="flex items-center gap-2 text-white/70 font-mono">
+                        <span className="text-[#f20089] font-bold">Schedule Summary:</span>
                         <span className="font-semibold text-white">{eventFormData.date}</span>
                       </div>
                     </div>
@@ -1532,8 +1531,8 @@ export default function EventsManager() {
 
                 {eventFormData.date && (
                   <div className="rounded-2xl border border-white/15 bg-white/[0.04] backdrop-blur-xl px-4 py-2.5 flex items-center justify-between gap-2 text-xs flex-wrap shadow-inner">
-                    <div className="flex items-center gap-2 text-white/70">
-                      <span className="text-[#f20089] font-bold inline-flex items-center gap-1"><Calendar className="h-3.5 w-3.5" /> Schedule Summary:</span>
+                    <div className="flex items-center gap-2 text-white/70 font-mono">
+                      <span className="text-[#f20089] font-bold">Schedule Summary:</span>
                       <span className="font-semibold text-white">{eventFormData.date}</span>
                     </div>
                   </div>
@@ -1721,13 +1720,13 @@ export default function EventsManager() {
                       </h3>
 
                       {/* Schedule & Venue Meta */}
-                      <div className="space-y-1 text-xs text-white/70 mb-3.5 font-sans">
+                      <div className="space-y-1.5 text-xs text-white/70 mb-3.5 font-sans">
                         <div className="flex items-center gap-2">
-                          <Calendar className="h-3.5 w-3.5 text-white/40" />
-                          <span className="font-semibold text-white">{event.date}</span>
+                          <span className="font-mono text-[9px] text-white/50 uppercase font-bold border border-white/10 bg-white/5 rounded px-1.5 py-0.5">DATE</span>
+                          <span className="font-semibold text-white font-mono tabular-nums">{event.date}</span>
                         </div>
                         <div className="flex items-center gap-2">
-                          <MapPin className="h-3.5 w-3.5 text-white/40" />
+                          <span className="font-mono text-[9px] text-white/50 uppercase font-bold border border-white/10 bg-white/5 rounded px-1.5 py-0.5">VENUE</span>
                           <span>{event.venue}</span>
                         </div>
                       </div>
@@ -1740,11 +1739,11 @@ export default function EventsManager() {
                       {/* Roster, Cutoff & Member Limits Strip */}
                       <div className="flex items-center justify-between gap-3 py-2.5 px-3.5 rounded-2xl bg-white/[0.04] border border-white/15 backdrop-blur-xl shadow-inner text-xs mb-5 flex-wrap">
                         <div className="flex items-center gap-2">
-                          <Users className="h-3.5 w-3.5 text-white/40" />
-                          <span className="font-bold text-white">
+                          <span className="font-mono text-[9px] text-emerald-400 uppercase font-bold border border-emerald-500/20 bg-emerald-500/10 rounded px-1.5 py-0.5">ROSTER</span>
+                          <span className="font-bold text-white font-mono tabular-nums">
                             {registeredCount} Registered {registeredCount === 1 ? "Team" : "Teams"}
                           </span>
-                          <span className="text-[11px] text-[#f20089] font-medium">
+                          <span className="text-[11px] text-[#f20089] font-medium font-mono">
                             ({minMem}–{maxMem} members/team)
                           </span>
                         </div>

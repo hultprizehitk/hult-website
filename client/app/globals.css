@@ -5,7 +5,7 @@
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-montserrat), var(--font-geist-sans), sans-serif;
+  --font-sans: var(--font-google-sans), var(--font-geist-sans), -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
   --font-syne: var(--font-google-sans), "Google Sans", sans-serif;
   --font-google-sans: var(--font-google-sans), "Google Sans", sans-serif;
   --font-pirata: var(--font-pirata), serif;
@@ -53,6 +53,10 @@
   --radius-4xl: calc(var(--radius) * 2.6);
 }
 
+:root {
+  --banner-height: 0px;
+}
+
 html {
   scroll-behavior: smooth;
 }
@@ -60,7 +64,7 @@ html {
 body {
   background-color: #000000;
   color: #ffffff;
-  font-family: var(--font-montserrat), -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  font-family: var(--font-google-sans), var(--font-geist-sans), -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
   overflow-x: hidden;
   min-height: 100vh;
 }

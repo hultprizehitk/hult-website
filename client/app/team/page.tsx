@@ -1,9 +1,9 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect, useRef, useCallback } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { GraduationCap, Building2, IdCard, Search } from "lucide-react";
+import { ChevronLeft, ChevronRight } from "lucide-react";
 import SiteHeader from "@/components/SiteHeader";
 import AnimatedGradient from "@/components/ui/animated-gradient";
 import { TEAM_SECTIONS, INITIAL_TEAM_MEMBERS } from "@/lib/team-data";
@@ -11,8 +11,51 @@ import type { TeamCategory, TeamMember } from "@/types";
 
 export default function TeamPage() {
   const [activeCategory, setActiveCategory] = useState<"all" | TeamCategory>("all");
-  const [searchQuery, setSearchQuery] = useState("");
   const [dbMembers, setDbMembers] = useState<TeamMember[]>([]);
+  const filterScrollRef = useRef<HTMLDivElement>(null);
+
+  const [canScrollLeft, setCanScrollLeft] = useState(false);
+  const [canScrollRight, setCanScrollRight] = useState(true);
+
+  const updateScrollButtons = useCallback(() => {
+    if (!filterScrollRef.current) return;
+    const { scrollLeft, scrollWidth, clientWidth } = filterScrollRef.current;
+    setCanScrollLeft(scrollLeft > 4);
+    setCanScrollRight(scrollLeft + clientWidth < scrollWidth - 4);
+  }, []);
+
+  // Prevent vertical page scroll when cursor is scrolling over the horizontal pill track
+  useEffect(() => {
+    const el = filterScrollRef.current;
+    if (!el) return;
+
+    const onWheel = (e: WheelEvent) => {
+      // If user scrolls horizontally or vertically over the filter track, scroll track and block page scroll
+      if (Math.abs(e.deltaY) > 0 || Math.abs(e.deltaX) > 0) {
+        e.preventDefault();
+        el.scrollLeft += e.deltaY !== 0 ? e.deltaY : e.deltaX;
+        updateScrollButtons();
+      }
+    };
+
+    el.addEventListener("wheel", onWheel, { passive: false });
+    el.addEventListener("scroll", updateScrollButtons);
+    window.addEventListener("resize", updateScrollButtons);
+    updateScrollButtons();
+
+    return () => {
+      el.removeEventListener("wheel", onWheel);
+      el.removeEventListener("scroll", updateScrollButtons);
+      window.removeEventListener("resize", updateScrollButtons);
+    };
+  }, [updateScrollButtons]);
+
+  const scrollFilter = (direction: "left" | "right") => {
+    if (!filterScrollRef.current) return;
+    const offset = direction === "left" ? -260 : 260;
+    filterScrollRef.current.scrollBy({ left: offset, behavior: "smooth" });
+    setTimeout(updateScrollButtons, 300);
+  };
 
   React.useEffect(() => {
     fetch("/api/content?type=committee")
@@ -39,15 +82,7 @@ export default function TeamPage() {
       .catch((err) => console.warn("Notice: Using static team data fallback:", err));
   }, []);
 
-  const baseMembers = dbMembers.length > 0 ? dbMembers : INITIAL_TEAM_MEMBERS;
-  const members = searchQuery.trim()
-    ? baseMembers.filter(
-        (m) =>
-          m.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-          m.role.toLowerCase().includes(searchQuery.toLowerCase()) ||
-          (m.department && m.department.toLowerCase().includes(searchQuery.toLowerCase()))
-      )
-    : baseMembers;
+  const members = dbMembers.length > 0 ? dbMembers : INITIAL_TEAM_MEMBERS;
 
   const facultyMembers = members.filter((m) => m.category === "faculty_coordinator");
   const cdMembers = members.filter((m) => m.category === "cd");
@@ -211,16 +246,12 @@ export default function TeamPage() {
 
           {member.academicYear && (
             <div className="inline-flex items-center gap-1.5 rounded-xl bg-white/[0.03] border border-white/10 px-2.5 py-1 text-[11px] text-white/70 font-mono mb-3">
-              <GraduationCap className="h-3 w-3 text-pink-400" />
+              <span className="text-[9px] font-mono text-pink-400 font-bold uppercase tracking-wider">YR</span>
               <span>{member.academicYear}</span>
             </div>
           )}
 
-          {member.bio && (
-            <p className="text-xs text-white/65 leading-relaxed mb-3 line-clamp-3 font-sans">
-              {member.bio}
-            </p>
-          )}
+
 
           {member.slug && (
             <div className="mb-3">
@@ -228,7 +259,6 @@ export default function TeamPage() {
                 href={`/team/${member.slug}`}
                 className="inline-flex items-center gap-1.5 rounded-full border border-pink-500/40 bg-pink-500/10 hover:bg-pink-500/25 px-3 py-1 text-[11px] font-bold text-pink-300 hover:text-white transition-all shadow-sm group/btn"
               >
-                <IdCard className="h-3.5 w-3.5" />
                 <span>View 3D ID Profile</span>
                 <span className="group-hover/btn:translate-x-0.5 transition-transform">→</span>
               </Link>
@@ -316,81 +346,44 @@ export default function TeamPage() {
 
       {/* Main Content Area */}
       <main className="relative z-10 flex-1 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 sm:py-16 w-full">
-        {/* Hero Section */}
-        <div className="text-center max-w-3xl mx-auto mb-12 sm:mb-16">
-          <div className="relative mx-auto mb-4 h-36 w-36 sm:h-44 sm:w-44 flex items-center justify-center">
-            <Image
-              src="/assets/bento/team-podium.png"
-              alt="3D Organizing Committee Team Podium"
-              width={176}
-              height={176}
-              unoptimized
-              className="object-contain drop-shadow-[0_12px_35px_rgba(242,0,137,0.6)] hover:scale-110 transition-transform duration-300"
-            />
-          </div>
-
-          <span className="inline-flex items-center gap-2 rounded-full border border-[#f20089]/40 bg-[#f20089]/15 px-4 py-1 text-xs font-extrabold uppercase tracking-widest text-[#f20089] mb-4 shadow-[0_0_20px_rgba(242,0,137,0.3)]">
+        {/* Header Section */}
+        <div className="text-center max-w-3xl mx-auto mb-10 sm:mb-12">
+          <span className="inline-flex items-center gap-2 rounded-full border border-[#f20089]/40 bg-[#f20089]/15 px-3.5 py-1 text-[10px] font-mono font-bold uppercase tracking-[0.25em] text-[#f20089] mb-4 shadow-[0_0_20px_rgba(242,0,137,0.2)]">
             Organizing Committee 2026-27
           </span>
 
-          <h1 className="text-3xl sm:text-5xl lg:text-6xl font-black uppercase tracking-tight text-white font-[family-name:var(--font-google-sans)] drop-shadow-lg mb-4">
+          <h1 className="text-3xl sm:text-5xl lg:text-6xl font-black uppercase tracking-tight text-white drop-shadow-lg font-[family-name:var(--font-google-sans)]">
             THE MINDS BEHIND{" "}
             <span className="text-transparent bg-clip-text bg-gradient-to-r from-white via-pink-200 to-[#f20089]">
               HULT PRIZE
             </span>
           </h1>
-
-          <p className="text-sm sm:text-base text-white/70 leading-relaxed font-sans">
-            The student innovators, coordinators, software engineers, and visual designers steering the world’s largest youth social entrepreneurship movement at Heritage Institute of Technology.
-          </p>
-
-          {/* Quick Metrics Bar */}
-          <div className="grid grid-cols-3 gap-3 sm:gap-6 mt-8 p-4 rounded-2xl bg-white/[0.02] border border-white/10 backdrop-blur-xl max-w-xl mx-auto">
-            <div>
-              <div className="text-xl sm:text-2xl font-black text-white font-[family-name:var(--font-google-sans)]">
-                {TEAM_SECTIONS.filter((s) => s.key !== "cd" && s.key !== "dcd").length}
-              </div>
-              <div className="text-[10px] sm:text-xs text-white/50 uppercase tracking-wider">
-                Divisions
-              </div>
-            </div>
-            <div className="border-x border-white/10">
-              <div className="text-xl sm:text-2xl font-black text-[#f20089] font-[family-name:var(--font-google-sans)]">
-                $1M
-              </div>
-              <div className="text-[10px] sm:text-xs text-white/50 uppercase tracking-wider">
-                Global Prize
-              </div>
-            </div>
-            <div>
-              <div className="text-xl sm:text-2xl font-black text-amber-300 font-[family-name:var(--font-google-sans)]">
-                HITK
-              </div>
-              <div className="text-[10px] sm:text-xs text-white/50 uppercase tracking-wider">
-                Chapter
-              </div>
-            </div>
-          </div>
         </div>
 
-        {/* Interactive Search & Category Filter Bar */}
-        <div className="sticky top-[61px] z-40 py-3 mb-10 -mx-4 px-4 sm:mx-0 sm:px-0 bg-black/60 backdrop-blur-xl border-y sm:border-none border-white/10 space-y-3">
-          <div className="max-w-md mx-auto relative">
-            <Search className="w-4 h-4 text-neutral-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
-            <input
-              type="text"
-              placeholder="Search committee member by name, role..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full bg-[#121216] border border-white/15 rounded-full pl-10 pr-4 py-2 text-xs text-white placeholder-neutral-500 focus:outline-none focus:border-[#f20089] transition-all"
-            />
-          </div>
+        {/* Category Filter Bar with Side Navigation Arrows */}
+        <div className="sticky top-[61px] z-40 py-2.5 mb-10 -mx-4 px-4 sm:mx-0 sm:px-0 bg-black/70 backdrop-blur-xl border-y sm:border-none border-white/10 flex items-center gap-2">
+          {/* Left Arrow Button */}
+          <button
+            type="button"
+            onClick={() => scrollFilter("left")}
+            disabled={!canScrollLeft}
+            aria-label="Scroll divisions left"
+            className={`h-8 w-8 sm:h-9 sm:w-9 shrink-0 rounded-full border border-white/20 bg-white/[0.08] hover:bg-white/20 text-white flex items-center justify-center transition-all cursor-pointer shadow-lg backdrop-blur-md active:scale-95 ${
+              canScrollLeft ? "opacity-100 translate-x-0" : "opacity-0 pointer-events-none -translate-x-2"
+            }`}
+          >
+            <ChevronLeft className="h-4 w-4 text-pink-300" />
+          </button>
 
-          <div className="flex items-center gap-2 overflow-x-auto no-scrollbar pb-1 sm:justify-center">
+          {/* Smooth Horizontal Track */}
+          <div
+            ref={filterScrollRef}
+            className="w-full overflow-x-auto pb-1 pt-1 flex items-center gap-2 scroll-smooth [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden select-none"
+          >
             <button
               type="button"
               onClick={() => setActiveCategory("all")}
-              className={`rounded-full px-4 py-2 text-xs font-bold uppercase tracking-wider transition-all whitespace-nowrap cursor-pointer font-[family-name:var(--font-google-sans)] ${
+              className={`rounded-full px-4 py-2 text-xs font-bold uppercase tracking-wider transition-all whitespace-nowrap shrink-0 cursor-pointer font-[family-name:var(--font-google-sans)] ${
                 activeCategory === "all"
                   ? "bg-[#f20089] text-white shadow-lg shadow-[#f20089]/40 scale-105"
                   : "bg-white/[0.05] text-white/70 hover:text-white hover:bg-white/10 border border-white/10"
@@ -408,7 +401,7 @@ export default function TeamPage() {
                   key={sec.key}
                   type="button"
                   onClick={() => setActiveCategory(sec.key)}
-                  className={`rounded-full px-4 py-2 text-xs font-bold uppercase tracking-wider transition-all whitespace-nowrap cursor-pointer font-[family-name:var(--font-google-sans)] ${
+                  className={`rounded-full px-4 py-2 text-xs font-bold uppercase tracking-wider transition-all whitespace-nowrap shrink-0 cursor-pointer font-[family-name:var(--font-google-sans)] ${
                     isSelected
                       ? "bg-[#f20089] text-white shadow-lg shadow-[#f20089]/40 scale-105"
                       : "bg-white/[0.05] text-white/70 hover:text-white hover:bg-white/10 border border-white/10"
@@ -419,6 +412,19 @@ export default function TeamPage() {
               );
             })}
           </div>
+
+          {/* Right Arrow Button */}
+          <button
+            type="button"
+            onClick={() => scrollFilter("right")}
+            disabled={!canScrollRight}
+            aria-label="Scroll divisions right"
+            className={`h-8 w-8 sm:h-9 sm:w-9 shrink-0 rounded-full border border-white/20 bg-white/[0.08] hover:bg-white/20 text-white flex items-center justify-center transition-all cursor-pointer shadow-lg backdrop-blur-md active:scale-95 ${
+              canScrollRight ? "opacity-100 translate-x-0" : "opacity-0 pointer-events-none translate-x-2"
+            }`}
+          >
+            <ChevronRight className="h-4 w-4 text-pink-300" />
+          </button>
         </div>
 
         {/* Team Sections Layout */}
@@ -511,16 +517,12 @@ export default function TeamPage() {
                             {fac.department}
                           </p>
                           <div className="mt-2 inline-flex items-center gap-1.5 rounded-full bg-sky-500/10 border border-sky-500/30 px-3 py-0.5 text-[11px] text-sky-300 font-mono">
-                            <Building2 className="h-3 w-3 text-sky-400" /> Faculty Mentor
+                            <span className="h-1.5 w-1.5 rounded-full bg-sky-400 inline-block" /> Faculty Mentor
                           </div>
                         </div>
                       </div>
 
-                      {fac.bio && (
-                        <p className="text-sm text-white/75 leading-relaxed mb-6 font-sans">
-                          {fac.bio}
-                        </p>
-                      )}
+
 
                       {fac.slug && (
                         <div className="mb-6">
@@ -528,8 +530,7 @@ export default function TeamPage() {
                             href={`/team/${fac.slug}`}
                             className="inline-flex items-center gap-2 rounded-2xl border border-sky-500/40 bg-sky-500/10 hover:bg-sky-500/25 px-4 py-2 text-xs font-bold text-sky-300 hover:text-white transition-all shadow-md group/id"
                           >
-                            <IdCard className="h-4 w-4 text-sky-400" />
-                            <span>View Interactive 3D ID Badge</span>
+                            <span>Interactive 3D ID Badge</span>
                             <span className="group-hover/id:translate-x-1 transition-transform">→</span>
                           </Link>
                         </div>
@@ -665,11 +666,7 @@ export default function TeamPage() {
                             </div>
                           </div>
 
-                          {cd.bio && (
-                            <p className="text-xs sm:text-sm text-white/70 leading-relaxed font-sans mb-4">
-                              "{cd.bio}"
-                            </p>
-                          )}
+
 
                           {cd.slug && (
                             <div className="mb-6">
@@ -677,7 +674,9 @@ export default function TeamPage() {
                                 href={`/team/${cd.slug}`}
                                 className="inline-flex items-center gap-2 rounded-full border border-amber-400/50 bg-amber-400/15 hover:bg-amber-400/30 px-4 py-1.5 text-xs font-bold text-amber-200 hover:text-white shadow-md shadow-amber-500/20 transition-all hover:scale-105"
                               >
-                                <IdCard className="h-3.5 w-3.5" />
+                                <span className="font-mono text-[9px] font-bold border border-current px-1 py-0.5 rounded leading-none">
+                                  ID
+                                </span>
                                 <span>View 3D ID Profile</span>
                                 <span>→</span>
                               </Link>
@@ -801,11 +800,7 @@ export default function TeamPage() {
                             </div>
                           </div>
 
-                          {dcd.bio && (
-                            <p className="text-xs sm:text-sm text-white/70 leading-relaxed font-sans mb-4">
-                              "{dcd.bio}"
-                            </p>
-                          )}
+
 
                           {dcd.slug && (
                             <div className="mb-6">
@@ -813,7 +808,9 @@ export default function TeamPage() {
                                 href={`/team/${dcd.slug}`}
                                 className="inline-flex items-center gap-2 rounded-full border border-sky-400/50 bg-sky-400/15 hover:bg-sky-400/30 px-4 py-1.5 text-xs font-bold text-sky-200 hover:text-white shadow-md shadow-sky-500/20 transition-all hover:scale-105"
                               >
-                                <IdCard className="h-3.5 w-3.5" />
+                                <span className="font-mono text-[9px] font-bold border border-current px-1 py-0.5 rounded leading-none">
+                                  ID
+                                </span>
                                 <span>View 3D ID Profile</span>
                                 <span>→</span>
                               </Link>

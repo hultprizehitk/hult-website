@@ -2,8 +2,27 @@
 
 import React, { useState, useEffect, useMemo, useCallback } from "react";
 import Link from "next/link";
-import { QRCodeSVG } from "qrcode.react";
-import { Plus, RefreshCw, X, Calendar, MapPin, Users, Download, Tv, Printer, Search, Clipboard, Lightbulb, Mail, Phone, Shield, Trash2, Check } from "lucide-react";
+import {
+  Plus,
+  RefreshCw,
+  X,
+  Calendar,
+  MapPin,
+  Users,
+  Download,
+  Printer,
+  Search,
+  Clipboard,
+  Mail,
+  Phone,
+  Shield,
+  Trash2,
+  Check,
+  Camera,
+  ScanLine,
+  Lightbulb,
+} from "lucide-react";
+import LiveCameraScannerModal from "@/components/admin/LiveCameraScannerModal";
 
 interface TeamMember {
   name: string;
@@ -74,7 +93,7 @@ export default function LiveEventManager() {
   // Modals & Inspection
   const [inspectingTeam, setInspectingTeam] = useState<RegisteredTeam | null>(null);
   const [showAddTeamModal, setShowAddTeamModal] = useState(false);
-  const [showQrProjector, setShowQrProjector] = useState(false);
+  const [showCameraScanner, setShowCameraScanner] = useState(false);
   const [showGraceModal, setShowGraceModal] = useState(false);
   const [graceTeam, setGraceTeam] = useState<RegisteredTeam | null>(null);
   const [graceNote, setGraceNote] = useState("");
@@ -786,12 +805,12 @@ export default function LiveEventManager() {
 
               <button
                 type="button"
-                onClick={() => setShowQrProjector(true)}
-                className="rounded-xl bg-gradient-to-r from-purple-600 to-[#f20089] hover:from-purple-500 hover:to-[#d8007a] px-3.5 py-2 text-xs font-bold text-white shadow-md shadow-purple-600/30 transition-all hover:scale-105 flex items-center gap-1.5 cursor-pointer font-[family-name:var(--font-google-sans)]"
-                title="Open fullscreen check-in QR code for screen projector"
+                onClick={() => setShowCameraScanner(true)}
+                className="rounded-xl bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-400 hover:to-teal-500 px-3.5 py-2 text-xs font-bold text-white shadow-md shadow-emerald-600/30 transition-all hover:scale-105 flex items-center gap-1.5 cursor-pointer font-[family-name:var(--font-google-sans)]"
+                title="Open camera to scan participant attendance passes"
               >
-                <Tv className="h-3.5 w-3.5" />
-                <span>Project Check-In QR</span>
+                <Camera className="h-3.5 w-3.5" />
+                <span>Scan Participant QR</span>
               </button>
 
               <button
@@ -1609,71 +1628,66 @@ export default function LiveEventManager() {
             </div>
           )}
           {/* ========================================================================= */}
-          {/* MODAL 2: PROJECTOR CHECK-IN QR MODAL                                      */}
+          {/* MODAL 2: LIVE CAMERA PARTICIPANT QR SCANNER MODAL                         */}
           {/* ========================================================================= */}
-          {showQrProjector && selectedEventId && (
-            <div className="fixed inset-0 z-50 bg-black/90 backdrop-blur-3xl flex items-center justify-center p-4 animate-fadeIn">
-              <div className="relative overflow-hidden rounded-[2.5rem] border border-purple-500/50 bg-gradient-to-b from-purple-950/40 via-black to-neutral-950 p-8 sm:p-12 max-w-xl w-full text-center space-y-6 shadow-[0_25px_60px_rgba(242,0,137,0.3)]">
-                <button
-                  type="button"
-                  onClick={() => setShowQrProjector(false)}
-                  className="absolute top-6 right-6 h-10 w-10 rounded-full bg-white/10 hover:bg-white/20 text-white font-bold flex items-center justify-center transition-all cursor-pointer"
-                >
-                  ✕
-                </button>
+          {selectedEventId && (
+            <LiveCameraScannerModal
+              isOpen={showCameraScanner}
+              eventId={selectedEventId}
+              eventTitle={eventMeta?.title || selectedEvent?.title}
+              onClose={() => setShowCameraScanner(false)}
+              onCheckInTeam={async (scannedCode) => {
+                const matchedTeam = teams.find(
+                  (t) => t.teamCode.toUpperCase() === scannedCode.toUpperCase()
+                );
 
-                <div className="space-y-2">
-                  <span className="rounded-full bg-purple-500/20 border border-purple-500/40 px-3.5 py-1 text-[11px] font-bold text-purple-300 uppercase tracking-widest font-mono">
-                    Official Auditorium Projection QR
-                  </span>
-                  <h2 className="text-2xl sm:text-3xl font-black text-white font-[family-name:var(--font-google-sans)]">
-                    {eventMeta?.title || "Hult Ascend Check-In"}
-                  </h2>
-                  <p className="text-xs text-white/60 font-sans">
-                    Scan with any phone camera or QR scanner app to mark physical attendance.
-                  </p>
-                </div>
+                try {
+                  const res = await fetch("/api/admin/teams", {
+                    method: "PUT",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({
+                      action: "toggle_check_in",
+                      teamId: matchedTeam?.id,
+                      eventId: selectedEventId,
+                      teamCode: scannedCode,
+                      checkedIn: true,
+                    }),
+                  });
 
-                {/* Big Center QR Code */}
-                <div className="flex flex-col items-center justify-center p-6 rounded-3xl bg-white backdrop-blur-2xl border border-white/20 shadow-2xl max-w-xs mx-auto">
-                  <QRCodeSVG
-                    value={`https://hultprizehitk.live/events/checkin?eventId=${selectedEventId}`}
-                    size={260}
-                    bgColor={"#FFFFFF"}
-                    fgColor={"#09090b"}
-                    level={"H"}
-                  />
-                  <span className="text-xs font-bold text-black/80 font-mono mt-3 uppercase tracking-wider">
-                    SCAN TO CHECK IN
-                  </span>
-                </div>
+                  const data = await res.json();
+                  if (res.ok) {
+                    // Update local teams list
+                    if (matchedTeam) {
+                      setTeams((prev) =>
+                        prev.map((t) =>
+                          t.id === matchedTeam.id
+                            ? { ...t, checkedIn: true, checkedInAt: new Date().toISOString() }
+                            : t
+                        )
+                      );
+                    } else {
+                      fetchTeamsForEvent(selectedEventId);
+                    }
 
-                {/* Action Buttons */}
-                <div className="flex items-center justify-center gap-3 flex-wrap pt-2">
-                  <button
-                    type="button"
-                    onClick={() => {
-                      if (document.documentElement.requestFullscreen) {
-                        document.documentElement.requestFullscreen();
-                      }
-                    }}
-                    className="rounded-2xl bg-white/10 hover:bg-white/20 border border-white/20 px-5 py-2.5 text-xs font-bold text-white transition-all cursor-pointer flex items-center gap-2"
-                  >
-                    <Tv className="h-4 w-4" />
-                    <span>Fullscreen Projection</span>
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={() => window.print()}
-                    className="rounded-2xl bg-gradient-to-r from-[#f20089] to-purple-600 hover:from-[#ff1a9b] hover:to-purple-500 px-6 py-2.5 text-xs font-bold text-white shadow-lg transition-all cursor-pointer flex items-center gap-2"
-                  >
-                    <Printer className="h-4 w-4" />
-                    <span>Save as PDF / Print</span>
-                  </button>
-                </div>
-              </div>
-            </div>
+                    return {
+                      success: true,
+                      message: `Team "${matchedTeam?.teamName || scannedCode}" marked present!`,
+                      teamName: matchedTeam?.teamName || data.team?.teamName,
+                    };
+                  } else {
+                    return {
+                      success: false,
+                      message: data.error || `Failed to check in team (${scannedCode}).`,
+                    };
+                  }
+                } catch (err: any) {
+                  return {
+                    success: false,
+                    message: err?.message || "Network error processing check-in.",
+                  };
+                }
+              }}
+            />
           )}
 
           {/* ========================================================================= */}

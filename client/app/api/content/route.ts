@@ -15,8 +15,13 @@ export async function GET(req: Request) {
     if (contentType) filter.contentType = contentType;
     if (category) filter.category = category;
 
+    const sortCriteria: Record<string, 1 | -1> =
+      contentType === "announcement"
+        ? { order: 1, createdAt: -1 }
+        : { order: 1, createdAt: 1 };
+
     const items = await SiteContent.find(filter)
-      .sort({ order: 1, createdAt: 1 })
+      .sort(sortCriteria)
       .lean();
 
     return NextResponse.json(

@@ -4,7 +4,6 @@ import React from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { signOut } from "next-auth/react";
-import { ShieldAlert, Lock } from "lucide-react";
 import AnimatedGradient from "@/components/ui/animated-gradient";
 
 interface AdminAccessDeniedProps {
@@ -48,9 +47,9 @@ export default function AdminAccessDenied({ userEmail }: AdminAccessDeniedProps)
             <div className="pointer-events-none absolute -top-20 -right-20 h-60 w-60 rounded-full bg-red-600/20 blur-3xl" />
             <div className="pointer-events-none absolute -bottom-20 -left-20 h-60 w-60 rounded-full bg-rose-900/30 blur-3xl" />
 
-            {/* Warning Shield Icon */}
-            <div className="relative mx-auto mb-5 flex h-20 w-20 items-center justify-center rounded-3xl bg-red-500/10 border border-red-500/30 text-red-500 shadow-[0_0_30px_rgba(239,68,68,0.3)]">
-              <ShieldAlert className="h-10 w-10" />
+            {/* Warning Shield Badge */}
+            <div className="relative mx-auto mb-5 flex h-20 w-20 items-center justify-center rounded-3xl bg-red-500/10 border border-red-500/30 text-red-500 shadow-[0_0_30px_rgba(239,68,68,0.3)] font-mono text-2xl font-black">
+              403
             </div>
 
             {/* Pill */}
@@ -77,8 +76,8 @@ export default function AdminAccessDenied({ userEmail }: AdminAccessDeniedProps)
               <p className="text-white font-semibold break-all text-xs sm:text-sm">
                 {userEmail}
               </p>
-              <div className="mt-3 pt-3 border-t border-white/10 text-[11px] text-neutral-400 leading-normal font-sans flex items-start gap-1.5">
-                <Lock className="h-3.5 w-3.5 text-red-400 shrink-0 mt-0.5" />
+              <div className="mt-3 pt-3 border-t border-white/10 text-[11px] text-neutral-400 leading-normal font-sans flex items-start gap-2">
+                <span className="h-1.5 w-1.5 rounded-full bg-red-400 shrink-0 mt-1" />
                 <span>If you are an authorized administrator, please sign in with your designated admin email address.</span>
               </div>
             </div>

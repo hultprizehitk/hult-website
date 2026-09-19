@@ -3,6 +3,7 @@ import mongoose from "mongoose";
 import { connectDB } from "@/lib/mongodb";
 import Event from "@/models/Event";
 import { isAuthorizedAdmin } from "@/lib/admin-check";
+import { logAdminAction } from "@/lib/audit-logger";
 
 // Stealth protection: if not admin, return 404
 function unauthorizedResponse() {
@@ -77,6 +78,14 @@ export async function POST(req: Request) {
       maxTeamMembers: Number(maxTeamMembers) || 5,
       registeredTeamsCount: teamsList.length,
       registeredTeams: teamsList,
+    });
+
+    await logAdminAction({
+      req,
+      action: "event_create",
+      targetType: "event",
+      targetId: newEvent._id.toString(),
+      details: { title: newEvent.title, tag: newEvent.tag, date: newEvent.date },
     });
 
     return NextResponse.json(
@@ -261,6 +270,14 @@ export async function PUT(req: Request) {
 
     await existing.save();
 
+    await logAdminAction({
+      req,
+      action: action ? `event_${action}` : "event_update",
+      targetType: "event",
+      targetId: id,
+      details: { title: existing.title, action: action || "general_update" },
+    });
+
     return NextResponse.json(
       { success: true, message: "Event updated successfully.", event: existing },
       { status: 200 }
@@ -285,7 +302,15 @@ export async function DELETE(req: Request) {
     }
 
     await connectDB();
-    await Event.findByIdAndDelete(id);
+    const deleted = await Event.findByIdAndDelete(id);
+
+    await logAdminAction({
+      req,
+      action: "event_delete",
+      targetType: "event",
+      targetId: id,
+      details: { title: deleted?.title || "" },
+    });
 
     return NextResponse.json(
       { success: true, message: "Event deleted successfully." },

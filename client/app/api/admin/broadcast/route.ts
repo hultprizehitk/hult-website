@@ -3,6 +3,7 @@ import { isAuthorizedAdmin } from "@/lib/admin-check";
 import { sendEmail, Recipient } from "@/lib/mail";
 import { checkRateLimit, getClientIp } from "@/lib/rate-limit";
 import { logEmailDispatch, hasEmailBeenSent } from "@/lib/mail-logger";
+import { logAdminAction } from "@/lib/audit-logger";
 import { EmailCategory } from "@/models/EmailLog";
 
 function unauthorizedResponse() {
@@ -170,6 +171,20 @@ export async function POST(req: Request) {
     console.log(
       `[Admin Broadcast Complete] Total: ${total}, Sent: ${sentCount}, Failed: ${failedCount}, Skipped: ${skippedCount}`
     );
+
+    await logAdminAction({
+      req,
+      action: "broadcast_dispatch",
+      targetType: "broadcast",
+      details: {
+        subject: subject.trim(),
+        totalRecipients: total,
+        sentCount,
+        failedCount,
+        skippedCount,
+        eventId: strEventId,
+      },
+    });
 
     return NextResponse.json(
       {

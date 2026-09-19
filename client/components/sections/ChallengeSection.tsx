@@ -47,23 +47,25 @@ export default function ChallengeSection() {
         <ScrollReveal direction="up">
           <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
             <div className="space-y-3 max-w-2xl">
-              <div className="inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/[0.06] backdrop-blur-xl px-4 py-1.5 text-xs font-semibold uppercase tracking-widest text-white/90 shadow-inner">
-                <span className="h-2 w-2 rounded-full bg-purple-400 animate-pulse" />
-                <span>UN Sustainable Development Goals</span>
+              <div className="inline-flex items-center gap-2 rounded-full border border-purple-500/30 bg-purple-950/30 backdrop-blur-xl px-4 py-1.5 shadow-inner">
+                <span className="h-1.5 w-1.5 rounded-full bg-purple-400 animate-pulse" />
+                <span className="font-mono text-[10px] font-bold uppercase tracking-[0.25em] text-purple-300">
+                  UN SUSTAINABLE DEVELOPMENT GOALS
+                </span>
               </div>
 
-              <h2 className="text-3xl sm:text-5xl font-black tracking-tight text-white leading-[1.1]">
+              <h2 className="text-3xl sm:text-5xl font-black tracking-tight text-white leading-[1.1] font-[family-name:var(--font-google-sans)]">
                 The Global Challenge
               </h2>
 
-              <p className="text-sm sm:text-base text-white/75 font-sans leading-relaxed">
+              <p className="text-sm sm:text-base text-white/70 font-sans leading-relaxed">
                 Build a scalable enterprise aligned with the United Nations SDGs to tackle global challenges with sustainable market solutions.
               </p>
             </div>
 
             <Link
               href="/register"
-              className="self-start md:self-auto rounded-2xl bg-[#f20089] hover:bg-[#d8007a] px-6 py-3 text-xs font-bold text-white shadow-lg shadow-[#f20089]/30 transition-all hover:scale-105 active:scale-95"
+              className="self-start md:self-auto rounded-2xl bg-[#f20089] hover:bg-[#d8007a] px-6 py-3 text-xs font-bold text-white shadow-lg shadow-[#f20089]/30 transition-all hover:scale-105 active:scale-95 font-mono"
             >
               Submit Pitch Idea →
             </Link>
@@ -76,15 +78,15 @@ export default function ChallengeSection() {
             <ScrollReveal key={idx} direction="up" delay={idx * 150}>
               <TiltCard glowColor={track.glow} className="space-y-4">
                 <div className="flex items-center justify-between">
-                  <span className="font-mono text-xs font-bold text-[#f20089] tracking-widest uppercase">
+                  <span className="font-mono text-xs font-bold text-[#f20089] tracking-[0.2em] uppercase">
                     {track.code}
                   </span>
-                  <span className="rounded-full border border-white/20 bg-white/5 px-3 py-1 text-[11px] font-mono font-bold text-white/80">
+                  <span className="rounded-full border border-white/20 bg-white/5 px-3 py-1 text-[11px] font-mono font-bold text-white/80 tabular-nums">
                     {track.sdg}
                   </span>
                 </div>
 
-                <h3 className="text-xl sm:text-2xl font-bold text-white group-hover:text-pink-100 transition-colors">
+                <h3 className="text-xl sm:text-2xl font-bold text-white tracking-tight group-hover:text-pink-100 transition-colors">
                   {track.title}
                 </h3>
 

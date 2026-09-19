@@ -4,6 +4,7 @@ import { connectDB } from "@/lib/mongodb";
 import Event from "@/models/Event";
 import Team from "@/models/Team";
 import { isAuthorizedAdmin } from "@/lib/admin-check";
+import { logAdminAction } from "@/lib/audit-logger";
 
 function unauthorizedResponse() {
   return NextResponse.json({ error: "Not Found" }, { status: 404 });
@@ -283,6 +284,14 @@ export async function PUT(req: Request) {
         }
       }
 
+      await logAdminAction({
+        req,
+        action: checkedIn ? "team_checkin" : "team_uncheckin",
+        targetType: "team",
+        targetId: teamId,
+        details: { checkedIn, eventId, teamCode: body.teamCode },
+      });
+
       return NextResponse.json(
         {
           success: true,
@@ -318,6 +327,14 @@ export async function PUT(req: Request) {
         }
       }
 
+      await logAdminAction({
+        req,
+        action: "team_status_change",
+        targetType: "team",
+        targetId: teamId,
+        details: { newStatus, eventId, teamCode: body.teamCode },
+      });
+
       return NextResponse.json(
         {
           success: true,
@@ -346,6 +363,14 @@ export async function PUT(req: Request) {
       if (mongoose.Types.ObjectId.isValid(teamId)) {
         updatedTeam = await Team.findByIdAndUpdate(teamId, updateData, { new: true });
       }
+
+      await logAdminAction({
+        req,
+        action: "team_update_details",
+        targetType: "team",
+        targetId: teamId,
+        details: { teamName, ventureName, department, leadEmail: lead?.email },
+      });
 
       return NextResponse.json(
         { success: true, message: "Team details updated successfully.", team: updatedTeam },
@@ -395,6 +420,14 @@ export async function DELETE(req: Request) {
         await ev.save();
       }
     }
+
+    await logAdminAction({
+      req,
+      action: "team_delete",
+      targetType: "team",
+      targetId: teamId || teamCode || "",
+      details: { teamId, eventId, teamCode },
+    });
 
     return NextResponse.json({ success: true, message: "Team registration removed successfully." }, { status: 200 });
   } catch (error: unknown) {

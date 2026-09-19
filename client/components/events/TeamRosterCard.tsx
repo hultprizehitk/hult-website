@@ -1,7 +1,6 @@
 "use client";
 
 import React from "react";
-import TeamClanBadgeSVG from "@/components/ui/TeamClanBadgeSVG";
 import { RefreshSVG, CheckSVG, UsersSVG, PhoneSVG, LeaderCrownSVG, BuildingSVG, UserSVG, SparklesSVG } from "@/components/ui/CustomSvgIcons";
 
 interface TeamRosterCardProps {
@@ -38,14 +37,9 @@ export default function TeamRosterCard({
       {/* Header Status with Dynamic SVG Clan Flag */}
       <div className="flex items-center justify-between border-b border-white/10 pb-4 flex-wrap gap-3">
         <div className="flex items-center gap-4">
-          <TeamClanBadgeSVG
-            size={52}
-            shape="shield"
-            primaryColor="#f20089"
-            accentColor="#a855f7"
-            pattern="gradient"
-            icon="crown"
-          />
+          <div className="h-12 w-12 rounded-2xl bg-gradient-to-tr from-[#f20089] to-purple-600 border border-white/20 flex items-center justify-center font-mono font-black text-white text-xl shadow-lg shadow-[#f20089]/20 shrink-0">
+            {registeredTeam.teamName ? registeredTeam.teamName.charAt(0).toUpperCase() : "T"}
+          </div>
           <div>
             <span className="rounded-full bg-emerald-500/20 border border-emerald-500/40 px-3 py-0.5 text-[11px] font-bold text-emerald-300 uppercase tracking-wider">
               Confirmed Team Registration Studio

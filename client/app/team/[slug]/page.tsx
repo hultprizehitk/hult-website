@@ -1,7 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import Image from "next/image";
-import { GraduationCap } from "lucide-react";
 import { getProfileBySlug, getAllProfileSlugs, getAllProfiles } from "@/lib/profile-data";
 import ProfileLanyardCard from "@/components/profile/ProfileLanyardCard";
 import SiteHeader from "@/components/SiteHeader";
@@ -105,8 +104,8 @@ export default async function TeamMemberDetailPage({ params }: TeamDetailPagePro
           <span>Back to Organizing Committee</span>
         </Link>
         <span className="hidden sm:inline-flex items-center gap-1.5 rounded-full border border-pink-500/30 bg-pink-500/10 px-3 py-1 text-[11px] font-mono text-pink-300">
-          <span>🪪</span>
-          <span>Interactive 3D ID Badge</span>
+          <span className="h-1.5 w-1.5 rounded-full bg-[#f20089] animate-pulse" />
+          <span>3D ID Badge</span>
         </span>
       </div>
 
@@ -177,7 +176,7 @@ export default async function TeamMemberDetailPage({ params }: TeamDetailPagePro
                 )}
                 {profile.academicYear && (
                   <span className="inline-flex items-center gap-1.5 rounded-full bg-[#f20089]/15 border border-[#f20089]/30 px-3 py-1 text-[11px] font-mono text-pink-300">
-                    <GraduationCap className="h-3 w-3 text-pink-400" />
+                    <span className="h-1.5 w-1.5 rounded-full bg-pink-400" />
                     <span>{profile.academicYear}</span>
                   </span>
                 )}

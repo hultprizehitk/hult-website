@@ -3,10 +3,8 @@
 import React from "react";
 import Image from "next/image";
 import Link from "next/link";
+import { ArrowLeft, Calendar, MapPin, Users, ExternalLink } from "lucide-react";
 import type { PublicEvent } from "../page";
-import LiveAuditoriumHub from "@/components/events/LiveAuditoriumHub";
-import StudentLeaderboard from "@/components/events/StudentLeaderboard";
-import CoFounderRadar from "@/components/profile/CoFounderRadar";
 import { useEventRegistration } from "@/hooks/useEventRegistration";
 import EventAuditoriumPass from "@/components/events/EventAuditoriumPass";
 import TeamRosterCard from "@/components/events/TeamRosterCard";
@@ -47,7 +45,8 @@ export default function EventInsideView({
           onClick={onBack}
           className="inline-flex items-center gap-2 rounded-2xl bg-white/[0.06] hover:bg-white/15 border border-white/15 px-4 py-2 text-xs font-semibold text-white/90 hover:text-white transition-all cursor-pointer shadow-md hover:scale-[1.02] active:scale-95"
         >
-          <span>← Back to All Events</span>
+          <ArrowLeft className="h-3.5 w-3.5 text-pink-400" />
+          <span>Back to All Events</span>
         </button>
 
         <div className="flex items-center gap-2 text-xs text-white/50 font-sans">
@@ -94,29 +93,6 @@ export default function EventInsideView({
                 Team Size: {reg.minMembers} to {reg.maxMembers} Members
               </span>
             </div>
-
-            <div className="flex items-center gap-4 hidden sm:flex">
-              <div className="relative h-24 w-24 sm:h-28 sm:w-28">
-                <Image
-                  src="/assets/bento/event-ticket-3d.png"
-                  alt="3D Event Ticket"
-                  width={112}
-                  height={112}
-                  unoptimized
-                  className="object-contain hover:scale-110 transition-transform duration-300"
-                />
-              </div>
-              <div className="relative h-24 w-24 sm:h-28 sm:w-28">
-                <Image
-                  src="/assets/bento/venture-coins.png"
-                  alt="3D Venture Coins"
-                  width={112}
-                  height={112}
-                  unoptimized
-                  className="object-contain hover:scale-110 transition-transform duration-300"
-                />
-              </div>
-            </div>
           </div>
 
           <h1 className="text-3xl sm:text-4xl md:text-5xl font-black text-white tracking-tight leading-tight">
@@ -125,8 +101,9 @@ export default function EventInsideView({
 
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3 pt-2 font-sans text-xs">
             <div className="rounded-2xl border border-white/15 bg-white/[0.04] backdrop-blur-xl p-3.5 space-y-1 shadow-inner">
-              <span className="text-[10px] uppercase font-bold tracking-wider text-white/50 block">
-                Schedule & Time
+              <span className="text-[10px] uppercase font-bold tracking-wider text-white/50 flex items-center gap-1.5">
+                <Calendar className="h-3 w-3 text-pink-400" />
+                <span>Schedule & Time</span>
               </span>
               <span className="font-semibold text-white block text-xs sm:text-sm">
                 {event.date}
@@ -134,8 +111,9 @@ export default function EventInsideView({
             </div>
 
             <div className="rounded-2xl border border-white/15 bg-white/[0.04] backdrop-blur-xl p-3.5 space-y-1 shadow-inner">
-              <span className="text-[10px] uppercase font-bold tracking-wider text-white/50 block">
-                Venue Location
+              <span className="text-[10px] uppercase font-bold tracking-wider text-white/50 flex items-center gap-1.5">
+                <MapPin className="h-3 w-3 text-pink-400" />
+                <span>Venue Location</span>
               </span>
               <span className="font-semibold text-white block text-xs sm:text-sm">
                 {event.venue}
@@ -143,8 +121,9 @@ export default function EventInsideView({
             </div>
 
             <div className="rounded-2xl border border-white/15 bg-white/[0.04] backdrop-blur-xl p-3.5 space-y-1 sm:col-span-2 md:col-span-1 shadow-inner">
-              <span className="text-[10px] uppercase font-bold tracking-wider text-white/50 block">
-                Team Size Limits
+              <span className="text-[10px] uppercase font-bold tracking-wider text-white/50 flex items-center gap-1.5">
+                <Users className="h-3 w-3 text-emerald-400" />
+                <span>Team Size Limits</span>
               </span>
               <span className="font-bold text-[#f20089] block text-xs sm:text-sm">
                 {reg.minMembers} to {reg.maxMembers} Students / Team
@@ -292,26 +271,6 @@ export default function EventInsideView({
             onBack={onBack}
           />
         )}
-
-        {/* Live Auditorium Hub & Stage Q&A/Poll */}
-        <div className="mt-16">
-          <LiveAuditoriumHub />
-        </div>
-
-        {/* Co-Founder Matchmaking Radar Board */}
-        <div className="mt-16">
-          <CoFounderRadar
-            currentStudentEmail={sessionUser?.email || undefined}
-            isTeamLeader={registeredTeam?.leadEmail === sessionUser?.email}
-            teamCode={registeredTeam?.teamCode}
-            teamName={registeredTeam?.teamName}
-          />
-        </div>
-
-        {/* Student Startup Leaderboard & Milestone Stepper */}
-        <div className="mt-16">
-          <StudentLeaderboard />
-        </div>
       </div>
     </div>
   );

@@ -5,15 +5,14 @@ import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useSession, signIn, signOut } from "next-auth/react";
-import { Mail, Lock, Shield } from "lucide-react";
 import AnimatedGradient from "@/components/ui/animated-gradient";
+import SiteHeader from "@/components/SiteHeader";
 import { parseHeritageEmail } from "@/lib/heritage-parser";
 
 export default function RegisterPage() {
   const router = useRouter();
   const { data: session, status } = useSession();
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [isSigningIn, setIsSigningIn] = useState(false);
 
   // If already authenticated, redirect seamlessly to the student profile
@@ -95,174 +94,7 @@ export default function RegisterPage() {
         <div className="absolute inset-0 bg-radial from-transparent via-black/20 to-black/85" />
       </div>
 
-      {/* 
-        ========================================================================
-        HEADER NAVIGATION (100% Identical to Homepage: Logos Left, Nav Right, Transparent)
-        ========================================================================
-      */}
-      <header className="fixed top-0 inset-x-0 z-50 flex w-full items-center justify-between px-4 py-3 sm:px-6 sm:py-3.5 md:px-8 transition-all duration-300 font-[family-name:var(--font-google-sans)] bg-black/60 backdrop-blur-md border-b border-white/10">
-        {/* Brand Logos */}
-        <div className="flex items-center gap-2 sm:gap-3 transition-opacity duration-700">
-          <Link href="/" className="relative aspect-[1080/659] h-7 sm:h-8 md:h-9">
-            <Image
-              src="/Hult-Prize.png"
-              alt="Hult Prize Logo"
-              fill
-              sizes="(max-width: 640px) 46px, 66px"
-              priority
-              className="object-contain drop-shadow-md"
-            />
-          </Link>
-          <div className="relative aspect-[1024/895] h-7 sm:h-8 md:h-9">
-            <Image
-              src="/hitk-25-logo.png"
-              alt="Heritage Institute of Technology 25 Years Logo"
-              fill
-              sizes="(max-width: 640px) 40px, 56px"
-              priority
-              className="object-contain drop-shadow-md"
-            />
-          </div>
-        </div>
-
-        {/* Desktop Nav Links */}
-        <nav className="hidden md:flex items-center gap-5 lg:gap-6 font-[family-name:var(--font-google-sans)]">
-          <Link
-            href="/#about"
-            className="text-xs sm:text-sm font-semibold tracking-wide text-white/85 drop-shadow transition-colors duration-200 hover:text-white"
-          >
-            About
-          </Link>
-          <Link
-            href="/events"
-            className="text-xs sm:text-sm font-semibold tracking-wide text-white/85 drop-shadow transition-colors duration-200 hover:text-white"
-          >
-            Events
-          </Link>
-          <Link
-            href="/#challenge"
-            className="text-xs sm:text-sm font-semibold tracking-wide text-white/85 drop-shadow transition-colors duration-200 hover:text-white"
-          >
-            Challenge
-          </Link>
-          <Link
-            href="/#timeline"
-            className="text-xs sm:text-sm font-semibold tracking-wide text-white/85 drop-shadow transition-colors duration-200 hover:text-white"
-          >
-            Timeline
-          </Link>
-
-          {status === "authenticated" && session?.user ? (
-            <div className="flex items-center gap-3">
-              {isAdmin && (
-                <Link
-                  href="/portal"
-                  className="rounded-full bg-[#f20089]/20 hover:bg-[#f20089]/35 border border-[#f20089]/50 px-3 py-1.5 text-xs font-bold text-pink-300 hover:text-white transition-all shadow-sm flex items-center gap-1.5"
-                >
-                  <span>{adminBadgeLabel} CMS</span>
-                </Link>
-              )}
-              <span className="inline-flex items-center gap-1.5 rounded-full border border-white/20 bg-white/[0.08] px-3.5 py-1.5 text-xs font-bold text-white shadow-sm">
-                <span className="h-2 w-2 rounded-full bg-emerald-400 animate-pulse" />
-                {session.user.name?.split(" ")[0] || "Student"}
-              </span>
-              <button
-                type="button"
-                onClick={() => signOut({ callbackUrl: "/register" })}
-                className="rounded-full bg-white/[0.08] hover:bg-white/[0.15] border border-white/20 px-3.5 py-1.5 text-xs font-semibold text-white/80 hover:text-white transition-all cursor-pointer"
-              >
-                Sign Out
-              </button>
-            </div>
-          ) : (
-            <button
-              type="button"
-              onClick={handleGoogleSignIn}
-              className="rounded-full bg-[#f20089] hover:bg-[#d8007a] px-4 sm:px-5 py-1.5 sm:py-2 text-xs sm:text-sm font-bold tracking-wide text-white shadow-lg shadow-[#f20089]/40 transition-all duration-200 hover:scale-[1.05] active:scale-[0.98] cursor-pointer"
-            >
-              Sign In with Google
-            </button>
-          )}
-        </nav>
-
-        {/* Mobile Right Bar */}
-        <div className="flex md:hidden items-center gap-2">
-          {status === "authenticated" ? (
-            <button
-              type="button"
-              onClick={() => signOut({ callbackUrl: "/register" })}
-              className="rounded-full bg-white/[0.08] border border-white/20 px-3 py-1.5 text-[11px] font-bold text-white shadow-md active:scale-95 cursor-pointer"
-            >
-              Sign Out
-            </button>
-          ) : (
-            <button
-              type="button"
-              onClick={handleGoogleSignIn}
-              className="rounded-full bg-[#f20089] px-3.5 py-1.5 text-[11px] font-bold tracking-wide text-white shadow-md active:scale-95 cursor-pointer"
-            >
-              Sign In
-            </button>
-          )}
-          <button
-            type="button"
-            onClick={() => setMobileMenuOpen((prev) => !prev)}
-            aria-label="Toggle navigation menu"
-            className="p-1.5 rounded-full bg-white/[0.08] hover:bg-white/[0.15] border border-white/20 text-white transition-colors cursor-pointer"
-          >
-            {mobileMenuOpen ? (
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
-              </svg>
-            ) : (
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5" />
-              </svg>
-            )}
-          </button>
-        </div>
-      </header>
-
-      {/* Mobile Slide-Down Menu Overlay */}
-      {mobileMenuOpen && (
-        <div className="fixed inset-x-0 top-[52px] z-45 md:hidden bg-black/95 backdrop-blur-3xl border-b border-white/15 px-6 py-6 shadow-2xl flex flex-col gap-4 font-[family-name:var(--font-google-sans)] animate-in fade-in slide-in-from-top-2 duration-200">
-          <Link
-            href="/"
-            onClick={() => setMobileMenuOpen(false)}
-            className="text-base font-semibold text-white/90 hover:text-[#f20089] py-2 border-b border-white/5 transition-colors"
-          >
-            Home
-          </Link>
-          <Link
-            href="/#about"
-            onClick={() => setMobileMenuOpen(false)}
-            className="text-base font-semibold text-white/90 hover:text-[#f20089] py-2 border-b border-white/5 transition-colors"
-          >
-            About
-          </Link>
-          <Link
-            href="/events"
-            onClick={() => setMobileMenuOpen(false)}
-            className="text-base font-semibold text-white/90 hover:text-[#f20089] py-2 border-b border-white/5 transition-colors"
-          >
-            Events
-          </Link>
-          <Link
-            href="/#challenge"
-            onClick={() => setMobileMenuOpen(false)}
-            className="text-base font-semibold text-white/90 hover:text-[#f20089] py-2 border-b border-white/5 transition-colors"
-          >
-            Challenge
-          </Link>
-          <Link
-            href="/#timeline"
-            onClick={() => setMobileMenuOpen(false)}
-            className="text-base font-semibold text-white/90 hover:text-[#f20089] py-2 border-b border-white/5 transition-colors"
-          >
-            Timeline
-          </Link>
-        </div>
-      )}
+      <SiteHeader />
 
       {/* Main Authentication Container */}
       <main className="relative z-10 flex flex-1 items-center justify-center px-4 pt-20 sm:pt-24 pb-8 sm:pb-12">
@@ -312,7 +144,9 @@ export default function RegisterPage() {
                 {/* Email Delivery Tip Notice */}
                 <div className="mb-6 rounded-2xl border border-amber-500/30 bg-amber-500/10 p-3.5 text-left backdrop-blur-xl">
                   <div className="flex items-start gap-2.5">
-                    <Mail className="h-4 w-4 text-amber-400 mt-0.5 shrink-0" />
+                    <span className="font-mono text-[9px] font-bold tracking-widest text-amber-400 uppercase border border-amber-500/40 bg-amber-500/20 rounded px-1.5 py-0.5 shrink-0 mt-0.5">
+                      EMAIL
+                    </span>
                     <div className="text-xs text-amber-200/90 leading-relaxed">
                       <span className="font-bold text-amber-300 block mb-0.5">Confirmation Email Sent!</span>
                       We sent your welcome email. If you do not see it in your Inbox, please check your <strong className="text-white">Spam / Junk folder</strong> and mark it as <strong className="text-amber-300 font-bold">"Not Spam"</strong>.
@@ -407,17 +241,6 @@ export default function RegisterPage() {
             ) : (
               /* GOOGLE ONLY AUTHENTICATION VIEW */
               <div className="relative z-10 py-2 animate-fadeIn">
-                {/* 3D Pitch Deck Icon */}
-                <div className="relative mx-auto mb-4 h-32 w-32 sm:h-40 sm:w-40 flex items-center justify-center">
-                  <Image
-                    src="/assets/bento/pitch-deck.png"
-                    alt="3D Venture Pitch Deck"
-                    width={160}
-                    height={160}
-                    unoptimized
-                    className="object-contain drop-shadow-[0_12px_35px_rgba(242,0,137,0.6)] hover:scale-110 transition-transform duration-300"
-                  />
-                </div>
 
                 {/* College Badge */}
                 <div className="inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/[0.04] px-4 py-1.5 backdrop-blur-xl mb-6 shadow-sm">
@@ -498,7 +321,7 @@ export default function RegisterPage() {
                 {/* Domain Policy Notice */}
                 <div className="mt-8 rounded-2xl border border-white/10 bg-white/[0.02] p-4 text-left space-y-2">
                   <div className="flex items-center gap-2 text-xs font-bold text-white">
-                    <Lock className="h-3.5 w-3.5 text-white/70" />
+                    <span className="h-2 w-2 rounded-full bg-amber-400 animate-pulse shrink-0" />
                     <span>Domain Restricted Access</span>
                   </div>
                   <p className="text-[11px] text-white/60 leading-relaxed">

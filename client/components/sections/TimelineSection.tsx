@@ -52,16 +52,18 @@ export default function TimelineSection() {
         {/* Header */}
         <ScrollReveal direction="up">
           <div className="space-y-3 max-w-2xl">
-            <div className="inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/[0.06] backdrop-blur-xl px-4 py-1.5 text-xs font-semibold uppercase tracking-widest text-white/90 shadow-inner">
-              <span className="h-2 w-2 rounded-full bg-sky-400 animate-pulse" />
-              <span>Competition Stepper</span>
+            <div className="inline-flex items-center gap-2 rounded-full border border-sky-500/30 bg-sky-950/30 backdrop-blur-xl px-4 py-1.5 shadow-inner">
+              <span className="h-1.5 w-1.5 rounded-full bg-sky-400 animate-pulse" />
+              <span className="font-mono text-[10px] font-bold uppercase tracking-[0.25em] text-sky-300">
+                COMPETITION STEPPER
+              </span>
             </div>
 
-            <h2 className="text-3xl sm:text-5xl font-black tracking-tight text-white leading-[1.1]">
+            <h2 className="text-3xl sm:text-5xl font-black tracking-tight text-white leading-[1.1] font-[family-name:var(--font-google-sans)]">
               Roadmap to the Global Stage
             </h2>
 
-            <p className="text-sm sm:text-base text-white/75 font-sans leading-relaxed">
+            <p className="text-sm sm:text-base text-white/70 font-sans leading-relaxed">
               From campus registration at Heritage Institute of Technology to the United Nations HQ.
             </p>
           </div>
@@ -73,16 +75,16 @@ export default function TimelineSection() {
             <ScrollReveal key={idx} direction="up" delay={idx * 120}>
               <TiltCard glowColor={item.glow} className="h-full flex flex-col justify-between space-y-4">
                 <div className="space-y-3">
-                  <div className="flex items-center justify-between font-mono">
-                    <span className="text-2xl font-black text-[#f20089]">
+                  <div className="flex items-center justify-between">
+                    <span className="font-mono text-3xl font-black tabular-nums tracking-tight bg-gradient-to-br from-white via-[#f20089] to-pink-400 bg-clip-text text-transparent">
                       {item.step}
                     </span>
-                    <span className="text-[10px] text-white/50 uppercase tracking-wider font-semibold">
+                    <span className="text-[10px] font-mono tracking-[0.2em] text-white/50 uppercase font-semibold">
                       {item.phase}
                     </span>
                   </div>
 
-                  <h3 className="text-base font-bold text-white group-hover:text-pink-100 transition-colors">
+                  <h3 className="text-base font-bold text-white tracking-tight group-hover:text-pink-200 transition-colors">
                     {item.title}
                   </h3>
 

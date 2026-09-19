@@ -1,7 +1,6 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { Copy, Download, X } from "lucide-react";
 import { parseHeritageEmail } from "@/lib/heritage-parser";
 
 import type { Participant } from "@/types";
@@ -141,9 +140,9 @@ export default function StudentsDirectory() {
           <button
             type="button"
             onClick={() => setStatusMessage(null)}
-            className="text-white/60 hover:text-white"
+            className="ml-auto text-current opacity-70 hover:opacity-100 font-mono text-xs cursor-pointer"
           >
-            <X className="h-4 w-4" />
+            ✕
           </button>
         </div>
       )}
@@ -163,17 +162,15 @@ export default function StudentsDirectory() {
           <button
             type="button"
             onClick={copyAllEmails}
-            className="inline-flex items-center gap-1.5 rounded-full bg-white/[0.08] hover:bg-white/15 border border-white/20 px-4 py-2.5 text-xs sm:text-sm font-semibold text-white transition-all cursor-pointer font-[family-name:var(--font-google-sans)]"
+            className="flex items-center gap-2 rounded-2xl border border-white/20 bg-white/[0.08] hover:bg-white/15 px-4 py-2.5 text-xs font-bold text-white transition-all shadow-md active:scale-95 cursor-pointer font-mono"
           >
-            <Copy className="h-4 w-4 text-white/80" />
             <span>Copy Emails</span>
           </button>
           <button
             type="button"
             onClick={exportToCSV}
-            className="inline-flex items-center gap-1.5 rounded-full bg-emerald-600 hover:bg-emerald-500 px-5 sm:px-6 py-2.5 text-xs sm:text-sm font-bold text-white shadow-lg shadow-emerald-600/30 transition-all hover:scale-105 cursor-pointer font-[family-name:var(--font-google-sans)]"
+            className="flex items-center gap-2 rounded-2xl bg-gradient-to-r from-[#f20089] to-purple-600 hover:from-[#ff1a9b] hover:to-purple-500 px-4 py-2.5 text-xs font-bold text-white transition-all shadow-lg shadow-[#f20089]/30 active:scale-95 cursor-pointer font-mono"
           >
-            <Download className="h-4 w-4 text-white" />
             <span>Export to CSV</span>
           </button>
         </div>

@@ -8,7 +8,8 @@
     "start": "next start",
     "lint": "eslint",
     "test:email": "npx tsx tests/email-system.test.ts",
-    "test:tracking": "npx tsx tests/email-tracking.test.ts"
+    "test:tracking": "npx tsx tests/email-tracking.test.ts",
+    "test:audit": "npx tsx tests/audit-trail.test.ts"
   },
   "dependencies": {
     "@react-three/drei": "^10.7.8",
@@ -17,7 +18,8 @@
     "@types/three": "^0.185.4",
     "bcryptjs": "^3.0.3",
     "html-to-image": "^1.11.13",
-    "lucide-react": "^1.46.0",
+    "jsqr": "^1.4.0",
+    "lucide-react": "^1.47.0",
     "meshline": "^3.3.1",
     "mongoose": "^9.9.4",
     "next": "16.3.1",

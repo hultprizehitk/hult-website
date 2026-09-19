@@ -14,7 +14,7 @@ import EventsHighlightSection from "@/components/sections/EventsHighlightSection
 import TimelineSection from "@/components/sections/TimelineSection";
 import CtaBannerSection from "@/components/sections/CtaBannerSection";
 import SiteFooter from "@/components/sections/SiteFooter";
-import FadedSectionDivider from "@/components/ui/FadedSectionDivider";
+import SiteHeader from "@/components/SiteHeader";
 import AnimatedGradient from "@/components/ui/animated-gradient";
 import { debug } from "@/lib/debug-logger";
 
@@ -43,8 +43,6 @@ export default function Home() {
   const [isCloudTransitionActive, setIsCloudTransitionActive] = useState(false);
   const [introOverlayActive, setIntroOverlayActive] = useState(() => !checkHasIntroPlayed());
   const [isLandingRevealed, setIsLandingRevealed] = useState(() => checkHasIntroPlayed());
-  const [isScrolled, setIsScrolled] = useState(false);
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   // If user is already authenticated or intro played in this session, skip intro overlay immediately
   useEffect(() => {
@@ -65,16 +63,6 @@ export default function Home() {
   // Mouse Parallax coordinates (subtle offsets in pixels)
   const [mouseOffset, setMouseOffset] = useState({ x: 0, y: 0 });
   const containerRef = useRef<HTMLDivElement>(null);
-
-  // Scroll listener to update header glassmorphism
-  useEffect(() => {
-    const handleScroll = () => {
-      setIsScrolled(window.scrollY > 20);
-    };
-    handleScroll();
-    window.addEventListener("scroll", handleScroll, { passive: true });
-    return () => window.removeEventListener("scroll", handleScroll);
-  }, []);
 
   // Trigger Cloud Transition ~400ms after logo intro sequence ends (only if intro hasn't already played)
   useEffect(() => {
@@ -299,222 +287,19 @@ export default function Home() {
           Constant Header Navigation (100% Pure Transparent, No Blur - z-50)
           ========================================================================
         */}
-        <header
-          className={`fixed top-0 inset-x-0 z-50 flex w-full items-center justify-between px-4 py-3 sm:px-6 sm:py-3.5 md:px-8 transition-all duration-300 font-[family-name:var(--font-google-sans)] ${
-            isScrolled
-              ? "bg-black/70 backdrop-blur-xl border-b border-white/10 shadow-2xl py-3"
-              : "bg-transparent border-none py-3.5"
-          } ${
-            isLandingRevealed ? "opacity-100 translate-y-0" : "opacity-0 -translate-y-4 pointer-events-none"
-          }`}
-        >
-          {/* Brand Logos */}
-          <div className="flex items-center gap-2 sm:gap-3 transition-opacity duration-700">
-            <Link href="/" className="relative aspect-[1080/659] h-7 sm:h-8 md:h-9">
-              <Image
-                src="/Hult-Prize.png"
-                alt="Hult Prize Logo"
-                fill
-                sizes="(max-width: 640px) 46px, 66px"
-                priority
-                className="object-contain drop-shadow-md"
-              />
-            </Link>
-            <div className="relative aspect-[1024/895] h-7 sm:h-8 md:h-9">
-              <Image
-                src="/hitk-25-logo.png"
-                alt="Heritage Institute of Technology 25 Years Logo"
-                fill
-                sizes="(max-width: 640px) 40px, 56px"
-                priority
-                className="object-contain drop-shadow-md"
-              />
-            </div>
-          </div>
-
-          {/* Desktop Nav Links */}
-          <nav className="hidden md:flex items-center gap-5 lg:gap-6 font-[family-name:var(--font-google-sans)]">
-            <a
-              href="#about"
-              className="text-xs sm:text-sm font-semibold tracking-wide text-white/85 drop-shadow transition-colors duration-200 hover:text-white"
-            >
-              About
-            </a>
-            <Link
-              href="/events"
-              className="text-xs sm:text-sm font-semibold tracking-wide text-white/85 drop-shadow transition-colors duration-200 hover:text-white"
-            >
-              Events
-            </Link>
-            <a
-              href="#challenge"
-              className="text-xs sm:text-sm font-semibold tracking-wide text-white/85 drop-shadow transition-colors duration-200 hover:text-white"
-            >
-              Challenge
-            </a>
-            <a
-              href="#timeline"
-              className="text-xs sm:text-sm font-semibold tracking-wide text-white/85 drop-shadow transition-colors duration-200 hover:text-white"
-            >
-              Timeline
-            </a>
-            <Link
-              href="/team"
-              className="text-xs sm:text-sm font-semibold tracking-wide text-white/85 drop-shadow transition-colors duration-200 hover:text-[#f20089]"
-            >
-              Team
-            </Link>
-            {status === "authenticated" && session?.user ? (
-              <div className="flex items-center gap-3">
-                {["junior_admin", "lead_admin", "master_admin"].includes(
-                  (session.user as { role?: string })?.role || ""
-                ) && (
-                  <Link
-                    href="/portal"
-                    className="inline-flex items-center gap-1 rounded-full border border-[#f20089]/60 bg-[#f20089]/25 hover:bg-[#f20089]/40 px-3 py-1.5 text-xs font-bold text-pink-300 hover:text-white transition-all shadow-sm hover:scale-105"
-                  >
-                    <span>
-                      {(session.user as { role?: string })?.role === "master_admin"
-                        ? "Master Admin CMS"
-                        : (session.user as { role?: string })?.role === "lead_admin"
-                        ? "Lead Admin CMS"
-                        : "Junior Admin CMS"}
-                    </span>
-                  </Link>
-                )}
-                <Link
-                  href="/profile"
-                  className="inline-flex items-center gap-1.5 rounded-full border border-white/20 bg-white/[0.08] hover:bg-white/[0.15] px-3.5 py-1.5 text-xs font-bold text-white shadow-sm hover:scale-105 transition-all"
-                  title="View User Profile"
-                >
-                  <span className="h-2 w-2 rounded-full bg-emerald-400 animate-pulse" />
-                  {session.user.name?.split(" ")[0]}
-                </Link>
-                <button
-                  type="button"
-                  onClick={() => signOut()}
-                  className="text-xs font-semibold text-white/70 hover:text-white transition-colors cursor-pointer"
-                >
-                  Sign Out
-                </button>
-              </div>
-            ) : (
-              <Link
-                href="/register"
-                className="rounded-full bg-[#f20089] hover:bg-[#d8007a] px-4 sm:px-5 py-1.5 sm:py-2 text-xs sm:text-sm font-bold tracking-wide text-white shadow-lg shadow-[#f20089]/40 transition-all duration-200 hover:scale-[1.05] active:scale-[0.98]"
-              >
-                Register Now
-              </Link>
-            )}
-          </nav>
-
-          {/* Mobile Right Bar: Compact Register + Hamburger Button */}
-          <div className="flex md:hidden items-center gap-2">
-            {status === "authenticated" && session?.user ? (
-              <div className="flex items-center gap-1.5">
-                {["junior_admin", "lead_admin", "master_admin"].includes(
-                  (session.user as { role?: string })?.role || ""
-                ) && (
-                  <Link
-                    href="/portal"
-                    className="rounded-full bg-[#f20089]/30 border border-[#f20089]/60 px-2.5 py-1 text-[11px] font-bold text-pink-200"
-                  >
-                    CMS
-                  </Link>
-                )}
-                <Link
-                  href="/profile"
-                  className="rounded-full bg-white/[0.1] border border-white/20 px-3 py-1.5 text-[11px] font-bold tracking-wide text-white shadow-md active:scale-95"
-                >
-                  {session.user.name?.split(" ")[0]}
-                </Link>
-              </div>
-            ) : (
-              <Link
-                href="/register"
-                className="rounded-full bg-[#f20089] hover:bg-[#d8007a] px-3.5 py-1.5 text-[11px] font-bold tracking-wide text-white shadow-md shadow-[#f20089]/40 active:scale-95"
-              >
-                Register
-              </Link>
-            )}
-            <button
-              type="button"
-              onClick={() => setMobileMenuOpen((prev) => !prev)}
-              aria-label="Toggle navigation menu"
-              className="p-1.5 rounded-full bg-white/[0.08] hover:bg-white/[0.15] border border-white/20 text-white transition-colors cursor-pointer"
-            >
-              {mobileMenuOpen ? (
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
-                </svg>
-              ) : (
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5" />
-                </svg>
-              )}
-            </button>
-          </div>
-        </header>
-
-        {/* Mobile Slide-Down Menu Overlay */}
-        {mobileMenuOpen && (
-          <div className="fixed inset-x-0 top-[52px] z-45 md:hidden bg-black/95 backdrop-blur-3xl border-b border-white/15 px-6 py-6 shadow-2xl flex flex-col gap-4 font-[family-name:var(--font-google-sans)] animate-in fade-in slide-in-from-top-2 duration-200">
-            <a
-              href="#about"
-              onClick={() => setMobileMenuOpen(false)}
-              className="text-base font-semibold text-white/90 hover:text-[#f20089] py-2 border-b border-white/5 transition-colors"
-            >
-              About
-            </a>
-            <Link
-              href="/events"
-              onClick={() => setMobileMenuOpen(false)}
-              className="text-base font-semibold text-white/90 hover:text-[#f20089] py-2 border-b border-white/5 transition-colors"
-            >
-              Events Calendar
-            </Link>
-            <a
-              href="#challenge"
-              onClick={() => setMobileMenuOpen(false)}
-              className="text-base font-semibold text-white/90 hover:text-[#f20089] py-2 border-b border-white/5 transition-colors"
-            >
-              Challenge
-            </a>
-            <a
-              href="#timeline"
-              onClick={() => setMobileMenuOpen(false)}
-              className="text-base font-semibold text-white/90 hover:text-[#f20089] py-2 border-b border-white/5 transition-colors"
-            >
-              Timeline
-            </a>
-            <Link
-              href="/team"
-              onClick={() => setMobileMenuOpen(false)}
-              className="text-base font-semibold text-white/90 hover:text-[#f20089] py-2 border-b border-white/5 transition-colors"
-            >
-              Team
-            </Link>
-            <Link
-              href="/register"
-              onClick={() => setMobileMenuOpen(false)}
-              className="mt-2 text-center rounded-full bg-[#f20089] py-3 text-sm font-bold text-white shadow-lg shadow-[#f20089]/40"
-            >
-              Register for OnCampus 2027
-            </Link>
-          </div>
-        )}
+        <SiteHeader transparentUntilScroll={true} isLandingRevealed={isLandingRevealed} />
 
         {/* Main Area with subtle scroll down indicator (z-20) */}
         <main className="flex-1 relative z-20 flex flex-col items-center justify-end pb-6 sm:pb-10">
           <a
             href="#about"
-            aria-label="Scroll down to About Us section"
+            aria-label="Scroll down to About section"
             className={`group flex flex-col items-center gap-2 transition-all duration-1000 delay-1000 ${
               isLandingRevealed ? "opacity-75 hover:opacity-100 translate-y-0" : "opacity-0 translate-y-6"
             }`}
           >
             <span className="text-[10px] font-semibold tracking-[0.25em] text-white/70 uppercase select-none group-hover:text-white transition-colors">
-              Explore
+              Explore More
             </span>
             <div className="w-5 h-9 rounded-full border-2 border-white/40 flex items-start justify-center p-1 group-hover:border-white/80 transition-colors">
               <span className="w-1 h-2 rounded-full bg-white animate-bounce" />
@@ -525,17 +310,11 @@ export default function Home() {
 
       {/* 
         ========================================================================
-        LANDING PAGE SECTIONS (About, Challenge, Events, Timeline, CTA, Footer)
+        MAIN PAGE SECTIONS (About, Events, Registration CTA, Footer)
         ========================================================================
       */}
       <AboutSection />
-      <FadedSectionDivider glowColor="pink" label="Global Challenge Tracks" />
-      <ChallengeSection />
-      <FadedSectionDivider glowColor="purple" label="Active Event Series" />
       <EventsHighlightSection />
-      <FadedSectionDivider glowColor="emerald" label="Roadmap to UN HQ" />
-      <TimelineSection />
-      <FadedSectionDivider glowColor="cyan" label="Get Started Today" />
       <CtaBannerSection />
       <SiteFooter />
 

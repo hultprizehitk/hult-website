@@ -2,7 +2,7 @@
 
 import React from "react";
 import { QRCodeSVG } from "qrcode.react";
-import { AdminShieldSVG, CheckSVG } from "@/components/ui/CustomSvgIcons";
+import { ShieldCheck, Check } from "lucide-react";
 import type { PublicEvent } from "@/app/events/page";
 
 interface EventAuditoriumPassProps {
@@ -38,7 +38,7 @@ export default function EventAuditoriumPass({
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 relative z-10">
         <div className="space-y-3 max-w-xl">
           <div className="inline-flex items-center gap-2 rounded-full bg-emerald-500/20 border border-emerald-500/40 px-3.5 py-1 text-[11px] font-bold text-emerald-300 uppercase tracking-widest font-mono">
-            <AdminShieldSVG size={14} />
+            <ShieldCheck className="h-3.5 w-3.5" />
             <span>Verified Auditorium Pass • Unlocked</span>
           </div>
 
@@ -72,7 +72,7 @@ export default function EventAuditoriumPass({
             level={"M"}
           />
           <span className="text-[10px] font-bold text-black/80 font-mono mt-2 uppercase tracking-wider flex items-center gap-1">
-            <CheckSVG className="h-3 w-3 text-emerald-600" />
+            <Check className="h-3 w-3 text-emerald-600" />
             <span>Official Check-In QR</span>
           </span>
         </div>

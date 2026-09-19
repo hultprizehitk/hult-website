@@ -1,7 +1,6 @@
 "use client";
 
 import React, { useState, useEffect, useRef } from "react";
-import { Shield, Star, Crown, User, Building2, GraduationCap } from "lucide-react";
 import { parseHeritageEmail } from "@/lib/heritage-parser";
 import type { AdminRecord, Participant, UserRole } from "@/types";
 
@@ -13,23 +12,20 @@ const ROLE_PRESETS = [
   {
     role: "junior_admin" as const,
     label: "Junior Admin",
-    icon: Shield,
     badgeClass: "bg-purple-500/20 border-purple-500/40 text-purple-300",
     desc: "Junior Admin • Verification and roster support",
   },
   {
     role: "lead_admin" as const,
     label: "Lead Admin",
-    icon: Star,
     badgeClass: "bg-sky-500/20 border-sky-500/40 text-sky-300",
     desc: "Lead Admin • Operations, events, and participant management",
   },
   {
     role: "master_admin" as const,
     label: "Master Admin",
-    icon: Crown,
-    badgeClass: "bg-gradient-to-r from-amber-500/25 to-[#f20089]/25 border-amber-500/40 text-amber-300",
-    desc: "Master Admin • Top-level executive clearance and team oversight",
+    badgeClass: "bg-amber-500/20 border-amber-500/40 text-amber-300",
+    desc: "Master Admin • Full authority to grant & revoke roles",
   },
 ];
 
@@ -216,29 +212,29 @@ export default function AdminUserManager({ currentUserEmail }: AdminUserManagerP
     switch (role) {
       case "master_admin":
         return (
-          <span className="inline-flex items-center gap-1.5 rounded-full bg-gradient-to-r from-amber-500/25 to-[#f20089]/25 border border-amber-500/40 px-3 py-0.5 text-[10px] font-extrabold text-amber-300 uppercase tracking-wider shadow-sm">
-            <Crown className="h-3 w-3 text-amber-400" />
+          <span className="inline-flex items-center gap-1.5 rounded-full bg-gradient-to-r from-amber-500/25 to-[#f20089]/25 border border-amber-500/40 px-3 py-0.5 text-[10px] font-extrabold text-amber-300 uppercase tracking-wider shadow-sm font-mono">
+            <span className="h-1.5 w-1.5 rounded-full bg-amber-400" />
             <span>Master Admin</span>
           </span>
         );
       case "lead_admin":
         return (
-          <span className="inline-flex items-center gap-1.5 rounded-full bg-sky-500/20 border border-sky-500/40 px-3 py-0.5 text-[10px] font-bold text-sky-300 uppercase tracking-wider">
-            <Star className="h-3 w-3 text-sky-400" />
+          <span className="inline-flex items-center gap-1.5 rounded-full bg-sky-500/20 border border-sky-500/40 px-3 py-0.5 text-[10px] font-bold text-sky-300 uppercase tracking-wider font-mono">
+            <span className="h-1.5 w-1.5 rounded-full bg-sky-400" />
             <span>Lead Admin</span>
           </span>
         );
       case "junior_admin":
         return (
-          <span className="inline-flex items-center gap-1.5 rounded-full bg-purple-500/20 border border-purple-500/40 px-3 py-0.5 text-[10px] font-bold text-purple-300 uppercase tracking-wider">
-            <Shield className="h-3 w-3 text-purple-400" />
+          <span className="inline-flex items-center gap-1.5 rounded-full bg-purple-500/20 border border-purple-500/40 px-3 py-0.5 text-[10px] font-bold text-purple-300 uppercase tracking-wider font-mono">
+            <span className="h-1.5 w-1.5 rounded-full bg-purple-400" />
             <span>Junior Admin</span>
           </span>
         );
       default:
         return (
-          <span className="inline-flex items-center gap-1.5 rounded-full bg-purple-500/20 border border-purple-500/40 px-3 py-0.5 text-[10px] font-bold text-purple-300 uppercase tracking-wider">
-            <Shield className="h-3 w-3 text-purple-400" />
+          <span className="inline-flex items-center gap-1.5 rounded-full bg-purple-500/20 border border-purple-500/40 px-3 py-0.5 text-[10px] font-bold text-purple-300 uppercase tracking-wider font-mono">
+            <span className="h-1.5 w-1.5 rounded-full bg-purple-400" />
             <span>Junior Admin</span>
           </span>
         );
@@ -363,18 +359,18 @@ export default function AdminUserManager({ currentUserEmail }: AdminUserManagerP
 
           {/* Email Identity Preview */}
           {adminEmailParsed && (
-            <div className="rounded-2xl border border-emerald-500/30 bg-emerald-950/20 p-4 animate-fadeIn flex flex-wrap items-center gap-3 text-xs">
+            <div className="rounded-2xl border border-emerald-500/30 bg-emerald-950/20 p-4 animate-fadeIn flex flex-wrap items-center gap-3 text-xs font-mono">
               <span className="text-emerald-400 font-bold uppercase tracking-wider text-[10px]">
                 Identity Preview:
               </span>
               <span className="font-semibold text-white inline-flex items-center gap-1">
-                <User className="h-3 w-3 text-emerald-400" /> {adminEmailParsed.fullName}
+                <span className="text-[9px] text-emerald-400 font-bold border border-emerald-500/30 bg-emerald-500/10 px-1 py-0.5 rounded">NAME</span> {adminEmailParsed.fullName}
               </span>
               <span className="text-emerald-300 inline-flex items-center gap-1">
-                <Building2 className="h-3 w-3 text-emerald-400" /> {adminEmailParsed.branchName} ({adminEmailParsed.branchCode})
+                <span className="text-[9px] text-emerald-400 font-bold border border-emerald-500/30 bg-emerald-500/10 px-1 py-0.5 rounded">DEPT</span> {adminEmailParsed.branchName} ({adminEmailParsed.branchCode})
               </span>
               <span className="text-purple-300 inline-flex items-center gap-1">
-                <GraduationCap className="h-3 w-3 text-purple-400" /> {adminEmailParsed.academicYear} ({adminEmailParsed.batch})
+                <span className="text-[9px] text-purple-400 font-bold border border-purple-500/30 bg-purple-500/10 px-1 py-0.5 rounded">YEAR</span> {adminEmailParsed.academicYear} ({adminEmailParsed.batch})
               </span>
             </div>
           )}
