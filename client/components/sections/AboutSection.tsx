@@ -30,7 +30,7 @@ export default function AboutSection() {
           <div className="space-y-4 max-w-3xl">
             <div className="inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/[0.06] backdrop-blur-xl px-4 py-1.5 text-xs font-semibold uppercase tracking-widest text-white/90 shadow-inner">
               <span className="h-2 w-2 rounded-full bg-[#f20089] animate-pulse" />
-              <span>Campus Accelerator</span>
+              <span>Hult Prize at HITK</span>
             </div>
 
             <h2 className="text-3xl sm:text-5xl md:text-6xl font-black tracking-tight text-white leading-[1.1]">
@@ -206,7 +206,7 @@ export default function AboutSection() {
                   href="/events"
                   className="rounded-2xl border border-white/20 bg-white/[0.08] hover:bg-white/15 px-6 py-3 text-xs font-bold text-white transition-all whitespace-nowrap hover:scale-105 shrink-0"
                 >
-                  View Events Roster →
+                  Explore Events →
                 </Link>
               </div>
             </div>

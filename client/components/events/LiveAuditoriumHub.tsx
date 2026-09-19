@@ -156,6 +156,39 @@ export default function LiveAuditoriumHub() {
   ]);
   const [userVotedPollId, setUserVotedPollId] = useState<string | null>(null);
 
+  // Real-Time SSE Live Stream Subscriber
+  React.useEffect(() => {
+    if (typeof window === "undefined" || !("EventSource" in window)) return;
+    const es = new EventSource("/api/admin/live/stream");
+
+    es.onmessage = (event) => {
+      try {
+        const data = JSON.parse(event.data);
+        if (data.type === "question_upvote") {
+          setQuestions((prev) =>
+            prev.map((q) =>
+              q.id === data.payload.id ? { ...q, upvotes: data.payload.upvotes } : q
+            )
+          );
+        } else if (data.type === "new_question") {
+          setQuestions((prev) => [data.payload, ...prev]);
+        } else if (data.type === "poll_vote") {
+          setPollOptions((prev) =>
+            prev.map((opt) =>
+              opt.id === data.payload.optionId ? { ...opt, votes: data.payload.votes } : opt
+            )
+          );
+        }
+      } catch (err) {
+        // Heartbeat or malformed frame
+      }
+    };
+
+    return () => {
+      es.close();
+    };
+  }, []);
+
   const handleUpvote = (id: string) => {
     setQuestions((prev) =>
       prev.map((q) => {

@@ -3,7 +3,7 @@
 import React, { useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { GraduationCap, Building2, IdCard } from "lucide-react";
+import { GraduationCap, Building2, IdCard, Search } from "lucide-react";
 import SiteHeader from "@/components/SiteHeader";
 import AnimatedGradient from "@/components/ui/animated-gradient";
 import { TEAM_SECTIONS, INITIAL_TEAM_MEMBERS } from "@/lib/team-data";
@@ -11,6 +11,7 @@ import type { TeamCategory, TeamMember } from "@/types";
 
 export default function TeamPage() {
   const [activeCategory, setActiveCategory] = useState<"all" | TeamCategory>("all");
+  const [searchQuery, setSearchQuery] = useState("");
   const [dbMembers, setDbMembers] = useState<TeamMember[]>([]);
 
   React.useEffect(() => {
@@ -38,7 +39,15 @@ export default function TeamPage() {
       .catch((err) => console.warn("Notice: Using static team data fallback:", err));
   }, []);
 
-  const members = dbMembers.length > 0 ? dbMembers : INITIAL_TEAM_MEMBERS;
+  const baseMembers = dbMembers.length > 0 ? dbMembers : INITIAL_TEAM_MEMBERS;
+  const members = searchQuery.trim()
+    ? baseMembers.filter(
+        (m) =>
+          m.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+          m.role.toLowerCase().includes(searchQuery.toLowerCase()) ||
+          (m.department && m.department.toLowerCase().includes(searchQuery.toLowerCase()))
+      )
+    : baseMembers;
 
   const facultyMembers = members.filter((m) => m.category === "faculty_coordinator");
   const cdMembers = members.filter((m) => m.category === "cd");
@@ -353,8 +362,19 @@ export default function TeamPage() {
           </div>
         </div>
 
-        {/* Interactive Category Filter Pills */}
-        <div className="sticky top-[61px] z-40 py-3 mb-10 -mx-4 px-4 sm:mx-0 sm:px-0 bg-black/60 backdrop-blur-xl border-y sm:border-none border-white/10">
+        {/* Interactive Search & Category Filter Bar */}
+        <div className="sticky top-[61px] z-40 py-3 mb-10 -mx-4 px-4 sm:mx-0 sm:px-0 bg-black/60 backdrop-blur-xl border-y sm:border-none border-white/10 space-y-3">
+          <div className="max-w-md mx-auto relative">
+            <Search className="w-4 h-4 text-neutral-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
+            <input
+              type="text"
+              placeholder="Search committee member by name, role..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="w-full bg-[#121216] border border-white/15 rounded-full pl-10 pr-4 py-2 text-xs text-white placeholder-neutral-500 focus:outline-none focus:border-[#f20089] transition-all"
+            />
+          </div>
+
           <div className="flex items-center gap-2 overflow-x-auto no-scrollbar pb-1 sm:justify-center">
             <button
               type="button"

@@ -16,7 +16,8 @@ export async function GET(req: Request) {
 
     const userEmail = session.user.email.toLowerCase().trim();
     const url = new URL(req.url);
-    const eventId = url.searchParams.get("eventId");
+    const rawEventId = url.searchParams.get("eventId");
+    const eventId = rawEventId ? String(rawEventId).trim() : "";
     const isAdmin = url.searchParams.get("admin") === "true";
 
     if (!eventId || !mongoose.Types.ObjectId.isValid(eventId)) {
@@ -102,7 +103,8 @@ export async function POST(req: Request) {
 
     const sessionEmail = session.user.email.toLowerCase().trim();
     const body = await req.json();
-    const { eventId } = body;
+    const rawEventId = body.eventId;
+    const eventId = rawEventId ? String(rawEventId).trim() : "";
 
     if (!eventId || !mongoose.Types.ObjectId.isValid(eventId)) {
       return NextResponse.json({ error: "Valid eventId is required." }, { status: 400 });
@@ -221,7 +223,9 @@ export async function PATCH(req: Request) {
     const sessionEmail = session.user.email.toLowerCase().trim();
     const sessionName = session.user.name || sessionEmail.split("@")[0];
     const body = await req.json();
-    const { eventId, action } = body;
+    const action = String(body.action || "").trim();
+    const rawEventId = body.eventId;
+    const eventId = rawEventId ? String(rawEventId).trim() : "";
 
     if (action !== "checkin") {
       return NextResponse.json({ error: "Invalid action" }, { status: 400 });

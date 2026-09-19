@@ -16,17 +16,22 @@ export async function POST(req: Request) {
     const session = await auth();
     const adminEmail = session?.user?.email?.toLowerCase().trim() || "admin@heritageit.edu.in";
     const body = await req.json();
-    const { eventId, teamCode, action = "approve", note = "" } = body;
+    const rawEventId = body.eventId;
+    const eventId = rawEventId ? String(rawEventId).trim() : "";
+    const rawTeamCode = body.teamCode;
+    const teamCode = rawTeamCode ? String(rawTeamCode).trim() : "";
+    const action = String(body.action || "approve").trim();
+    const note = String(body.note || "").trim();
 
     if (!eventId || !mongoose.Types.ObjectId.isValid(eventId)) {
       return NextResponse.json({ error: "Valid eventId is required." }, { status: 400 });
     }
 
-    if (!teamCode || typeof teamCode !== "string") {
+    if (!teamCode) {
       return NextResponse.json({ error: "Valid teamCode is required." }, { status: 400 });
     }
 
-    const cleanCode = teamCode.trim().toUpperCase();
+    const cleanCode = teamCode.toUpperCase();
     await connectDB();
 
     let rsvp = await EventRsvp.findOne({

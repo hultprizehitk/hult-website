@@ -8,6 +8,7 @@ import { useSession, signOut } from "next-auth/react";
 import { Shield } from "lucide-react";
 import AnimatedGradient from "@/components/ui/animated-gradient";
 import { parseHeritageEmail } from "@/lib/heritage-parser";
+import DigitalCertificateHub from "@/components/profile/DigitalCertificateHub";
 
 export default function StudentProfilePage() {
   const router = useRouter();
@@ -286,15 +287,15 @@ export default function StudentProfilePage() {
                   )}
                 </div>
 
-                {/* Verified Pills: Student Status + Admin Clearance */}
+                {/* Verified Pills: Student Status + Admin Role */}
                 <div className="flex items-center justify-center gap-2 mb-3 flex-wrap">
                   <div className="inline-flex items-center gap-2 rounded-full border border-emerald-500/40 bg-emerald-500/15 px-3.5 py-1 text-[11px] font-bold text-emerald-300 uppercase tracking-widest">
                     <span className="h-2 w-2 rounded-full bg-emerald-400 animate-pulse" />
-                    <span>Verified HITK Scholar</span>
+                    <span>HITK Student</span>
                   </div>
                   {isAdmin && (
                     <div className="inline-flex items-center gap-1.5 rounded-full border border-[#f20089]/50 bg-[#f20089]/20 px-3.5 py-1 text-[11px] font-bold text-pink-300 uppercase tracking-widest shadow-sm">
-                      <span>{adminBadgeLabel} Clearance</span>
+                      <span>{adminBadgeLabel}</span>
                     </div>
                   )}
                 </div>
@@ -312,22 +313,22 @@ export default function StudentProfilePage() {
                   {/* Branch / Department Tile */}
                   <div className="rounded-2xl border border-white/10 bg-[#121216] p-4">
                     <span className="block text-[10px] font-mono uppercase font-bold tracking-widest text-zinc-400 mb-1">
-                      DEPARTMENT / BRANCH
+                      Department
                     </span>
                     <span className="text-sm font-bold text-white block leading-snug font-[family-name:var(--font-google-sans)]">
-                      {studentInfo?.branchName || "General Engineering"}
+                      {studentInfo?.branchName || "Engineering"}
                     </span>
                     {studentInfo?.branchCode && (
                       <span className="inline-block mt-2 rounded-md bg-[#f20089]/15 border border-[#f20089]/30 px-2 py-0.5 text-[10px] font-mono font-bold uppercase tracking-wider text-[#f20089]">
-                        CODE: {studentInfo.branchCode}
+                        {studentInfo.branchCode}
                       </span>
                     )}
                   </div>
 
-                  {/* Current Year of Study & Passing Year Tile */}
+                  {/* Current Year of Study & Batch Tile */}
                   <div className="rounded-2xl border border-white/10 bg-[#121216] p-4">
                     <span className="block text-[10px] font-mono uppercase font-bold tracking-widest text-zinc-400 mb-1">
-                      CURRENT YEAR OF STUDY
+                      Year of Study
                     </span>
                     <span className="text-sm font-bold text-white block leading-snug font-[family-name:var(--font-google-sans)]">
                       {studentInfo?.academicYear || "3rd Year"}
@@ -335,9 +336,6 @@ export default function StudentProfilePage() {
                     <div className="flex items-center gap-1.5 mt-2 flex-wrap font-mono">
                       <span className="rounded-md bg-white/10 border border-white/15 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-zinc-200">
                         {studentInfo?.batch || "Class of 2028"}
-                      </span>
-                      <span className="rounded-md bg-white/5 border border-white/10 px-2 py-0.5 text-[10px] font-bold text-zinc-400">
-                        PASSING: {studentInfo?.passingYear || "2028"}
                       </span>
                     </div>
                   </div>
@@ -347,14 +345,14 @@ export default function StudentProfilePage() {
                     <div className="flex items-center justify-between gap-2">
                       <div>
                         <span className="block text-[10px] font-mono uppercase font-bold tracking-widest text-zinc-400 mb-0.5">
-                          INSTITUTION
+                          Campus
                         </span>
                         <span className="text-xs font-semibold text-white">
                           Heritage Institute of Technology, Kolkata
                         </span>
                       </div>
                       <span className="rounded-full bg-white/10 border border-white/15 px-3 py-1 text-[10px] font-mono font-bold text-zinc-200">
-                        Eligible 2027
+                        Hult Prize 2027
                       </span>
                     </div>
                   </div>
@@ -364,13 +362,13 @@ export default function StudentProfilePage() {
                     <div className="rounded-2xl border border-white/15 bg-[#121216] p-4 sm:col-span-2 space-y-3">
                       <div className="flex items-center justify-between">
                         <span className="block text-[10px] font-mono font-bold uppercase tracking-widest text-[#f20089]">
-                          MY REGISTERED EVENTS ({registrations.length})
+                          My Registered Events ({registrations.length})
                         </span>
                         <Link
                           href="/events"
                           className="text-[10px] font-mono font-bold text-zinc-400 hover:text-white"
                         >
-                          View All Events →
+                          View Events →
                         </Link>
                       </div>
 
@@ -399,13 +397,23 @@ export default function StudentProfilePage() {
                                   : "bg-[#f20089]/20 border border-[#f20089]/40 text-pink-300 hover:bg-[#f20089]/30"
                               }`}
                             >
-                              {reg.team?.status === "pending" ? "Roster Incomplete" : "Pass Confirmed"}
+                              {reg.team?.status === "pending" ? "Team Incomplete" : "Confirmed"}
                             </Link>
                           </div>
                         ))}
                       </div>
                     </div>
                   )}
+                </div>
+
+                {/* Point 9: Digital Certificate & Verification Hub */}
+                <div className="mt-8 mb-6 text-left">
+                  <DigitalCertificateHub
+                    studentName={studentInfo?.fullName || session.user.name || "Heritage Delegate"}
+                    email={session.user.email || ""}
+                    department={studentInfo?.branchName}
+                    registeredTeam={registrations?.[0]?.team || null}
+                  />
                 </div>
 
                 {/* Action Buttons Grid */}
@@ -415,7 +423,7 @@ export default function StudentProfilePage() {
                       href="/portal"
                       className="w-full rounded-2xl bg-[#f20089] hover:bg-[#d8007a] px-5 py-3 text-xs sm:text-sm font-bold text-white shadow-lg shadow-[#f20089]/40 transition-all hover:scale-[1.02] active:scale-95 font-[family-name:var(--font-google-sans)] flex items-center justify-center gap-1.5"
                     >
-                      <span>{adminBadgeLabel} CMS →</span>
+                      <span>Admin Dashboard →</span>
                     </Link>
                   )}
                   <Link
@@ -446,7 +454,7 @@ export default function StudentProfilePage() {
 
       {/* Footer */}
       <footer className="relative z-10 py-6 text-center text-xs text-white/40 font-mono">
-        © 2026-2027 Hult Prize at Heritage Institute of Technology • Student Portal
+        © 2026-2027 Hult Prize at Heritage Institute of Technology
       </footer>
     </div>
   );

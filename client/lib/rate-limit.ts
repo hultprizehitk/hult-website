@@ -1,92 +1,62 @@
-/**
- * In-Memory Sliding Window Rate Limiter
- * Provides lightweight, zero-dependency rate limiting for serverless/Node.js API routes.
- */
+import { NextResponse } from "next/server";
 
-interface RateLimitRecord {
-  timestamps: number[];
+interface RateLimitStore {
+  tokens: number;
+  lastReset: number;
 }
 
-const rateLimitStore = new Map<string, RateLimitRecord>();
-
-// Periodically clean up stale entries every 5 minutes to prevent memory leaks
-if (typeof setInterval !== "undefined") {
-  setInterval(() => {
-    const now = Date.now();
-    for (const [key, record] of rateLimitStore.entries()) {
-      record.timestamps = record.timestamps.filter((ts) => now - ts < 600000); // 10 minutes max window
-      if (record.timestamps.length === 0) {
-        rateLimitStore.delete(key);
-      }
-    }
-  }, 300000);
-}
-
-export interface RateLimitOptions {
-  /**
-   * Maximum number of allowed requests within the time window.
-   */
-  limit: number;
-  /**
-   * Window duration in milliseconds (e.g. 60000 for 1 minute).
-   */
-  windowMs: number;
-}
-
-export interface RateLimitResult {
-  success: boolean;
-  limit: number;
-  remaining: number;
-  resetMs: number;
-}
+const rateLimitMap = new Map<string, RateLimitStore>();
 
 /**
- * Checks if a given identifier has exceeded the rate limit.
- *
- * @param identifier Unique key (e.g. client IP, user email, or combined action key)
- * @param options RateLimitOptions with limit and windowMs
- * @returns RateLimitResult with success boolean, remaining count, and reset time
+ * In-memory sliding window rate limiter
+ * @param ip Client IP address or unique identifier
+ * @param limit Maximum allowed requests within duration
+ * @param windowMs Time window in milliseconds
  */
 export function checkRateLimit(
-  identifier: string,
-  options: RateLimitOptions
-): RateLimitResult {
+  ip: string,
+  limitOrOptions: number | { limit?: number; windowMs?: number } = 10,
+  windowMsParam: number = 60 * 1000
+): { success: boolean; remaining: number; reset: number } {
+  let limit = 10;
+  let windowMs = 60 * 1000;
+
+  if (typeof limitOrOptions === "object" && limitOrOptions !== null) {
+    limit = limitOrOptions.limit ?? 10;
+    windowMs = limitOrOptions.windowMs ?? 60 * 1000;
+  } else {
+    limit = limitOrOptions;
+    windowMs = windowMsParam;
+  }
+
   const now = Date.now();
-  const { limit, windowMs } = options;
+  const record = rateLimitMap.get(ip);
 
-  let record = rateLimitStore.get(identifier);
   if (!record) {
-    record = { timestamps: [] };
-    rateLimitStore.set(identifier, record);
+    rateLimitMap.set(ip, { tokens: limit - 1, lastReset: now });
+    return { success: true, remaining: limit - 1, reset: now + windowMs };
   }
 
-  // Filter timestamps within the sliding window
-  record.timestamps = record.timestamps.filter((ts) => now - ts < windowMs);
-
-  if (record.timestamps.length >= limit) {
-    const oldestTimestamp = record.timestamps[0];
-    const resetMs = Math.max(0, windowMs - (now - oldestTimestamp));
-    return {
-      success: false,
-      limit,
-      remaining: 0,
-      resetMs,
-    };
+  // If window time elapsed, reset token count
+  if (now - record.lastReset > windowMs) {
+    record.tokens = limit - 1;
+    record.lastReset = now;
+    rateLimitMap.set(ip, record);
+    return { success: true, remaining: limit - 1, reset: now + windowMs };
   }
 
-  // Record this request
-  record.timestamps.push(now);
+  // Check remaining tokens
+  if (record.tokens > 0) {
+    record.tokens -= 1;
+    rateLimitMap.set(ip, record);
+    return { success: true, remaining: record.tokens, reset: record.lastReset + windowMs };
+  }
 
-  return {
-    success: true,
-    limit,
-    remaining: limit - record.timestamps.length,
-    resetMs: windowMs,
-  };
+  return { success: false, remaining: 0, reset: record.lastReset + windowMs };
 }
 
 /**
- * Helper to extract client IP address from standard Next.js Request headers.
+ * Helper to get client IP address from headers
  */
 export function getClientIp(req: Request): string {
   const forwarded = req.headers.get("x-forwarded-for");
