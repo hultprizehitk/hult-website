@@ -274,17 +274,29 @@ export default function StudentProfilePage() {
               </div>
             ) : status === "authenticated" && session?.user ? (
               <div className="relative z-10 py-2 animate-fadeIn font-sans">
-                {/* Avatar with Glow Ring */}
-                <div className="relative mx-auto mb-4 flex h-20 w-20 items-center justify-center rounded-full bg-gradient-to-tr from-[#f20089] to-purple-600 text-3xl font-extrabold text-white shadow-[0_0_35px_rgba(242,0,137,0.6)] border-2 border-white/40 font-[family-name:var(--font-google-sans)] overflow-hidden">
-                  {session.user.image ? (
-                    <img
-                      src={session.user.image}
-                      alt={session.user.name || "Student"}
-                      className="h-full w-full object-cover"
+                {/* Avatar with Glow Ring & 3D Shield Badge */}
+                <div className="relative mx-auto mb-4 flex items-center justify-center gap-4">
+                  <div className="relative flex h-20 w-20 items-center justify-center rounded-full bg-gradient-to-tr from-[#f20089] to-purple-600 text-3xl font-extrabold text-white shadow-[0_0_35px_rgba(242,0,137,0.6)] border-2 border-white/40 font-[family-name:var(--font-google-sans)] overflow-hidden">
+                    {session.user.image ? (
+                      <img
+                        src={session.user.image}
+                        alt={session.user.name || "Student"}
+                        className="h-full w-full object-cover"
+                      />
+                    ) : (
+                      studentInfo?.firstName?.charAt(0) || "H"
+                    )}
+                  </div>
+                  <div className="relative h-16 w-16 shrink-0 hidden sm:block">
+                    <Image
+                      src="/assets/bento/founder-shield-badge.png"
+                      alt="3D Founder Shield Badge"
+                      width={64}
+                      height={64}
+                      unoptimized
+                      className="object-contain drop-shadow-[0_8px_20px_rgba(242,0,137,0.5)] hover:scale-110 transition-transform"
                     />
-                  ) : (
-                    studentInfo?.firstName?.charAt(0) || "H"
-                  )}
+                  </div>
                 </div>
 
                 {/* Verified Pills: Student Status + Admin Role */}

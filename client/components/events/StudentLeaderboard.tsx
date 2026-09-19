@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import React, { useState } from "react";
 import {
   Trophy,
@@ -207,16 +208,28 @@ export default function StudentLeaderboard() {
               <Trophy className="w-4 h-4 text-amber-300" /> TOP PITCH
             </div>
 
-            <div className="mt-2">
-              <div className="flex items-center justify-between mb-2">
-                <span className="text-xs text-[#f20089] font-bold uppercase tracking-wide">{top3[0].track}</span>
-                <span className="text-sm font-mono font-black text-amber-300 bg-[#f20089]/20 border border-[#f20089]/50 px-3 py-1 rounded-lg">
-                  {top3[0].score} pts
-                </span>
+            <div className="mt-2 flex items-start justify-between gap-3">
+              <div>
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-xs text-[#f20089] font-bold uppercase tracking-wide">{top3[0].track}</span>
+                  <span className="text-sm font-mono font-black text-amber-300 bg-[#f20089]/20 border border-[#f20089]/50 px-3 py-1 rounded-lg">
+                    {top3[0].score} pts
+                  </span>
+                </div>
+                <h3 className="text-2xl font-black text-white">{top3[0].teamName}</h3>
+                <p className="text-xs font-bold text-[#f20089] mt-0.5">{top3[0].ventureTitle}</p>
+                <p className="text-xs text-neutral-300 mt-2 line-clamp-2">{top3[0].tagline}</p>
               </div>
-              <h3 className="text-2xl font-black text-white">{top3[0].teamName}</h3>
-              <p className="text-xs font-bold text-[#f20089] mt-0.5">{top3[0].ventureTitle}</p>
-              <p className="text-xs text-neutral-300 mt-2 line-clamp-2">{top3[0].tagline}</p>
+              <div className="relative h-20 w-20 shrink-0 hidden sm:block">
+                <Image
+                  src="/assets/bento/leaderboard-trophy.png"
+                  alt="3D Champion Trophy"
+                  width={80}
+                  height={80}
+                  unoptimized
+                  className="object-contain drop-shadow-[0_8px_20px_rgba(242,0,137,0.5)] hover:scale-110 transition-transform"
+                />
+              </div>
             </div>
 
             {/* Milestone Indicator */}

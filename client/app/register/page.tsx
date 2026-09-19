@@ -407,6 +407,18 @@ export default function RegisterPage() {
             ) : (
               /* GOOGLE ONLY AUTHENTICATION VIEW */
               <div className="relative z-10 py-2 animate-fadeIn">
+                {/* 3D Pitch Deck Icon */}
+                <div className="relative mx-auto mb-3 h-20 w-20 flex items-center justify-center">
+                  <Image
+                    src="/assets/bento/pitch-deck.png"
+                    alt="3D Venture Pitch Deck"
+                    width={80}
+                    height={80}
+                    unoptimized
+                    className="object-contain drop-shadow-[0_8px_25px_rgba(242,0,137,0.5)] hover:scale-110 transition-transform"
+                  />
+                </div>
+
                 {/* College Badge */}
                 <div className="inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/[0.04] px-4 py-1.5 backdrop-blur-xl mb-6 shadow-sm">
                   <span className="h-2 w-2 rounded-full bg-[#f20089] animate-pulse" />

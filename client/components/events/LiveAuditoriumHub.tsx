@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
+import Image from "next/image";
 import {
   Radio,
   Clock,
@@ -261,20 +262,32 @@ export default function LiveAuditoriumHub() {
 
       {/* Header Banner */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-8 border-b border-white/10">
-        <div>
-          <div className="flex items-center gap-2 mb-2">
-            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-[#f20089]/20 border border-[#f20089]/50 text-[#f20089]">
-              <Radio className="w-3.5 h-3.5 animate-pulse text-[#f20089]" />
-              LIVE STAGE
-            </span>
-            <span className="inline-flex items-center gap-1 text-xs text-neutral-400 bg-white/5 border border-white/10 px-2.5 py-1 rounded-full">
-              <MapPin className="w-3 h-3 text-sky-400" />
-              Main Stage • Heritage HITK
-            </span>
+        <div className="flex items-center gap-4">
+          <div className="relative w-14 h-14 shrink-0 hidden sm:block">
+            <Image
+              src="/assets/bento/broadcast-antenna.png"
+              alt="Live Stage Broadcast Antenna"
+              width={56}
+              height={56}
+              className="object-contain drop-shadow-[0_6px_16px_rgba(242,0,137,0.4)]"
+              unoptimized
+            />
           </div>
-          <h2 className="text-2xl md:text-3xl font-bold tracking-tight">
-            Event Schedule & Stage
-          </h2>
+          <div>
+            <div className="flex items-center gap-2 mb-1.5">
+              <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-[#f20089]/20 border border-[#f20089]/50 text-[#f20089]">
+                <Radio className="w-3.5 h-3.5 animate-pulse text-[#f20089]" />
+                LIVE STAGE
+              </span>
+              <span className="inline-flex items-center gap-1 text-xs text-neutral-400 bg-white/5 border border-white/10 px-2.5 py-1 rounded-full">
+                <MapPin className="w-3 h-3 text-sky-400" />
+                Main Stage • Heritage HITK
+              </span>
+            </div>
+            <h2 className="text-2xl md:text-3xl font-bold tracking-tight">
+              Event Schedule & Stage
+            </h2>
+          </div>
         </div>
 
         {/* Tab Switcher */}

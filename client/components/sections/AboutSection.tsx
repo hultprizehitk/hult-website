@@ -90,14 +90,38 @@ export default function AboutSection() {
 
               <div className="pt-4 border-t border-white/10 flex items-center justify-between gap-4 flex-wrap">
                 <div className="flex items-center gap-4 text-xs font-mono">
-                  <div>
-                    <span className="block text-white/50 text-[10px] uppercase">Heritage Impact</span>
-                    <strong className="text-white text-sm font-bold">100+ Founders</strong>
+                  <div className="flex items-center gap-2">
+                    <div className="relative h-7 w-7 shrink-0">
+                      <Image
+                        src="/assets/bento/sdg-wheel.png"
+                        alt="3D SDG Wheel"
+                        width={28}
+                        height={28}
+                        unoptimized
+                        className="object-contain drop-shadow-[0_4px_10px_rgba(242,0,137,0.5)]"
+                      />
+                    </div>
+                    <div>
+                      <span className="block text-white/50 text-[10px] uppercase">UN Alignment</span>
+                      <strong className="text-[#f20089] text-sm font-bold">17 SDGs</strong>
+                    </div>
                   </div>
                   <div className="h-6 w-[1px] bg-white/10" />
-                  <div>
-                    <span className="block text-white/50 text-[10px] uppercase">UN Alignment</span>
-                    <strong className="text-[#f20089] text-sm font-bold">17 SDGs</strong>
+                  <div className="flex items-center gap-2">
+                    <div className="relative h-7 w-7 shrink-0">
+                      <Image
+                        src="/assets/bento/network-nodes.png"
+                        alt="3D Network Nodes"
+                        width={28}
+                        height={28}
+                        unoptimized
+                        className="object-contain drop-shadow-[0_4px_10px_rgba(56,189,248,0.5)]"
+                      />
+                    </div>
+                    <div>
+                      <span className="block text-white/50 text-[10px] uppercase">Heritage Impact</span>
+                      <strong className="text-white text-sm font-bold">100+ Founders</strong>
+                    </div>
                   </div>
                 </div>
 

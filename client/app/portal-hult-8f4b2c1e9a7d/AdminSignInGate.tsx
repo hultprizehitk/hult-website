@@ -44,9 +44,16 @@ export default function AdminSignInGate() {
             <div className="pointer-events-none absolute -top-16 -right-16 h-48 w-48 rounded-full bg-[#f20089]/25 blur-3xl" />
             <div className="pointer-events-none absolute -bottom-16 -left-16 h-48 w-48 rounded-full bg-purple-900/30 blur-3xl" />
 
-            {/* Lock Icon Badge */}
-            <div className="relative mx-auto mb-5 flex h-16 w-16 items-center justify-center rounded-2xl bg-[#f20089]/20 border border-[#f20089]/40 text-[#f20089] shadow-[0_0_25px_rgba(242,0,137,0.3)]">
-              <ShieldCheck className="h-8 w-8" />
+            {/* 3D Security Keycard Badge */}
+            <div className="relative mx-auto mb-4 flex h-20 w-20 items-center justify-center">
+              <Image
+                src="/assets/bento/security-keycard.png"
+                alt="3D Security Keycard"
+                width={80}
+                height={80}
+                unoptimized
+                className="object-contain drop-shadow-[0_8px_25px_rgba(242,0,137,0.6)] hover:scale-110 transition-transform"
+              />
             </div>
 
             <span className="inline-flex items-center gap-1.5 rounded-full border border-[#f20089]/40 bg-[#f20089]/15 px-3 py-1 text-[10px] font-extrabold text-[#f20089] uppercase tracking-widest mb-3">

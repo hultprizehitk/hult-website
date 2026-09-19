@@ -391,6 +391,18 @@ export default function EventsPage() {
           })()
         ) : (
           <>
+            {/* 3D Incubation Flask Asset */}
+            <div className="relative mx-auto mb-2 h-24 w-24 flex items-center justify-center">
+              <Image
+                src="/assets/bento/incubation-flask.png"
+                alt="3D Incubation Flask"
+                width={96}
+                height={96}
+                unoptimized
+                className="object-contain drop-shadow-[0_8px_30px_rgba(242,0,137,0.6)] hover:scale-110 transition-transform duration-300"
+              />
+            </div>
+
             {/* Distressed Gothic Spurred Title */}
             <DistressedEventsTitle text="EVENTS" className="mb-8" />
 

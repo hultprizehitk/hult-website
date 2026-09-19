@@ -148,8 +148,18 @@ export default function DigitalCertificateHub({
               </div>
             </div>
 
-            <div className="shrink-0 text-right">
-              <span className="inline-block whitespace-nowrap text-[10px] font-mono font-bold text-amber-300 bg-amber-400/10 border border-amber-400/30 px-3 py-1 rounded-full uppercase">
+            <div className="shrink-0 flex items-center gap-3">
+              <div className="relative w-12 h-12 hidden sm:block">
+                <Image
+                  src="/assets/bento/certificate-scroll.png"
+                  alt="Official Certificate Scroll"
+                  width={48}
+                  height={48}
+                  className="object-contain drop-shadow-[0_4px_12px_rgba(242,0,137,0.4)]"
+                  unoptimized
+                />
+              </div>
+              <span className="inline-block whitespace-nowrap text-[10px] font-mono font-bold text-amber-300 bg-amber-400/10 border border-amber-400/30 px-3 py-1.5 rounded-full uppercase">
                 Delegate 2027
               </span>
             </div>

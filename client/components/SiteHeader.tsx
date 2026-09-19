@@ -40,6 +40,16 @@ export default function SiteHeader({ className = "" }: SiteHeaderProps) {
               className="object-contain drop-shadow-md"
             />
           </div>
+          <div className="relative h-6 sm:h-7 w-6 sm:w-7 shrink-0">
+            <Image
+              src="/assets/bento/heritage-h-emblem.png"
+              alt="Heritage 3D H Emblem"
+              width={28}
+              height={28}
+              unoptimized
+              className="object-contain drop-shadow-[0_4px_10px_rgba(242,0,137,0.5)] hover:scale-110 transition-transform"
+            />
+          </div>
         </div>
 
         {/* Desktop Nav Links */}

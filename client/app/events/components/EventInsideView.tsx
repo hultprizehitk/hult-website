@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
+import Image from "next/image";
 import Link from "next/link";
 import { signIn } from "next-auth/react";
 import { QRCodeSVG } from "qrcode.react";
@@ -322,31 +323,56 @@ export default function EventInsideView({
         <div className="pointer-events-none absolute -bottom-24 -left-24 h-64 w-64 rounded-full bg-purple-900/20 blur-3xl" />
 
         <div className="relative z-10 space-y-4">
-          {/* Badges Row */}
-          <div className="flex items-center gap-2.5 flex-wrap">
-            <span className="rounded-full bg-[#f20089]/20 border border-[#f20089]/50 px-3.5 py-1 text-[11px] font-bold uppercase tracking-wider text-[#f20089]">
-              {event.tag}
-            </span>
+          {/* Badges Row with 3D Ticket & Coins Decorative Floating Icons */}
+          <div className="flex items-center justify-between gap-4 flex-wrap">
+            <div className="flex items-center gap-2.5 flex-wrap">
+              <span className="rounded-full bg-[#f20089]/20 border border-[#f20089]/50 px-3.5 py-1 text-[11px] font-bold uppercase tracking-wider text-[#f20089]">
+                {event.tag}
+              </span>
 
-            {event.registrationStatus === "closed" ? (
-              <span className="rounded-full bg-red-500/20 border border-red-500/40 px-3 py-1 text-[11px] font-bold text-red-300 uppercase tracking-wider">
-                Registrations Closed
-              </span>
-            ) : event.registrationStatus === "extended" ? (
-              <span className="inline-flex items-center gap-1.5 rounded-full bg-purple-500/20 border border-purple-500/40 px-3 py-1 text-[11px] font-bold text-purple-300 uppercase tracking-wider">
-                <span className="h-2 w-2 rounded-full bg-purple-400 animate-pulse" />
-                Extended Deadline
-              </span>
-            ) : (
-              <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-500/20 border border-emerald-500/40 px-3 py-1 text-[11px] font-bold text-emerald-300 uppercase tracking-wider">
-                <span className="h-2 w-2 rounded-full bg-emerald-400 animate-pulse" />
-                Registrations Open
-              </span>
-            )}
+              {event.registrationStatus === "closed" ? (
+                <span className="rounded-full bg-red-500/20 border border-red-500/40 px-3 py-1 text-[11px] font-bold text-red-300 uppercase tracking-wider">
+                  Registrations Closed
+                </span>
+              ) : event.registrationStatus === "extended" ? (
+                <span className="inline-flex items-center gap-1.5 rounded-full bg-purple-500/20 border border-purple-500/40 px-3 py-1 text-[11px] font-bold text-purple-300 uppercase tracking-wider">
+                  <span className="h-2 w-2 rounded-full bg-purple-400 animate-pulse" />
+                  Extended Deadline
+                </span>
+              ) : (
+                <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-500/20 border border-emerald-500/40 px-3 py-1 text-[11px] font-bold text-emerald-300 uppercase tracking-wider">
+                  <span className="h-2 w-2 rounded-full bg-emerald-400 animate-pulse" />
+                  Registrations Open
+                </span>
+              )}
 
-            <span className="rounded-full bg-purple-500/15 border border-purple-500/30 px-3 py-1 text-[11px] font-bold text-purple-200">
-              Team Size: {minMembers} to {maxMembers} Members
-            </span>
+              <span className="rounded-full bg-purple-500/15 border border-purple-500/30 px-3 py-1 text-[11px] font-bold text-purple-200">
+                Team Size: {minMembers} to {maxMembers} Members
+              </span>
+            </div>
+
+            <div className="flex items-center gap-3 hidden sm:flex">
+              <div className="relative h-14 w-14">
+                <Image
+                  src="/assets/bento/event-ticket-3d.png"
+                  alt="3D Event Ticket"
+                  width={56}
+                  height={56}
+                  unoptimized
+                  className="object-contain drop-shadow-[0_6px_15px_rgba(242,0,137,0.5)] hover:scale-110 transition-transform"
+                />
+              </div>
+              <div className="relative h-14 w-14">
+                <Image
+                  src="/assets/bento/venture-coins.png"
+                  alt="3D Venture Coins"
+                  width={56}
+                  height={56}
+                  unoptimized
+                  className="object-contain drop-shadow-[0_6px_15px_rgba(245,158,11,0.5)] hover:scale-110 transition-transform"
+                />
+              </div>
+            </div>
           </div>
 
           {/* Event Title */}
