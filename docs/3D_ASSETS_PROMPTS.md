@@ -51,180 +51,185 @@
 
 ---
 
-## 🟡 PENDING ASSETS (5 - 20)
+## 🟢 COMPLETED BENTO ASSETS (5 - 20)
 
 ### 5. `hero-trophy.png` — UN Global Champion Trophy
-- **Status**: `[PENDING]`
-- **Target Location**: [`components/sections/HeroSection.tsx`](file:///d:/yogesh-folder/hult-website/client/components/sections/HeroSection.tsx)
-- **Suggested Path**: `public/assets/hero/hero-trophy.png`
-- **Prompt**:
-  ```text
-  A majestic 3D trophy cup forged from dark polished chrome and glowing magenta crystal, subtle UN olive branch motif engraved on frosted glass, floating gold dust particles around the pedestal, luxury Octane 3D render, raytracing reflections, isolated on a pure solid black background (#000000), no text, centered.
-  ```
-
----
+- **Status**: `[COMPLETED]`
+- **Location**: [`components/sections/CtaBannerSection.tsx`](file:///d:/yogesh-folder/hult-website/client/components/sections/CtaBannerSection.tsx)
+- **Path**: `public/assets/bento/hero-trophy.png`
 
 ### 6. `event-ticket-3d.png` — VIP OnCampus Event Ticket
-- **Status**: `[PENDING]`
-- **Target Location**: [`app/events/components/EventInsideView.tsx`](file:///d:/yogesh-folder/hult-website/client/app/events/components/EventInsideView.tsx)
-- **Suggested Path**: `public/assets/events/event-ticket-3d.png`
-- **Prompt**:
-  ```text
-  Floating 3D luxury event admission pass, translucent dark glass material with glowing pink neon perforated ticket stub, embedded glowing 3D barcode, isometric view, subtle purple ambient lighting, studio quality render, isolated on a pure solid black background (#000000).
-  ```
-
----
+- **Status**: `[COMPLETED]`
+- **Location**: [`app/events/components/EventInsideView.tsx`](file:///d:/yogesh-folder/hult-website/client/app/events/components/EventInsideView.tsx)
+- **Path**: `public/assets/bento/event-ticket-3d.png`
 
 ### 7. `team-podium.png` — Executive Organizing Committee Badge
-- **Status**: `[PENDING]`
-- **Target Location**: [`app/team/page.tsx`](file:///d:/yogesh-folder/hult-website/client/app/team/page.tsx)
-- **Suggested Path**: `public/assets/team/team-podium.png`
-- **Prompt**:
-  ```text
-  Modern 3D geometric podium with three stepped hexagonal platforms, dark slate texture with glowing magenta LED strip lights around each tier, floating star emblem at the peak, sleek corporate tech aesthetic, isolated on a pure solid black background (#000000).
-  ```
-
----
+- **Status**: `[COMPLETED]`
+- **Location**: [`app/team/page.tsx`](file:///d:/yogesh-folder/hult-website/client/app/team/page.tsx)
+- **Path**: `public/assets/bento/team-podium.png`
 
 ### 8. `sdg-wheel.png` — 17 UN Sustainable Development Goals Prism Wheel
-- **Status**: `[PENDING]`
-- **Target Location**: [`components/sections/ImpactMetricsSection.tsx`](file:///d:/yogesh-folder/hult-website/client/components/sections/ImpactMetricsSection.tsx)
-- **Suggested Path**: `public/assets/home/sdg-wheel.png`
-- **Prompt**:
-  ```text
-  A circular 3D holographic ring composed of 17 colorful spectral glass segments, glowing soft neon backlight in cyan, magenta, amber, and purple, floating in space with glossy reflections, ultra-detailed 3D Octane render, isolated on a pure solid black background (#000000).
-  ```
-
----
+- **Status**: `[COMPLETED]`
+- **Location**: [`components/sections/AboutSection.tsx`](file:///d:/yogesh-folder/hult-website/client/components/sections/AboutSection.tsx)
+- **Path**: `public/assets/bento/sdg-wheel.png`
 
 ### 9. `pitch-deck.png` — Venture Idea & Pitch Deck Folder
-- **Status**: `[PENDING]`
-- **Target Location**: [`app/register/components/RegistrationWizard.tsx`](file:///d:/yogesh-folder/hult-website/client/app/register/components/RegistrationWizard.tsx)
-- **Suggested Path**: `public/assets/register/pitch-deck.png`
-- **Prompt**:
-  ```text
-  Floating 3D digital document folder, dark translucent carbon-fiber cover bursting with glowing magenta light rays, floating 3D chart graphics and lightbulb sparkles emerging from inside, high tech startup presentation asset, isolated on a pure solid black background (#000000).
-  ```
-
----
+- **Status**: `[COMPLETED]`
+- **Location**: [`app/register/page.tsx`](file:///d:/yogesh-folder/hult-website/client/app/register/page.tsx)
+- **Path**: `public/assets/bento/pitch-deck.png`
 
 ### 10. `qr-scanner-3d.png` — Live Check-in Holographic Scanner
-- **Status**: `[PENDING]`
-- **Target Location**: [`app/events/checkin/page.tsx`](file:///d:/yogesh-folder/hult-website/client/app/events/checkin/page.tsx)
-- **Suggested Path**: `public/assets/checkin/qr-scanner-3d.png`
-- **Prompt**:
-  ```text
-  A 3D futuristic optical scanner lens framing a floating glowing QR code grid, bright magenta laser beam sweeping across the surface, obsidian bezel frame, high tech security terminal graphic, 8k render, isolated on a pure solid black background (#000000).
-  ```
-
----
+- **Status**: `[COMPLETED]`
+- **Location**: [`app/events/checkin/page.tsx`](file:///d:/yogesh-folder/hult-website/client/app/events/checkin/page.tsx)
+- **Path**: `public/assets/bento/qr-scanner-3d.png`
 
 ### 11. `leaderboard-trophy.png` — Summit Leaderboard Crown & Badge
-- **Status**: `[PENDING]`
-- **Target Location**: [`app/portal-hult-8f4b2c1e9a7d/dashboard/components/LiveEventManager.tsx`](file:///d:/yogesh-folder/hult-website/client/app/portal-hult-8f4b2c1e9a7d/dashboard/components/LiveEventManager.tsx)
-- **Suggested Path**: `public/assets/portal/leaderboard-trophy.png`
-- **Prompt**:
-  ```text
-  Sleek 3D crown symbol made of dark chrome alloy and radiant magenta glass crystals, floating above a glowing rank #1 badge platform, luxury sports trophy style, isolated on a pure solid black background (#000000), dramatic soft shadows.
-  ```
-
----
+- **Status**: `[COMPLETED]`
+- **Location**: [`components/events/StudentLeaderboard.tsx`](file:///d:/yogesh-folder/hult-website/client/components/events/StudentLeaderboard.tsx)
+- **Path**: `public/assets/bento/leaderboard-trophy.png`
 
 ### 12. `founder-shield-badge.png` — Verified Student Founder Level Ring
-- **Status**: `[PENDING]`
-- **Target Location**: [`app/profile/page.tsx`](file:///d:/yogesh-folder/hult-website/client/app/profile/page.tsx)
-- **Suggested Path**: `public/assets/profile/founder-shield-badge.png`
-- **Prompt**:
-  ```text
-  A 3D circular founder badge ring, dark gunmetal finish with glowing purple interior core and a sharp magenta checkmark shield in the center, glassmorphism finish, isolated on a pure solid black background (#000000), 3D render.
-  ```
-
----
+- **Status**: `[COMPLETED]`
+- **Location**: [`app/profile/page.tsx`](file:///d:/yogesh-folder/hult-website/client/app/profile/page.tsx)
+- **Path**: `public/assets/bento/founder-shield-badge.png`
 
 ### 13. `network-nodes.png` — Global Regional Summits Connector
-- **Status**: `[PENDING]`
-- **Target Location**: [`components/sections/GlobalNetworkSection.tsx`](file:///d:/yogesh-folder/hult-website/client/components/sections/GlobalNetworkSection.tsx)
-- **Suggested Path**: `public/assets/home/network-nodes.png`
-- **Prompt**:
-  ```text
-  Abstract 3D network mesh cluster, interconnected glowing magenta spheres and glass pins floating over a curved dark grid plane, high tech global infrastructure, isolated on a pure solid black background (#000000), Octane render.
-  ```
-
----
+- **Status**: `[COMPLETED]`
+- **Location**: [`components/sections/AboutSection.tsx`](file:///d:/yogesh-folder/hult-website/client/components/sections/AboutSection.tsx)
+- **Path**: `public/assets/bento/network-nodes.png`
 
 ### 14. `incubation-flask.png` — Accelerator Crucible & Startup Innovation
-- **Status**: `[PENDING]`
-- **Target Location**: [`app/events/page.tsx`](file:///d:/yogesh-folder/hult-website/client/app/events/page.tsx)
-- **Suggested Path**: `public/assets/events/incubation-flask.png`
-- **Prompt**:
-  ```text
-  Futuristic 3D alchemy flask made of ultra-clear glass, containing glowing pink liquid energy and tiny floating neon idea lightbulbs inside, steam/light particle emission, creative innovation lab asset, isolated on a pure solid black background (#000000).
-  ```
-
----
+- **Status**: `[COMPLETED]`
+- **Location**: [`app/events/page.tsx`](file:///d:/yogesh-folder/hult-website/client/app/events/page.tsx)
+- **Path**: `public/assets/bento/incubation-flask.png`
 
 ### 15. `certificate-scroll.png` — Official Heritage Certificate Scroll
-- **Status**: `[PENDING]`
-- **Target Location**: [`app/profile/components/CertificatesTab.tsx`](file:///d:/yogesh-folder/hult-website/client/app/profile/components/CertificatesTab.tsx)
-- **Suggested Path**: `public/assets/profile/certificate-scroll.png`
-- **Prompt**:
-  ```text
-  Floating 3D digital diploma scroll, dark obsidian leather texture bound with a glowing magenta ribbon and wax seal emblem, subtle gold foil trim on edges, luxury academic award graphic, isolated on a pure solid black background (#000000).
-  ```
-
----
+- **Status**: `[COMPLETED]`
+- **Location**: [`components/profile/DigitalCertificateHub.tsx`](file:///d:/yogesh-folder/hult-website/client/components/profile/DigitalCertificateHub.tsx)
+- **Path**: `public/assets/bento/certificate-scroll.png`
 
 ### 16. `security-keycard.png` — Executive Portal Admin Keycard
-- **Status**: `[PENDING]`
-- **Target Location**: [`app/portal-hult-8f4b2c1e9a7d/page.tsx`](file:///d:/yogesh-folder/hult-website/client/app/portal-hult-8f4b2c1e9a7d/page.tsx)
-- **Suggested Path**: `public/assets/portal/security-keycard.png`
-- **Prompt**:
-  ```text
-  Floating 3D heavy military-grade digital keycard, matte black carbon fiber casing with glowing cyan and magenta authorization chips, holographic security emblem, isolated on a pure solid black background (#000000), Octane render.
-  ```
-
----
+- **Status**: `[COMPLETED]`
+- **Location**: [`app/portal-hult-8f4b2c1e9a7d/AdminSignInGate.tsx`](file:///d:/yogesh-folder/hult-website/client/app/portal-hult-8f4b2c1e9a7d/AdminSignInGate.tsx)
+- **Path**: `public/assets/bento/security-keycard.png`
 
 ### 17. `community-chat-sphere.png` — Official WhatsApp Community Node
-- **Status**: `[PENDING]`
-- **Target Location**: [`components/SiteFooter.tsx`](file:///d:/yogesh-folder/hult-website/client/components/SiteFooter.tsx)
-- **Suggested Path**: `public/assets/footer/community-chat-sphere.png`
-- **Prompt**:
-  ```text
-  3D speech bubble orb composed of glowing emerald green and magenta neon light tubes encircling a glass message icon, floating particles, social network vibe, isolated on a pure solid black background (#000000), 8k render.
-  ```
-
----
+- **Status**: `[COMPLETED]`
+- **Location**: [`components/sections/SiteFooter.tsx`](file:///d:/yogesh-folder/hult-website/client/components/sections/SiteFooter.tsx)
+- **Path**: `public/assets/bento/community-chat-sphere.png`
 
 ### 18. `venture-coins.png` — Prize Pool Venture Coins Stack
-- **Status**: `[PENDING]`
-- **Target Location**: [`app/events/components/EventInsideView.tsx`](file:///d:/yogesh-folder/hult-website/client/app/events/components/EventInsideView.tsx)
-- **Suggested Path**: `public/assets/events/venture-coins.png`
-- **Prompt**:
-  ```text
-  Stack of 3D metallic coins floating diagonally, dark chrome coins with embossed glowing magenta Hult Prize 'H' insignia on top coin, subtle sparks around edge, financial seed capital motif, isolated on a pure solid black background (#000000).
-  ```
-
----
+- **Status**: `[COMPLETED]`
+- **Location**: [`app/events/components/EventInsideView.tsx`](file:///d:/yogesh-folder/hult-website/client/app/events/components/EventInsideView.tsx)
+- **Path**: `public/assets/bento/venture-coins.png`
 
 ### 19. `heritage-h-emblem.png` — Heritage x Hult Prize 3D Brand Crest
-- **Status**: `[PENDING]`
-- **Target Location**: [`components/SiteHeader.tsx`](file:///d:/yogesh-folder/hult-website/client/components/SiteHeader.tsx)
-- **Suggested Path**: `public/assets/header/heritage-h-emblem.png`
+- **Status**: `[COMPLETED]`
+- **Location**: [`components/SiteHeader.tsx`](file:///d:/yogesh-folder/hult-website/client/components/SiteHeader.tsx)
+- **Path**: `public/assets/bento/heritage-h-emblem.png`
+
+### 20. `broadcast-antenna.png` — Live Stream & Announcement Node
+- **Status**: `[COMPLETED]`
+- **Location**: [`components/events/LiveAuditoriumHub.tsx`](file:///d:/yogesh-folder/hult-website/client/components/events/LiveAuditoriumHub.tsx)
+- **Path**: `public/assets/bento/broadcast-antenna.png`
+
+---
+
+---
+
+## 🎭 3D FOUNDER AVATARS & TEAM CREST BLUEPRINT (Game / Esports Inspired)
+
+> **Gamification Theme**: Esports character style portraits and guild crests inspired by Clash of Clans / League of Legends, tailored for youth social entrepreneurs.
+> **Format**: Isolated on pure black background (`#000000`), square 1:1 ratio, 3D Octane render, glowing magenta & electric accent lighting.
+
+### 👤 Preset Founder Archetype Avatars (1 - 8)
+
+#### 1. `avatar-visionary-ceo.png` — The Visionary Founder (CEO & Pitch Lead)
+- **Path**: `public/assets/avatars/avatar-visionary-ceo.png`
 - **Prompt**:
   ```text
-  Stylized 3D letter 'H' emblem sculpted in faceted glass and dark titanium alloy, inner core glowing with intense Hult magenta light (#f20089), floating in space with specular highlights, isolated on a pure solid black background (#000000).
+  3D stylized esports character portrait avatar of a confident young tech CEO founder wearing a dark futuristic jacket with glowing magenta collar trim, sharp Valorant/Pixar character 3D render, dark obsidian lighting, isolated on solid black background (#000000), 8k Octane render.
+  ```
+
+#### 2. `avatar-ai-architect.png` — The AI & Tech Architect (CTO & Lead Dev)
+- **Path**: `public/assets/avatars/avatar-ai-architect.png`
+- **Prompt**:
+  ```text
+  3D stylized character portrait avatar of a brilliant young AI software engineer wearing cybernetic neon glasses and dark hoodie with glowing cyan circuit patterns, futuristic developer portrait, 3D Octane render, isolated on solid black background (#000000).
+  ```
+
+#### 3. `avatar-growth-strategist.png` — The Growth Strategist & CMO
+- **Path**: `public/assets/avatars/avatar-growth-strategist.png`
+- **Prompt**:
+  ```text
+  3D stylized character portrait avatar of an energetic growth marketer with vibrant pink hair accents wearing modern glass visor, floating digital stats holographic chart beside head, esports avatar style, isolated on solid black background (#000000).
+  ```
+
+#### 4. `avatar-green-innovator.png` — CleanTech & Bio Specialist (SDG Lead)
+- **Path**: `public/assets/avatars/avatar-green-innovator.png`
+- **Prompt**:
+  ```text
+  3D stylized character portrait avatar of a green sustainability innovator wearing sleek bio-lab coat with glowing emerald green leaf emblem badge, futuristic eco-warrior render, isolated on solid black background (#000000).
+  ```
+
+#### 5. `avatar-fintech-hustler.png` — FinTech & Venture Financial Lead
+- **Path**: `public/assets/avatars/avatar-fintech-hustler.png`
+- **Prompt**:
+  ```text
+  3D stylized character portrait avatar of a sharp venture financial strategist in dark tailored suit with glowing gold digital coin motif, luxury esports character render, isolated on solid black background (#000000).
+  ```
+
+#### 6. `avatar-ui-designer.png` — UI/UX & Visual Storyteller (Design Lead)
+- **Path**: `public/assets/avatars/avatar-ui-designer.png`
+- **Prompt**:
+  ```text
+  3D stylized character portrait avatar of a creative visual designer with electric purple glowing headphones and holographic stylus, 3D modern digital artist character render, isolated on solid black background (#000000).
+  ```
+
+#### 7. `avatar-social-catalyst.png` — Social Impact & Community Champion
+- **Path**: `public/assets/avatars/avatar-social-catalyst.png`
+- **Prompt**:
+  ```text
+  3D stylized character portrait avatar of an inspiring community organizer wearing modern dark tech jacket with glowing pink heart emblem, warm dramatic rim lighting, 3D render, isolated on solid black background (#000000).
+  ```
+
+#### 8. `avatar-deeptech-scientist.png` — DeepTech R&D Researcher
+- **Path**: `public/assets/avatars/avatar-deeptech-scientist.png`
+- **Prompt**:
+  ```text
+  3D stylized character portrait avatar of a deep-tech R&D researcher with glowing purple molecular holographic visor and white laboratory collar, high-tech scientist character render, isolated on solid black background (#000000).
   ```
 
 ---
 
-### 20. `broadcast-antenna.png` — Live Stream & Announcement Node
-- **Status**: `[PENDING]`
-- **Target Location**: [`app/portal-hult-8f4b2c1e9a7d/dashboard/components/BroadcastCenter.tsx`](file:///d:/yogesh-folder/hult-website/client/app/portal-hult-8f4b2c1e9a7d/dashboard/components/BroadcastCenter.tsx)
-- **Suggested Path**: `public/assets/portal/broadcast-antenna.png`
+### 🛡️ Team Crest Icons (1 - 4)
+
+#### 1. `crest-phoenix.png` — Phoenix Guild Crest
+- **Path**: `public/assets/crests/crest-phoenix.png`
 - **Prompt**:
   ```text
-  3D futuristic satellite dish transmitter, dark obsidian dish emitting expanding concentric rings of glowing magenta signal waves into space, live media broadcast icon, isolated on a pure solid black background (#000000), dramatic lighting.
+  A 3D metallic team guild emblem of a glowing magenta phoenix rising from a dark obsidian shield, glowing fire particles, esports team logo style, 3D render, isolated on solid black background (#000000).
+  ```
+
+#### 2. `crest-cyber-shield.png` — Cyber Shield Crest
+- **Path**: `public/assets/crests/crest-cyber-shield.png`
+- **Prompt**:
+  ```text
+  A 3D futuristic team guild crest with an electric purple glowing cybernetic shield and crossed laser swords, dark titanium texture, isolated on solid black background (#000000).
+  ```
+
+#### 3. `crest-gaia-leaf.png` — Gaia Impact Crest
+- **Path**: `public/assets/crests/crest-gaia-leaf.png`
+- **Prompt**:
+  ```text
+  A 3D metallic team emblem of a glowing emerald crystal leaf framed inside a dark gold circular crest ring, sustainability guild badge, 3D render, isolated on solid black background (#000000).
+  ```
+
+#### 4. `crest-nexus-crown.png` — Nexus Leader Crown Crest
+- **Path**: `public/assets/crests/crest-nexus-crown.png`
+- **Prompt**:
+  ```text
+  A 3D luxury team guild crest of a floating dark chrome crown with glowing pink neon core and diamond wings, champion team emblem, isolated on solid black background (#000000).
   ```
 
 ---
@@ -232,8 +237,5 @@
 ## 🛠️ How to Add New Assets:
 1. Generate the asset using any AI image generator (Flux, Midjourney, DALL-E 3) using the prompts above.
 2. Save the output PNG into the designated folder path.
-3. If the image has a black background, drop it into `public/assets/...` and run our background transparency converter script:
-   ```bash
-   node scratch-remove-bg.mjs
-   ```
+3. If the image has a black background, drop it into `public/assets/...` and run our background transparency converter script.
 4. Update the status in this file from `[PENDING]` to `[COMPLETED]`.
