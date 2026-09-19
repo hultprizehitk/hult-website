@@ -7,6 +7,7 @@ import User from "@/models/User";
 import { parseHeritageEmail } from "@/lib/heritage-parser";
 import { auth } from "@/auth";
 import { sendRegistrationConfirmationEmail } from "@/lib/email-templates";
+import { logEmailDispatch } from "@/lib/mail-logger";
 import { checkRateLimit, getClientIp } from "@/lib/rate-limit";
 
 // Helper to generate a distinctive, memorable Team Code (e.g. HULT-7X9K)
@@ -331,10 +332,25 @@ export async function POST(req: Request) {
 
       // Dispatch Google Workspace email notification asynchronously
       try {
-        await sendRegistrationConfirmationEmail({
+        const mailRes = await sendRegistrationConfirmationEmail({
           name: newMember.name,
           email: sessionEmail,
           eventName: `${event.title} - Joined Team "${targetTeam.teamName}"`,
+        });
+        await logEmailDispatch({
+          recipientEmail: sessionEmail,
+          recipientName: newMember.name,
+          category: "registration",
+          eventId: event._id,
+          subject: `Registration Confirmed: ${event.title} - Joined Team "${targetTeam.teamName}"`,
+          status: mailRes.success ? "sent" : "failed",
+          messageId: mailRes.messageId,
+          error: mailRes.error,
+          metadata: {
+            action: "join_team",
+            teamCode: targetTeam.teamCode,
+            teamName: targetTeam.teamName,
+          },
         });
       } catch (mailErr) {
         console.warn("Notice: Member confirmation email dispatch failed:", mailErr);
@@ -456,10 +472,25 @@ export async function POST(req: Request) {
 
     // Dispatch confirmation email to leader with their team code
     try {
-      await sendRegistrationConfirmationEmail({
+      const mailRes = await sendRegistrationConfirmationEmail({
         name: verifiedLeadName,
         email: sessionEmail,
         eventName: `${event.title} (Team: ${newTeam.teamName}, Code: ${teamCode})`,
+      });
+      await logEmailDispatch({
+        recipientEmail: sessionEmail,
+        recipientName: verifiedLeadName,
+        category: "registration",
+        eventId: event._id,
+        subject: `Registration Confirmed: ${event.title} (Team: ${newTeam.teamName}, Code: ${teamCode})`,
+        status: mailRes.success ? "sent" : "failed",
+        messageId: mailRes.messageId,
+        error: mailRes.error,
+        metadata: {
+          action: "create_team",
+          teamCode: newTeam.teamCode,
+          teamName: newTeam.teamName,
+        },
       });
     } catch (mailErr) {
       console.warn("Notice: Lead confirmation email dispatch failed:", mailErr);

@@ -5,6 +5,7 @@ import User from "@/models/User";
 import { parseHeritageEmail } from "@/lib/heritage-parser";
 import { isSuperAdminEmail, isAdminRole } from "@/lib/admin-check";
 import { sendWelcomeEmail } from "@/lib/email-templates";
+import { logEmailDispatch } from "@/lib/mail-logger";
 import type { UserRole } from "@/types";
 
 // When deployed to production, ensure NEXTAUTH_URL and AUTH_URL never point to localhost
@@ -65,7 +66,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
           }
 
           if (!dbUser) {
-            dbUser = await User.create({
+            const newUser = await User.create({
               name: parsed.fullName || user.name || "HITK Student",
               email: email,
               image: user.image || "",
@@ -74,18 +75,38 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
               role: assignedRole,
               welcomeEmailSent: true,
             });
+            dbUser = newUser;
 
             // Trigger Google Workspace official welcome email for new account creation
             sendWelcomeEmail({
-              name: dbUser.name,
-              email: dbUser.email,
-              department: dbUser.department,
-              year: dbUser.year,
-              role: dbUser.role,
+              name: newUser.name,
+              email: newUser.email,
+              department: newUser.department,
+              year: newUser.year,
+              role: newUser.role,
+            }).then((res) => {
+              logEmailDispatch({
+                recipientEmail: newUser.email,
+                recipientName: newUser.name,
+                category: "welcome",
+                subject: `Welcome to Hult Prize HITK, ${newUser.name}!`,
+                status: res.success ? "sent" : "failed",
+                messageId: res.messageId,
+                error: res.error,
+              });
             }).catch((emailErr) => {
               console.error("[Google Workspace SMTP] Failed to send welcome email on account creation:", emailErr);
+              logEmailDispatch({
+                recipientEmail: newUser.email,
+                recipientName: newUser.name,
+                category: "welcome",
+                subject: `Welcome to Hult Prize HITK, ${newUser.name}!`,
+                status: "failed",
+                error: emailErr instanceof Error ? emailErr.message : String(emailErr),
+              });
             });
           } else {
+            const existingUser = dbUser;
             const updates: Record<string, any> = {
               department: parsed.branchName,
               year: parsed.academicYear,
@@ -94,16 +115,35 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
             if (user.image) updates.image = user.image;
 
             // If user has not yet received their first-time welcome email, send it now
-            if (!dbUser.welcomeEmailSent) {
+            if (!existingUser.welcomeEmailSent) {
               updates.welcomeEmailSent = true;
+              const welcomeName = existingUser.name || parsed.fullName || user.name || "HITK Innovator";
               sendWelcomeEmail({
-                name: dbUser.name || parsed.fullName || user.name || "HITK Innovator",
-                email: dbUser.email,
-                department: dbUser.department || parsed.branchName,
-                year: dbUser.year || parsed.academicYear,
-                role: dbUser.role,
+                name: welcomeName,
+                email: existingUser.email,
+                department: existingUser.department || parsed.branchName,
+                year: existingUser.year || parsed.academicYear,
+                role: existingUser.role,
+              }).then((res) => {
+                logEmailDispatch({
+                  recipientEmail: existingUser.email,
+                  recipientName: welcomeName,
+                  category: "welcome",
+                  subject: `Welcome to Hult Prize HITK, ${welcomeName}!`,
+                  status: res.success ? "sent" : "failed",
+                  messageId: res.messageId,
+                  error: res.error,
+                });
               }).catch((emailErr) => {
                 console.error("[Google Workspace SMTP] Failed to send welcome email on first login:", emailErr);
+                logEmailDispatch({
+                  recipientEmail: existingUser.email,
+                  recipientName: welcomeName,
+                  category: "welcome",
+                  subject: `Welcome to Hult Prize HITK, ${welcomeName}!`,
+                  status: "failed",
+                  error: emailErr instanceof Error ? emailErr.message : String(emailErr),
+                });
               });
             }
 

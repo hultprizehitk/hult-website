@@ -2,6 +2,8 @@ import { NextResponse } from "next/server";
 import { isAuthorizedAdmin } from "@/lib/admin-check";
 import { sendEmail, Recipient } from "@/lib/mail";
 import { checkRateLimit, getClientIp } from "@/lib/rate-limit";
+import { logEmailDispatch, hasEmailBeenSent } from "@/lib/mail-logger";
+import { EmailCategory } from "@/models/EmailLog";
 
 function unauthorizedResponse() {
   return NextResponse.json({ error: "Not Found" }, { status: 404 });
@@ -41,7 +43,16 @@ export async function POST(req: Request) {
   }
 
   try {
-    const { recipients, subject, htmlContent, batchSize = 50, delayMs = 1000 } = body;
+    const {
+      recipients,
+      subject,
+      htmlContent,
+      batchSize = 50,
+      delayMs = 1000,
+      eventId,
+      category = "broadcast",
+      preventDuplicates = false,
+    } = body;
 
     if (!Array.isArray(recipients) || recipients.length === 0) {
       return NextResponse.json(
@@ -58,6 +69,9 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "htmlContent is required." }, { status: 400 });
     }
 
+    const emailCategory = (category as EmailCategory) || "broadcast";
+    const strEventId = typeof eventId === "string" && eventId.trim() ? eventId.trim() : undefined;
+
     // Normalize recipients
     const normalizedRecipients: Recipient[] = recipients.map((r) => {
       if (typeof r === "string") return { email: r.trim() };
@@ -67,7 +81,9 @@ export async function POST(req: Request) {
     const total = normalizedRecipients.length;
     let sentCount = 0;
     let failedCount = 0;
+    let skippedCount = 0;
     const failures: Array<{ email: string; error?: string }> = [];
+    const skippedList: Array<{ email: string; reason: string }> = [];
 
     const numBatchSize = typeof batchSize === "number" ? batchSize : 50;
     const numDelayMs = typeof delayMs === "number" ? delayMs : 1000;
@@ -75,13 +91,40 @@ export async function POST(req: Request) {
     const effectiveDelay = Math.max(100, numDelayMs);
 
     console.log(
-      `[Admin Broadcast] Starting bulk email sending to ${total} recipients in batches of ${effectiveBatchSize}...`
+      `[Admin Broadcast] Starting bulk email sending to ${total} recipients in batches of ${effectiveBatchSize}... (preventDuplicates: ${Boolean(preventDuplicates)})`
     );
 
     for (let i = 0; i < total; i += effectiveBatchSize) {
       const chunk = normalizedRecipients.slice(i, i + effectiveBatchSize);
 
       const batchPromises = chunk.map(async (recipient) => {
+        // Deduplication safeguard check
+        if (preventDuplicates) {
+          const alreadySent = await hasEmailBeenSent({
+            recipientEmail: recipient.email,
+            category: emailCategory,
+            eventId: strEventId,
+          });
+
+          if (alreadySent) {
+            skippedCount++;
+            skippedList.push({
+              email: recipient.email,
+              reason: "Already received email for this event/category",
+            });
+            await logEmailDispatch({
+              recipientEmail: recipient.email,
+              recipientName: recipient.name,
+              category: emailCategory,
+              eventId: strEventId,
+              subject: subject.trim(),
+              status: "skipped_duplicate",
+              metadata: { skippedAt: new Date() },
+            });
+            return;
+          }
+        }
+
         const result = await sendEmail({
           to: [recipient],
           subject: subject.trim(),
@@ -90,9 +133,27 @@ export async function POST(req: Request) {
 
         if (result.success) {
           sentCount++;
+          await logEmailDispatch({
+            recipientEmail: recipient.email,
+            recipientName: recipient.name,
+            category: emailCategory,
+            eventId: strEventId,
+            subject: subject.trim(),
+            status: "sent",
+            messageId: result.messageId,
+          });
         } else {
           failedCount++;
           failures.push({ email: recipient.email, error: result.error });
+          await logEmailDispatch({
+            recipientEmail: recipient.email,
+            recipientName: recipient.name,
+            category: emailCategory,
+            eventId: strEventId,
+            subject: subject.trim(),
+            status: "failed",
+            error: result.error,
+          });
         }
       });
 
@@ -106,7 +167,9 @@ export async function POST(req: Request) {
       }
     }
 
-    console.log(`[Admin Broadcast Complete] Total: ${total}, Sent: ${sentCount}, Failed: ${failedCount}`);
+    console.log(
+      `[Admin Broadcast Complete] Total: ${total}, Sent: ${sentCount}, Failed: ${failedCount}, Skipped: ${skippedCount}`
+    );
 
     return NextResponse.json(
       {
@@ -115,8 +178,10 @@ export async function POST(req: Request) {
           total,
           sent: sentCount,
           failed: failedCount,
+          skipped: skippedCount,
         },
         failures,
+        skippedList,
       },
       { status: 200 }
     );
