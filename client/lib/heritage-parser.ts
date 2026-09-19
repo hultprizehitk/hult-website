@@ -123,3 +123,32 @@ export function parseHeritageEmail(email: string, fallbackName?: string | null):
     academicYear,
   };
 }
+
+/**
+ * Validates 10-digit Indian Mobile Phone Number.
+ */
+export function validatePhoneNumber(phone: string): { isValid: boolean; message?: string; clean: string } {
+  if (!phone || !phone.trim()) {
+    return { isValid: false, message: "Phone number is required", clean: "" };
+  }
+  const cleanDigits = phone.replace(/\D/g, "");
+  const digits = cleanDigits.length === 12 && cleanDigits.startsWith("91") ? cleanDigits.slice(2) : cleanDigits;
+
+  if (digits.length !== 10) {
+    return { isValid: false, message: `Phone number must be exactly 10 digits (entered ${digits.length} digits)`, clean: digits };
+  }
+  if (!/^[6-9]/.test(digits)) {
+    return { isValid: false, message: "Phone number must start with 6, 7, 8, or 9", clean: digits };
+  }
+  return { isValid: true, clean: digits };
+}
+
+/**
+ * Passes through Roll Number without strict length constraints.
+ */
+export function validateRollNumber(roll?: string): { isValid: boolean; message?: string; clean: string } {
+  if (!roll || !roll.trim()) {
+    return { isValid: true, clean: "" };
+  }
+  return { isValid: true, clean: roll.trim() };
+}

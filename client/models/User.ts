@@ -6,6 +6,13 @@ export interface IUser extends Document {
   email: string;
   password?: string;
   image?: string;
+  avatarId?: string;
+  archetype?: string;
+  xp?: number;
+  level?: number;
+  lookingForTeam?: boolean;
+  desiredRole?: string;
+  bio?: string;
   department: string;
   year: string;
   role:
@@ -38,6 +45,34 @@ const UserSchema = new Schema<IUser>(
       required: false,
     },
     image: {
+      type: String,
+      default: "",
+    },
+    avatarId: {
+      type: String,
+      default: "visionary-ceo",
+    },
+    archetype: {
+      type: String,
+      default: "Visionary Leader",
+    },
+    xp: {
+      type: Number,
+      default: 150,
+    },
+    level: {
+      type: Number,
+      default: 1,
+    },
+    lookingForTeam: {
+      type: Boolean,
+      default: false,
+    },
+    desiredRole: {
+      type: String,
+      default: "Co-Founder",
+    },
+    bio: {
       type: String,
       default: "",
     },

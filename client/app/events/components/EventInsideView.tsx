@@ -3,13 +3,15 @@
 import React, { useState, useEffect } from "react";
 import Image from "next/image";
 import Link from "next/link";
+import TeamClanBadgeSVG from "@/components/ui/TeamClanBadgeSVG";
 import { signIn } from "next-auth/react";
 import { QRCodeSVG } from "qrcode.react";
-import { ExternalLink, Sparkles, RotateCcw, Check, Clipboard, Share2, ShieldCheck, QrCode, AlertTriangle, Crown, User, Building2, Phone, Clock, Users } from "lucide-react";
-import { parseHeritageEmail } from "@/lib/heritage-parser";
+import { parseHeritageEmail, validatePhoneNumber, validateRollNumber } from "@/lib/heritage-parser";
+import { AlertTriangleSVG, SparklesSVG, RefreshSVG, CheckSVG, UsersSVG, PhoneSVG, AdminShieldSVG, LeaderCrownSVG, BuildingSVG, UserSVG } from "@/components/ui/CustomSvgIcons";
 import type { PublicEvent } from "../page";
 import LiveAuditoriumHub from "@/components/events/LiveAuditoriumHub";
 import StudentLeaderboard from "@/components/events/StudentLeaderboard";
+import CoFounderRadar from "@/components/profile/CoFounderRadar";
 
 interface EventInsideViewProps {
   event: PublicEvent;
@@ -163,8 +165,15 @@ export default function EventInsideView({
       return;
     }
 
-    if (!leadPhone.trim()) {
-      setErrorMessage("Please enter your WhatsApp / contact phone number.");
+    const phoneCheck = validatePhoneNumber(leadPhone);
+    if (!phoneCheck.isValid) {
+      setErrorMessage(phoneCheck.message || "Invalid 10-digit phone number.");
+      return;
+    }
+
+    const rollCheck = validateRollNumber(leadRoll);
+    if (!rollCheck.isValid) {
+      setErrorMessage(rollCheck.message || "Invalid 7-digit Heritage Roll Number.");
       return;
     }
 
@@ -180,8 +189,8 @@ export default function EventInsideView({
           teamName: teamName.trim(),
           ventureName: ventureName.trim(),
           leadName: sessionUser.name || "Student Leader",
-          leadPhone: leadPhone.trim(),
-          leadRoll: leadRoll.trim(),
+          leadPhone: phoneCheck.clean,
+          leadRoll: rollCheck.clean,
           department: department.trim(),
           membersCount: maxMembers,
         }),
@@ -216,8 +225,15 @@ export default function EventInsideView({
       return;
     }
 
-    if (!memberPhone.trim()) {
-      setErrorMessage("Please enter your WhatsApp / contact phone number.");
+    const joinPhoneCheck = validatePhoneNumber(memberPhone);
+    if (!joinPhoneCheck.isValid) {
+      setErrorMessage(joinPhoneCheck.message || "Invalid 10-digit phone number.");
+      return;
+    }
+
+    const joinRollCheck = validateRollNumber(memberRoll);
+    if (!joinRollCheck.isValid) {
+      setErrorMessage(joinRollCheck.message || "Invalid 7-digit Heritage Roll Number.");
       return;
     }
 
@@ -359,7 +375,7 @@ export default function EventInsideView({
                   width={112}
                   height={112}
                   unoptimized
-                  className="object-contain drop-shadow-[0_10px_25px_rgba(242,0,137,0.6)] hover:scale-110 transition-transform duration-300"
+                  className="object-contain hover:scale-110 transition-transform duration-300"
                 />
               </div>
               <div className="relative h-24 w-24 sm:h-28 sm:w-28">
@@ -369,7 +385,7 @@ export default function EventInsideView({
                   width={112}
                   height={112}
                   unoptimized
-                  className="object-contain drop-shadow-[0_10px_25px_rgba(245,158,11,0.6)] hover:scale-110 transition-transform duration-300"
+                  className="object-contain hover:scale-110 transition-transform duration-300"
                 />
               </div>
             </div>
@@ -428,7 +444,7 @@ export default function EventInsideView({
                 rel="noopener noreferrer"
                 className="inline-flex items-center gap-2 text-xs text-[#f20089] hover:underline font-bold"
               >
-                <ExternalLink className="h-3.5 w-3.5 text-[#f20089]" />
+                <svg className="h-3.5 w-3.5 text-[#f20089]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
                 <span>External RSVP & Event Page</span>
               </a>
             </div>
@@ -446,20 +462,30 @@ export default function EventInsideView({
         {/* STATE A: STUDENT IS REGISTERED IN A TEAM (VIEW TEAM STUDIO & INVITE PASS) */}
         {registeredTeam ? (
           <div className="space-y-6 animate-scaleUp">
-            {/* Header Status */}
+            {/* Header Status with Dynamic SVG Clan Flag */}
             <div className="flex items-center justify-between border-b border-white/10 pb-4 flex-wrap gap-3">
-              <div>
-                <span className="rounded-full bg-emerald-500/20 border border-emerald-500/40 px-3 py-0.5 text-[11px] font-bold text-emerald-300 uppercase tracking-wider">
-                  Confirmed Team Registration Studio
-                </span>
-                <h2 className="text-2xl sm:text-3xl font-black text-white mt-1.5 font-[family-name:var(--font-google-sans)]">
-                  Team {registeredTeam.teamName}
-                </h2>
-                {registeredTeam.ventureName && (
-                  <p className="text-xs text-[#f20089] font-medium mt-0.5">
-                    Venture Pitch: {registeredTeam.ventureName}
-                  </p>
-                )}
+              <div className="flex items-center gap-4">
+                <TeamClanBadgeSVG
+                  size={52}
+                  shape="shield"
+                  primaryColor="#f20089"
+                  accentColor="#a855f7"
+                  pattern="gradient"
+                  icon="crown"
+                />
+                <div>
+                  <span className="rounded-full bg-emerald-500/20 border border-emerald-500/40 px-3 py-0.5 text-[11px] font-bold text-emerald-300 uppercase tracking-wider">
+                    Confirmed Team Registration Studio
+                  </span>
+                  <h2 className="text-2xl sm:text-3xl font-black text-white mt-1.5 font-[family-name:var(--font-google-sans)]">
+                    Team {registeredTeam.teamName}
+                  </h2>
+                  {registeredTeam.ventureName && (
+                    <p className="text-xs text-[#f20089] font-medium mt-0.5">
+                      Venture Pitch: {registeredTeam.ventureName}
+                    </p>
+                  )}
+                </div>
               </div>
 
               <div className="flex items-center gap-2">
@@ -470,7 +496,7 @@ export default function EventInsideView({
                   className="rounded-full bg-white/[0.08] hover:bg-white/15 border border-white/15 px-3.5 py-1.5 text-xs font-semibold text-white/90 hover:text-white transition-all cursor-pointer flex items-center gap-1.5"
                   title="Click to refresh roster if a teammate just joined"
                 >
-                  <RotateCcw className={`h-3.5 w-3.5 ${refreshing ? "animate-spin text-pink-400" : ""}`} />
+                  <RefreshSVG className={`h-3.5 w-3.5 ${refreshing ? "animate-spin text-pink-400" : ""}`} />
                   <span>{refreshing ? "Syncing..." : "Refresh Roster"}</span>
                 </button>
                 {isTeamCriteriaMet ? (
@@ -493,11 +519,8 @@ export default function EventInsideView({
             <div className="rounded-3xl border border-white/15 bg-white/[0.04] backdrop-blur-2xl p-6 sm:p-7 space-y-4 font-sans shadow-xl">
               <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
                 <div>
-                  <span className="text-[10px] text-white/50 uppercase tracking-widest block font-mono font-bold">
-                    Point 5 • Real-Time Roster Progress
-                  </span>
                   <h3 className="text-lg font-bold text-white font-[family-name:var(--font-google-sans)]">
-                    Team Member Eligibility Tracker
+                    Roster Progress
                   </h3>
                 </div>
 
@@ -547,7 +570,7 @@ export default function EventInsideView({
                       onClick={() => handleCopyCode(registeredTeam.teamCode)}
                       className="rounded-xl bg-white hover:bg-neutral-100 px-3.5 py-1.5 text-xs font-bold text-black shadow-md transition-all cursor-pointer hover:scale-105 active:scale-95 flex items-center gap-1.5"
                     >
-                      {copiedCode ? <Check className="h-3.5 w-3.5 text-emerald-600" /> : <Clipboard className="h-3.5 w-3.5" />}
+                      {copiedCode ? <CheckSVG className="h-3.5 w-3.5 text-emerald-600" /> : <svg className="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect width="8" height="4" x="8" y="2" rx="1" ry="1"/><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/></svg>}
                       <span>{copiedCode ? "Code Copied!" : "Copy Code"}</span>
                     </button>
 
@@ -557,7 +580,7 @@ export default function EventInsideView({
                       rel="noopener noreferrer"
                       className="rounded-xl bg-[#25D366] hover:bg-[#20bd5a] px-3.5 py-1.5 text-xs font-bold text-white shadow-md shadow-[#25D366]/30 transition-all hover:scale-105 active:scale-95 flex items-center gap-1.5"
                     >
-                      <Share2 className="h-3.5 w-3.5" />
+                      <svg className="h-3.5 w-3.5" viewBox="0 0 24 24" fill="currentColor"><path d="M12.012 2c-5.506 0-9.989 4.478-9.99 9.984a9.964 9.964 0 001.333 4.993L2 22l5.233-1.237a9.96 9.96 0 004.779 1.221h.004c5.505 0 9.988-4.478 9.989-9.985A9.965 9.965 0 0012.012 2z"/></svg>
                       <span>Share via WhatsApp</span>
                     </a>
                   </div>
@@ -575,7 +598,7 @@ export default function EventInsideView({
                 <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 relative z-10">
                   <div className="space-y-3 max-w-xl">
                     <div className="inline-flex items-center gap-2 rounded-full bg-emerald-500/20 border border-emerald-500/40 px-3.5 py-1 text-[11px] font-bold text-emerald-300 uppercase tracking-widest font-mono">
-                      <ShieldCheck className="h-3.5 w-3.5 text-emerald-400" />
+                      <AdminShieldSVG size={14} />
                       <span>Verified Auditorium Pass • Unlocked</span>
                     </div>
 
@@ -609,7 +632,7 @@ export default function EventInsideView({
                       level={"M"}
                     />
                     <span className="text-[10px] font-bold text-black/80 font-mono mt-2 uppercase tracking-wider flex items-center gap-1">
-                      <QrCode className="h-3 w-3 text-emerald-600" />
+                      <CheckSVG className="h-3 w-3 text-emerald-600" />
                       <span>Official Check-In QR</span>
                     </span>
                   </div>
@@ -617,21 +640,9 @@ export default function EventInsideView({
               </div>
             ) : (
               /* INCOMPLETE ROSTER CRITERIA WARNING */
-              <div className="rounded-3xl border border-amber-500/40 bg-gradient-to-r from-amber-500/15 via-amber-500/10 to-transparent backdrop-blur-2xl p-5 sm:p-6 text-xs text-amber-200 flex items-start gap-3.5 shadow-[0_10px_30px_rgba(245,158,11,0.15)]">
-                <AlertTriangle className="h-5 w-5 text-amber-400 shrink-0 mt-0.5" />
-                <div className="space-y-1.5">
-                  <div className="flex items-center gap-2 flex-wrap">
-                    <span className="font-bold text-amber-300 text-sm font-[family-name:var(--font-google-sans)]">
-                      Pass Locked: Needs {minMembers - totalJoined} More Member(s)
-                    </span>
-                    <span className="text-[10px] font-bold uppercase tracking-wider bg-amber-500/20 border border-amber-500/30 px-2 py-0.5 rounded-full text-amber-300 font-mono">
-                      Roster Pending ({totalJoined}/{minMembers})
-                    </span>
-                  </div>
-                  <p className="text-amber-200/90 font-sans text-xs">
-                    Needs {minMembers - totalJoined} more member(s) to unlock auditorium pass.
-                  </p>
-                </div>
+              <div className="rounded-2xl border border-amber-500/30 bg-amber-500/10 px-4 py-3 text-xs text-amber-300 flex items-center justify-between font-sans">
+                <span className="font-medium">Pass Locked • Needs {minMembers - totalJoined} more member(s)</span>
+                <span className="font-mono font-bold text-[11px] bg-amber-500/20 px-2.5 py-0.5 rounded-full">{totalJoined}/{minMembers}</span>
               </div>
             )}
 
@@ -639,7 +650,7 @@ export default function EventInsideView({
             <div className="rounded-3xl border border-white/15 bg-white/[0.04] backdrop-blur-2xl p-6 sm:p-7 space-y-4 font-sans shadow-xl">
               <div className="flex items-center justify-between border-b border-white/10 pb-3 flex-wrap gap-2">
                 <span className="text-sm font-bold text-white font-[family-name:var(--font-google-sans)] flex items-center gap-2">
-                  <Users className="h-4 w-4 text-pink-400" />
+                  <UsersSVG className="h-4 w-4 text-pink-400" />
                   <span>Team Co-Founders ({totalJoined} of {targetCount} Slots Occupied)</span>
                 </span>
               </div>
@@ -650,7 +661,7 @@ export default function EventInsideView({
                 <div className="rounded-2xl border border-white/15 bg-white/[0.04] p-4 flex items-start justify-between gap-3 text-xs">
                   <div className="space-y-1">
                     <div className="flex items-center gap-2">
-                      <Crown className="h-4 w-4 text-amber-400" />
+                      <LeaderCrownSVG size={16} />
                       <span className="font-bold text-white text-sm">
                         {registeredTeam.leadName}
                       </span>
@@ -663,12 +674,12 @@ export default function EventInsideView({
                     </span>
                     <div className="flex items-center gap-3 pt-1 text-[11px] text-white/50">
                       <span className="flex items-center gap-1">
-                        <Building2 className="h-3 w-3 text-sky-400" />
+                        <BuildingSVG className="h-3 w-3 text-sky-400" />
                         <span>{registeredTeam.department}</span>
                       </span>
                       {registeredTeam.leadPhone && (
                         <span className="flex items-center gap-1">
-                          <Phone className="h-3 w-3 text-emerald-400" />
+                          <PhoneSVG className="h-3 w-3 text-emerald-400" />
                           <span>{registeredTeam.leadPhone}</span>
                         </span>
                       )}
@@ -687,7 +698,7 @@ export default function EventInsideView({
                   >
                     <div className="space-y-1">
                       <div className="flex items-center gap-2">
-                        <User className="h-4 w-4 text-sky-400" />
+                        <UserSVG className="h-4 w-4 text-sky-400" />
                         <span className="font-bold text-white text-sm">{mate.name}</span>
                         <span className="text-[10px] font-semibold text-purple-300 bg-purple-500/20 border border-purple-500/40 px-2 py-0.2 rounded-full">
                           Co-Founder #{idx + 2}
@@ -698,12 +709,12 @@ export default function EventInsideView({
                       </span>
                       <div className="flex items-center gap-3 pt-1 text-[11px] text-white/50">
                         <span className="flex items-center gap-1">
-                          <Building2 className="h-3 w-3 text-sky-400" />
+                          <BuildingSVG className="h-3 w-3 text-sky-400" />
                           <span>{mate.department || "Heritage IT"}</span>
                         </span>
                         {mate.phone && (
                           <span className="flex items-center gap-1">
-                            <Phone className="h-3 w-3 text-emerald-400" />
+                            <PhoneSVG className="h-3 w-3 text-emerald-400" />
                             <span>{mate.phone}</span>
                           </span>
                         )}
@@ -723,7 +734,7 @@ export default function EventInsideView({
                   >
                     <div className="space-y-1">
                       <div className="flex items-center gap-2">
-                        <Clock className="h-3.5 w-3.5 text-white/40" />
+                        <SparklesSVG className="h-3.5 w-3.5 text-white/40" />
                         <span className="font-semibold text-white/70">
                           Slot #{totalJoined + idx + 1} Open
                         </span>
@@ -762,7 +773,7 @@ export default function EventInsideView({
                   type="button"
                   onClick={() => {
                     if (!isTeamCriteriaMet) {
-                      alert(`⚠️ Team Roster Incomplete (${totalJoined}/${minMembers} Members)\n\nOfficial Hult Prize rules require at least ${minMembers} members per team to validate your pass. Please share your Team Code (${registeredTeam.teamCode}) with teammates so they can join!`);
+                      alert(`Team Roster Incomplete (${totalJoined}/${minMembers} Members)\n\nOfficial Hult Prize rules require at least ${minMembers} members per team to validate your pass. Please share your Team Code (${registeredTeam.teamCode}) with teammates so they can join!`);
                       return;
                     }
                     const text = `HULT PRIZE REGISTRATION PASS\nEvent: ${event.title}\nTeam: ${registeredTeam.teamName}\nTeam Code: ${registeredTeam.teamCode || "N/A"}\nLeader: ${registeredTeam.leadName} (${registeredTeam.leadEmail})\nMembers Count: ${totalJoined} / ${targetCount}\nStatus: Confirmed\nVenue: ${event.venue}\nDate: ${event.date}`;
@@ -874,7 +885,7 @@ export default function EventInsideView({
             {/* Error Alert */}
             {errorMessage && (
               <div className="rounded-2xl border border-red-500/30 bg-red-950/40 p-4 text-xs text-red-200 flex items-center gap-3">
-                <span>⚠️</span>
+                <AlertTriangleSVG className="h-4 w-4 text-red-400 shrink-0" />
                 <span>{errorMessage}</span>
               </div>
             )}
@@ -973,11 +984,8 @@ export default function EventInsideView({
                 {createStep === 1 && (
                   <div className="rounded-3xl border border-white/15 bg-[#09090b] p-6 sm:p-8 space-y-6 backdrop-blur-2xl shadow-2xl animate-fadeIn">
                     <div className="space-y-1">
-                      <span className="text-[10px] font-mono font-bold text-[#f20089] uppercase tracking-widest block">
-                        Phase 01
-                      </span>
-                      <h3 className="text-xl sm:text-2xl font-bold text-white tracking-tight font-[family-name:var(--font-google-sans)]">
-                        What is your startup venture & team name?
+                      <h3 className="text-xl font-bold text-white tracking-tight font-[family-name:var(--font-google-sans)]">
+                        Team & Venture Details
                       </h3>
                     </div>
 
@@ -1054,40 +1062,20 @@ export default function EventInsideView({
                 {createStep === 2 && (
                   <div className="rounded-3xl border border-white/15 bg-[#09090b] p-6 sm:p-8 space-y-6 backdrop-blur-2xl shadow-2xl animate-fadeIn">
                     <div className="space-y-1">
-                      <span className="text-[10px] font-mono font-bold text-[#f20089] uppercase tracking-widest block">
-                        Phase 02
-                      </span>
-                      <h3 className="text-xl sm:text-2xl font-bold text-white tracking-tight font-[family-name:var(--font-google-sans)]">
-                        Team Leader Contact & Credentials
+                      <h3 className="text-xl font-bold text-white tracking-tight font-[family-name:var(--font-google-sans)]">
+                        Leader Contact Info
                       </h3>
                     </div>
 
-                    {/* Verified Identity Badge (Minimalist Dark Glass) */}
-                    <div className="rounded-2xl border border-white/15 bg-white/[0.03] p-4 flex items-center justify-between gap-3 flex-wrap">
-                      <div className="space-y-0.5 text-xs">
+                    <div className="rounded-2xl border border-white/10 bg-white/[0.02] p-4 flex items-center justify-between text-xs">
+                      <div>
                         <span className="font-semibold text-white block">
-                          Team Leader: {sessionUser.name || "Student Leader"}
+                          Leader: {sessionUser.name || "Student Leader"}
                         </span>
                         <span className="text-[11px] font-mono text-zinc-400 block">
                           {sessionUser.email}
                         </span>
                       </div>
-                      <span className="text-[10px] font-mono font-bold uppercase tracking-wider bg-white/10 text-zinc-200 border border-white/15 px-3 py-1 rounded-full">
-                        Verified Institutional Identity
-                      </span>
-                    </div>
-
-                    {/* Auto-fill Identity Micro-Banner */}
-                    <div className="rounded-2xl border border-pink-500/30 bg-pink-500/10 p-3 flex items-center justify-between gap-2 text-xs backdrop-blur-md">
-                      <div className="flex items-center gap-2">
-                        <Sparkles className="h-4 w-4 text-pink-400 shrink-0" />
-                        <span className="text-pink-200 text-[11px] font-mono">
-                          Auto-filled from verified email: <strong className="text-white font-semibold">{parseHeritageEmail(sessionUser?.email || "").fullName}</strong>
-                        </span>
-                      </div>
-                      <span className="text-[10px] uppercase font-bold text-pink-300 font-mono bg-pink-500/20 px-2 py-0.5 rounded-full shrink-0">
-                        Heritage Verified
-                      </span>
                     </div>
 
                     <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-xs">
@@ -1111,7 +1099,7 @@ export default function EventInsideView({
                         </label>
                         <input
                           type="text"
-                          placeholder="e.g. 12621001099"
+                          placeholder="e.g. 2151042"
                           value={leadRoll}
                           onChange={(e) => setLeadRoll(e.target.value)}
                           className="w-full rounded-2xl border border-white/15 bg-[#121216] focus:bg-[#16161c] px-4 py-3 text-white placeholder:text-zinc-600 outline-none focus:border-[#f20089] focus:ring-1 focus:ring-[#f20089] transition-all text-xs font-mono"
@@ -1258,27 +1246,20 @@ export default function EventInsideView({
                 {joinStep === 2 && (
                   <div className="rounded-3xl border border-white/15 bg-[#09090b] p-6 sm:p-8 space-y-6 backdrop-blur-2xl shadow-2xl animate-fadeIn">
                     <div className="space-y-1">
-                      <span className="text-[10px] font-mono font-bold text-[#f20089] uppercase tracking-widest block">
-                        Phase 02
-                      </span>
-                      <h3 className="text-xl sm:text-2xl font-bold text-white tracking-tight font-[family-name:var(--font-google-sans)]">
-                        Teammate Contact Details & Department
+                      <h3 className="text-xl font-bold text-white tracking-tight font-[family-name:var(--font-google-sans)]">
+                        Member Contact Info
                       </h3>
                     </div>
 
-                    {/* Verified Identity Badge */}
-                    <div className="rounded-2xl border border-white/15 bg-white/[0.03] p-4 flex items-center justify-between gap-3 flex-wrap">
-                      <div className="space-y-0.5 text-xs">
+                    <div className="rounded-2xl border border-white/10 bg-white/[0.02] p-4 flex items-center justify-between text-xs">
+                      <div>
                         <span className="font-semibold text-white block">
-                          Joining Member: {sessionUser.name || "Student Co-Founder"}
+                          Member: {sessionUser.name || "Student"}
                         </span>
                         <span className="text-[11px] font-mono text-zinc-400 block">
                           {sessionUser.email}
                         </span>
                       </div>
-                      <span className="text-[10px] font-mono font-bold uppercase tracking-wider bg-white/10 text-zinc-200 border border-white/15 px-3 py-1 rounded-full">
-                        Verified Institutional Identity
-                      </span>
                     </div>
 
                     <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-xs">
@@ -1302,7 +1283,7 @@ export default function EventInsideView({
                         </label>
                         <input
                           type="text"
-                          placeholder="e.g. 12621001099"
+                          placeholder="e.g. 2151042"
                           value={memberRoll}
                           onChange={(e) => setMemberRoll(e.target.value)}
                           className="w-full rounded-2xl border border-white/15 bg-[#121216] focus:bg-[#16161c] px-4 py-3 text-white placeholder:text-zinc-600 outline-none focus:border-[#f20089] focus:ring-1 focus:ring-[#f20089] transition-all text-xs font-mono"
@@ -1368,6 +1349,16 @@ export default function EventInsideView({
         {/* Point 7: Live Auditorium Hub & Stage Q&A/Poll */}
         <div className="mt-16">
           <LiveAuditoriumHub />
+        </div>
+
+        {/* Co-Founder Matchmaking Radar Board */}
+        <div className="mt-16">
+          <CoFounderRadar
+            currentStudentEmail={sessionUser?.email || undefined}
+            isTeamLeader={registeredTeam?.leadEmail === sessionUser?.email}
+            teamCode={registeredTeam?.teamCode}
+            teamName={registeredTeam?.teamName}
+          />
         </div>
 
         {/* Point 8: Student Startup Leaderboard & Milestone Stepper */}

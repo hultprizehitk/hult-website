@@ -83,7 +83,7 @@ export default function AboutSection() {
                     width={180}
                     height={180}
                     unoptimized
-                    className="object-contain hover:scale-105 transition-transform duration-500 drop-shadow-[0_10px_30px_rgba(242,0,137,0.5)]"
+                    className="object-contain hover:scale-105 transition-transform duration-500"
                   />
                 </div>
               </div>
@@ -223,7 +223,7 @@ export default function AboutSection() {
                     width={495}
                     height={495}
                     unoptimized
-                    className="object-contain drop-shadow-[0_10px_40px_rgba(56,189,248,0.5)] hover:scale-105 transition-transform duration-500"
+                    className="object-contain hover:scale-105 transition-transform duration-500"
                   />
                 </div>
                 <Link

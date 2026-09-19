@@ -8,7 +8,7 @@ export interface TeamClanBadgeProps {
   primaryColor?: string;
   accentColor?: string;
   pattern?: "stripes" | "hex" | "starburst" | "diagonal" | "gradient";
-  icon?: "phoenix" | "crown" | "lightning" | "rocket" | "leaf" | "atom" | "sword" | "diamond";
+  icon?: "phoenix" | "crown" | "lightning" | "rocket" | "leaf" | "atom" | "sword" | "dragon";
   size?: number;
   crestImage?: string;
   className?: string;
@@ -24,7 +24,7 @@ export default function TeamClanBadgeSVG({
   crestImage,
   className = "",
 }: TeamClanBadgeProps) {
-  // If a 3D crest PNG image is provided, render it directly with glowing frame
+  // If a 3D crest PNG image is provided, render it directly
   if (crestImage) {
     return (
       <div
@@ -43,9 +43,12 @@ export default function TeamClanBadgeSVG({
     );
   }
 
-  // Dynamic SVG Flag Paths & Icons
-  const gradientId = `crest-grad-${primaryColor.replace('#', '')}-${accentColor.replace('#', '')}`;
-  const patternId = `crest-pat-${pattern}`;
+  // Generate unique IDs for SVG defs
+  const safePrimary = primaryColor.replace("#", "");
+  const safeAccent = accentColor.replace("#", "");
+  const gradId = `badge-grad-${safePrimary}-${safeAccent}`;
+  const goldGradId = `badge-gold-${safePrimary}`;
+  const strokeGradId = `badge-stroke-${safePrimary}-${safeAccent}`;
 
   return (
     <div
@@ -58,111 +61,217 @@ export default function TeamClanBadgeSVG({
         viewBox="0 0 100 100"
         fill="none"
         xmlns="http://www.w3.org/2000/svg"
-        className="drop-shadow-[0_6px_16px_rgba(0,0,0,0.5)]"
+        className="drop-shadow-[0_8px_20px_rgba(0,0,0,0.7)]"
       >
         <defs>
-          {/* Gradient fill */}
-          <linearGradient id={gradientId} x1="0%" y1="0%" x2="100%" y2="100%">
+          {/* Main Primary Accent Gradient */}
+          <linearGradient id={gradId} x1="0%" y1="0%" x2="100%" y2="100%">
             <stop offset="0%" stopColor={primaryColor} />
+            <stop offset="50%" stopColor={primaryColor} stopOpacity="0.85" />
             <stop offset="100%" stopColor={accentColor} />
           </linearGradient>
 
-          {/* Patterns */}
-          <pattern id={`${patternId}-stripes`} width="10" height="10" patternTransform="rotate(45 0 0)" patternUnits="userSpaceOnUse">
-            <line x1="0" y1="0" x2="0" y2="10" stroke="rgba(255,255,255,0.15)" strokeWidth="4" />
+          {/* Metallic Gold Frame Gradient */}
+          <linearGradient id={goldGradId} x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" stopColor="#fbbf24" />
+            <stop offset="50%" stopColor="#f59e0b" />
+            <stop offset="100%" stopColor="#d97706" />
+          </linearGradient>
+
+          {/* Glowing Stroke Edge */}
+          <linearGradient id={strokeGradId} x1="0%" y1="0%" x2="0%" y2="100%">
+            <stop offset="0%" stopColor="#ffffff" stopOpacity="0.8" />
+            <stop offset="50%" stopColor={primaryColor} stopOpacity="0.6" />
+            <stop offset="100%" stopColor="#ffffff" stopOpacity="0.2" />
+          </linearGradient>
+
+          {/* Texture Patterns */}
+          <pattern id={`pat-stripes-${safePrimary}`} width="8" height="8" patternTransform="rotate(45 0 0)" patternUnits="userSpaceOnUse">
+            <line x1="0" y1="0" x2="0" y2="8" stroke="rgba(255,255,255,0.2)" strokeWidth="3" />
+          </pattern>
+
+          <pattern id={`pat-dots-${safePrimary}`} width="10" height="10" patternUnits="userSpaceOnUse">
+            <circle cx="5" cy="5" r="1.5" fill="rgba(255,255,255,0.25)" />
           </pattern>
         </defs>
 
-        {/* Flag Frame Shapes */}
+        {/* ----------------------------------------------------------------- */}
+        {/* LAYER 1: BASE METALLIC FRAME & SHAPE PATHS                         */}
+        {/* ----------------------------------------------------------------- */}
         {shape === "shield" && (
-          <path
-            d="M50 5 L85 20 V50 C85 72 50 95 50 95 C50 95 15 72 15 50 V20 L50 5 Z"
-            fill={`url(#${gradientId})`}
-            stroke="#ffffff"
-            strokeWidth="3"
-            strokeOpacity="0.4"
-          />
+          <>
+            <path
+              d="M50 3 L88 18 V48 C88 74 50 97 50 97 C50 97 12 74 12 48 V18 L50 3 Z"
+              fill={`url(#${goldGradId})`}
+            />
+            <path
+              d="M50 7 L84 21 V46 C84 70 50 92 50 92 C50 92 16 70 16 46 V21 L50 7 Z"
+              fill={`url(#${gradId})`}
+              stroke={`url(#${strokeGradId})`}
+              strokeWidth="2.5"
+            />
+          </>
         )}
 
         {shape === "banner" && (
-          <path
-            d="M20 5 H80 V75 L50 95 L20 75 V5 Z"
-            fill={`url(#${gradientId})`}
-            stroke="#ffffff"
-            strokeWidth="3"
-            strokeOpacity="0.4"
-          />
+          <>
+            <path
+              d="M15 3 H85 V78 L50 97 L15 78 V3 Z"
+              fill={`url(#${goldGradId})`}
+            />
+            <path
+              d="M19 7 H81 V75 L50 92 L19 75 V7 Z"
+              fill={`url(#${gradId})`}
+              stroke={`url(#${strokeGradId})`}
+              strokeWidth="2.5"
+            />
+          </>
         )}
 
         {shape === "hexagon" && (
-          <path
-            d="M50 5 L90 27.5 V72.5 L50 95 L10 72.5 V27.5 L50 5 Z"
-            fill={`url(#${gradientId})`}
-            stroke="#ffffff"
-            strokeWidth="3"
-            strokeOpacity="0.4"
-          />
+          <>
+            <path
+              d="M50 3 L92 26 V74 L50 97 L8 74 V26 L50 3 Z"
+              fill={`url(#${goldGradId})`}
+            />
+            <path
+              d="M50 7 L88 28 V72 L50 93 L12 72 V28 L50 7 Z"
+              fill={`url(#${gradId})`}
+              stroke={`url(#${strokeGradId})`}
+              strokeWidth="2.5"
+            />
+          </>
         )}
 
         {shape === "diamond" && (
-          <path
-            d="M50 5 L92 50 L50 95 L8 50 L50 5 Z"
-            fill={`url(#${gradientId})`}
-            stroke="#ffffff"
-            strokeWidth="3"
-            strokeOpacity="0.4"
-          />
+          <>
+            <path
+              d="M50 3 L97 50 L50 97 L3 50 L50 3 Z"
+              fill={`url(#${goldGradId})`}
+            />
+            <path
+              d="M50 8 L92 50 L50 92 L8 50 L50 8 Z"
+              fill={`url(#${gradId})`}
+              stroke={`url(#${strokeGradId})`}
+              strokeWidth="2.5"
+            />
+          </>
         )}
 
         {shape === "crown" && (
-          <path
-            d="M15 25 L35 40 L50 10 L65 40 L85 25 L80 85 H20 L15 25 Z"
-            fill={`url(#${gradientId})`}
-            stroke="#ffffff"
-            strokeWidth="3"
-            strokeOpacity="0.4"
-          />
+          <>
+            <path
+              d="M12 22 L35 38 L50 5 L65 38 L88 22 L82 88 H18 L12 22 Z"
+              fill={`url(#${goldGradId})`}
+            />
+            <path
+              d="M16 26 L36 40 L50 11 L64 40 L84 26 L79 84 H21 L16 26 Z"
+              fill={`url(#${gradId})`}
+              stroke={`url(#${strokeGradId})`}
+              strokeWidth="2.5"
+            />
+          </>
         )}
 
-        {/* Inner Motif Layer */}
+        {/* ----------------------------------------------------------------- */}
+        {/* LAYER 2: BACKGROUND MOTIF TEXTURES                                */}
+        {/* ----------------------------------------------------------------- */}
         {pattern === "stripes" && (
-          <rect x="0" y="0" width="100" height="100" fill={`url(#${patternId}-stripes)`} opacity="0.3" />
+          <rect x="15" y="15" width="70" height="70" fill={`url(#pat-stripes-${safePrimary})`} opacity="0.35" clipPath="url(#bg-clip)" />
         )}
 
-        {/* Central Emblem Icon */}
-        <g fill="#ffffff" opacity="0.95" transform="translate(25, 25) scale(0.5)">
+        {/* Inner Radial Starburst Lines */}
+        <g stroke="#ffffff" strokeOpacity="0.18" strokeWidth="1.5">
+          <line x1="50" y1="20" x2="50" y2="80" />
+          <line x1="20" y1="50" x2="80" y2="50" />
+          <line x1="28" y1="28" x2="72" y2="72" />
+          <line x1="28" y1="72" x2="72" y2="28" />
+        </g>
+
+        {/* Inner Heraldic Ring Frame */}
+        <circle cx="50" cy="50" r="24" stroke="#ffffff" strokeOpacity="0.3" strokeWidth="2" fill="rgba(0,0,0,0.25)" />
+
+        {/* ----------------------------------------------------------------- */}
+        {/* LAYER 3: RICH COMPOSITE HERALDIC EMBLEM GRAPHICS                   */}
+        {/* ----------------------------------------------------------------- */}
+        <g fill="#ffffff" fillOpacity="0.95" stroke="#ffffff" strokeWidth="0.5">
+          {/* EMBLEM 1: PHOENIX FLAME CREST */}
+          {(icon === "phoenix" || icon === "lightning") && (
+            <g transform="translate(50, 50)">
+              {/* Flame Wings */}
+              <path d="M0 -22 C-14 -12 -22 2 -18 16 C-12 22 -4 20 0 12 C4 20 12 22 18 16 C22 2 14 -12 0 -22 Z" fill={`url(#${goldGradId})`} />
+              {/* Central Starburst Core */}
+              <polygon points="0,-18 4,-6 16,-6 6,2 10,14 0,6 -10,14 -6,2 -16,-6 -4,-6" fill="#ffffff" />
+              {/* Flame crown */}
+              <path d="M-6 -18 L0 -26 L6 -18 L0 -14 Z" fill="#ffffff" />
+            </g>
+          )}
+
+          {/* EMBLEM 2: IMPERIAL CROWN & CROSSED SWORDS */}
           {icon === "crown" && (
-            <path d="M50 15 L65 45 L90 25 L75 80 H25 L10 25 L35 45 Z" />
+            <g transform="translate(50, 50)">
+              {/* Crossed Swords Background */}
+              <path d="M-18 -18 L18 18 M-14 -18 L-18 -14 M14 18 L18 14" stroke="#fbbf24" strokeWidth="3.5" strokeLinecap="round" />
+              <path d="M18 -18 L-18 18 M14 -18 L18 -14 M-18 14 L-14 18" stroke="#fbbf24" strokeWidth="3.5" strokeLinecap="round" />
+              {/* Imperial Crown */}
+              <path d="M-14 -6 L-7 6 L0 -10 L7 6 L14 -6 L10 12 H-10 L-14 -6 Z" fill="#ffffff" />
+              <circle cx="-14" cy="-8" r="2.5" fill="#fbbf24" />
+              <circle cx="0" cy="-12" r="3" fill="#fbbf24" />
+              <circle cx="14" cy="-8" r="2.5" fill="#fbbf24" />
+              <rect x="-8" y="14" width="16" height="3" rx="1.5" fill="#fbbf24" />
+            </g>
           )}
 
-          {icon === "phoenix" && (
-            <path d="M50 10 C30 30 10 35 10 65 C10 80 25 90 50 90 C75 90 90 80 90 65 C90 35 70 30 50 10 Z" />
-          )}
-
-          {icon === "lightning" && (
-            <path d="M55 10 L20 55 H45 L35 90 L80 45 H55 L65 10 Z" />
-          )}
-
-          {icon === "rocket" && (
-            <path d="M50 10 C35 30 30 50 30 75 L50 90 L70 75 C70 50 65 30 50 10 Z" />
-          )}
-
-          {icon === "leaf" && (
-            <path d="M50 10 C20 30 15 65 50 90 C85 65 80 30 50 10 Z" />
-          )}
-
+          {/* EMBLEM 3: QUANTUM ATOM TECH ENGINE */}
           {icon === "atom" && (
-            <polygon points="50,15 85,50 50,85 15,50" />
+            <g transform="translate(50, 50)">
+              <ellipse cx="0" cy="0" rx="20" ry="7" fill="none" stroke="#ffffff" strokeWidth="2" transform="rotate(30)" />
+              <ellipse cx="0" cy="0" rx="20" ry="7" fill="none" stroke="#ffffff" strokeWidth="2" transform="rotate(90)" />
+              <ellipse cx="0" cy="0" rx="20" ry="7" fill="none" stroke="#ffffff" strokeWidth="2" transform="rotate(150)" />
+              <circle cx="0" cy="0" r="6" fill={`url(#${goldGradId})`} />
+              <circle cx="0" cy="0" r="3" fill="#ffffff" />
+            </g>
           )}
 
-          {icon === "sword" && (
-            <path d="M50 10 L60 30 L50 70 L40 30 Z M40 75 H60 V85 H40 Z" />
+          {/* EMBLEM 4: VANGUARD DRAGON & SHIELD */}
+          {(icon === "sword" || icon === "dragon") && (
+            <g transform="translate(50, 50)">
+              {/* Broadsword */}
+              <path d="M0 -24 L4 -8 L2 14 H-2 L-4 -8 Z" fill="#ffffff" />
+              <path d="M-10 -8 H10 V-5 H-10 Z" fill="#fbbf24" />
+              <circle cx="0" cy="18" r="3" fill="#fbbf24" />
+              {/* Dragon Wings */}
+              <path d="M-4 -6 C-12 -18 -24 -14 -20 4 C-14 8 -6 2 -4 -6 Z" fill={`url(#${goldGradId})`} />
+              <path d="M4 -6 C12 -18 24 -14 20 4 C14 8 6 2 4 -6 Z" fill={`url(#${goldGradId})`} />
+            </g>
+          )}
+
+          {/* EMBLEM 5: GAIA BIO LEAF & SOLAR CIRCLE */}
+          {icon === "leaf" && (
+            <g transform="translate(50, 50)">
+              <path d="M0 -20 C16 -12 18 10 0 20 C-18 10 -16 -12 0 -20 Z" fill="#ffffff" />
+              <path d="M0 -15 C-8 -4 -6 8 0 15 C6 8 8 -4 0 -15 Z" fill={`url(#${goldGradId})`} />
+              <line x1="0" y1="-15" x2="0" y2="15" stroke="#ffffff" strokeWidth="2" />
+            </g>
+          )}
+
+          {/* EMBLEM 6: ROCKET LAUNCH CORE */}
+          {icon === "rocket" && (
+            <g transform="translate(50, 50)">
+              <path d="M0 -22 C6 -12 8 2 8 12 L0 16 L-8 12 C-8 2 -6 -12 0 -22 Z" fill="#ffffff" />
+              <path d="M-8 6 L-16 16 L-8 12 Z" fill={`url(#${goldGradId})`} />
+              <path d="M8 6 L16 16 L8 12 Z" fill={`url(#${goldGradId})`} />
+              <circle cx="0" cy="-4" r="3.5" fill="#38bdf8" stroke="#ffffff" strokeWidth="1" />
+              <path d="M-4 16 L0 24 L4 16 Z" fill="#f59e0b" />
+            </g>
           )}
         </g>
 
-        {/* Gloss Highlight Overlay */}
+        {/* ----------------------------------------------------------------- */}
+        {/* LAYER 4: GLASS GLARE OVERLAY                                      */}
+        {/* ----------------------------------------------------------------- */}
         <path
-          d="M20 15 C40 10 60 10 80 15 C70 35 30 35 20 15 Z"
+          d="M18 10 C45 6 70 10 82 22 C65 34 35 34 18 10 Z"
           fill="#ffffff"
           opacity="0.2"
         />

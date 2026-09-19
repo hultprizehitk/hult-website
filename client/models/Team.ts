@@ -17,12 +17,21 @@ export interface ITeamLead {
   roll?: string;
 }
 
+export interface ITeamBadgeConfig {
+  shape: "shield" | "banner" | "hexagon" | "diamond" | "crown";
+  primaryColor: string;
+  accentColor: string;
+  pattern: "stripes" | "hex" | "starburst" | "diagonal" | "gradient";
+  icon: "phoenix" | "crown" | "lightning" | "rocket" | "leaf" | "atom" | "sword" | "dragon";
+}
+
 export interface ITeam extends Document {
   _id: mongoose.Types.ObjectId;
   eventId: mongoose.Types.ObjectId;
   teamCode: string;
   teamName: string;
   ventureName: string;
+  badgeConfig?: ITeamBadgeConfig;
   lead: ITeamLead;
   leadEmail: string; // denormalized for fast indexed queries
   membersCount: number; // max team capacity
@@ -84,6 +93,13 @@ const TeamSchema = new Schema<ITeam>(
       type: String,
       default: "",
       trim: true,
+    },
+    badgeConfig: {
+      shape: { type: String, default: "shield" },
+      primaryColor: { type: String, default: "#f20089" },
+      accentColor: { type: String, default: "#a855f7" },
+      pattern: { type: String, default: "gradient" },
+      icon: { type: String, default: "crown" },
     },
     lead: {
       type: TeamLeadSchema,

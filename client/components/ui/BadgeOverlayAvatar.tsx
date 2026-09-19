@@ -2,6 +2,8 @@
 
 import React from "react";
 import Image from "next/image";
+import TeamClanBadgeSVG from "./TeamClanBadgeSVG";
+import { LeaderCrownSVG, ChampionTrophySVG } from "./CustomSvgIcons";
 
 export interface BadgeOverlayAvatarProps {
   src?: string | null;
@@ -10,7 +12,12 @@ export interface BadgeOverlayAvatarProps {
   isLeader?: boolean;
   isAdmin?: boolean;
   rank?: number;
-  badgePin?: "crown" | "scholar" | "champion" | "finalist" | "leaf";
+  teamBadgeConfig?: {
+    shape?: "shield" | "banner" | "hexagon" | "diamond" | "crown";
+    primaryColor?: string;
+    accentColor?: string;
+    icon?: "phoenix" | "crown" | "lightning" | "rocket" | "leaf" | "atom" | "sword" | "dragon";
+  };
   glowColor?: string;
   className?: string;
 }
@@ -22,16 +29,16 @@ export default function BadgeOverlayAvatar({
   isLeader = false,
   isAdmin = false,
   rank,
-  badgePin,
+  teamBadgeConfig,
   glowColor = "rgba(242, 0, 137, 0.6)",
   className = "",
 }: BadgeOverlayAvatarProps) {
   // Dimension maps
   const dimensionMap = {
-    sm: { container: "h-10 w-10", text: "text-xs", pin: "h-4 w-4", pinText: "text-[9px]" },
-    md: { container: "h-16 w-16", text: "text-lg", pin: "h-6 w-6", pinText: "text-xs" },
-    lg: { container: "h-20 w-20", text: "text-2xl", pin: "h-7 w-7", pinText: "text-sm" },
-    xl: { container: "h-28 w-28", text: "text-4xl", pin: "h-9 w-9", pinText: "text-base" },
+    sm: { container: "h-10 w-10", text: "text-xs", badgeSize: 18, pin: "h-4 w-4", iconSize: "w-2.5 h-2.5" },
+    md: { container: "h-16 w-16", text: "text-lg", badgeSize: 26, pin: "h-5 w-5", iconSize: "w-3 h-3" },
+    lg: { container: "h-20 w-20", text: "text-2xl", badgeSize: 32, pin: "h-6 w-6", iconSize: "w-3.5 h-3.5" },
+    xl: { container: "h-28 w-28", text: "text-4xl", badgeSize: 42, pin: "h-7 w-7", iconSize: "w-4 h-4" },
   };
 
   const dim = dimensionMap[size];
@@ -80,20 +87,32 @@ export default function BadgeOverlayAvatar({
         )}
       </div>
 
-      {/* Gamified Badge Overlay Pin (Bottom-Right Corner - Clash Style) */}
-      {(isLeader || badgePin || rank === 1) && (
+      {/* OVERLAY: Dynamic SVG Team Badge (Appears when student is part of a team) */}
+      {teamBadgeConfig && (
         <div
-          className={`absolute -bottom-1 -right-1 flex items-center justify-center rounded-full bg-[#121216] border border-white/30 text-white shadow-lg ${dim.pin}`}
-          title={isLeader ? "Team Leader" : rank === 1 ? "1st Place Champion" : "Verified Badge"}
+          className="absolute -bottom-1 -right-1 drop-shadow-xl hover:scale-110 transition-transform pointer-events-none"
+          title="Official Team Guild Badge"
         >
-          {isLeader || badgePin === "crown" ? (
-            <span className={dim.pinText}>👑</span>
-          ) : rank === 1 || badgePin === "champion" ? (
-            <span className={dim.pinText}>🏆</span>
-          ) : badgePin === "scholar" ? (
-            <span className={dim.pinText}>⚡</span>
+          <TeamClanBadgeSVG
+            size={dim.badgeSize}
+            shape={teamBadgeConfig.shape}
+            primaryColor={teamBadgeConfig.primaryColor}
+            accentColor={teamBadgeConfig.accentColor}
+            icon={teamBadgeConfig.icon}
+          />
+        </div>
+      )}
+
+      {/* Leader Crown Pin (Top-Right or Offset when Team Badge exists) */}
+      {(isLeader || rank === 1) && !teamBadgeConfig && (
+        <div
+          className={`absolute -bottom-1 -right-1 flex items-center justify-center rounded-full bg-[#121216] border border-amber-400/60 shadow-lg ${dim.pin}`}
+          title={isLeader ? "Team Leader" : "1st Place Champion"}
+        >
+          {isLeader ? (
+            <LeaderCrownSVG size={14} />
           ) : (
-            <span className={dim.pinText}>🚀</span>
+            <ChampionTrophySVG size={14} />
           )}
         </div>
       )}
