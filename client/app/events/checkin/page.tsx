@@ -76,14 +76,14 @@ function CheckInContent() {
         <div className="pointer-events-none absolute -bottom-32 -right-32 h-96 w-96 rounded-full bg-purple-900/30 blur-3xl" />
 
         <div className="relative z-10 max-w-md w-full rounded-3xl border border-white/15 bg-white/[0.04] backdrop-blur-2xl p-8 space-y-6 shadow-2xl">
-          <div className="relative mx-auto h-20 w-20 flex items-center justify-center">
+          <div className="relative mx-auto h-32 w-32 sm:h-40 sm:w-40 flex items-center justify-center">
             <Image
               src="/assets/bento/qr-scanner-3d.png"
               alt="3D QR Scanner"
-              width={80}
-              height={80}
+              width={160}
+              height={160}
               unoptimized
-              className="object-contain drop-shadow-[0_8px_25px_rgba(242,0,137,0.6)] hover:scale-110 transition-transform"
+              className="object-contain drop-shadow-[0_12px_35px_rgba(242,0,137,0.7)] hover:scale-110 transition-transform duration-300"
             />
           </div>
 

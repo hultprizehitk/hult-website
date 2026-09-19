@@ -149,13 +149,13 @@ export default function DigitalCertificateHub({
             </div>
 
             <div className="shrink-0 flex items-center gap-3">
-              <div className="relative w-12 h-12 hidden sm:block">
+              <div className="relative w-20 h-20 sm:w-24 sm:h-24 hidden sm:block">
                 <Image
                   src="/assets/bento/certificate-scroll.png"
                   alt="Official Certificate Scroll"
-                  width={48}
-                  height={48}
-                  className="object-contain drop-shadow-[0_4px_12px_rgba(242,0,137,0.4)]"
+                  width={96}
+                  height={96}
+                  className="object-contain drop-shadow-[0_8px_20px_rgba(242,0,137,0.6)] hover:scale-110 transition-transform duration-300"
                   unoptimized
                 />
               </div>

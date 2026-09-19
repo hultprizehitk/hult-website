@@ -318,14 +318,14 @@ export default function TeamPage() {
       <main className="relative z-10 flex-1 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 sm:py-16 w-full">
         {/* Hero Section */}
         <div className="text-center max-w-3xl mx-auto mb-12 sm:mb-16">
-          <div className="relative mx-auto mb-4 h-24 w-24 flex items-center justify-center">
+          <div className="relative mx-auto mb-4 h-36 w-36 sm:h-44 sm:w-44 flex items-center justify-center">
             <Image
               src="/assets/bento/team-podium.png"
               alt="3D Organizing Committee Team Podium"
-              width={96}
-              height={96}
+              width={176}
+              height={176}
               unoptimized
-              className="object-contain drop-shadow-[0_10px_30px_rgba(242,0,137,0.5)] hover:scale-110 transition-transform duration-300"
+              className="object-contain drop-shadow-[0_12px_35px_rgba(242,0,137,0.6)] hover:scale-110 transition-transform duration-300"
             />
           </div>
 

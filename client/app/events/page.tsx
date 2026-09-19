@@ -392,14 +392,14 @@ export default function EventsPage() {
         ) : (
           <>
             {/* 3D Incubation Flask Asset */}
-            <div className="relative mx-auto mb-2 h-24 w-24 flex items-center justify-center">
+            <div className="relative mx-auto mb-4 h-36 w-36 sm:h-44 sm:w-44 flex items-center justify-center">
               <Image
                 src="/assets/bento/incubation-flask.png"
                 alt="3D Incubation Flask"
-                width={96}
-                height={96}
+                width={176}
+                height={176}
                 unoptimized
-                className="object-contain drop-shadow-[0_8px_30px_rgba(242,0,137,0.6)] hover:scale-110 transition-transform duration-300"
+                className="object-contain drop-shadow-[0_12px_35px_rgba(242,0,137,0.7)] hover:scale-110 transition-transform duration-300"
               />
             </div>
 

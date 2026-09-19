@@ -263,13 +263,13 @@ export default function LiveAuditoriumHub() {
       {/* Header Banner */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-8 border-b border-white/10">
         <div className="flex items-center gap-4">
-          <div className="relative w-14 h-14 shrink-0 hidden sm:block">
+          <div className="relative w-24 h-24 sm:w-28 sm:h-28 shrink-0 hidden sm:block">
             <Image
               src="/assets/bento/broadcast-antenna.png"
               alt="Live Stage Broadcast Antenna"
-              width={56}
-              height={56}
-              className="object-contain drop-shadow-[0_6px_16px_rgba(242,0,137,0.4)]"
+              width={112}
+              height={112}
+              className="object-contain drop-shadow-[0_8px_20px_rgba(242,0,137,0.6)] hover:scale-110 transition-transform duration-300"
               unoptimized
             />
           </div>

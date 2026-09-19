@@ -88,39 +88,39 @@ export default function AboutSection() {
                 </div>
               </div>
 
-              <div className="pt-4 border-t border-white/10 flex items-center justify-between gap-4 flex-wrap">
-                <div className="flex items-center gap-4 text-xs font-mono">
-                  <div className="flex items-center gap-2">
-                    <div className="relative h-7 w-7 shrink-0">
+              <div className="pt-6 border-t border-white/10 flex items-center justify-between gap-6 flex-wrap">
+                <div className="flex items-center gap-6 text-xs font-mono">
+                  <div className="flex items-center gap-3">
+                    <div className="relative h-12 w-12 sm:h-14 sm:w-14 shrink-0">
                       <Image
                         src="/assets/bento/sdg-wheel.png"
                         alt="3D SDG Wheel"
-                        width={28}
-                        height={28}
+                        width={56}
+                        height={56}
                         unoptimized
-                        className="object-contain drop-shadow-[0_4px_10px_rgba(242,0,137,0.5)]"
+                        className="object-contain drop-shadow-[0_8px_20px_rgba(242,0,137,0.6)] hover:scale-110 transition-transform"
                       />
                     </div>
                     <div>
-                      <span className="block text-white/50 text-[10px] uppercase">UN Alignment</span>
-                      <strong className="text-[#f20089] text-sm font-bold">17 SDGs</strong>
+                      <span className="block text-white/50 text-[11px] uppercase tracking-wider font-bold">UN Alignment</span>
+                      <strong className="text-[#f20089] text-base font-black">17 SDGs</strong>
                     </div>
                   </div>
-                  <div className="h-6 w-[1px] bg-white/10" />
-                  <div className="flex items-center gap-2">
-                    <div className="relative h-7 w-7 shrink-0">
+                  <div className="h-8 w-[1px] bg-white/15" />
+                  <div className="flex items-center gap-3">
+                    <div className="relative h-12 w-12 sm:h-14 sm:w-14 shrink-0">
                       <Image
                         src="/assets/bento/network-nodes.png"
                         alt="3D Network Nodes"
-                        width={28}
-                        height={28}
+                        width={56}
+                        height={56}
                         unoptimized
-                        className="object-contain drop-shadow-[0_4px_10px_rgba(56,189,248,0.5)]"
+                        className="object-contain drop-shadow-[0_8px_20px_rgba(56,189,248,0.6)] hover:scale-110 transition-transform"
                       />
                     </div>
                     <div>
-                      <span className="block text-white/50 text-[10px] uppercase">Heritage Impact</span>
-                      <strong className="text-white text-sm font-bold">100+ Founders</strong>
+                      <span className="block text-white/50 text-[11px] uppercase tracking-wider font-bold">Heritage Impact</span>
+                      <strong className="text-white text-base font-black">100+ Founders</strong>
                     </div>
                   </div>
                 </div>

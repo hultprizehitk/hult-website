@@ -287,14 +287,14 @@ export default function StudentProfilePage() {
                       studentInfo?.firstName?.charAt(0) || "H"
                     )}
                   </div>
-                  <div className="relative h-16 w-16 shrink-0 hidden sm:block">
+                  <div className="relative h-24 w-24 sm:h-28 sm:w-28 shrink-0 hidden sm:block">
                     <Image
                       src="/assets/bento/founder-shield-badge.png"
                       alt="3D Founder Shield Badge"
-                      width={64}
-                      height={64}
+                      width={112}
+                      height={112}
                       unoptimized
-                      className="object-contain drop-shadow-[0_8px_20px_rgba(242,0,137,0.5)] hover:scale-110 transition-transform"
+                      className="object-contain drop-shadow-[0_10px_25px_rgba(242,0,137,0.6)] hover:scale-110 transition-transform duration-300"
                     />
                   </div>
                 </div>

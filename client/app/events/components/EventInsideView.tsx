@@ -351,25 +351,25 @@ export default function EventInsideView({
               </span>
             </div>
 
-            <div className="flex items-center gap-3 hidden sm:flex">
-              <div className="relative h-14 w-14">
+            <div className="flex items-center gap-4 hidden sm:flex">
+              <div className="relative h-24 w-24 sm:h-28 sm:w-28">
                 <Image
                   src="/assets/bento/event-ticket-3d.png"
                   alt="3D Event Ticket"
-                  width={56}
-                  height={56}
+                  width={112}
+                  height={112}
                   unoptimized
-                  className="object-contain drop-shadow-[0_6px_15px_rgba(242,0,137,0.5)] hover:scale-110 transition-transform"
+                  className="object-contain drop-shadow-[0_10px_25px_rgba(242,0,137,0.6)] hover:scale-110 transition-transform duration-300"
                 />
               </div>
-              <div className="relative h-14 w-14">
+              <div className="relative h-24 w-24 sm:h-28 sm:w-28">
                 <Image
                   src="/assets/bento/venture-coins.png"
                   alt="3D Venture Coins"
-                  width={56}
-                  height={56}
+                  width={112}
+                  height={112}
                   unoptimized
-                  className="object-contain drop-shadow-[0_6px_15px_rgba(245,158,11,0.5)] hover:scale-110 transition-transform"
+                  className="object-contain drop-shadow-[0_10px_25px_rgba(245,158,11,0.6)] hover:scale-110 transition-transform duration-300"
                 />
               </div>
             </div>

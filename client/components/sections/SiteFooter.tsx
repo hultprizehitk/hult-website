@@ -28,14 +28,14 @@ export default function SiteFooter() {
                   className="object-contain"
                 />
               </div>
-              <div className="relative h-9 w-9 shrink-0">
+              <div className="relative h-14 w-14 shrink-0">
                 <Image
                   src="/assets/bento/community-chat-sphere.png"
                   alt="3D Community Sphere"
-                  width={36}
-                  height={36}
+                  width={56}
+                  height={56}
                   unoptimized
-                  className="object-contain drop-shadow-[0_4px_12px_rgba(242,0,137,0.5)] hover:scale-110 transition-transform"
+                  className="object-contain drop-shadow-[0_6px_18px_rgba(242,0,137,0.6)] hover:scale-110 transition-transform duration-300"
                 />
               </div>
             </div>

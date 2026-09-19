@@ -408,14 +408,14 @@ export default function RegisterPage() {
               /* GOOGLE ONLY AUTHENTICATION VIEW */
               <div className="relative z-10 py-2 animate-fadeIn">
                 {/* 3D Pitch Deck Icon */}
-                <div className="relative mx-auto mb-3 h-20 w-20 flex items-center justify-center">
+                <div className="relative mx-auto mb-4 h-32 w-32 sm:h-40 sm:w-40 flex items-center justify-center">
                   <Image
                     src="/assets/bento/pitch-deck.png"
                     alt="3D Venture Pitch Deck"
-                    width={80}
-                    height={80}
+                    width={160}
+                    height={160}
                     unoptimized
-                    className="object-contain drop-shadow-[0_8px_25px_rgba(242,0,137,0.5)] hover:scale-110 transition-transform"
+                    className="object-contain drop-shadow-[0_12px_35px_rgba(242,0,137,0.6)] hover:scale-110 transition-transform duration-300"
                   />
                 </div>
 

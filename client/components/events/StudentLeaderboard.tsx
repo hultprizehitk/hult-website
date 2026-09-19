@@ -220,14 +220,14 @@ export default function StudentLeaderboard() {
                 <p className="text-xs font-bold text-[#f20089] mt-0.5">{top3[0].ventureTitle}</p>
                 <p className="text-xs text-neutral-300 mt-2 line-clamp-2">{top3[0].tagline}</p>
               </div>
-              <div className="relative h-20 w-20 shrink-0 hidden sm:block">
+              <div className="relative h-28 w-28 sm:h-36 sm:w-36 shrink-0 hidden sm:block">
                 <Image
                   src="/assets/bento/leaderboard-trophy.png"
                   alt="3D Champion Trophy"
-                  width={80}
-                  height={80}
+                  width={144}
+                  height={144}
                   unoptimized
-                  className="object-contain drop-shadow-[0_8px_20px_rgba(242,0,137,0.5)] hover:scale-110 transition-transform"
+                  className="object-contain drop-shadow-[0_12px_30px_rgba(242,0,137,0.7)] hover:scale-110 transition-transform duration-300"
                 />
               </div>
             </div>
