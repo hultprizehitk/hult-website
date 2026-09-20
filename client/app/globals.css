@@ -343,6 +343,59 @@ body {
   transition: transform 0.35s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
+/* ==========================================================================
+   Cherry blossom hero (homepage recreation)
+   ========================================================================== */
+
+@keyframes cherrySway {
+  0%, 100% { transform: rotate(0deg) translate3d(0, 0, 0); }
+  50% { transform: rotate(-1.2deg) translate3d(-8px, 6px, 0); }
+}
+
+@keyframes cherrySwayAlt {
+  0%, 100% { transform: rotate(0deg) translate3d(0, 0, 0); }
+  50% { transform: rotate(1.2deg) translate3d(8px, 5px, 0); }
+}
+
+.cherry-sway {
+  animation: cherrySway 9s ease-in-out infinite;
+  transform-origin: top left;
+  will-change: transform;
+}
+
+.cherry-sway-alt {
+  animation: cherrySwayAlt 11s ease-in-out infinite;
+  transform-origin: top right;
+  will-change: transform;
+}
+
+@keyframes cherryPetalFall {
+  0% {
+    transform: translate3d(0, -8vh, 0) rotate(0deg);
+    opacity: 0;
+  }
+  8% { opacity: 0.95; }
+  50% {
+    transform: translate3d(34px, 46vh, 0) rotate(160deg);
+    opacity: 0.9;
+  }
+  92% { opacity: 0.75; }
+  100% {
+    transform: translate3d(-30px, 108vh, 0) rotate(340deg);
+    opacity: 0;
+  }
+}
+
+.cherry-petal {
+  position: absolute;
+  top: 0;
+  display: block;
+  animation-name: cherryPetalFall;
+  animation-timing-function: linear;
+  animation-iteration-count: infinite;
+  will-change: transform, opacity;
+}
+
 :root {
   --background: #000000;
   --foreground: #ffffff;
