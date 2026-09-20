@@ -50,19 +50,20 @@
   animation: branchSwingRight 10.5s ease-in-out infinite alternate;
 }
 
-/* ── Bottom Atmosphere Bokeh Layer (Replaces bottom branches with soft cinematic framing) ── */
+/* ── Bottom Atmosphere Bokeh Layer (Phone only: soft cinematic framing at bottom) ── */
 .events-bottom-bokeh {
+  display: none;
   position: fixed;
   bottom: 0;
   left: 0;
   right: 0;
   width: 100%;
-  height: 28vh;
-  max-height: 240px;
+  height: 25vh;
+  max-height: 200px;
   pointer-events: none;
   user-select: none;
   z-index: 5;
-  opacity: 0.88;
+  opacity: 0.92;
 }
 
 /* Gentle natural wind sway keyframes for top desktop branches */
@@ -85,9 +86,7 @@
     display: none !important;
   }
   .events-bottom-bokeh {
-    height: 25vh;
-    max-height: 200px;
-    opacity: 0.95;
+    display: block !important;
   }
 }
 
@@ -145,16 +144,16 @@
   font-weight: 600;
   letter-spacing: 0.28em;
   text-transform: uppercase;
-  color: #7d4d5e;
-  opacity: 0.9;
+  color: #6F302B;
+  opacity: 0.88;
 }
 
 .events-tagline-dot {
   width: 3px;
   height: 3px;
   border-radius: 50%;
-  background-color: #d81b60;
-  opacity: 0.7;
+  background-color: #E96F82;
+  opacity: 0.8;
 }
 
 .events-tagline-rule {
@@ -170,29 +169,46 @@
 .events-tagline-rule-line {
   flex: 1;
   height: 1px;
-  background: #d81b60;
+  background: #6F302B;
 }
 
 .events-tagline-rule-diamond {
   width: 3.5px;
   height: 3.5px;
   transform: rotate(45deg);
-  background: #d81b60;
+  background: #6F302B;
 }
 
-/* EVENTS Title with gradient */
+/* EVENTS Title styled with exact Home Page Palette & Typography */
 .events-title {
-  font-family: var(--font-playfair, "Playfair Display"), "Didot", "Bodoni MT", "Cinzel", "Cormorant Garamond", Georgia, serif;
+  font-family: 'Jomolhari', 'Bodoni Moda', var(--font-playfair, "Playfair Display"), Georgia, serif;
   font-size: clamp(3.2rem, 6.5vw, 5.2rem);
-  font-weight: 700;
+  font-weight: normal;
   letter-spacing: 0.04em;
   line-height: 0.95;
   margin: 0.2rem 0 0;
   user-select: none;
-  background: linear-gradient(98deg, #110408 20%, #200612 45%, #9d024b 72%, #e60067 100%);
+  display: inline-flex;
+  align-items: baseline;
+  justify-content: center;
+}
+
+.events-title-hult {
+  background: linear-gradient(148deg, #211B1C 0%, #6F302B 52%, #241D1E 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
+  display: inline-block;
+  filter: drop-shadow(0 2px 14px rgba(33, 27, 28, 0.08));
+}
+
+.events-title-prize {
+  background: linear-gradient(148deg, #F6A0AE 0%, #E96F82 48%, #D9435B 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  display: inline-block;
+  filter: drop-shadow(0 4px 20px rgba(233, 111, 130, 0.25));
 }
 
 /* Subtitle */
@@ -201,7 +217,7 @@
   font-size: clamp(0.85rem, 1.4vw, 1.05rem);
   font-style: italic;
   font-weight: 400;
-  color: #5c3545;
+  color: #6F302B;
   margin-top: 0.25rem;
   letter-spacing: 0.02em;
   opacity: 0.88;
@@ -301,7 +317,7 @@
   font-family: var(--font-playfair, "Playfair Display"), Georgia, serif;
   font-size: 2rem;
   font-weight: 500;
-  color: #3b1b28;
+  color: #211B1C;
   letter-spacing: -0.02em;
   margin-bottom: 1rem;
 }
@@ -346,7 +362,7 @@
   font-weight: 600;
   letter-spacing: 0.14em;
   text-transform: uppercase;
-  color: #7a4658;
+  color: #6F302B;
 }
 
 .events-timeline-day {

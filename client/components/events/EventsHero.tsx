@@ -293,8 +293,11 @@ export default function EventsHero({
             <span className="events-tagline-rule-line" />
           </div>
 
-          {/* EVENTS Title with gradient */}
-          <h1 className="events-title">EVENTS</h1>
+          {/* EVENTS Title with Home Page Gradient Palette */}
+          <h1 className="events-title">
+            <span className="events-title-hult">EVENT</span>
+            <span className="events-title-prize">S</span>
+          </h1>
 
           {/* Subtitle */}
           <p className="events-subtitle">Be a part of the journey.</p>
