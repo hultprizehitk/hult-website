@@ -20,6 +20,11 @@ const nextConfig: NextConfig = {
   async redirects() {
     return [
       {
+        source: "/event",
+        destination: "/events",
+        permanent: true,
+      },
+      {
         source: "/portal-hult-8f4b2c1e9a7d/dashboard/student",
         destination: "/portal-hult-8f4b2c1e9a7d/dashboard/students",
         permanent: true,

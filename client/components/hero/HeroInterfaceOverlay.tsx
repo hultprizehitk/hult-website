@@ -119,15 +119,24 @@ export default function HeroInterfaceOverlay({ scrollProgress = 0 }: HeroInterfa
 
         {/* Navigation Links Center */}
         <nav className="hidden md:flex items-center gap-8 text-[13px] font-medium select-none text-neutral-800">
-          {["About", "Events", "Challenge", "Timeline"].map((item) => (
-            <Link
-              key={item}
-              href={`#${item.toLowerCase()}`}
-              className="relative transition-colors duration-200 hover:text-[#e60067] after:absolute after:-bottom-1 after:left-0 after:h-[1.5px] after:w-0 after:bg-[#e60067] hover:after:w-full after:transition-all after:duration-200"
-            >
-              {item}
-            </Link>
-          ))}
+          <Link
+            href="/"
+            className="relative transition-colors duration-200 hover:text-[#e60067] after:absolute after:-bottom-1 after:left-0 after:h-[1.5px] after:w-0 after:bg-[#e60067] hover:after:w-full after:transition-all after:duration-200"
+          >
+            Home
+          </Link>
+          <Link
+            href="#about"
+            className="relative transition-colors duration-200 hover:text-[#e60067] after:absolute after:-bottom-1 after:left-0 after:h-[1.5px] after:w-0 after:bg-[#e60067] hover:after:w-full after:transition-all after:duration-200"
+          >
+            About
+          </Link>
+          <Link
+            href="/events"
+            className="relative transition-colors duration-200 hover:text-[#e60067] after:absolute after:-bottom-1 after:left-0 after:h-[1.5px] after:w-0 after:bg-[#e60067] hover:after:w-full after:transition-all after:duration-200"
+          >
+            Events
+          </Link>
         </nav>
 
         {/* Right CTA Group */}

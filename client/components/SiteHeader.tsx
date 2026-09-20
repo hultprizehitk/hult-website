@@ -82,6 +82,17 @@ export default function SiteHeader({
         {/* Desktop Nav Links */}
         <nav className="hidden md:flex items-center gap-5 lg:gap-6 font-[family-name:var(--font-google-sans)]">
           <Link
+            href="/"
+            className={`text-xs sm:text-sm font-semibold tracking-wide transition-colors duration-200 ${
+              theme === "light"
+                ? "text-[#2b161f]/85 hover:text-[#e60067]"
+                : "text-white/85 drop-shadow hover:text-white"
+            }`}
+          >
+            Home
+          </Link>
+
+          <Link
             href="/events"
             className={`text-xs sm:text-sm font-semibold tracking-wide transition-colors duration-200 ${
               theme === "light"
@@ -213,6 +224,13 @@ export default function SiteHeader({
           style={{ top: "calc(var(--banner-height, 0px) + 52px)" }}
           className="fixed inset-x-0 z-40 md:hidden bg-black/95 backdrop-blur-3xl border-b border-white/15 px-6 py-6 shadow-2xl flex flex-col gap-4 font-[family-name:var(--font-google-sans)] animate-in fade-in slide-in-from-top-2 duration-200"
         >
+          <Link
+            href="/"
+            onClick={() => setMobileMenuOpen(false)}
+            className="text-base font-semibold text-white/90 hover:text-[#f20089] py-2 border-b border-white/5 transition-colors"
+          >
+            Home
+          </Link>
           <Link
             href="/events"
             onClick={() => setMobileMenuOpen(false)}
