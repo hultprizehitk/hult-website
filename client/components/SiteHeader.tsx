@@ -8,12 +8,16 @@ import { useSession, signOut } from "next-auth/react";
 interface SiteHeaderProps {
   className?: string;
   transparentUntilScroll?: boolean;
+  transparent?: boolean;
+  theme?: "dark" | "light";
   isLandingRevealed?: boolean;
 }
 
 export default function SiteHeader({
   className = "",
   transparentUntilScroll = false,
+  transparent = false,
+  theme = "dark",
   isLandingRevealed = true,
 }: SiteHeaderProps) {
   const { data: session, status } = useSession();
@@ -30,7 +34,9 @@ export default function SiteHeader({
     return () => window.removeEventListener("scroll", handleScroll);
   }, [transparentUntilScroll]);
 
-  const headerBgClass = transparentUntilScroll
+  const headerBgClass = transparent
+    ? "bg-transparent border-none py-3.5"
+    : transparentUntilScroll
     ? isScrolled
       ? "bg-black/75 backdrop-blur-xl border-b border-white/10 shadow-2xl py-3"
       : "bg-transparent border-none py-3.5"
@@ -77,14 +83,22 @@ export default function SiteHeader({
         <nav className="hidden md:flex items-center gap-5 lg:gap-6 font-[family-name:var(--font-google-sans)]">
           <Link
             href="/events"
-            className="text-xs sm:text-sm font-semibold tracking-wide text-white/85 drop-shadow transition-colors duration-200 hover:text-white"
+            className={`text-xs sm:text-sm font-semibold tracking-wide transition-colors duration-200 ${
+              theme === "light"
+                ? "text-[#2b161f]/85 hover:text-[#e60067]"
+                : "text-white/85 drop-shadow hover:text-white"
+            }`}
           >
             Events
           </Link>
 
           <Link
             href="/team"
-            className="text-xs sm:text-sm font-semibold tracking-wide text-white/85 drop-shadow transition-colors duration-200 hover:text-white"
+            className={`text-xs sm:text-sm font-semibold tracking-wide transition-colors duration-200 ${
+              theme === "light"
+                ? "text-[#2b161f]/85 hover:text-[#e60067]"
+                : "text-white/85 drop-shadow hover:text-white"
+            }`}
           >
             Team
           </Link>
@@ -107,7 +121,11 @@ export default function SiteHeader({
               )}
               <Link
                 href="/profile"
-                className="inline-flex items-center gap-1.5 rounded-full border border-white/20 bg-white/10 hover:bg-white/15 px-3.5 py-1.5 text-xs font-bold text-white shadow-sm hover:scale-[1.02] transition-all"
+                className={`inline-flex items-center gap-1.5 rounded-full border px-3.5 py-1.5 text-xs font-bold shadow-sm hover:scale-[1.02] transition-all ${
+                  theme === "light"
+                    ? "border-[#2b161f]/20 bg-[#2b161f]/5 hover:bg-[#2b161f]/10 text-[#2b161f]"
+                    : "border-white/20 bg-white/10 hover:bg-white/15 text-white"
+                }`}
                 title="View User Profile"
               >
                 <span className="h-1.5 w-1.5 rounded-full bg-[#f20089]" />
@@ -116,7 +134,11 @@ export default function SiteHeader({
               <button
                 type="button"
                 onClick={() => signOut()}
-                className="text-xs font-semibold text-white/70 hover:text-white transition-colors cursor-pointer"
+                className={`text-xs font-semibold transition-colors cursor-pointer ${
+                  theme === "light"
+                    ? "text-[#2b161f]/70 hover:text-[#e60067]"
+                    : "text-white/70 hover:text-white"
+                }`}
               >
                 Sign Out
               </button>
@@ -145,7 +167,11 @@ export default function SiteHeader({
               )}
               <Link
                 href="/profile"
-                className="rounded-full bg-white/[0.1] border border-white/20 px-3 py-1.5 text-[11px] font-bold tracking-wide text-white shadow-md active:scale-95"
+                className={`rounded-full border px-3 py-1.5 text-[11px] font-bold tracking-wide shadow-md active:scale-95 ${
+                  theme === "light"
+                    ? "border-[#2b161f]/20 bg-[#2b161f]/5 text-[#2b161f]"
+                    : "border-white/20 bg-white/[0.1] text-white"
+                }`}
               >
                 {session.user.name?.split(" ")[0]}
               </Link>
@@ -162,7 +188,11 @@ export default function SiteHeader({
             type="button"
             onClick={() => setMobileMenuOpen((prev) => !prev)}
             aria-label="Toggle navigation menu"
-            className="p-1.5 rounded-full bg-white/[0.08] hover:bg-white/[0.15] border border-white/20 text-white transition-colors cursor-pointer"
+            className={`p-1.5 rounded-full border transition-colors cursor-pointer ${
+              theme === "light"
+                ? "bg-black/[0.05] hover:bg-black/[0.1] border-black/15 text-[#2b161f]"
+                : "bg-white/[0.08] hover:bg-white/[0.15] border-white/20 text-white"
+            }`}
           >
             {mobileMenuOpen ? (
               <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
