@@ -4,7 +4,8 @@ import Image from "next/image";
 import { getProfileBySlug, getAllProfileSlugs, getAllProfiles } from "@/lib/profile-data";
 import ProfileLanyardCard from "@/components/profile/ProfileLanyardCard";
 import SiteHeader from "@/components/SiteHeader";
-import AnimatedGradient from "@/components/ui/animated-gradient";
+import KolkataHero from "@/components/hero/KolkataHero";
+import GrainOverlay from "@/components/hero/GrainOverlay";
 
 interface TeamDetailPageProps {
   params: Promise<{
@@ -76,20 +77,11 @@ export default async function TeamMemberDetailPage({ params }: TeamDetailPagePro
 
   return (
     <main className="relative min-h-screen w-full bg-black text-white font-sans overflow-x-hidden flex flex-col justify-between selection:bg-[#f20089] selection:text-white">
-      {/* 
-        WebGL Aurora Animated Background (Fluid Pink & Deep Purple Swirls)
-      */}
-      <div className="fixed inset-0 z-0 pointer-events-none opacity-90">
-        <AnimatedGradient
-          config={{
-            preset: "Aurora",
-            speed: 18,
-          }}
-          noise={{ opacity: 0.1, scale: 1 }}
-        />
-        <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-black/75" />
-        <div className="absolute inset-0 bg-radial from-transparent via-black/20 to-black/85" />
+      {/* Kolkata Ambient Hero Background (Same as Events page) */}
+      <div className="fixed inset-0 z-0 pointer-events-none">
+        <KolkataHero mouseOffset={{ x: 0, y: 0 }} isRevealed={true} hideText={true} hideForeground={true} />
       </div>
+      <GrainOverlay opacity={0.65} />
 
       {/* Top Header Navbar */}
       <SiteHeader />
