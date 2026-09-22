@@ -1,3 +1,5 @@
+export type UserRole = "user" | "junior_admin" | "lead_admin" | "master_admin";
+
 export interface ParsedStudentInfo {
   firstName: string;
   lastName: string;
@@ -8,3 +10,16 @@ export interface ParsedStudentInfo {
   batch: string;
   academicYear: string;
 }
+
+export interface IUserProfile {
+  id: string;
+  name: string;
+  email: string;
+  image?: string;
+  department: string;
+  year: string;
+  role: UserRole;
+  createdAt?: string;
+  updatedAt?: string;
+}
+

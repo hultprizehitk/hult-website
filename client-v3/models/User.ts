@@ -1,4 +1,5 @@
 import mongoose, { Schema, Document, Model } from "mongoose";
+import type { UserRole } from "@/types/user";
 
 export interface IUser extends Document {
   _id: mongoose.Types.ObjectId;
@@ -7,7 +8,7 @@ export interface IUser extends Document {
   image?: string;
   department: string;
   year: string;
-  role: "user";
+  role: UserRole;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -43,7 +44,7 @@ const UserSchema = new Schema<IUser>(
     },
     role: {
       type: String,
-      enum: ["user"],
+      enum: ["user", "junior_admin", "lead_admin", "master_admin"],
       default: "user",
     },
   },
