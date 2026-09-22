@@ -1,87 +1,157 @@
 import { NextResponse } from "next/server";
 import { connectDB } from "@/lib/mongodb";
-import { isAuthorizedAdmin, isAuthorizedSuperAdmin } from "@/lib/admin-check";
+import User from "@/models/User";
+import { parseHeritageEmail } from "@/lib/heritage-parser";
+import { isAuthorizedSuperAdmin, isSuperAdminEmail, ADMIN_ROLES } from "@/lib/admin-check";
 import { logAdminAction } from "@/lib/audit-logger";
 import { auth } from "@/auth";
-import User from "@/models/User";
+import type { UserRole } from "@/types/user";
 
-export async function GET(req: Request) {
-  try {
-    const isAuth = await isAuthorizedAdmin(req);
-    if (!isAuth) {
-      return NextResponse.json({ error: "Unauthorized access" }, { status: 401 });
-    }
-
-    const { searchParams } = new URL(req.url);
-    const filterAdminsOnly = searchParams.get("adminsOnly") === "true";
-
-    await connectDB();
-
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const query: Record<string, any> = {};
-    if (filterAdminsOnly) {
-      query.role = { $in: ["junior_admin", "lead_admin", "master_admin"] };
-    }
-
-    const users = await User.find(query)
-      .select("name email department year role image createdAt")
-      .sort({ role: -1, createdAt: -1 })
-      .lean();
-
-    return NextResponse.json({ success: true, users });
-  } catch (error) {
-    console.error("Admin users GET error:", error);
-    return NextResponse.json({ error: "Failed to fetch users" }, { status: 500 });
+function getRoleLabel(role: string): string {
+  switch (role) {
+    case "master_admin":
+      return "Master Administrator";
+    case "lead_admin":
+      return "Lead Administrator";
+    case "junior_admin":
+      return "Junior Administrator";
+    default:
+      return "Student";
   }
 }
 
-export async function PATCH(req: Request) {
+// GET: List all administrators and registered students
+export async function GET(req: Request) {
   try {
     const isSuper = await isAuthorizedSuperAdmin(req);
     if (!isSuper) {
       return NextResponse.json(
-        { error: "Forbidden: Super Admin (Master Admin) clearance required to modify administrative roles" },
+        { error: "Unauthorized: Master Administrator clearance required" },
+        { status: 403 }
+      );
+    }
+
+    await connectDB();
+
+    const admins = await User.find({
+      role: { $in: Array.from(ADMIN_ROLES) },
+    })
+      .sort({ role: -1, createdAt: -1 })
+      .lean();
+
+    const allStudents = await User.find({ role: "user" })
+      .sort({ createdAt: -1 })
+      .limit(100)
+      .lean();
+
+    return NextResponse.json({
+      success: true,
+      admins: JSON.parse(JSON.stringify(admins)),
+      students: JSON.parse(JSON.stringify(allStudents)),
+      users: JSON.parse(JSON.stringify(admins)),
+    });
+  } catch (error) {
+    console.error("GET /api/admin/users error:", error);
+    return NextResponse.json(
+      { error: "Failed to fetch administrator records" },
+      { status: 500 }
+    );
+  }
+}
+
+// POST: Appoint or update admin role
+export async function POST(req: Request) {
+  try {
+    const isSuper = await isAuthorizedSuperAdmin(req);
+    if (!isSuper) {
+      return NextResponse.json(
+        { error: "Unauthorized: Only Master Administrators can grant or revoke admin privileges" },
         { status: 403 }
       );
     }
 
     const session = await auth();
     const body = await req.json();
-    const { userId, role } = body;
+    const rawEmail = (body.email || "").toLowerCase().trim();
+    const action = body.action || "promote";
+    const requestedRole = (body.role || "lead_admin") as UserRole;
 
-    if (!userId || !role) {
-      return NextResponse.json({ error: "Missing userId or role" }, { status: 400 });
+    if (!rawEmail) {
+      return NextResponse.json(
+        { error: "Please provide a valid college email address" },
+        { status: 400 }
+      );
     }
 
-    if (!["user", "junior_admin", "lead_admin", "master_admin"].includes(role)) {
-      return NextResponse.json({ error: "Invalid role specified" }, { status: 400 });
+    if (!rawEmail.endsWith("@heritageit.edu.in")) {
+      return NextResponse.json(
+        { error: "Only official @heritageit.edu.in college email addresses are permitted" },
+        { status: 400 }
+      );
+    }
+
+    if (isSuperAdminEmail(rawEmail) && action === "demote") {
+      return NextResponse.json(
+        { error: "Master Administrator executive accounts are permanent and cannot be demoted" },
+        { status: 400 }
+      );
     }
 
     await connectDB();
 
-    const user = await User.findById(userId);
-    if (!user) {
-      return NextResponse.json({ error: "User not found" }, { status: 404 });
-    }
+    const validRoles: UserRole[] = [
+      "master_admin",
+      "lead_admin",
+      "junior_admin",
+    ];
 
-    const oldRole = user.role;
-    user.role = role;
-    await user.save();
+    const targetRole: UserRole =
+      action === "demote"
+        ? "user"
+        : validRoles.includes(requestedRole)
+        ? requestedRole
+        : "lead_admin";
+
+    let user = await User.findOne({ email: rawEmail });
+
+    if (user) {
+      user.role = targetRole;
+      await user.save();
+    } else {
+      const parsed = parseHeritageEmail(rawEmail);
+      user = await User.create({
+        name: parsed.fullName || "HITK Appointed Admin",
+        email: rawEmail,
+        department: parsed.branchName,
+        year: parsed.academicYear,
+        role: targetRole,
+      });
+    }
 
     await logAdminAction({
       adminEmail: session?.user?.email || "admin",
       adminName: session?.user?.name || "Admin",
-      adminRole: (session?.user as { role?: string })?.role || "super_admin",
-      action: `Modified role for ${user.email} from "${oldRole}" to "${role}"`,
+      adminRole: "master_admin",
+      action: `${action === "demote" ? "Revoked" : "Granted"} ${getRoleLabel(targetRole)} for ${rawEmail}`,
       targetType: "user",
-      targetId: userId,
-      details: { email: user.email, oldRole, newRole: role },
+      targetId: user._id.toString(),
+      details: { email: rawEmail, role: targetRole, action },
       req,
     });
 
-    return NextResponse.json({ success: true, user });
+    return NextResponse.json({
+      success: true,
+      message:
+        action === "demote"
+          ? `Revoked admin privileges for ${rawEmail}. Role is now user.`
+          : `Successfully granted ${getRoleLabel(targetRole)} privileges to ${rawEmail}.`,
+      user: JSON.parse(JSON.stringify(user)),
+    });
   } catch (error) {
-    console.error("Admin users PATCH error:", error);
-    return NextResponse.json({ error: "Failed to update user role" }, { status: 500 });
+    console.error("POST /api/admin/users error:", error);
+    return NextResponse.json(
+      { error: "Failed to update administrator role" },
+      { status: 500 }
+    );
   }
 }

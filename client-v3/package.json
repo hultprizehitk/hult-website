@@ -15,6 +15,7 @@
     "@react-three/rapier": "^2.2.0",
     "@types/three": "^0.185.4",
     "html-to-image": "^1.11.13",
+    "jsqr": "^1.4.0",
     "lucide-react": "^1.47.0",
     "meshline": "^3.3.1",
     "mongoose": "^9.9.4",

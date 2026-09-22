@@ -1,115 +1,116 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { signIn } from "next-auth/react";
-import { ShieldAlert, ArrowLeft, Lock } from "lucide-react";
+import AnimatedGradient from "@/components/ui/animated-gradient";
 
 export default function AdminSignInGate() {
-  const [loading, setLoading] = useState(false);
+  const [isSubdomain, setIsSubdomain] = useState(false);
+  const [mainSiteUrl, setMainSiteUrl] = useState("/");
 
-  const handleSignIn = async () => {
-    setLoading(true);
-    await signIn("google", { callbackUrl: "/admin" });
-  };
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const isSub = window.location.host.startsWith("admin.");
+      setIsSubdomain(isSub);
+      if (isSub) {
+        setMainSiteUrl(`${window.location.protocol}//${window.location.host.replace(/^admin\./, "")}`);
+      } else {
+        setMainSiteUrl("/");
+      }
+    }
+  }, []);
 
   return (
-    <div className="min-h-screen w-full bg-[#0a0a0f] text-white flex flex-col justify-between items-center p-6 relative overflow-hidden font-sans">
-      {/* Background Subtle Gradient & Grid Glow */}
-      <div className="absolute inset-0 pointer-events-none">
-        <div className="absolute top-1/3 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[360px] bg-rose-950/20 rounded-full blur-[120px]" />
-        <div className="absolute inset-0 bg-[linear-gradient(to_right,#ffffff05_1px,transparent_1px),linear-gradient(to_bottom,#ffffff05_1px,transparent_1px)] bg-[size:4rem_4rem] [mask-image:radial-gradient(ellipse_60%_50%_at_50%_50%,#000_70%,transparent_100%)]" />
+    <div className="relative min-h-screen w-full bg-black font-sans text-white selection:bg-[#f20089] selection:text-white flex flex-col justify-between overflow-x-hidden">
+      {/* Aurora Ambient Background */}
+      <div className="fixed inset-0 z-0 pointer-events-none opacity-85">
+        <AnimatedGradient config={{ preset: "Aurora", speed: 16 }} noise={{ opacity: 0.1, scale: 1 }} />
+        <div className="absolute inset-0 bg-gradient-to-t from-black via-black/50 to-black/80" />
+        <div className="absolute inset-0 bg-radial from-transparent via-black/30 to-black/90" />
       </div>
 
-      {/* Top Header Bar */}
-      <div className="w-full max-w-5xl flex items-center justify-between z-10">
+      {/* Top Bar */}
+      <header className="relative z-20 flex items-center justify-between px-6 py-4 border-b border-white/10 bg-black/40 backdrop-blur-2xl">
         <div className="flex items-center gap-3">
-          <div className="relative h-8 w-12">
-            <Image
-              src="/ef-hult-prize-logo.png"
-              alt="Hult Prize Logo"
-              fill
-              sizes="48px"
-              className="object-contain"
-            />
-          </div>
-          <div className="h-5 w-px bg-white/20" />
-          <div className="flex flex-col text-[8.5px] font-semibold tracking-[0.14em] uppercase text-white/70">
-            <span>Heritage Institute</span>
-            <span>of Technology</span>
-          </div>
+          <Link href={isSubdomain ? mainSiteUrl : "/"} className="relative aspect-[1080/659] h-7 sm:h-8">
+            <Image src="/Hult-Prize.png" alt="Hult Prize Logo" fill sizes="48px" className="object-contain" />
+          </Link>
+          <div className="h-4 w-[1px] bg-white/20" />
+          <span className="text-xs font-bold tracking-widest text-white/80 uppercase font-[family-name:var(--font-google-sans)]">
+            Admin Console
+          </span>
         </div>
-
         <Link
-          href="/"
-          className="flex items-center gap-1.5 text-xs text-white/70 hover:text-white transition-colors border border-white/10 rounded-full px-3.5 py-1.5 bg-white/5 backdrop-blur-sm hover:bg-white/10"
+          href={isSubdomain ? mainSiteUrl : "/"}
+          className="rounded-full border border-white/20 bg-white/[0.06] hover:bg-white/15 px-4 py-1.5 text-xs font-semibold text-white transition-all font-[family-name:var(--font-google-sans)]"
         >
-          <ArrowLeft className="h-3.5 w-3.5" />
-          <span>Public Portal</span>
+          ← Return to Website
         </Link>
-      </div>
+      </header>
 
-      {/* Main Gate Card */}
-      <div className="w-full max-w-md my-auto z-10">
-        <div className="relative rounded-2xl border border-white/10 bg-neutral-900/60 backdrop-blur-xl p-8 shadow-2xl shadow-black/80">
-          {/* Top Status Chip */}
-          <div className="flex items-center justify-between mb-6">
-            <div className="inline-flex items-center gap-2 rounded-full border border-rose-500/30 bg-rose-500/10 px-3 py-1 text-[11px] font-mono font-semibold text-rose-400">
-              <Lock className="h-3 w-3" />
-              <span>Restricted System Area</span>
+      {/* Center Gate Card */}
+      <main className="relative z-10 flex flex-1 items-center justify-center px-4 py-12">
+        <div className="w-full max-w-md">
+          <div className="relative overflow-hidden rounded-[2.5rem] border border-white/20 bg-white/[0.04] p-8 sm:p-10 text-center shadow-[0_24px_60px_rgba(0,0,0,0.7),inset_0_1.5px_1px_rgba(255,255,255,0.35)] backdrop-blur-3xl">
+            {/* Ambient Glow */}
+            <div className="pointer-events-none absolute -top-16 -right-16 h-48 w-48 rounded-full bg-[#f20089]/25 blur-3xl" />
+            <div className="pointer-events-none absolute -bottom-16 -left-16 h-48 w-48 rounded-full bg-purple-900/30 blur-3xl" />
+
+            <div className="pt-2" />
+
+            <span className="inline-flex items-center gap-1.5 rounded-full border border-[#f20089]/40 bg-[#f20089]/15 px-3 py-1 text-[10px] font-extrabold text-[#f20089] uppercase tracking-widest mb-3">
+              Restricted Admin Access
+            </span>
+
+            <h1 className="text-2xl sm:text-3xl font-extrabold text-white mb-2 font-[family-name:var(--font-google-sans)]">
+              Admin Portal
+            </h1>
+
+            <p className="text-xs sm:text-sm text-neutral-300 max-w-xs mx-auto mb-8 leading-relaxed">
+              Google authentication is required to enter the Admin Command Center. Please sign in with your authorized administrator account.
+            </p>
+
+            {/* Google Admin Login Button */}
+            <button
+              type="button"
+              onClick={() => signIn("google", { callbackUrl: isSubdomain ? "/" : "/admin" })}
+              className="w-full flex items-center justify-center gap-3 rounded-2xl bg-white hover:bg-neutral-100 py-3.5 px-5 text-xs sm:text-sm font-extrabold text-neutral-900 shadow-2xl transition-all duration-200 hover:scale-[1.02] active:scale-[0.98] cursor-pointer font-[family-name:var(--font-google-sans)]"
+            >
+              <svg className="h-5 w-5 shrink-0" viewBox="0 0 24 24">
+                <path
+                  fill="#4285F4"
+                  d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
+                />
+                <path
+                  fill="#34A853"
+                  d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"
+                />
+                <path
+                  fill="#FBBC05"
+                  d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z"
+                />
+                <path
+                  fill="#EA4335"
+                  d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z"
+                />
+              </svg>
+              <span>Sign In with Admin Google Account</span>
+            </button>
+
+            {/* Security Notice */}
+            <div className="mt-6 flex items-start gap-2 rounded-xl border border-white/10 bg-white/[0.02] p-3 text-[11px] text-white/50 text-left">
+              <span className="h-1.5 w-1.5 rounded-full bg-pink-400 shrink-0 mt-1" />
+              <span><strong>Security Policy:</strong> Only verified administrator accounts listed in the organizing team whitelist are permitted. Unauthorized attempts will be denied.</span>
             </div>
-            <span className="text-[10px] font-mono text-white/40 tracking-wider">v3.0.0</span>
-          </div>
-
-          <h1 className="text-2xl font-bold tracking-tight text-white mb-2">
-            Admin Command Center
-          </h1>
-          <p className="text-xs text-neutral-400 leading-relaxed mb-6">
-            Administrative clearance required. Please verify with your authorized Heritage Google Workspace identity.
-          </p>
-
-          <button
-            onClick={handleSignIn}
-            disabled={loading}
-            className="w-full flex items-center justify-center gap-3 rounded-xl bg-white hover:bg-neutral-100 text-neutral-950 font-semibold px-6 py-3.5 text-sm shadow-lg transition-all duration-200 hover:scale-[1.02] active:scale-[0.98] disabled:opacity-70 cursor-pointer"
-          >
-            <svg className="h-4 w-4" viewBox="0 0 24 24">
-              <path
-                fill="#4285F4"
-                d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
-              />
-              <path
-                fill="#34A853"
-                d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"
-              />
-              <path
-                fill="#FBBC05"
-                d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z"
-              />
-              <path
-                fill="#EA4335"
-                d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z"
-              />
-            </svg>
-            <span>{loading ? "Authenticating Clearance..." : "Authorize with Heritage Account"}</span>
-          </button>
-
-          <div className="mt-6 pt-5 border-t border-white/10 flex items-center justify-between text-[11px] text-neutral-400 font-mono">
-            <span>Domain: @heritageit.edu.in</span>
-            <span className="text-white/40">TLS 1.3 Protected</span>
           </div>
         </div>
-      </div>
+      </main>
 
-      {/* Footer System Info */}
-      <div className="w-full max-w-5xl flex items-center justify-between text-[11px] font-mono text-white/40 z-10">
-        <div className="flex items-center gap-2">
-          <ShieldAlert className="h-3.5 w-3.5 text-rose-500/80" />
-          <span>Hult Prize HITK Administrative Network</span>
-        </div>
-        <span>Security Clearance L2 / L3</span>
-      </div>
+      <footer className="relative z-20 py-4 text-center text-[11px] text-white/40">
+        © 2026 Hult Prize HITK • Internal Administrative Operations
+      </footer>
     </div>
   );
 }

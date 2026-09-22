@@ -1,0 +1,587 @@
+"use client";
+
+import React, { useState, useEffect, useRef } from "react";
+import { parseHeritageEmail } from "@/lib/heritage-parser";
+import type { AdminRecord, Participant, UserRole } from "@/types";
+
+interface AdminUserManagerProps {
+  currentUserEmail: string;
+}
+
+const ROLE_PRESETS = [
+  {
+    role: "junior_admin" as const,
+    label: "Junior Admin",
+    badgeClass: "bg-purple-500/20 border-purple-500/40 text-purple-300",
+    desc: "Junior Admin • Verification and roster support",
+  },
+  {
+    role: "lead_admin" as const,
+    label: "Lead Admin",
+    badgeClass: "bg-sky-500/20 border-sky-500/40 text-sky-300",
+    desc: "Lead Admin • Operations, events, and participant management",
+  },
+  {
+    role: "master_admin" as const,
+    label: "Master Admin",
+    badgeClass: "bg-amber-500/20 border-amber-500/40 text-amber-300",
+    desc: "Master Admin • Full authority to grant & revoke roles",
+  },
+];
+
+export default function AdminUserManager({ currentUserEmail }: AdminUserManagerProps) {
+  const [admins, setAdmins] = useState<AdminRecord[]>([]);
+  const [participants, setParticipants] = useState<Participant[]>([]);
+  const [adminEmailInput, setAdminEmailInput] = useState("");
+  const [selectedRole, setSelectedRole] = useState<"junior_admin" | "lead_admin" | "master_admin">("lead_admin");
+  const [roleDropdownOpen, setRoleDropdownOpen] = useState(false);
+  const [quickPromoteRole, setQuickPromoteRole] = useState<"junior_admin" | "lead_admin" | "master_admin">("junior_admin");
+  const [isSubmittingAdmin, setIsSubmittingAdmin] = useState(false);
+  const [searchStudentForAdmin, setSearchStudentForAdmin] = useState("");
+  const [loading, setLoading] = useState(true);
+  const [statusMessage, setStatusMessage] = useState<{
+    type: "success" | "error";
+    text: string;
+  } | null>(null);
+
+  const showToast = (type: "success" | "error", text: string) => {
+    setStatusMessage({ type, text });
+    setTimeout(() => setStatusMessage(null), 4000);
+  };
+
+  const fetchData = async () => {
+    setLoading(true);
+    try {
+      const [usersRes, participantsRes] = await Promise.all([
+        fetch("/api/admin/users"),
+        fetch("/api/admin/participants"),
+      ]);
+
+      if (usersRes && usersRes.ok) {
+        const usersData = await usersRes.json();
+        setAdmins(usersData.admins || []);
+      }
+
+      if (participantsRes && participantsRes.ok) {
+        const pData = await participantsRes.json();
+        setParticipants(pData.participants || []);
+      }
+    } catch (err) {
+      console.error("Failed to load admin user data:", err);
+      showToast("error", "Failed to load admin roster.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const dropdownRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    fetchData();
+
+    function handleClickOutside(event: MouseEvent) {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+        setRoleDropdownOpen(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  // Grant admin access by email with designated role
+  const handleGrantAdmin = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const cleanEmail = adminEmailInput.trim().toLowerCase();
+    if (!cleanEmail || !cleanEmail.endsWith("@heritageit.edu.in")) {
+      showToast("error", "Please provide a valid @heritageit.edu.in college email");
+      return;
+    }
+    setIsSubmittingAdmin(true);
+    try {
+      const res = await fetch("/api/admin/users", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: cleanEmail, action: "promote", role: selectedRole }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        showToast("error", data.error || "Failed to appoint admin");
+      } else {
+        showToast("success", data.message || `Granted ${selectedRole} access to ${cleanEmail}`);
+        setAdminEmailInput("");
+        fetchData();
+      }
+    } catch {
+      showToast("error", "Network error while appointing admin");
+    } finally {
+      setIsSubmittingAdmin(false);
+    }
+  };
+
+  // Change existing admin's role
+  const handleChangeRole = async (admin: AdminRecord, newRole: UserRole) => {
+    if (admin.role === newRole) return;
+    try {
+      const res = await fetch("/api/admin/users", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: admin.email, action: "promote", role: newRole }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        showToast("error", data.error || "Failed to update role");
+      } else {
+        showToast("success", data.message || `Updated role for ${admin.name}`);
+        fetchData();
+      }
+    } catch {
+      showToast("error", "Failed to update role");
+    }
+  };
+
+  // Revoke admin access
+  const handleRevokeAdmin = async (admin: AdminRecord) => {
+    if (admin.email.toLowerCase() === currentUserEmail.toLowerCase()) {
+      showToast("error", "You cannot revoke your own active administrator account");
+      return;
+    }
+    if (
+      !window.confirm(
+        `Revoke administrator access for ${admin.name} (${admin.email})?`
+      )
+    )
+      return;
+
+    try {
+      const res = await fetch("/api/admin/users", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: admin.email, action: "demote" }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        showToast("error", data.error || "Failed to revoke admin");
+      } else {
+        showToast("success", data.message || `Revoked admin privileges for ${admin.email}`);
+        fetchData();
+      }
+    } catch {
+      showToast("error", "Failed to revoke admin");
+    }
+  };
+
+  // Quick promote student to admin with selected role
+  const handleQuickPromote = async (student: Participant, roleToGrant: "junior_admin" | "lead_admin" | "master_admin") => {
+    const roleLabel =
+      roleToGrant === "master_admin"
+        ? "Master Admin"
+        : roleToGrant === "lead_admin"
+        ? "Lead Admin"
+        : "Junior Admin";
+
+    if (
+      !window.confirm(
+        `Promote ${student.name} (${student.email}) to ${roleLabel}?`
+      )
+    )
+      return;
+
+    try {
+      const res = await fetch("/api/admin/users", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: student.email, action: "promote", role: roleToGrant }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        showToast("error", data.error || "Failed to promote student");
+      } else {
+        showToast("success", `Successfully appointed ${student.name} as ${roleLabel}!`);
+        fetchData();
+      }
+    } catch {
+      showToast("error", "Failed to promote student");
+    }
+  };
+
+  const adminEmailParsed = adminEmailInput.includes("@heritageit.edu.in")
+    ? parseHeritageEmail(adminEmailInput)
+    : null;
+
+  const renderRoleBadge = (role: string) => {
+    switch (role) {
+      case "master_admin":
+        return (
+          <span className="inline-flex items-center gap-1.5 rounded-full bg-gradient-to-r from-amber-500/25 to-[#f20089]/25 border border-amber-500/40 px-3 py-0.5 text-[10px] font-extrabold text-amber-300 uppercase tracking-wider shadow-sm font-mono">
+            <span className="h-1.5 w-1.5 rounded-full bg-amber-400" />
+            <span>Master Admin</span>
+          </span>
+        );
+      case "lead_admin":
+        return (
+          <span className="inline-flex items-center gap-1.5 rounded-full bg-sky-500/20 border border-sky-500/40 px-3 py-0.5 text-[10px] font-bold text-sky-300 uppercase tracking-wider font-mono">
+            <span className="h-1.5 w-1.5 rounded-full bg-sky-400" />
+            <span>Lead Admin</span>
+          </span>
+        );
+      case "junior_admin":
+        return (
+          <span className="inline-flex items-center gap-1.5 rounded-full bg-purple-500/20 border border-purple-500/40 px-3 py-0.5 text-[10px] font-bold text-purple-300 uppercase tracking-wider font-mono">
+            <span className="h-1.5 w-1.5 rounded-full bg-purple-400" />
+            <span>Junior Admin</span>
+          </span>
+        );
+      default:
+        return (
+          <span className="inline-flex items-center gap-1.5 rounded-full bg-purple-500/20 border border-purple-500/40 px-3 py-0.5 text-[10px] font-bold text-purple-300 uppercase tracking-wider font-mono">
+            <span className="h-1.5 w-1.5 rounded-full bg-purple-400" />
+            <span>Junior Admin</span>
+          </span>
+        );
+    }
+  };
+
+  return (
+    <section className="space-y-8 animate-fadeIn">
+      {/* Toast Feedback */}
+      {statusMessage && (
+        <div
+          className={`flex items-center justify-between rounded-2xl px-5 py-3.5 text-sm backdrop-blur-2xl border animate-fadeIn ${
+            statusMessage.type === "success"
+              ? "bg-emerald-950/60 border-emerald-500/40 text-emerald-200"
+              : "bg-red-950/60 border-red-500/40 text-red-200"
+          }`}
+        >
+          <span>{statusMessage.text}</span>
+          <button
+            onClick={() => setStatusMessage(null)}
+            className="text-white/60 hover:text-white text-xs cursor-pointer"
+          >
+            ✕
+          </button>
+        </div>
+      )}
+
+      {/* INVITE USER Card */}
+      <div className="relative mx-auto max-w-xl w-full rounded-3xl border border-white/15 bg-white/[0.03] p-6 sm:p-8 backdrop-blur-2xl shadow-2xl overflow-hidden animate-fadeIn">
+        {/* Iridescent Top Glow */}
+        <div className="pointer-events-none absolute inset-x-0 top-0 h-[1px] bg-gradient-to-r from-transparent via-white/40 to-transparent" />
+        <div className="pointer-events-none absolute -top-16 -right-16 h-40 w-40 rounded-full bg-[#f20089]/15 blur-3xl" />
+        <div className="pointer-events-none absolute -bottom-16 -left-16 h-40 w-40 rounded-full bg-purple-900/20 blur-3xl" />
+
+        <div className="relative z-10 text-center mb-6">
+          <h3 className="text-xl sm:text-2xl font-extrabold uppercase tracking-widest text-white font-[family-name:var(--font-google-sans)] drop-shadow">
+            INVITE USER
+          </h3>
+          <p className="text-xs text-white/60 mt-1">
+            Designate an administrator role and enter an official college email.
+          </p>
+        </div>
+
+        <form onSubmit={handleGrantAdmin} className="relative z-10 space-y-4">
+          {/* Email Field */}
+          <div>
+            <label className="block text-[11px] font-bold uppercase tracking-wider text-white/70 mb-1.5 font-[family-name:var(--font-google-sans)]">
+              Email Address
+            </label>
+            <input
+              type="email"
+              required
+              placeholder="e.g. rohit.sharma.cse28@heritageit.edu.in"
+              value={adminEmailInput}
+              onChange={(e) => setAdminEmailInput(e.target.value)}
+              className="w-full rounded-2xl border border-white/20 bg-black/60 px-5 py-3 text-xs sm:text-sm text-white placeholder-white/30 outline-none backdrop-blur-xl transition-all focus:border-[#f20089] focus:ring-1 focus:ring-[#f20089]/50 font-mono"
+            />
+          </div>
+
+          {/* Role Dropdown */}
+          <div className="relative" ref={dropdownRef}>
+            <label className="block text-[11px] font-bold uppercase tracking-wider text-white/70 mb-1.5 font-[family-name:var(--font-google-sans)]">
+              Role
+            </label>
+            <button
+              type="button"
+              onClick={() => setRoleDropdownOpen((prev) => !prev)}
+              className="w-full flex items-center justify-between rounded-2xl border border-white/20 bg-black/60 px-5 py-3 text-xs sm:text-sm text-white outline-none hover:border-[#f20089]/70 focus:border-[#f20089] cursor-pointer transition-all shadow-md"
+            >
+              <span className="font-semibold text-white">
+                {selectedRole === "master_admin"
+                  ? "Master Admin"
+                  : selectedRole === "lead_admin"
+                  ? "Lead Admin"
+                  : "Junior Admin"}
+              </span>
+              <svg
+                className={`w-4 h-4 text-[#f20089] transition-transform duration-200 ${
+                  roleDropdownOpen ? "rotate-180" : ""
+                }`}
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2.5"
+                viewBox="0 0 24 24"
+              >
+                <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+              </svg>
+            </button>
+
+            {roleDropdownOpen && (
+              <div className="absolute z-30 mt-2 w-full rounded-2xl border border-white/15 bg-black/95 backdrop-blur-3xl shadow-2xl overflow-hidden py-1.5 divide-y divide-white/5 animate-fadeIn">
+                {[
+                  { value: "master_admin" as const, label: "Master Admin" },
+                  { value: "lead_admin" as const, label: "Lead Admin" },
+                  { value: "junior_admin" as const, label: "Junior Admin" },
+                ].map((opt) => {
+                  const isSelected = selectedRole === opt.value;
+                  return (
+                    <button
+                      key={opt.value}
+                      type="button"
+                      onClick={() => {
+                        setSelectedRole(opt.value);
+                        setRoleDropdownOpen(false);
+                      }}
+                      className={`w-full flex items-center gap-2.5 px-5 py-3 text-xs sm:text-sm text-left transition-colors cursor-pointer ${
+                        isSelected
+                          ? "bg-[#f20089]/20 text-white font-bold"
+                          : "text-white/80 hover:bg-white/10 hover:text-white"
+                      }`}
+                    >
+                      <span className="w-4 text-center font-bold text-[#f20089]">
+                        {isSelected ? "✓" : ""}
+                      </span>
+                      <span>{opt.label}</span>
+                    </button>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+
+          {/* Email Identity Preview */}
+          {adminEmailParsed && (
+            <div className="rounded-2xl border border-emerald-500/30 bg-emerald-950/20 p-4 animate-fadeIn flex flex-wrap items-center gap-3 text-xs font-mono">
+              <span className="text-emerald-400 font-bold uppercase tracking-wider text-[10px]">
+                Identity Preview:
+              </span>
+              <span className="font-semibold text-white inline-flex items-center gap-1">
+                <span className="text-[9px] text-emerald-400 font-bold border border-emerald-500/30 bg-emerald-500/10 px-1 py-0.5 rounded">NAME</span> {adminEmailParsed.fullName}
+              </span>
+              <span className="text-emerald-300 inline-flex items-center gap-1">
+                <span className="text-[9px] text-emerald-400 font-bold border border-emerald-500/30 bg-emerald-500/10 px-1 py-0.5 rounded">DEPT</span> {adminEmailParsed.branchName} ({adminEmailParsed.branchCode})
+              </span>
+              <span className="text-purple-300 inline-flex items-center gap-1">
+                <span className="text-[9px] text-purple-400 font-bold border border-purple-500/30 bg-purple-500/10 px-1 py-0.5 rounded">YEAR</span> {adminEmailParsed.academicYear} ({adminEmailParsed.batch})
+              </span>
+            </div>
+          )}
+
+          {/* INVITE Button */}
+          <div className="pt-2">
+            <button
+              type="submit"
+              disabled={isSubmittingAdmin}
+              className="rounded-2xl bg-[#f20089] hover:bg-[#d8007a] disabled:opacity-50 px-8 py-3 text-xs sm:text-sm font-bold uppercase tracking-wider text-white shadow-lg shadow-[#f20089]/40 transition-all hover:scale-105 active:scale-95 cursor-pointer font-[family-name:var(--font-google-sans)]"
+            >
+              {isSubmittingAdmin ? "INVITING..." : "INVITE"}
+            </button>
+          </div>
+        </form>
+      </div>
+
+      {/* Card 2: Current Administrators Table */}
+      <div className="rounded-3xl border border-white/15 bg-white/[0.03] p-6 sm:p-8 backdrop-blur-2xl shadow-xl space-y-4">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+          <div>
+            <h3 className="text-lg font-bold text-white font-[family-name:var(--font-google-sans)]">
+              Active Administrators ({admins.length})
+            </h3>
+            <p className="text-xs text-white/60">
+              Change administrator roles or revoke access at any time.
+            </p>
+          </div>
+          <div className="flex items-center gap-2 text-[11px] text-white/60">
+            <span>Roles:</span>
+            <span className="text-amber-300 font-semibold">Master Admin</span> •
+            <span className="text-sky-300 font-semibold">Lead Admin</span> •
+            <span className="text-purple-300 font-semibold">Junior Admin</span>
+          </div>
+        </div>
+
+        <div className="overflow-x-auto rounded-2xl border border-white/10 bg-white/[0.02]">
+          <table className="w-full text-left text-xs text-neutral-300">
+            <thead className="border-b border-white/10 bg-white/[0.04] text-[11px] uppercase tracking-wider text-white/60 font-[family-name:var(--font-google-sans)]">
+              <tr>
+                <th className="px-5 py-4">Administrator</th>
+                <th className="px-5 py-4">College Email</th>
+                <th className="px-5 py-4">Department / Year</th>
+                <th className="px-5 py-4">Current Role</th>
+                <th className="px-5 py-4">Change Role</th>
+                <th className="px-5 py-4 text-right">Actions</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-white/5">
+              {loading ? (
+                <tr>
+                  <td colSpan={6} className="py-8 text-center text-white/60">
+                    Loading administrators...
+                  </td>
+                </tr>
+              ) : (
+                admins.map((admin) => {
+                  const isSelf = admin.email.toLowerCase() === currentUserEmail.toLowerCase();
+                  const parsed = parseHeritageEmail(admin.email, admin.name);
+
+                  return (
+                    <tr
+                      key={admin._id}
+                      className="hover:bg-white/[0.03] transition-colors"
+                    >
+                      <td className="px-5 py-4 font-bold text-white flex items-center gap-3">
+                        <div
+                          className={`h-8 w-8 rounded-full flex items-center justify-center text-xs font-extrabold text-white shrink-0 ${
+                            admin.role === "master_admin"
+                              ? "bg-gradient-to-tr from-amber-500 to-[#f20089] shadow-md shadow-amber-500/30"
+                              : admin.role === "lead_admin"
+                              ? "bg-gradient-to-tr from-sky-400 to-blue-600 shadow-md shadow-sky-500/20"
+                              : "bg-gradient-to-tr from-[#f20089] to-purple-600"
+                          }`}
+                        >
+                          {parsed.firstName.charAt(0).toUpperCase()}
+                        </div>
+                        <div>
+                          <span className="block font-bold">
+                            {parsed.fullName || admin.name}
+                          </span>
+                          <span className="text-[10px] text-white/50">{admin.name}</span>
+                        </div>
+                      </td>
+                      <td className="px-5 py-4 font-mono text-[11px] text-white/90">
+                        {admin.email}
+                      </td>
+                      <td className="px-5 py-4">
+                        <span className="block text-white font-medium">
+                          {parsed.branchName || admin.department}
+                        </span>
+                        <span className="text-[10px] text-white/50">
+                          {parsed.academicYear || admin.year}
+                        </span>
+                      </td>
+                      <td className="px-5 py-4">
+                        {renderRoleBadge(admin.role)}
+                      </td>
+                      <td className="px-5 py-4">
+                        <select
+                          value={admin.role}
+                          onChange={(e) =>
+                            handleChangeRole(admin, e.target.value as UserRole)
+                          }
+                          className="rounded-xl border border-white/15 bg-[#121216] px-2.5 py-1 text-[11px] text-white outline-none hover:border-[#f20089] focus:border-[#f20089] cursor-pointer"
+                        >
+                          <option value="junior_admin">Junior Admin</option>
+                          <option value="lead_admin">Lead Admin</option>
+                          <option value="master_admin">Master Admin</option>
+                        </select>
+                      </td>
+                      <td className="px-5 py-4 text-right">
+                        {isSelf ? (
+                          <span className="text-[11px] text-amber-300/80 font-medium">
+                            Current User
+                          </span>
+                        ) : (
+                          <button
+                            type="button"
+                            onClick={() => handleRevokeAdmin(admin)}
+                            className="rounded-full border border-red-500/30 bg-red-950/20 hover:bg-red-900/40 px-3 py-1 text-[11px] font-semibold text-red-300 transition-all cursor-pointer"
+                          >
+                            Revoke
+                          </button>
+                        )}
+                      </td>
+                    </tr>
+                  );
+                })
+              )}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      {/* Card 3: Quick Promote from Registered Students */}
+      <div className="rounded-3xl border border-white/15 bg-white/[0.03] p-6 sm:p-8 backdrop-blur-2xl shadow-xl space-y-4">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+          <div>
+            <h3 className="text-lg font-bold text-white font-[family-name:var(--font-google-sans)]">
+              Quick Promote Registered Students
+            </h3>
+            <p className="text-xs text-neutral-300">
+              Select any student and designate their admin tier directly.
+            </p>
+          </div>
+          <div className="flex items-center gap-3 w-full sm:w-auto">
+            <select
+              value={quickPromoteRole}
+              onChange={(e) => setQuickPromoteRole(e.target.value as "junior_admin" | "lead_admin" | "master_admin")}
+              className="rounded-2xl border border-white/15 bg-[#121216] px-3 py-2 text-xs text-white outline-none focus:border-[#f20089] cursor-pointer"
+            >
+              <option value="junior_admin">as Junior Admin</option>
+              <option value="lead_admin">as Lead Admin</option>
+              <option value="master_admin">as Master Admin</option>
+            </select>
+            <input
+              type="text"
+              placeholder="Filter students..."
+              value={searchStudentForAdmin}
+              onChange={(e) => setSearchStudentForAdmin(e.target.value)}
+              className="w-full sm:w-56 rounded-2xl border border-white/15 bg-black/60 px-4 py-2 text-xs text-white placeholder-white/40 outline-none backdrop-blur-xl focus:border-[#f20089]"
+            />
+          </div>
+        </div>
+
+        <div className="max-h-64 overflow-y-auto rounded-2xl border border-white/10 divide-y divide-white/5 bg-white/[0.01]">
+          {participants
+            .filter((p) => {
+              const q = searchStudentForAdmin.toLowerCase();
+              return p.name.toLowerCase().includes(q) || p.email.toLowerCase().includes(q);
+            })
+            .slice(0, 50)
+            .map((student) => {
+              const parsed = parseHeritageEmail(student.email, student.name);
+              const existingAdmin = admins.find(
+                (a) => a.email.toLowerCase() === student.email.toLowerCase()
+              );
+
+              return (
+                <div
+                  key={student._id}
+                  className="flex items-center justify-between px-4 py-3 hover:bg-white/[0.02] transition-colors text-xs"
+                >
+                  <div>
+                    <span className="font-bold text-white block">
+                      {parsed.fullName || student.name}
+                    </span>
+                    <span className="text-[10px] text-white/60 font-mono">
+                      {student.email} • {parsed.branchCode} • {parsed.academicYear}
+                    </span>
+                  </div>
+
+                  {existingAdmin ? (
+                    <div className="flex items-center gap-2">
+                      {renderRoleBadge(existingAdmin.role)}
+                    </div>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={() => handleQuickPromote(student, quickPromoteRole)}
+                      className="rounded-full bg-emerald-600/20 hover:bg-emerald-600/40 border border-emerald-500/40 px-3.5 py-1 text-[11px] font-bold text-emerald-300 transition-all cursor-pointer"
+                    >
+                      + Promote ({quickPromoteRole === "master_admin" ? "Master" : quickPromoteRole === "lead_admin" ? "Lead" : "Junior"})
+                    </button>
+                  )}
+                </div>
+              );
+            })}
+        </div>
+      </div>
+    </section>
+  );
+}

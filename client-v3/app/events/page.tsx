@@ -6,7 +6,6 @@ import EventsHero from "@/components/events/EventsHero";
 import EventInsideView from "@/components/events/EventInsideView";
 import GrainOverlay from "@/components/hero/GrainOverlay";
 import KolkataHero from "@/components/hero/KolkataHero";
-import { SEED_EVENTS } from "@/lib/seed-data";
 import type { PublicEvent } from "@/types";
 
 export type { PublicEvent };
@@ -31,10 +30,29 @@ export default function EventsPage() {
     return () => window.removeEventListener("popstate", onPop);
   }, []);
 
-  // ── Load events from static seed data ────────────────────────────────────
+  // ── Fetch dynamic events from MongoDB via API ───────────────────────────
   useEffect(() => {
-    setEvents(SEED_EVENTS);
-    setLoading(false);
+    let isMounted = true;
+    const fetchEvents = async () => {
+      try {
+        setLoading(true);
+        const res = await fetch("/api/events");
+        if (res.ok) {
+          const data = await res.json();
+          if (isMounted && Array.isArray(data.events)) {
+            setEvents(data.events);
+          }
+        }
+      } catch (err) {
+        console.error("Failed to load events:", err);
+      } finally {
+        if (isMounted) setLoading(false);
+      }
+    };
+    fetchEvents();
+    return () => {
+      isMounted = false;
+    };
   }, []);
 
   // ── Navigation helpers ───────────────────────────────────────────────────

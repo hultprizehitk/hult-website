@@ -11,6 +11,28 @@ export interface ParsedStudentInfo {
   academicYear: string;
 }
 
+export interface Participant {
+  _id: string;
+  name: string;
+  email: string;
+  department: string;
+  year: string;
+  role: UserRole | string;
+  createdAt: string;
+  updatedAt?: string;
+}
+
+export interface AdminRecord {
+  _id: string;
+  name: string;
+  email: string;
+  department?: string;
+  year?: string;
+  role: UserRole;
+  createdAt: string;
+  updatedAt?: string;
+}
+
 export interface IUserProfile {
   id: string;
   name: string;
@@ -22,4 +44,5 @@ export interface IUserProfile {
   createdAt?: string;
   updatedAt?: string;
 }
+
 
