@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect } from "react";
 import { parseHeritageEmail, validatePhoneNumber, validateRollNumber } from "@/lib/heritage-parser";
 import type { PublicEvent } from "@/types";
 
@@ -17,10 +17,6 @@ interface UseEventRegistrationProps {
   onRegisterSuccess: (teamData: any) => void;
 }
 
-// In-memory data structures (Zero localStorage, ready for DB hookup)
-let inMemoryTeams: any[] = [];
-let inMemoryRsvps: Record<string, string[]> = {};
-
 export function useEventRegistration({
   event,
   sessionUser,
@@ -33,30 +29,36 @@ export function useEventRegistration({
   // Mode: "create" | "join"
   const [registrationMode, setRegistrationMode] = useState<"create" | "join">("create");
 
-  // Create Team state
+  // Create Team form inputs
   const [teamName, setTeamName] = useState("");
   const [ventureName, setVentureName] = useState("");
   const [leadPhone, setLeadPhone] = useState("");
   const [leadRoll, setLeadRoll] = useState("");
   const [department, setDepartment] = useState("Computer Science & Engineering");
 
-  // Join Team state
+  // Join Team form inputs
   const [joinCode, setJoinCode] = useState("");
   const [memberPhone, setMemberPhone] = useState("");
   const [memberRoll, setMemberRoll] = useState("");
   const [memberDepartment, setMemberDepartment] = useState("Computer Science & Engineering");
 
-  // RSVP State
+  // RSVP UI State
   const [rsvpInfo, setRsvpInfo] = useState<{
     rsvpd: boolean;
     status?: string;
     myCheckIn?: boolean;
     checkedInCount?: number;
     totalRoster?: number;
-  } | null>(null);
+  }>({
+    rsvpd: false,
+    status: "pending",
+    myCheckIn: false,
+    checkedInCount: 0,
+    totalRoster: registeredTeam ? 1 + (registeredTeam.members?.length || 0) : 1,
+  });
   const [rsvpLoading, setRsvpLoading] = useState(false);
 
-  // General state
+  // General UI state
   const [loading, setLoading] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
@@ -66,27 +68,7 @@ export function useEventRegistration({
   const [createStep, setCreateStep] = useState<1 | 2>(1);
   const [joinStep, setJoinStep] = useState<1 | 2>(1);
 
-  // Fetch RSVP status if user has a registered team
-  const fetchRsvpStatus = useCallback(() => {
-    if (!registeredTeam || !event._id || !sessionUser?.email) return;
-    const eventRsvps = inMemoryRsvps[event._id] || [];
-    const userRsvpd = eventRsvps.includes(sessionUser.email.toLowerCase());
-
-    const totalRoster = 1 + (registeredTeam?.members?.length || 0);
-    setRsvpInfo({
-      rsvpd: userRsvpd,
-      status: userRsvpd ? "confirmed" : "pending",
-      myCheckIn: userRsvpd,
-      checkedInCount: userRsvpd ? 1 : 0,
-      totalRoster,
-    });
-  }, [registeredTeam, event._id, sessionUser?.email]);
-
-  useEffect(() => {
-    fetchRsvpStatus();
-  }, [fetchRsvpStatus]);
-
-  // Auto-fill student profile from Heritage email
+  // Auto-fill student department from Heritage email
   useEffect(() => {
     if (sessionUser?.email) {
       const parsed = parseHeritageEmail(sessionUser.email);
@@ -97,7 +79,7 @@ export function useEventRegistration({
     }
   }, [sessionUser?.email]);
 
-  // Read URL params for auto-fill join code
+  // Read URL query params for auto-fill join code
   useEffect(() => {
     if (typeof window !== "undefined") {
       const params = new URLSearchParams(window.location.search);
@@ -109,27 +91,37 @@ export function useEventRegistration({
     }
   }, []);
 
-  // Handle RSVP action
+  // Update roster counts on registeredTeam change
+  useEffect(() => {
+    if (registeredTeam) {
+      const rosterCount = 1 + (registeredTeam.members?.length || 0);
+      setRsvpInfo((prev) => ({
+        ...prev,
+        totalRoster: rosterCount,
+      }));
+    }
+  }, [registeredTeam]);
+
+  // Handle RSVP action (Pure Frontend UI State)
   const handleRsvp = async () => {
-    if (!sessionUser?.email || !event._id) return;
+    if (!sessionUser?.email) return;
     setRsvpLoading(true);
     setErrorMessage(null);
 
     try {
-      const current = inMemoryRsvps[event._id] || [];
-      const email = sessionUser.email.toLowerCase();
-      if (!current.includes(email)) {
-        inMemoryRsvps[event._id] = [...current, email];
-      }
-      fetchRsvpStatus();
-    } catch {
-      setErrorMessage("Failed to update RSVP.");
+      setRsvpInfo((prev) => ({
+        ...prev,
+        rsvpd: true,
+        status: "confirmed",
+        myCheckIn: true,
+        checkedInCount: Math.min((prev.totalRoster || 1), (prev.checkedInCount || 0) + 1),
+      }));
     } finally {
       setRsvpLoading(false);
     }
   };
 
-  // Handle Create Team submit
+  // Handle Create Team submit (Frontend UI Form Submission)
   const handleCreateTeam = async (e: React.FormEvent) => {
     e.preventDefault();
     setErrorMessage(null);
@@ -159,11 +151,10 @@ export function useEventRegistration({
     setLoading(true);
 
     try {
-      const code = "HP" + Math.random().toString(36).substring(2, 6).toUpperCase();
       const newTeam = {
         id: `team-${Date.now()}`,
         eventId: event._id,
-        teamCode: code,
+        teamCode: "HP" + Math.random().toString(36).substring(2, 6).toUpperCase(),
         teamName: teamName.trim(),
         ventureName: ventureName.trim(),
         leadName: sessionUser.name || "Student Leader",
@@ -177,16 +168,15 @@ export function useEventRegistration({
         status: "confirmed",
       };
 
-      inMemoryTeams.push(newTeam);
       onRegisterSuccess(newTeam);
     } catch {
-      setErrorMessage("Failed to create team. Please try again.");
+      setErrorMessage("Unable to submit team registration.");
     } finally {
       setLoading(false);
     }
   };
 
-  // Handle Join Team submit
+  // Handle Join Team submit (Frontend UI Form Submission)
   const handleJoinTeam = async (e: React.FormEvent) => {
     e.preventDefault();
     setErrorMessage(null);
@@ -217,66 +207,43 @@ export function useEventRegistration({
     setLoading(true);
 
     try {
-      const teamIndex = inMemoryTeams.findIndex(
-        (t) => t.teamCode?.toUpperCase() === cleanCode && t.eventId === event._id
-      );
-
-      if (teamIndex === -1) {
-        throw new Error("Invalid team code for this event. Please verify the code.");
-      }
-
-      const team = inMemoryTeams[teamIndex];
-      const userEmail = sessionUser.email.toLowerCase();
-
-      if (team.leadEmail?.toLowerCase() === userEmail) {
-        throw new Error("You are already the leader of this team.");
-      }
-
-      const alreadyMember = (team.members || []).some(
-        (m: any) => m.email?.toLowerCase() === userEmail
-      );
-      if (alreadyMember) {
-        throw new Error("You are already a member of this team.");
-      }
-
-      if ((team.members || []).length + 1 >= (team.membersCount || maxMembers)) {
-        throw new Error("This team has already reached its maximum member limit.");
-      }
-
-      const newMember = {
-        name: sessionUser.name || "Student Member",
-        email: userEmail,
+      const joinedTeam = {
+        id: `team-${cleanCode}`,
+        eventId: event._id,
+        teamCode: cleanCode,
+        teamName: `Team ${cleanCode}`,
+        leadName: "Team Leader",
+        leadEmail: "leader@heritageit.edu.in",
         department: memberDepartment.trim(),
-        phone: joinPhoneCheck.clean,
-        roll: joinRollCheck.clean,
-        joinedAt: new Date().toISOString(),
+        membersCount: maxMembers,
+        members: [
+          {
+            name: sessionUser.name || "Student Member",
+            email: sessionUser.email.toLowerCase(),
+            department: memberDepartment.trim(),
+            phone: joinPhoneCheck.clean,
+            roll: joinRollCheck.clean,
+            joinedAt: new Date().toISOString(),
+          },
+        ],
+        registeredAt: new Date().toISOString(),
+        status: "confirmed",
       };
 
-      team.members = [...(team.members || []), newMember];
-      inMemoryTeams[teamIndex] = team;
-
-      onRegisterSuccess(team);
-    } catch (err: any) {
-      setErrorMessage(err.message || "Failed to join team.");
+      onRegisterSuccess(joinedTeam);
+    } catch {
+      setErrorMessage("Unable to join team with this code.");
     } finally {
       setLoading(false);
     }
   };
 
-  // Refresh roster to see if teammates joined
+  // Refresh roster action
   const handleRefreshRoster = async () => {
     setRefreshing(true);
-    try {
-      if (!registeredTeam) return;
-      const updated = inMemoryTeams.find(
-        (t) => t.id === registeredTeam.id || t.teamCode === registeredTeam.teamCode
-      );
-      if (updated) {
-        onRegisterSuccess(updated);
-      }
-    } finally {
+    setTimeout(() => {
       setRefreshing(false);
-    }
+    }, 400);
   };
 
   // Copy code to clipboard helper

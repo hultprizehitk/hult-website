@@ -12,19 +12,16 @@ export interface SessionUser {
   name?: string | null;
   email?: string | null;
   image?: string | null;
-  role?: string;
 }
 
 export interface Session {
   user: SessionUser;
-  expires: string;
 }
 
 type Status = "loading" | "authenticated" | "unauthenticated";
 
 const NO_SESSION: Session | null = null;
 
-// In-memory session store (no localStorage persistence)
 let currentSession: Session | null = null;
 const sessionListeners = new Set<() => void>();
 
@@ -32,7 +29,7 @@ function emitSessionChange() {
   for (const listener of sessionListeners) listener();
 }
 
-function updateSession(session: Session | null) {
+export function setClientSession(session: Session | null) {
   currentSession = session;
   emitSessionChange();
 }
@@ -58,11 +55,7 @@ const AuthContext = createContext<AuthContextValue>({
   status: "unauthenticated",
 });
 
-export function SessionProvider({
-  children,
-}: {
-  children: React.ReactNode;
-}) {
+export function SessionProvider({ children }: { children: React.ReactNode }) {
   const session = useSyncExternalStore(
     subscribeSession,
     getSessionSnapshot,
@@ -84,18 +77,12 @@ export function useSession(): { data: Session | null; status: Status } {
   return useContext(AuthContext);
 }
 
-interface SignInOptions {
-  email?: string;
-  callbackUrl?: string;
-}
-
-export async function signIn(
-  _provider?: string,
-  options?: SignInOptions
-): Promise<void> {
+export function signIn(_provider?: string, options?: { email?: string; callbackUrl?: string }): void {
   const email = options?.email?.trim();
   if (!email) {
-    window.location.assign(options?.callbackUrl || "/register");
+    if (typeof window !== "undefined") {
+      window.location.assign(options?.callbackUrl ? `/register?callbackUrl=${encodeURIComponent(options.callbackUrl)}` : "/register");
+    }
     return;
   }
 
@@ -105,15 +92,17 @@ export async function signIn(
       name: info.fullName || email.split("@")[0],
       email,
       image: null,
-      role: "student",
     },
-    expires: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
   };
-  updateSession(session);
-  window.location.assign(options?.callbackUrl || "/profile");
+  setClientSession(session);
+  if (typeof window !== "undefined") {
+    window.location.assign(options?.callbackUrl || "/profile");
+  }
 }
 
-export async function signOut(options?: { callbackUrl?: string }): Promise<void> {
-  updateSession(null);
-  window.location.assign(options?.callbackUrl || "/");
+export function signOut(options?: { callbackUrl?: string }): void {
+  setClientSession(null);
+  if (typeof window !== "undefined") {
+    window.location.assign(options?.callbackUrl || "/");
+  }
 }

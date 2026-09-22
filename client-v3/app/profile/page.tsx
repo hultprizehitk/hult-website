@@ -26,20 +26,6 @@ export default function StudentProfilePage() {
     ? parseHeritageEmail(session.user.email, session.user.name)
     : null;
 
-  const userRole = (session?.user as { role?: string })?.role;
-  const isMasterAdmin = userRole === "master_admin";
-  const isLeadAdmin = userRole === "lead_admin";
-  const isJuniorAdmin = userRole === "junior_admin";
-  const isAdmin = isMasterAdmin || isLeadAdmin || isJuniorAdmin;
-
-  const adminBadgeLabel = isMasterAdmin
-    ? "Master Admin"
-    : isLeadAdmin
-    ? "Lead Admin"
-    : isJuniorAdmin
-    ? "Junior Admin"
-    : "Admin";
-
   return (
     <div className="relative min-h-screen w-full overflow-x-hidden bg-black font-sans text-white selection:bg-[#f20089] selection:text-white flex flex-col justify-between">
       {/* WebGL Aurora Background */}
@@ -93,17 +79,12 @@ export default function StudentProfilePage() {
                   </div>
                 </div>
 
-                {/* Verified Pills: Student Status + Admin Role */}
+                {/* Verified Pill: Student Status */}
                 <div className="flex items-center justify-center gap-2 mb-3 flex-wrap">
                   <div className="inline-flex items-center gap-2 rounded-full border border-emerald-500/40 bg-emerald-500/15 px-3.5 py-1 text-[11px] font-bold text-emerald-300 uppercase tracking-widest">
                     <span className="h-2 w-2 rounded-full bg-emerald-400 animate-pulse" />
                     <span>HITK Student</span>
                   </div>
-                  {isAdmin && (
-                    <div className="inline-flex items-center gap-1.5 rounded-full border border-[#f20089]/50 bg-[#f20089]/20 px-3.5 py-1 text-[11px] font-bold text-pink-300 uppercase tracking-widest shadow-sm">
-                      <span>{adminBadgeLabel}</span>
-                    </div>
-                  )}
                 </div>
 
                 {/* Student Name */}

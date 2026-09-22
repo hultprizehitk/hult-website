@@ -68,21 +68,6 @@ export default function RegisterPage() {
     signIn("college-email", { email: email.trim(), callbackUrl: "/profile" });
   };
 
-  // Role checks (kept in sync with the live app's clearance model)
-  const userRole = (session?.user as { role?: string })?.role;
-  const isMasterAdmin = userRole === "master_admin";
-  const isLeadAdmin = userRole === "lead_admin";
-  const isJuniorAdmin = userRole === "junior_admin";
-  const isAdmin = isMasterAdmin || isLeadAdmin || isJuniorAdmin;
-
-  const adminBadgeLabel = isMasterAdmin
-    ? "Master Admin"
-    : isLeadAdmin
-    ? "Lead Admin"
-    : isJuniorAdmin
-    ? "Junior Admin"
-    : "Admin";
-
   const sessionStudentInfo = session?.user?.email
     ? parseHeritageEmail(session.user.email, session.user.name)
     : null;
@@ -136,11 +121,6 @@ export default function RegisterPage() {
                   <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse" />
                   Verified HITK Scholar
                 </div>
-                {isAdmin && (
-                  <div className="inline-flex items-center gap-1.5 rounded-full border border-white/30 bg-white/10 px-3.5 py-1 text-[10px] font-bold text-white/80 uppercase tracking-widest">
-                    {adminBadgeLabel} Clearance
-                  </div>
-                )}
               </div>
 
               {/* Student Name */}
