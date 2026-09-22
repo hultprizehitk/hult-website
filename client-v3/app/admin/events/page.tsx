@@ -217,7 +217,7 @@ export default function AdminEventsPage() {
             placeholder="Search events by title, venue, or tag..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="w-full pl-10 pr-4 py-2 text-xs bg-neutral-900 border border-white/10 rounded-xl text-white placeholder-neutral-500 focus:outline-none focus:border-rose-500/50"
+            className="w-full pl-10 pr-4 py-2 text-xs bg-[#16161d] border border-white/15 rounded-xl text-white placeholder-neutral-500 focus:outline-none focus:border-rose-500/50"
           />
         </div>
         <div className="text-xs font-mono text-neutral-400">
@@ -226,7 +226,7 @@ export default function AdminEventsPage() {
       </div>
 
       {/* Events Table Card */}
-      <div className="rounded-2xl border border-white/10 bg-neutral-900/40 backdrop-blur-sm overflow-hidden">
+      <div className="rounded-2xl border border-white/15 bg-[#0e0e12] shadow-2xl overflow-hidden">
         {loading ? (
           <div className="py-20 text-center text-xs text-neutral-500 font-mono">
             Loading events directory...
@@ -235,7 +235,7 @@ export default function AdminEventsPage() {
           <div className="overflow-x-auto">
             <table className="w-full text-left text-xs">
               <thead>
-                <tr className="border-b border-white/10 text-neutral-400 bg-white/[0.02]">
+                <tr className="border-b border-white/10 text-neutral-300 bg-[#16161d]">
                   <th className="py-3.5 px-4 font-semibold">Event Title</th>
                   <th className="py-3.5 px-4 font-semibold">Category</th>
                   <th className="py-3.5 px-4 font-semibold">Date & Venue</th>
@@ -247,12 +247,12 @@ export default function AdminEventsPage() {
               </thead>
               <tbody className="divide-y divide-white/5">
                 {filteredEvents.map((ev) => (
-                  <tr key={ev._id} className="hover:bg-white/[0.02] transition-colors">
+                  <tr key={ev._id} className="hover:bg-[#16161d]/60 transition-colors">
                     <td className="py-3.5 px-4 font-medium text-white max-w-xs truncate">
                       {ev.title}
                     </td>
                     <td className="py-3.5 px-4">
-                      <span className="inline-block rounded-md border border-white/10 bg-white/5 px-2 py-0.5 text-[10px] font-mono text-neutral-300">
+                      <span className="inline-block rounded-md border border-white/15 bg-[#16161d] px-2 py-0.5 text-[10px] font-mono text-neutral-300">
                         {ev.tag}
                       </span>
                     </td>
@@ -275,7 +275,7 @@ export default function AdminEventsPage() {
                             ? "bg-emerald-500/15 text-emerald-400 border border-emerald-500/30"
                             : ev.registrationStatus === "extended"
                             ? "bg-amber-500/15 text-amber-400 border border-amber-500/30"
-                            : "bg-neutral-800 text-neutral-400 border border-neutral-700"
+                            : "bg-[#16161d] text-neutral-400 border border-white/10"
                         }`}
                       >
                         {ev.registrationStatus}
@@ -287,7 +287,7 @@ export default function AdminEventsPage() {
                         className={`inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-[10px] font-mono font-medium transition-colors cursor-pointer ${
                           ev.isPublished
                             ? "bg-blue-500/15 text-blue-400 border border-blue-500/30 hover:bg-blue-500/25"
-                            : "bg-white/5 text-neutral-400 border border-white/10 hover:bg-white/10"
+                            : "bg-[#16161d] text-neutral-400 border border-white/10 hover:bg-[#202028]"
                         }`}
                       >
                         {ev.isPublished ? (
@@ -335,8 +335,8 @@ export default function AdminEventsPage() {
 
       {/* Create / Edit Event Modal */}
       {modalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm overflow-y-auto">
-          <div className="relative w-full max-w-xl rounded-2xl border border-white/10 bg-[#0d0d14] p-6 shadow-2xl my-8">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 overflow-y-auto">
+          <div className="relative w-full max-w-xl rounded-2xl border border-white/20 bg-[#0e0e12] p-6 shadow-2xl my-8">
             <div className="flex items-center justify-between pb-4 border-b border-white/10 mb-5">
               <h2 className="text-lg font-bold text-white">
                 {editingEvent ? "Edit Event" : "Create New Event"}
@@ -360,7 +360,7 @@ export default function AdminEventsPage() {
                   placeholder="e.g. On-Campus Pitch Qualifier 2026"
                   value={formData.title}
                   onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-                  className="w-full px-3.5 py-2.5 bg-neutral-900 border border-white/10 rounded-xl text-white placeholder-neutral-500 focus:outline-none focus:border-rose-500"
+                  className="w-full px-3.5 py-2.5 bg-[#16161d] border border-white/15 rounded-xl text-white placeholder-neutral-500 focus:outline-none focus:border-rose-500"
                 />
               </div>
 
@@ -374,7 +374,7 @@ export default function AdminEventsPage() {
                     placeholder="e.g. Flagship, Workshop, Pitch"
                     value={formData.tag}
                     onChange={(e) => setFormData({ ...formData, tag: e.target.value })}
-                    className="w-full px-3.5 py-2.5 bg-neutral-900 border border-white/10 rounded-xl text-white placeholder-neutral-500 focus:outline-none focus:border-rose-500"
+                    className="w-full px-3.5 py-2.5 bg-[#16161d] border border-white/15 rounded-xl text-white placeholder-neutral-500 focus:outline-none focus:border-rose-500"
                   />
                 </div>
 
@@ -388,7 +388,7 @@ export default function AdminEventsPage() {
                     placeholder="e.g. Oct 24, 2026 • 10:00 AM"
                     value={formData.date}
                     onChange={(e) => setFormData({ ...formData, date: e.target.value })}
-                    className="w-full px-3.5 py-2.5 bg-neutral-900 border border-white/10 rounded-xl text-white placeholder-neutral-500 focus:outline-none focus:border-rose-500"
+                    className="w-full px-3.5 py-2.5 bg-[#16161d] border border-white/15 rounded-xl text-white placeholder-neutral-500 focus:outline-none focus:border-rose-500"
                   />
                 </div>
               </div>
@@ -403,7 +403,7 @@ export default function AdminEventsPage() {
                   placeholder="e.g. Main Auditorium, Heritage Institute of Technology"
                   value={formData.venue}
                   onChange={(e) => setFormData({ ...formData, venue: e.target.value })}
-                  className="w-full px-3.5 py-2.5 bg-neutral-900 border border-white/10 rounded-xl text-white placeholder-neutral-500 focus:outline-none focus:border-rose-500"
+                  className="w-full px-3.5 py-2.5 bg-[#16161d] border border-white/15 rounded-xl text-white placeholder-neutral-500 focus:outline-none focus:border-rose-500"
                 />
               </div>
 
@@ -417,7 +417,7 @@ export default function AdminEventsPage() {
                   placeholder="Concise overview of event structure, criteria, and outcomes..."
                   value={formData.description}
                   onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                  className="w-full px-3.5 py-2.5 bg-neutral-900 border border-white/10 rounded-xl text-white placeholder-neutral-500 focus:outline-none focus:border-rose-500 resize-none"
+                  className="w-full px-3.5 py-2.5 bg-[#16161d] border border-white/15 rounded-xl text-white placeholder-neutral-500 focus:outline-none focus:border-rose-500 resize-none"
                 />
               </div>
 
@@ -429,7 +429,7 @@ export default function AdminEventsPage() {
                   <select
                     value={formData.registrationStatus}
                     onChange={(e) => setFormData({ ...formData, registrationStatus: e.target.value })}
-                    className="w-full px-3.5 py-2.5 bg-neutral-900 border border-white/10 rounded-xl text-white focus:outline-none focus:border-rose-500"
+                    className="w-full px-3.5 py-2.5 bg-[#16161d] border border-white/15 rounded-xl text-white focus:outline-none focus:border-rose-500"
                   >
                     <option value="open">Open</option>
                     <option value="closed">Closed</option>
@@ -448,7 +448,7 @@ export default function AdminEventsPage() {
                     max={200}
                     value={formData.maxTeams}
                     onChange={(e) => setFormData({ ...formData, maxTeams: parseInt(e.target.value, 10) || 40 })}
-                    className="w-full px-3.5 py-2.5 bg-neutral-900 border border-white/10 rounded-xl text-white focus:outline-none focus:border-rose-500"
+                    className="w-full px-3.5 py-2.5 bg-[#16161d] border border-white/15 rounded-xl text-white focus:outline-none focus:border-rose-500"
                   />
                 </div>
 
@@ -461,7 +461,7 @@ export default function AdminEventsPage() {
                     placeholder="e.g. Oct 20, 2026"
                     value={formData.registrationDeadline}
                     onChange={(e) => setFormData({ ...formData, registrationDeadline: e.target.value })}
-                    className="w-full px-3.5 py-2.5 bg-neutral-900 border border-white/10 rounded-xl text-white placeholder-neutral-500 focus:outline-none focus:border-rose-500"
+                    className="w-full px-3.5 py-2.5 bg-[#16161d] border border-white/15 rounded-xl text-white placeholder-neutral-500 focus:outline-none focus:border-rose-500"
                   />
                 </div>
               </div>

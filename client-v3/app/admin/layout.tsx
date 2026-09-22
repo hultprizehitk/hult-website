@@ -4,7 +4,7 @@ import { isAuthorizedAdmin, isAuthorizedSuperAdmin } from "@/lib/admin-check";
 import AdminSignInGate from "./components/AdminSignInGate";
 import AdminAccessDenied from "./components/AdminAccessDenied";
 import DashboardNav from "./components/DashboardNav";
-import AnimatedGradient from "@/components/ui/animated-gradient";
+import { DotPattern } from "@/components/ui/dot-pattern";
 
 export const metadata = {
   title: "Admin CMS | Hult Prize HITK",
@@ -32,15 +32,18 @@ export default async function AdminLayout({
   const isSuperAdmin = await isAuthorizedSuperAdmin();
 
   return (
-    <div className="relative min-h-screen w-full bg-black font-sans text-white selection:bg-[#f20089] selection:text-white overflow-x-clip">
-      {/* Background Aurora */}
-      <div className="fixed inset-0 z-0 pointer-events-none opacity-80">
-        <AnimatedGradient
-          config={{ preset: "Aurora", speed: 14 }}
-          noise={{ opacity: 0.08, scale: 1 }}
+    <div className="relative min-h-screen w-full bg-black font-sans text-white selection:bg-white/25 selection:text-white overflow-x-clip">
+      {/* Subtle Lightweight Dot Pattern Background */}
+      <div className="fixed inset-0 z-0 pointer-events-none overflow-hidden">
+        <DotPattern
+          width={32}
+          height={32}
+          cx={1}
+          cy={1}
+          cr={0.8}
+          className="fill-white/[0.05] [mask-image:radial-gradient(ellipse_at_center,white,transparent_75%)]"
         />
-        <div className="absolute inset-0 bg-gradient-to-t from-black via-black/40 to-black/80" />
-        <div className="absolute inset-0 bg-radial from-transparent via-black/30 to-black/90" />
+        <div className="absolute inset-0 bg-gradient-to-b from-black/80 via-black/40 to-black/90" />
       </div>
 
       {/* Persistent Navigation Header & Tabs */}

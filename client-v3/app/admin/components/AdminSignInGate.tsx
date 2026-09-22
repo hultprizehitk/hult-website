@@ -4,7 +4,8 @@ import React, { useState, useEffect } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { signIn } from "next-auth/react";
-import AnimatedGradient from "@/components/ui/animated-gradient";
+import { DotPattern } from "@/components/ui/dot-pattern";
+import { Button } from "@/components/ui/button";
 
 export default function AdminSignInGate() {
   const [isSubdomain, setIsSubdomain] = useState(false);
@@ -23,16 +24,22 @@ export default function AdminSignInGate() {
   }, []);
 
   return (
-    <div className="relative min-h-screen w-full bg-black font-sans text-white selection:bg-[#f20089] selection:text-white flex flex-col justify-between overflow-x-hidden">
-      {/* Aurora Ambient Background */}
-      <div className="fixed inset-0 z-0 pointer-events-none opacity-85">
-        <AnimatedGradient config={{ preset: "Aurora", speed: 16 }} noise={{ opacity: 0.1, scale: 1 }} />
-        <div className="absolute inset-0 bg-gradient-to-t from-black via-black/50 to-black/80" />
-        <div className="absolute inset-0 bg-radial from-transparent via-black/30 to-black/90" />
+    <div className="relative min-h-screen w-full bg-black font-sans text-white selection:bg-white/25 selection:text-white flex flex-col justify-between overflow-x-hidden">
+      {/* Lightweight Dot Pattern Background */}
+      <div className="fixed inset-0 z-0 pointer-events-none overflow-hidden">
+        <DotPattern
+          width={28}
+          height={28}
+          cx={1.5}
+          cy={1.5}
+          cr={1.2}
+          className="fill-white/[0.05] [mask-image:radial-gradient(ellipse_at_center,white,transparent_85%)]"
+        />
+        <div className="absolute inset-0 bg-gradient-to-b from-black/50 via-transparent to-black/80" />
       </div>
 
       {/* Top Bar */}
-      <header className="relative z-20 flex items-center justify-between px-6 py-4 border-b border-white/10 bg-black/40 backdrop-blur-2xl">
+      <header className="relative z-20 flex items-center justify-between px-6 py-4 border-b border-white/10 bg-[#08080a] shadow-md">
         <div className="flex items-center gap-3">
           <Link href={isSubdomain ? mainSiteUrl : "/"} className="relative aspect-[1080/659] h-7 sm:h-8">
             <Image src="/Hult-Prize.png" alt="Hult Prize Logo" fill sizes="48px" className="object-contain" />
@@ -42,25 +49,24 @@ export default function AdminSignInGate() {
             Admin Console
           </span>
         </div>
-        <Link
-          href={isSubdomain ? mainSiteUrl : "/"}
-          className="rounded-full border border-white/20 bg-white/[0.06] hover:bg-white/15 px-4 py-1.5 text-xs font-semibold text-white transition-all font-[family-name:var(--font-google-sans)]"
-        >
-          ← Return to Website
-        </Link>
+        <Button asChild variant="outline" size="sm" className="rounded-full text-xs bg-[#16161d] border-white/15 hover:bg-[#202028]">
+          <Link href={isSubdomain ? mainSiteUrl : "/"}>
+            ← Return to Website
+          </Link>
+        </Button>
       </header>
 
       {/* Center Gate Card */}
       <main className="relative z-10 flex flex-1 items-center justify-center px-4 py-12">
         <div className="w-full max-w-md">
-          <div className="relative overflow-hidden rounded-[2.5rem] border border-white/20 bg-white/[0.04] p-8 sm:p-10 text-center shadow-[0_24px_60px_rgba(0,0,0,0.7),inset_0_1.5px_1px_rgba(255,255,255,0.35)] backdrop-blur-3xl">
+          <div className="relative overflow-hidden rounded-[2.5rem] border border-white/20 bg-[#0e0e12] p-8 sm:p-10 text-center shadow-2xl">
             {/* Ambient Glow */}
-            <div className="pointer-events-none absolute -top-16 -right-16 h-48 w-48 rounded-full bg-[#f20089]/25 blur-3xl" />
-            <div className="pointer-events-none absolute -bottom-16 -left-16 h-48 w-48 rounded-full bg-purple-900/30 blur-3xl" />
+            <div className="pointer-events-none absolute -top-16 -right-16 h-48 w-48 rounded-full bg-emerald-500/10 blur-3xl" />
+            <div className="pointer-events-none absolute -bottom-16 -left-16 h-48 w-48 rounded-full bg-neutral-800/40 blur-3xl" />
 
             <div className="pt-2" />
 
-            <span className="inline-flex items-center gap-1.5 rounded-full border border-[#f20089]/40 bg-[#f20089]/15 px-3 py-1 text-[10px] font-extrabold text-[#f20089] uppercase tracking-widest mb-3">
+            <span className="inline-flex items-center gap-1.5 rounded-full border border-emerald-500/40 bg-emerald-500/15 px-3 py-1 text-[10px] font-extrabold text-emerald-300 uppercase tracking-widest mb-3">
               Restricted Admin Access
             </span>
 
@@ -73,10 +79,11 @@ export default function AdminSignInGate() {
             </p>
 
             {/* Google Admin Login Button */}
-            <button
-              type="button"
+            <Button
+              variant="default"
+              size="lg"
               onClick={() => signIn("google", { callbackUrl: isSubdomain ? "/" : "/admin" })}
-              className="w-full flex items-center justify-center gap-3 rounded-2xl bg-white hover:bg-neutral-100 py-3.5 px-5 text-xs sm:text-sm font-extrabold text-neutral-900 shadow-2xl transition-all duration-200 hover:scale-[1.02] active:scale-[0.98] cursor-pointer font-[family-name:var(--font-google-sans)]"
+              className="w-full flex items-center justify-center gap-3 rounded-2xl py-6 font-bold shadow-2xl transition-all duration-200 hover:scale-[1.02] active:scale-[0.98] font-[family-name:var(--font-google-sans)]"
             >
               <svg className="h-5 w-5 shrink-0" viewBox="0 0 24 24">
                 <path
@@ -97,11 +104,11 @@ export default function AdminSignInGate() {
                 />
               </svg>
               <span>Sign In with Admin Google Account</span>
-            </button>
+            </Button>
 
             {/* Security Notice */}
-            <div className="mt-6 flex items-start gap-2 rounded-xl border border-white/10 bg-white/[0.02] p-3 text-[11px] text-white/50 text-left">
-              <span className="h-1.5 w-1.5 rounded-full bg-pink-400 shrink-0 mt-1" />
+            <div className="mt-6 flex items-start gap-2 rounded-xl border border-white/10 bg-black/60 p-3 text-[11px] text-white/60 text-left">
+              <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 shrink-0 mt-1" />
               <span><strong>Security Policy:</strong> Only verified administrator accounts listed in the organizing team whitelist are permitted. Unauthorized attempts will be denied.</span>
             </div>
           </div>

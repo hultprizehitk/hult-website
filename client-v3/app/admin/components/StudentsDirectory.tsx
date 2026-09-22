@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import { parseHeritageEmail } from "@/lib/heritage-parser";
+import { Button } from "@/components/ui/button";
 
 import type { Participant } from "@/types";
 
@@ -130,10 +131,10 @@ export default function StudentsDirectory() {
       {/* Toast Feedback */}
       {statusMessage && (
         <div
-          className={`flex items-center justify-between rounded-2xl px-5 py-3.5 text-sm backdrop-blur-2xl border animate-fadeIn ${
+          className={`flex items-center justify-between rounded-2xl px-5 py-3.5 text-sm border shadow-lg animate-fadeIn ${
             statusMessage.type === "success"
-              ? "bg-emerald-950/60 border-emerald-500/40 text-emerald-200"
-              : "bg-red-950/60 border-red-500/40 text-red-200"
+              ? "bg-[#0a1f18] border-emerald-500/40 text-emerald-200"
+              : "bg-[#240c10] border-red-500/40 text-red-200"
           }`}
         >
           <span>{statusMessage.text}</span>
@@ -159,55 +160,59 @@ export default function StudentsDirectory() {
         </div>
 
         <div className="flex items-center gap-2 flex-wrap">
-          <button
-            type="button"
+          <Button
+            variant="outline"
+            size="sm"
             onClick={copyAllEmails}
-            className="flex items-center gap-2 rounded-2xl border border-white/20 bg-white/[0.08] hover:bg-white/15 px-4 py-2.5 text-xs font-bold text-white transition-all shadow-md active:scale-95 cursor-pointer font-mono"
+            className="rounded-xl font-mono text-xs"
           >
-            <span>Copy Emails</span>
-          </button>
-          <button
-            type="button"
+            Copy Emails
+          </Button>
+          <Button
+            variant="default"
+            size="sm"
             onClick={exportToCSV}
-            className="flex items-center gap-2 rounded-2xl bg-gradient-to-r from-[#f20089] to-purple-600 hover:from-[#ff1a9b] hover:to-purple-500 px-4 py-2.5 text-xs font-bold text-white transition-all shadow-lg shadow-[#f20089]/30 active:scale-95 cursor-pointer font-mono"
+            className="rounded-xl font-mono text-xs"
           >
-            <span>Export to CSV</span>
-          </button>
+            Export to CSV
+          </Button>
         </div>
       </div>
 
-      {/* Search & Filter Controls */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-        <div className="sm:col-span-2">
-          <input
-            type="text"
-            placeholder="Search by student name, email, branch, or department..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full rounded-2xl border border-white/15 bg-black/40 px-4 py-2.5 text-xs sm:text-sm text-white placeholder-white/40 outline-none backdrop-blur-xl focus:border-[#f20089]"
-          />
-        </div>
+      {/* Search & Filter Controls Card */}
+      <div className="rounded-3xl border border-white/15 bg-[#0e0e12] p-4 sm:p-5 shadow-2xl">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+          <div className="sm:col-span-2">
+            <input
+              type="text"
+              placeholder="Search by student name, email, branch, or department..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="w-full rounded-2xl border border-white/15 bg-[#16161c] px-4 py-2.5 text-xs sm:text-sm text-white placeholder-white/40 outline-none focus:border-white/40 focus:ring-1 focus:ring-white/20"
+            />
+          </div>
 
-        <div>
-          <select
-            value={selectedYear}
-            onChange={(e) => setSelectedYear(e.target.value)}
-            className="w-full rounded-2xl border border-white/15 bg-black/60 px-4 py-2.5 text-xs sm:text-sm text-white outline-none backdrop-blur-xl focus:border-[#f20089]"
-          >
-            <option value="all">All Academic Years</option>
-            <option value="3rd Year">3rd Year (Class of 2028)</option>
-            <option value="2nd Year">2nd Year (Class of 2029)</option>
-            <option value="1st Year">1st Year (Class of 2030)</option>
-            <option value="4th Year">4th Year (Class of 2027)</option>
-            <option value="Final Year">Final Year (Class of 2026)</option>
-          </select>
+          <div>
+            <select
+              value={selectedYear}
+              onChange={(e) => setSelectedYear(e.target.value)}
+              className="w-full rounded-2xl border border-white/15 bg-[#16161c] px-4 py-2.5 text-xs sm:text-sm text-white outline-none focus:border-white/40 focus:ring-1 focus:ring-white/20 cursor-pointer"
+            >
+              <option value="all">All Academic Years</option>
+              <option value="3rd Year">3rd Year (Class of 2028)</option>
+              <option value="2nd Year">2nd Year (Class of 2029)</option>
+              <option value="1st Year">1st Year (Class of 2030)</option>
+              <option value="4th Year">4th Year (Class of 2027)</option>
+              <option value="Final Year">Final Year (Class of 2026)</option>
+            </select>
+          </div>
         </div>
       </div>
 
-      {/* Table */}
-      <div className="overflow-x-auto rounded-3xl border border-white/10 bg-white/[0.02] backdrop-blur-xl">
-        <table className="w-full text-left text-xs text-neutral-300">
-          <thead className="border-b border-white/10 bg-white/[0.04] text-[11px] uppercase tracking-wider text-white/60 font-[family-name:var(--font-google-sans)]">
+      {/* Table Card */}
+      <div className="overflow-x-auto rounded-3xl border border-white/15 bg-[#0e0e12] shadow-2xl">
+        <table className="w-full text-left text-xs text-neutral-200">
+          <thead className="border-b border-white/10 bg-[#16161c] text-[11px] uppercase tracking-wider text-white/70 font-[family-name:var(--font-google-sans)]">
             <tr>
               <th className="px-5 py-4">Student Name</th>
               <th className="px-5 py-4">College Email</th>
@@ -238,7 +243,7 @@ export default function StudentsDirectory() {
                     className="hover:bg-white/[0.03] transition-colors"
                   >
                     <td className="px-5 py-4 font-bold text-white flex items-center gap-2.5">
-                      <div className="h-7 w-7 rounded-full bg-gradient-to-tr from-[#f20089] to-purple-600 flex items-center justify-center text-[10px] font-extrabold text-white shrink-0">
+                      <div className="h-7 w-7 rounded-full bg-neutral-800 border border-white/20 flex items-center justify-center text-[10px] font-extrabold text-white shrink-0">
                         {parsed.firstName.charAt(0).toUpperCase()}
                       </div>
                       <div>
@@ -255,7 +260,7 @@ export default function StudentsDirectory() {
                       <span className="block text-xs font-semibold text-white">
                         {parsed.branchName}
                       </span>
-                      <span className="inline-block mt-0.5 rounded bg-[#f20089]/20 px-1.5 py-0.5 text-[9px] font-bold text-[#f20089] uppercase">
+                      <span className="inline-block mt-0.5 rounded bg-emerald-500/15 border border-emerald-500/30 px-1.5 py-0.5 text-[9px] font-bold text-emerald-300 uppercase">
                         {parsed.branchCode}
                       </span>
                     </td>

@@ -5,6 +5,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { usePathname } from "next/navigation";
 import { signOut } from "next-auth/react";
+import { Button } from "@/components/ui/button";
 
 interface DashboardNavProps {
   userEmail: string;
@@ -46,7 +47,7 @@ export default function DashboardNav({ userEmail, isSuperAdmin }: DashboardNavPr
   return (
     <>
       {/* Sticky Top Header */}
-      <header className="sticky top-0 z-50 flex items-center justify-between border-b border-white/10 bg-black/75 backdrop-blur-2xl px-4 sm:px-6 py-4 font-[family-name:var(--font-google-sans)]">
+      <header className="sticky top-0 z-50 flex items-center justify-between border-b border-white/10 bg-[#08080a] px-4 sm:px-6 py-3.5 shadow-md font-[family-name:var(--font-google-sans)]">
         <div className="flex items-center gap-3">
           <Link href={isSubdomain ? "/" : "/admin"} className="relative aspect-[1080/659] h-7 sm:h-8">
             <Image
@@ -59,7 +60,7 @@ export default function DashboardNav({ userEmail, isSuperAdmin }: DashboardNavPr
           </Link>
           <div className="h-5 w-[1px] bg-white/20" />
           <span className="text-xs sm:text-sm font-extrabold tracking-wider text-white">
-            ADMIN <span className="text-[#f20089]">CMS</span>
+            ADMIN <span className="text-neutral-400">CMS</span>
           </span>
           <span className="hidden sm:inline-block rounded-full bg-emerald-500/15 border border-emerald-500/30 px-2.5 py-0.5 text-[10px] font-bold text-emerald-300 uppercase tracking-widest">
             Stealth Mode
@@ -72,40 +73,39 @@ export default function DashboardNav({ userEmail, isSuperAdmin }: DashboardNavPr
               Logged in as <span className="text-white font-medium">{userEmail}</span>
             </span>
           )}
-          <Link
-            href={isSubdomain ? `${mainSiteUrl}/profile` : "/profile"}
-            className="rounded-full bg-white/[0.08] hover:bg-white/15 border border-white/20 px-3 sm:px-3.5 py-1.5 text-xs font-semibold text-white transition-all whitespace-nowrap flex items-center gap-1.5"
-          >
-            <span>User Profile</span>
-          </Link>
-          <Link
-            href={mainSiteUrl}
-            className="rounded-full bg-white/[0.08] hover:bg-white/15 border border-white/20 px-3 sm:px-3.5 py-1.5 text-xs font-semibold text-white transition-all whitespace-nowrap"
-          >
-            ← Back to Site
-          </Link>
-          <button
-            type="button"
+          <Button asChild variant="outline" size="sm" className="rounded-full text-xs bg-[#16161d] border-white/15 hover:bg-[#202028]">
+            <Link href={isSubdomain ? `${mainSiteUrl}/profile` : "/profile"}>
+              User Profile
+            </Link>
+          </Button>
+          <Button asChild variant="ghost" size="sm" className="rounded-full text-xs hidden sm:inline-flex hover:bg-[#16161d]">
+            <Link href={mainSiteUrl}>
+              ← Back to Site
+            </Link>
+          </Button>
+          <Button
+            variant="destructive-outline"
+            size="sm"
             onClick={() => signOut({ callbackUrl: isSubdomain ? mainSiteUrl : "/" })}
-            className="rounded-full bg-[#f20089] hover:bg-[#d8007a] px-3.5 sm:px-4 py-1.5 text-xs font-bold text-white shadow-md shadow-[#f20089]/40 transition-all cursor-pointer whitespace-nowrap"
+            className="rounded-full text-xs"
           >
             Sign Out
-          </button>
+          </Button>
         </div>
       </header>
 
       {/* Tab Switcher */}
-      <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-8">
+      <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-6">
         <nav
           aria-label="Dashboard Tabs"
           className="flex items-center gap-2 border-b border-white/10 pb-4 overflow-x-auto"
         >
           <Link
             href={getHref("/")}
-            className={`rounded-xl px-5 py-2.5 text-xs sm:text-sm font-bold tracking-wide transition-all font-[family-name:var(--font-google-sans)] whitespace-nowrap ${
+            className={`rounded-xl px-5 py-2 text-xs sm:text-sm font-bold tracking-wide transition-all font-[family-name:var(--font-google-sans)] whitespace-nowrap ${
               isEvents
-                ? "bg-[#f20089] text-white shadow-lg shadow-[#f20089]/30"
-                : "bg-white/[0.05] text-white/70 hover:text-white hover:bg-white/10"
+                ? "bg-white text-black shadow-lg shadow-white/15"
+                : "bg-[#16161d] text-white/70 hover:text-white hover:bg-[#202028] border border-white/10"
             }`}
           >
             Events
@@ -113,10 +113,10 @@ export default function DashboardNav({ userEmail, isSuperAdmin }: DashboardNavPr
 
           <Link
             href={getHref("/live-event")}
-            className={`relative flex items-center gap-2 rounded-xl px-5 py-2.5 text-xs sm:text-sm font-bold tracking-wide transition-all font-[family-name:var(--font-google-sans)] whitespace-nowrap ${
+            className={`relative flex items-center gap-2 rounded-xl px-5 py-2 text-xs sm:text-sm font-bold tracking-wide transition-all font-[family-name:var(--font-google-sans)] whitespace-nowrap ${
               isLiveEvent
-                ? "bg-[#f20089] text-white shadow-lg shadow-[#f20089]/30"
-                : "bg-white/[0.05] text-white/70 hover:text-white hover:bg-white/10"
+                ? "bg-white text-black shadow-lg shadow-white/15"
+                : "bg-[#16161d] text-white/70 hover:text-white hover:bg-[#202028] border border-white/10"
             }`}
           >
             <span className="relative flex h-2 w-2">
@@ -128,10 +128,10 @@ export default function DashboardNav({ userEmail, isSuperAdmin }: DashboardNavPr
 
           <Link
             href={getHref("/students")}
-            className={`rounded-xl px-5 py-2.5 text-xs sm:text-sm font-bold tracking-wide transition-all font-[family-name:var(--font-google-sans)] whitespace-nowrap ${
+            className={`rounded-xl px-5 py-2 text-xs sm:text-sm font-bold tracking-wide transition-all font-[family-name:var(--font-google-sans)] whitespace-nowrap ${
               isStudents
-                ? "bg-[#f20089] text-white shadow-lg shadow-[#f20089]/30"
-                : "bg-white/[0.05] text-white/70 hover:text-white hover:bg-white/10"
+                ? "bg-white text-black shadow-lg shadow-white/15"
+                : "bg-[#16161d] text-white/70 hover:text-white hover:bg-[#202028] border border-white/10"
             }`}
           >
             Users
@@ -140,10 +140,10 @@ export default function DashboardNav({ userEmail, isSuperAdmin }: DashboardNavPr
           {isSuperAdmin && (
             <Link
               href={getHref("/admins")}
-              className={`rounded-xl px-5 py-2.5 text-xs sm:text-sm font-bold tracking-wide transition-all font-[family-name:var(--font-google-sans)] whitespace-nowrap ${
+              className={`rounded-xl px-5 py-2 text-xs sm:text-sm font-bold tracking-wide transition-all font-[family-name:var(--font-google-sans)] whitespace-nowrap ${
                 isAdmins
-                  ? "bg-gradient-to-r from-amber-500 to-[#f20089] text-white shadow-lg shadow-amber-500/20"
-                  : "bg-amber-500/10 text-amber-300 hover:bg-amber-500/20 border border-amber-500/30"
+                  ? "bg-amber-400 text-black font-extrabold shadow-lg shadow-amber-400/20"
+                  : "bg-amber-500/15 text-amber-300 hover:bg-amber-500/25 border border-amber-500/30"
               }`}
             >
               Admin

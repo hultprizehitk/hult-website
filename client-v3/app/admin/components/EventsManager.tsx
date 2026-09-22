@@ -2,6 +2,8 @@
 
 import React, { useState, useEffect } from "react";
 import Link from "next/link";
+import { Button } from "@/components/ui/button";
+import { Calendar } from "lucide-react";
 
 import type { EventItem, RegisteredTeamItem } from "@/types";
 
@@ -545,10 +547,10 @@ export default function EventsManager() {
       {/* Toast Feedback */}
       {statusMessage && (
         <div
-          className={`flex items-center justify-between rounded-2xl px-5 py-3 text-xs sm:text-sm backdrop-blur-2xl border animate-fadeIn ${
+          className={`flex items-center justify-between rounded-2xl px-5 py-3 text-xs sm:text-sm border shadow-lg animate-fadeIn ${
             statusMessage.type === "success"
-              ? "bg-emerald-950/80 border-emerald-500/40 text-emerald-200"
-              : "bg-red-950/80 border-red-500/40 text-red-200"
+              ? "bg-[#0a1f18] border-emerald-500/40 text-emerald-200"
+              : "bg-[#240c10] border-red-500/40 text-red-200"
           }`}
         >
           <span>{statusMessage.text}</span>
@@ -602,10 +604,10 @@ export default function EventsManager() {
           </div>
 
           {/* Event Header Banner inside the card */}
-          <div className="rounded-3xl border border-white/15 bg-white/[0.03] p-6 sm:p-8 backdrop-blur-2xl shadow-xl space-y-4">
+          <div className="rounded-3xl border border-white/15 bg-[#0e0e12] p-6 sm:p-8 shadow-2xl space-y-4">
             <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
               <div className="flex items-center gap-2 flex-wrap">
-                <span className="rounded-full bg-[#f20089]/20 border border-[#f20089]/40 px-3 py-0.5 text-[10px] font-bold uppercase tracking-wider text-[#f20089]">
+                <span className="rounded-full bg-white/10 border border-white/20 px-3 py-0.5 text-[10px] font-bold uppercase tracking-wider text-white">
                   {selectedEvent.tag}
                 </span>
 
@@ -634,13 +636,14 @@ export default function EventsManager() {
                   {selectedEvent.isPublished ? "● Live on Site" : "○ Draft Hidden"}
                 </button>
 
-                <button
+                <Button
                   type="button"
+                  variant="destructive-outline"
+                  size="sm"
                   onClick={() => handleDeleteEvent(selectedEvent._id, selectedEvent.title)}
-                  className="rounded-full bg-red-950/40 hover:bg-red-900/60 border border-red-500/30 px-3 py-1 text-xs font-semibold text-red-300 transition-colors cursor-pointer"
                 >
                   Delete Event
-                </button>
+                </Button>
               </div>
             </div>
 
@@ -648,57 +651,43 @@ export default function EventsManager() {
               <h1 className="text-2xl sm:text-3xl font-black text-white font-[family-name:var(--font-google-sans)]">
                 {selectedEvent.title}
               </h1>
-              <div className="flex items-center gap-3 text-xs text-white/60 mt-1.5 flex-wrap font-mono">
-                <span className="inline-flex items-center gap-1.5"><span className="text-[9px] text-pink-400 font-bold border border-pink-500/30 bg-pink-500/10 px-1.5 py-0.5 rounded">DATE</span> {selectedEvent.date}</span>
-                <span>•</span>
-                <span className="inline-flex items-center gap-1.5"><span className="text-[9px] text-pink-400 font-bold border border-pink-500/30 bg-pink-500/10 px-1.5 py-0.5 rounded">HALL</span> {selectedEvent.venue}</span>
-                <span>•</span>
-                <span className="text-white font-medium inline-flex items-center gap-1.5">
-                  <span className="text-[9px] text-pink-400 font-bold border border-pink-500/30 bg-pink-500/10 px-1.5 py-0.5 rounded">TEAMS</span> {selectedEvent.registeredTeamsCount || selectedEvent.registeredTeams?.length || 0} Teams Registered
-                </span>
-                <span>•</span>
-                <span className="text-[#f20089] font-medium font-sans">
-                  Team Size: {selectedEvent.minTeamMembers || 3} to {selectedEvent.maxTeamMembers || 5} Members
-                </span>
-              </div>
+              <p className="text-xs text-white/60 mt-1">
+                Venue: <strong className="text-white">{selectedEvent.venue}</strong> • Schedule:{" "}
+                <strong className="text-white">{selectedEvent.date}</strong>
+              </p>
             </div>
 
-            {/* Sub-Navigation Tabs matching website theme */}
-            <div className="flex items-center gap-2 pt-4 border-t border-white/10 overflow-x-auto no-scrollbar">
+            {/* Navigation Tabs inside the card */}
+            <div className="flex items-center gap-2 pt-2 border-t border-white/10 overflow-x-auto no-scrollbar">
               <button
                 type="button"
-                onClick={() => handleSwitchTab("details")}
-                className={`rounded-xl px-4 py-2 text-xs font-bold tracking-wide transition-all cursor-pointer font-[family-name:var(--font-google-sans)] whitespace-nowrap ${
+                onClick={() => setInsideTab("details")}
+                className={`rounded-xl px-4 py-2 text-xs font-bold uppercase tracking-wider transition-all cursor-pointer whitespace-nowrap font-[family-name:var(--font-google-sans)] ${
                   insideTab === "details"
-                    ? "bg-[#f20089] text-white shadow-lg shadow-[#f20089]/30"
-                    : "bg-white/[0.05] text-white/70 hover:text-white hover:bg-white/10"
+                    ? "bg-white text-black font-bold shadow-md shadow-white/10"
+                    : "bg-white/[0.05] text-white/70 hover:text-white hover:bg-white/15 border border-white/10"
                 }`}
               >
                 Overview & Details
               </button>
-
               <button
                 type="button"
-                onClick={() => handleSwitchTab("registration")}
-                className={`rounded-xl px-4 py-2 text-xs font-bold tracking-wide transition-all cursor-pointer font-[family-name:var(--font-google-sans)] whitespace-nowrap flex items-center gap-1.5 ${
+                onClick={() => setInsideTab("registration")}
+                className={`rounded-xl px-4 py-2 text-xs font-bold uppercase tracking-wider transition-all cursor-pointer whitespace-nowrap font-[family-name:var(--font-google-sans)] ${
                   insideTab === "registration"
-                    ? "bg-[#f20089] text-white shadow-lg shadow-[#f20089]/30"
-                    : "bg-white/[0.05] text-white/70 hover:text-white hover:bg-white/10"
+                    ? "bg-white text-black font-bold shadow-md shadow-white/10"
+                    : "bg-white/[0.05] text-white/70 hover:text-white hover:bg-white/15 border border-white/10"
                 }`}
               >
-                <span>Registration & Deadline</span>
-                {selectedEvent.registrationStatus !== "closed" && (
-                  <span className="h-1.5 w-1.5 rounded-full bg-emerald-400" />
-                )}
+                Registration & Deadlines
               </button>
-
               <button
                 type="button"
-                onClick={() => handleSwitchTab("teams")}
-                className={`rounded-xl px-4 py-2 text-xs font-bold tracking-wide transition-all cursor-pointer font-[family-name:var(--font-google-sans)] whitespace-nowrap ${
+                onClick={() => setInsideTab("teams")}
+                className={`rounded-xl px-4 py-2 text-xs font-bold uppercase tracking-wider transition-all cursor-pointer whitespace-nowrap font-[family-name:var(--font-google-sans)] ${
                   insideTab === "teams"
-                    ? "bg-[#f20089] text-white shadow-lg shadow-[#f20089]/30"
-                    : "bg-white/[0.05] text-white/70 hover:text-white hover:bg-white/10"
+                    ? "bg-white text-black font-bold shadow-md shadow-white/10"
+                    : "bg-white/[0.05] text-white/70 hover:text-white hover:bg-white/15 border border-white/10"
                 }`}
               >
                 Registered Teams ({selectedEvent.registeredTeams?.length || 0})
@@ -708,10 +697,10 @@ export default function EventsManager() {
 
           {/* Tab 1: Overview & Details Form */}
           {insideTab === "details" && (
-            <div className="relative overflow-hidden rounded-3xl border border-white/15 bg-white/[0.03] p-6 sm:p-8 backdrop-blur-3xl shadow-[0_20px_50px_rgba(0,0,0,0.5)] animate-fadeIn">
+            <div className="relative overflow-hidden rounded-3xl border border-white/15 bg-[#0e0e12] p-6 sm:p-8 shadow-2xl animate-fadeIn">
               {/* Subtle top iridescent accent */}
-              <div className="pointer-events-none absolute inset-x-0 top-0 h-[1.5px] bg-gradient-to-r from-transparent via-[#f20089]/60 to-transparent" />
-              <div className="pointer-events-none absolute -top-20 -right-20 h-48 w-48 rounded-full bg-[#f20089]/10 blur-3xl" />
+              <div className="pointer-events-none absolute inset-x-0 top-0 h-[1.5px] bg-gradient-to-r from-transparent via-white/40 to-transparent" />
+              <div className="pointer-events-none absolute -top-20 -right-20 h-48 w-48 rounded-full bg-white/5 blur-3xl" />
 
               <h3 className="text-lg font-bold text-white mb-4 font-[family-name:var(--font-google-sans)]">
                 Event Information & Schedule
@@ -725,7 +714,7 @@ export default function EventsManager() {
                     required
                     value={eventFormData.title}
                     onChange={(e) => setEventFormData({ ...eventFormData, title: e.target.value })}
-                    className="w-full rounded-2xl border border-white/15 bg-white/[0.05] hover:bg-white/[0.08] focus:bg-white/[0.1] px-4 py-2.5 text-white placeholder-white/40 outline-none backdrop-blur-xl focus:border-[#f20089] focus:ring-1 focus:ring-[#f20089]/50 shadow-inner transition-all text-xs sm:text-sm font-medium"
+                    className="w-full rounded-2xl border border-white/15 bg-[#16161d] px-4 py-2.5 text-white placeholder-white/40 outline-none focus:border-white/50 focus:ring-1 focus:ring-white/20 shadow-inner transition-all text-xs sm:text-sm font-medium"
                   />
                 </div>
 
@@ -735,7 +724,7 @@ export default function EventsManager() {
                     <select
                       value={eventFormData.tag}
                       onChange={(e) => setEventFormData({ ...eventFormData, tag: e.target.value })}
-                      className="w-full rounded-2xl border border-white/15 bg-white/[0.05] hover:bg-white/[0.08] focus:bg-white/[0.1] px-4 py-2.5 text-white outline-none backdrop-blur-xl focus:border-[#f20089] focus:ring-1 focus:ring-[#f20089]/50 shadow-inner transition-all cursor-pointer"
+                      className="w-full rounded-2xl border border-white/15 bg-[#16161d] px-4 py-2.5 text-white outline-none focus:border-white/50 focus:ring-1 focus:ring-white/20 shadow-inner transition-all cursor-pointer"
                     >
                       <option value="Flagship" className="bg-neutral-900 text-white">Flagship</option>
                       <option value="Workshop" className="bg-neutral-900 text-white">Workshop</option>
@@ -754,7 +743,7 @@ export default function EventsManager() {
                       onChange={(e) =>
                         setEventFormData({ ...eventFormData, order: Number(e.target.value) })
                       }
-                      className="w-full rounded-2xl border border-white/15 bg-white/[0.05] hover:bg-white/[0.08] focus:bg-white/[0.1] px-4 py-2.5 text-white outline-none backdrop-blur-xl focus:border-[#f20089] focus:ring-1 focus:ring-[#f20089]/50 shadow-inner transition-all font-mono"
+                      className="w-full rounded-2xl border border-white/15 bg-[#16161d] px-4 py-2.5 text-white outline-none focus:border-white/50 focus:ring-1 focus:ring-white/20 shadow-inner transition-all font-mono"
                     />
                   </div>
                 </div>
@@ -774,7 +763,7 @@ export default function EventsManager() {
                           minTeamMembers: Math.max(1, Number(e.target.value)),
                         })
                       }
-                      className="w-full rounded-2xl border border-white/15 bg-white/[0.05] hover:bg-white/[0.08] focus:bg-white/[0.1] px-4 py-2.5 text-white outline-none backdrop-blur-xl focus:border-[#f20089] focus:ring-1 focus:ring-[#f20089]/50 shadow-inner transition-all font-mono"
+                      className="w-full rounded-2xl border border-white/15 bg-[#16161d] px-4 py-2.5 text-white outline-none focus:border-white/50 focus:ring-1 focus:ring-white/20 shadow-inner transition-all font-mono"
                     />
                     <span className="text-[10px] text-white/40 mt-1 block">Default: 3 members</span>
                   </div>
@@ -792,7 +781,7 @@ export default function EventsManager() {
                           maxTeamMembers: Math.max(1, Number(e.target.value)),
                         })
                       }
-                      className="w-full rounded-2xl border border-white/15 bg-white/[0.05] hover:bg-white/[0.08] focus:bg-white/[0.1] px-4 py-2.5 text-white outline-none backdrop-blur-xl focus:border-[#f20089] focus:ring-1 focus:ring-[#f20089]/50 shadow-inner transition-all font-mono"
+                      className="w-full rounded-2xl border border-white/15 bg-[#16161d] px-4 py-2.5 text-white outline-none focus:border-white/50 focus:ring-1 focus:ring-white/20 shadow-inner transition-all font-mono"
                     />
                     <span className="text-[10px] text-white/40 mt-1 block">Default: 5 members</span>
                   </div>
@@ -803,7 +792,7 @@ export default function EventsManager() {
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div>
                       <label className="block text-white/70 font-semibold mb-1 flex items-center gap-1.5">
-                        <span>📅</span>
+                        <Calendar className="h-3.5 w-3.5 text-white/70" />
                         <span>Start Date & Time * (Calendar)</span>
                       </label>
                       <input
@@ -819,7 +808,7 @@ export default function EventsManager() {
                             date: formatted || eventFormData.date,
                           });
                         }}
-                        className="w-full rounded-2xl border border-white/15 bg-white/[0.05] hover:bg-white/[0.08] focus:bg-white/[0.1] px-4 py-2.5 text-white outline-none backdrop-blur-xl focus:border-[#f20089] focus:ring-1 focus:ring-[#f20089]/50 shadow-inner transition-all [color-scheme:dark] cursor-pointer"
+                        className="w-full rounded-2xl border border-white/15 bg-[#16161d] px-4 py-2.5 text-white outline-none focus:border-white/50 focus:ring-1 focus:ring-white/20 shadow-inner transition-all [color-scheme:dark] cursor-pointer"
                       />
                       <span className="text-[10px] text-white/40 mt-1 block">
                         Pick event start date and time from calendar
@@ -828,7 +817,7 @@ export default function EventsManager() {
 
                     <div>
                       <label className="block text-white/70 font-semibold mb-1 flex items-center gap-1.5">
-                        <span>📅</span>
+                        <Calendar className="h-3.5 w-3.5 text-white/70" />
                         <span>End Date & Time (Calendar)</span>
                       </label>
                       <input
@@ -844,7 +833,7 @@ export default function EventsManager() {
                             date: formatted || eventFormData.date,
                           });
                         }}
-                        className="w-full rounded-2xl border border-white/15 bg-white/[0.05] hover:bg-white/[0.08] focus:bg-white/[0.1] px-4 py-2.5 text-white outline-none backdrop-blur-xl focus:border-[#f20089] focus:ring-1 focus:ring-[#f20089]/50 shadow-inner transition-all [color-scheme:dark] cursor-pointer"
+                        className="w-full rounded-2xl border border-white/15 bg-[#16161d] px-4 py-2.5 text-white outline-none focus:border-white/50 focus:ring-1 focus:ring-white/20 shadow-inner transition-all [color-scheme:dark] cursor-pointer"
                       />
                       <span className="text-[10px] text-white/40 mt-1 block">
                         Optional event conclusion / pitch wrap-up
@@ -853,9 +842,9 @@ export default function EventsManager() {
                   </div>
 
                   {eventFormData.date && (
-                    <div className="rounded-2xl border border-white/15 bg-white/[0.04] backdrop-blur-xl px-4 py-2.5 flex items-center justify-between gap-2 text-xs flex-wrap shadow-inner">
+                    <div className="rounded-2xl border border-white/15 bg-[#16161d] px-4 py-2.5 flex items-center justify-between gap-2 text-xs flex-wrap shadow-inner">
                       <div className="flex items-center gap-2 text-white/70 font-mono">
-                        <span className="text-[#f20089] font-bold">Schedule Summary:</span>
+                        <span className="text-white font-bold">Schedule Summary:</span>
                         <span className="font-semibold text-white">{eventFormData.date}</span>
                       </div>
                     </div>
@@ -870,7 +859,7 @@ export default function EventsManager() {
                     placeholder="e.g. CME212 / Main Auditorium"
                     value={eventFormData.venue}
                     onChange={(e) => setEventFormData({ ...eventFormData, venue: e.target.value })}
-                    className="w-full rounded-2xl border border-white/15 bg-white/[0.05] hover:bg-white/[0.08] focus:bg-white/[0.1] px-4 py-2.5 text-white placeholder-white/40 outline-none backdrop-blur-xl focus:border-[#f20089] focus:ring-1 focus:ring-[#f20089]/50 shadow-inner transition-all"
+                    className="w-full rounded-2xl border border-white/15 bg-[#16161d] px-4 py-2.5 text-white placeholder-white/40 outline-none focus:border-white/50 focus:ring-1 focus:ring-white/20 shadow-inner transition-all"
                   />
                 </div>
 
@@ -883,7 +872,7 @@ export default function EventsManager() {
                     onChange={(e) =>
                       setEventFormData({ ...eventFormData, description: e.target.value })
                     }
-                    className="w-full rounded-2xl border border-white/15 bg-white/[0.05] hover:bg-white/[0.08] focus:bg-white/[0.1] px-4 py-2.5 text-white placeholder-white/40 outline-none backdrop-blur-xl focus:border-[#f20089] focus:ring-1 focus:ring-[#f20089]/50 shadow-inner transition-all leading-relaxed"
+                    className="w-full rounded-2xl border border-white/15 bg-[#16161d] px-4 py-2.5 text-white placeholder-white/40 outline-none focus:border-white/50 focus:ring-1 focus:ring-white/20 shadow-inner transition-all leading-relaxed"
                   />
                 </div>
 
@@ -896,7 +885,7 @@ export default function EventsManager() {
                     placeholder="Leave blank to use default portal registration (/register)"
                     value={eventFormData.link}
                     onChange={(e) => setEventFormData({ ...eventFormData, link: e.target.value })}
-                    className="w-full rounded-2xl border border-white/15 bg-white/[0.05] hover:bg-white/[0.08] focus:bg-white/[0.1] px-4 py-2.5 text-white placeholder-white/40 outline-none backdrop-blur-xl focus:border-[#f20089] focus:ring-1 focus:ring-[#f20089]/50 shadow-inner transition-all"
+                    className="w-full rounded-2xl border border-white/15 bg-[#16161d] px-4 py-2.5 text-white placeholder-white/40 outline-none focus:border-white/50 focus:ring-1 focus:ring-white/20 shadow-inner transition-all"
                   />
                 </div>
 
@@ -908,7 +897,7 @@ export default function EventsManager() {
                     onChange={(e) =>
                       setEventFormData({ ...eventFormData, isPublished: e.target.checked })
                     }
-                    className="rounded border-white/20 text-[#f20089] accent-[#f20089]"
+                    className="rounded border-white/20 accent-white"
                   />
                   <label htmlFor="isPublishedInside" className="text-white/80 cursor-pointer select-none">
                     Publish this event live on the public website (/events)
@@ -916,12 +905,14 @@ export default function EventsManager() {
                 </div>
 
                 <div className="pt-4 border-t border-white/10 flex justify-end">
-                  <button
+                  <Button
                     type="submit"
-                    className="rounded-2xl bg-[#f20089] hover:bg-[#d8007a] px-6 py-2.5 text-xs font-bold text-white shadow-lg shadow-[#f20089]/30 transition-all cursor-pointer font-[family-name:var(--font-google-sans)]"
+                    variant="default"
+                    size="default"
+                    className="font-[family-name:var(--font-google-sans)]"
                   >
                     Save Changes
-                  </button>
+                  </Button>
                 </div>
               </form>
             </div>
@@ -929,13 +920,13 @@ export default function EventsManager() {
 
           {/* Tab 2: Registration & Deadline Rules */}
           {insideTab === "registration" && (
-            <div className="rounded-3xl border border-white/15 bg-white/[0.03] p-6 sm:p-8 backdrop-blur-2xl shadow-xl space-y-6 animate-fadeIn">
+            <div className="rounded-3xl border border-white/15 bg-[#0e0e12] p-6 sm:p-8 shadow-2xl space-y-6 animate-fadeIn">
               <h3 className="text-lg font-bold text-white font-[family-name:var(--font-google-sans)]">
                 Registration Controls & Team Constraints
               </h3>
 
               {/* Start / Stop Registration Card */}
-              <div className="rounded-2xl border border-white/15 bg-white/[0.04] backdrop-blur-xl p-5 sm:p-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 shadow-lg">
+              <div className="rounded-2xl border border-white/15 bg-[#16161d] p-5 sm:p-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 shadow-lg">
                 <div>
                   <span className="text-sm font-bold text-white block">Registration Status</span>
                   <p className="text-xs text-white/60 mt-0.5">
@@ -961,7 +952,7 @@ export default function EventsManager() {
               </div>
 
               {/* Increase Time / Extend Deadline Card */}
-              <div className="rounded-2xl border border-white/15 bg-white/[0.04] backdrop-blur-xl p-5 sm:p-6 space-y-4 shadow-lg">
+              <div className="rounded-2xl border border-white/15 bg-[#16161d] p-5 sm:p-6 space-y-4 shadow-lg">
                 <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2">
                   <div>
                     <span className="text-sm font-bold text-white block">Cut-Off Deadline</span>
@@ -988,21 +979,21 @@ export default function EventsManager() {
                     <button
                       type="button"
                       onClick={() => handleIncreaseDeadline(selectedEvent._id, 24)}
-                      className="rounded-xl border border-white/15 bg-white/[0.05] hover:bg-[#f20089]/30 hover:border-[#f20089]/60 px-4 py-2 text-xs font-bold text-white transition-all cursor-pointer"
+                      className="rounded-xl border border-white/15 bg-[#121217] hover:bg-white/10 hover:border-white/40 px-4 py-2 text-xs font-bold text-white transition-all cursor-pointer"
                     >
                       +24 Hours
                     </button>
                     <button
                       type="button"
                       onClick={() => handleIncreaseDeadline(selectedEvent._id, 72)}
-                      className="rounded-xl border border-white/15 bg-white/[0.05] hover:bg-[#f20089]/30 hover:border-[#f20089]/60 px-4 py-2 text-xs font-bold text-white transition-all cursor-pointer"
+                      className="rounded-xl border border-white/15 bg-[#121217] hover:bg-white/10 hover:border-white/40 px-4 py-2 text-xs font-bold text-white transition-all cursor-pointer"
                     >
                       +3 Days
                     </button>
                     <button
                       type="button"
                       onClick={() => handleIncreaseDeadline(selectedEvent._id, 168)}
-                      className="rounded-xl border border-white/15 bg-white/[0.05] hover:bg-[#f20089]/30 hover:border-[#f20089]/60 px-4 py-2 text-xs font-bold text-white transition-all cursor-pointer"
+                      className="rounded-xl border border-white/15 bg-[#121217] hover:bg-white/10 hover:border-white/40 px-4 py-2 text-xs font-bold text-white transition-all cursor-pointer"
                     >
                       +1 Week
                     </button>
@@ -1024,21 +1015,22 @@ export default function EventsManager() {
                           registrationDeadline: e.target.value,
                         })
                       }
-                      className="flex-1 rounded-xl border border-white/15 bg-white/[0.05] hover:bg-white/[0.08] focus:bg-white/[0.1] px-3.5 py-2 text-xs text-white placeholder-white/40 outline-none backdrop-blur-xl focus:border-[#f20089] focus:ring-1 focus:ring-[#f20089]/50 shadow-inner font-mono transition-all"
+                      className="flex-1 rounded-xl border border-white/15 bg-[#121217] px-3.5 py-2 text-xs text-white placeholder-white/40 outline-none focus:border-white/50 focus:ring-1 focus:ring-white/20 shadow-inner font-mono transition-all"
                     />
-                    <button
+                    <Button
                       type="button"
+                      variant="outline"
+                      size="sm"
                       onClick={handleSaveEventDetails}
-                      className="rounded-xl bg-white/[0.08] hover:bg-white/15 border border-white/15 px-4 py-2 text-xs font-bold text-white transition-all cursor-pointer"
                     >
                       Save Deadline
-                    </button>
+                    </Button>
                   </div>
                 </div>
               </div>
 
               {/* Team Size Limits (Min / Max Members) */}
-              <div className="rounded-2xl border border-white/15 bg-white/[0.04] backdrop-blur-xl p-5 sm:p-6 space-y-3 shadow-lg">
+              <div className="rounded-2xl border border-white/15 bg-[#16161d] p-5 sm:p-6 space-y-3 shadow-lg">
                 <div>
                   <span className="text-sm font-bold text-white block">Team Member Constraints</span>
                   <p className="text-xs text-white/60 mt-0.5">
@@ -1062,7 +1054,7 @@ export default function EventsManager() {
                           minTeamMembers: Math.max(1, Number(e.target.value)),
                         })
                       }
-                      className="w-full rounded-xl border border-white/15 bg-white/[0.05] hover:bg-white/[0.08] focus:bg-white/[0.1] px-3.5 py-2 text-xs text-white outline-none backdrop-blur-xl focus:border-[#f20089] focus:ring-1 focus:ring-[#f20089]/50 shadow-inner font-mono transition-all"
+                      className="w-full rounded-xl border border-white/15 bg-[#121217] px-3.5 py-2 text-xs text-white outline-none focus:border-white/50 focus:ring-1 focus:ring-white/20 shadow-inner font-mono transition-all"
                     />
                     <span className="text-[10px] text-white/40 mt-1 block">
                       Default: 3 members (Official Hult Prize rule)
@@ -1084,7 +1076,7 @@ export default function EventsManager() {
                           maxTeamMembers: Math.max(1, Number(e.target.value)),
                         })
                       }
-                      className="w-full rounded-xl border border-white/15 bg-white/[0.05] hover:bg-white/[0.08] focus:bg-white/[0.1] px-3.5 py-2 text-xs text-white outline-none backdrop-blur-xl focus:border-[#f20089] focus:ring-1 focus:ring-[#f20089]/50 shadow-inner font-mono transition-all"
+                      className="w-full rounded-xl border border-white/15 bg-[#121217] px-3.5 py-2 text-xs text-white outline-none focus:border-white/50 focus:ring-1 focus:ring-white/20 shadow-inner font-mono transition-all"
                     />
                     <span className="text-[10px] text-white/40 mt-1 block">
                       Default: 5 members (Official Hult Prize rule)
@@ -1093,13 +1085,14 @@ export default function EventsManager() {
                 </div>
 
                 <div className="pt-2 flex justify-end">
-                  <button
+                  <Button
                     type="button"
+                    variant="outline"
+                    size="sm"
                     onClick={handleSaveEventDetails}
-                    className="rounded-xl bg-white/[0.08] hover:bg-white/15 border border-white/15 px-4 py-2 text-xs font-bold text-white transition-all cursor-pointer"
                   >
                     Save Team Size Limits
-                  </button>
+                  </Button>
                 </div>
               </div>
             </div>
@@ -1107,7 +1100,7 @@ export default function EventsManager() {
 
           {/* Tab 3: Registered Teams Roster */}
           {insideTab === "teams" && (
-            <div className="rounded-3xl border border-white/15 bg-white/[0.03] p-6 sm:p-8 backdrop-blur-2xl shadow-xl space-y-6 animate-fadeIn">
+            <div className="rounded-3xl border border-white/15 bg-[#0e0e12] p-6 sm:p-8 shadow-2xl space-y-6 animate-fadeIn">
               <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
                 <div>
                   <h3 className="text-lg font-bold text-white font-[family-name:var(--font-google-sans)]">
@@ -1119,8 +1112,10 @@ export default function EventsManager() {
                 </div>
 
                 <div className="flex items-center gap-2 flex-wrap">
-                  <button
+                  <Button
                     type="button"
+                    variant="default"
+                    size="sm"
                     onClick={() => {
                       setNewTeamData((prev) => ({
                         ...prev,
@@ -1128,26 +1123,27 @@ export default function EventsManager() {
                       }));
                       setShowAddTeamForm(!showAddTeamForm);
                     }}
-                    className="rounded-xl bg-[#f20089] hover:bg-[#d8007a] text-white px-4 py-2 text-xs font-bold transition-all shadow-md cursor-pointer whitespace-nowrap"
                   >
                     {showAddTeamForm ? "Cancel Add" : "+ Register Team"}
-                  </button>
-                  <button
+                  </Button>
+                  <Button
                     type="button"
+                    variant="outline"
+                    size="sm"
                     onClick={handleExportTeamsCSV}
                     disabled={!selectedEvent.registeredTeams?.length}
-                    className="rounded-xl bg-white/[0.08] hover:bg-white/15 disabled:opacity-40 border border-white/15 text-white px-3.5 py-2 text-xs font-semibold transition-all cursor-pointer whitespace-nowrap"
                   >
                     Export CSV
-                  </button>
-                  <button
+                  </Button>
+                  <Button
                     type="button"
+                    variant="secondary"
+                    size="sm"
                     onClick={handleSyncToLiveEvent}
                     disabled={!selectedEvent.registeredTeams?.length}
-                    className="rounded-xl bg-emerald-500/20 hover:bg-emerald-500/30 disabled:opacity-40 border border-emerald-500/40 text-emerald-300 px-3.5 py-2 text-xs font-bold transition-all cursor-pointer whitespace-nowrap"
                   >
                     Sync to Live Queue →
-                  </button>
+                  </Button>
                 </div>
               </div>
 
@@ -1155,7 +1151,7 @@ export default function EventsManager() {
               {showAddTeamForm && (
                 <form
                   onSubmit={handleAddTeamToEvent}
-                  className="rounded-2xl border border-white/15 bg-white/[0.04] backdrop-blur-xl p-5 sm:p-6 space-y-3 animate-fadeIn text-xs shadow-lg"
+                  className="rounded-2xl border border-white/15 bg-[#16161d] p-5 sm:p-6 space-y-3 animate-fadeIn text-xs shadow-lg"
                 >
                   <h4 className="font-bold text-white text-sm">Register Team Manually</h4>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -1165,7 +1161,7 @@ export default function EventsManager() {
                       placeholder="Team Name *"
                       value={newTeamData.teamName}
                       onChange={(e) => setNewTeamData({ ...newTeamData, teamName: e.target.value })}
-                      className="rounded-xl border border-white/15 bg-white/[0.05] hover:bg-white/[0.08] focus:bg-white/[0.1] px-3.5 py-2 text-white placeholder-white/40 outline-none backdrop-blur-xl focus:border-[#f20089] focus:ring-1 focus:ring-[#f20089]/50 shadow-inner transition-all"
+                      className="rounded-xl border border-white/15 bg-[#121217] px-3.5 py-2 text-white placeholder-white/40 outline-none focus:border-white/50 focus:ring-1 focus:ring-white/20 shadow-inner transition-all"
                     />
                     <input
                       type="text"
@@ -1174,7 +1170,7 @@ export default function EventsManager() {
                       onChange={(e) =>
                         setNewTeamData({ ...newTeamData, ventureName: e.target.value })
                       }
-                      className="rounded-xl border border-white/15 bg-white/[0.05] hover:bg-white/[0.08] focus:bg-white/[0.1] px-3.5 py-2 text-white placeholder-white/40 outline-none backdrop-blur-xl focus:border-[#f20089] focus:ring-1 focus:ring-[#f20089]/50 shadow-inner transition-all"
+                      className="rounded-xl border border-white/15 bg-[#121217] px-3.5 py-2 text-white placeholder-white/40 outline-none focus:border-white/50 focus:ring-1 focus:ring-white/20 shadow-inner transition-all"
                     />
                     <input
                       type="text"
@@ -1182,7 +1178,7 @@ export default function EventsManager() {
                       placeholder="Team Lead Name *"
                       value={newTeamData.leadName}
                       onChange={(e) => setNewTeamData({ ...newTeamData, leadName: e.target.value })}
-                      className="rounded-xl border border-white/15 bg-white/[0.05] hover:bg-white/[0.08] focus:bg-white/[0.1] px-3.5 py-2 text-white placeholder-white/40 outline-none backdrop-blur-xl focus:border-[#f20089] focus:ring-1 focus:ring-[#f20089]/50 shadow-inner transition-all"
+                      className="rounded-xl border border-white/15 bg-[#121217] px-3.5 py-2 text-white placeholder-white/40 outline-none focus:border-white/50 focus:ring-1 focus:ring-white/20 shadow-inner transition-all"
                     />
                     <input
                       type="email"
@@ -1190,7 +1186,7 @@ export default function EventsManager() {
                       placeholder="Lead College Email (@heritageit.edu.in) *"
                       value={newTeamData.leadEmail}
                       onChange={(e) => setNewTeamData({ ...newTeamData, leadEmail: e.target.value })}
-                      className="rounded-xl border border-white/15 bg-white/[0.05] hover:bg-white/[0.08] focus:bg-white/[0.1] px-3.5 py-2 text-white placeholder-white/40 outline-none backdrop-blur-xl focus:border-[#f20089] focus:ring-1 focus:ring-[#f20089]/50 shadow-inner transition-all"
+                      className="rounded-xl border border-white/15 bg-[#121217] px-3.5 py-2 text-white placeholder-white/40 outline-none focus:border-white/50 focus:ring-1 focus:ring-white/20 shadow-inner transition-all"
                     />
                     <div>
                       <label className="block text-white/60 mb-1">
@@ -1207,7 +1203,7 @@ export default function EventsManager() {
                             membersCount: Number(e.target.value),
                           })
                         }
-                        className="w-full rounded-xl border border-white/15 bg-white/[0.05] hover:bg-white/[0.08] focus:bg-white/[0.1] px-3.5 py-2 text-white outline-none backdrop-blur-xl focus:border-[#f20089] focus:ring-1 focus:ring-[#f20089]/50 shadow-inner font-mono transition-all"
+                        className="w-full rounded-xl border border-white/15 bg-[#121217] px-3.5 py-2 text-white outline-none focus:border-white/50 focus:ring-1 focus:ring-white/20 shadow-inner font-mono transition-all"
                       />
                     </div>
                     <div>
@@ -1219,25 +1215,26 @@ export default function EventsManager() {
                         onChange={(e) =>
                           setNewTeamData({ ...newTeamData, department: e.target.value })
                         }
-                        className="w-full rounded-xl border border-white/15 bg-white/[0.05] hover:bg-white/[0.08] focus:bg-white/[0.1] px-3.5 py-2 text-white placeholder-white/40 outline-none backdrop-blur-xl focus:border-[#f20089] focus:ring-1 focus:ring-[#f20089]/50 shadow-inner transition-all"
+                        className="w-full rounded-xl border border-white/15 bg-[#121217] px-3.5 py-2 text-white placeholder-white/40 outline-none focus:border-white/50 focus:ring-1 focus:ring-white/20 shadow-inner transition-all"
                       />
                     </div>
                   </div>
                   <div className="flex items-center justify-end gap-2 pt-2">
-                    <button
+                    <Button
                       type="submit"
-                      className="rounded-xl bg-emerald-500 hover:bg-emerald-400 text-black font-bold px-4 py-2 text-xs transition-all cursor-pointer shadow-md"
+                      variant="default"
+                      size="sm"
                     >
                       Save Team
-                    </button>
+                    </Button>
                   </div>
                 </form>
               )}
 
               {/* Table */}
-              <div className="overflow-x-auto rounded-2xl border border-white/15 bg-white/[0.02] backdrop-blur-xl shadow-inner">
-                <table className="w-full text-left text-xs text-neutral-300">
-                  <thead className="bg-white/[0.04] border-b border-white/10 text-[11px] uppercase tracking-wider text-white/60">
+              <div className="overflow-x-auto rounded-2xl border border-white/15 bg-[#16161d] shadow-inner">
+                <table className="w-full text-left text-xs text-neutral-200">
+                  <thead className="bg-[#121217] border-b border-white/10 text-[11px] uppercase tracking-wider text-white/70">
                     <tr>
                       <th className="px-5 py-3.5">#</th>
                       <th className="px-5 py-3.5">Team & Venture</th>
@@ -1266,7 +1263,7 @@ export default function EventsManager() {
                             <div className="flex items-center gap-2 flex-wrap">
                               <span className="font-bold text-white text-sm">{team.teamName}</span>
                               {team.teamCode && (
-                                <span className="font-mono text-[10px] font-bold text-[#f20089] bg-[#f20089]/15 border border-[#f20089]/35 px-2 py-0.5 rounded-md">
+                                <span className="font-mono text-[10px] font-bold text-white bg-white/10 border border-white/20 px-2 py-0.5 rounded-md">
                                   {team.teamCode}
                                 </span>
                               )}
@@ -1297,7 +1294,7 @@ export default function EventsManager() {
                                     title={`${m.name} (${m.email || "N/A"}) - ${m.department || ""}`}
                                     className="inline-flex items-center gap-1 rounded-md bg-white/[0.06] border border-white/10 px-1.5 py-0.5 text-[9px] text-white/80"
                                   >
-                                    <span className="w-1.5 h-1.5 rounded-full bg-[#f20089]" />
+                                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
                                     <span>{m.name}</span>
                                   </span>
                                 ))}
@@ -1313,7 +1310,7 @@ export default function EventsManager() {
                                   e.target.value as "confirmed" | "pending" | "waitlist"
                                 )
                               }
-                              className={`rounded-full border px-2.5 py-1 text-[10px] font-bold uppercase outline-none cursor-pointer backdrop-blur-xl transition-all ${
+                              className={`rounded-full border px-2.5 py-1 text-[10px] font-bold uppercase outline-none cursor-pointer transition-all ${
                                 team.status === "confirmed"
                                   ? "bg-emerald-500/20 border-emerald-500/40 text-emerald-300"
                                   : team.status === "waitlist"
@@ -1371,15 +1368,15 @@ export default function EventsManager() {
             <button
               type="button"
               onClick={handleBackToEventsList}
-              className="inline-flex items-center gap-2 rounded-xl bg-white/[0.05] hover:bg-white/15 border border-white/15 px-3.5 py-1.5 text-xs font-semibold text-white/80 hover:text-white transition-all cursor-pointer"
+              className="inline-flex items-center gap-2 rounded-xl bg-[#16161d] hover:bg-[#202028] border border-white/15 px-3.5 py-1.5 text-xs font-semibold text-white/80 hover:text-white transition-all cursor-pointer"
             >
               <span>← Back to All Events</span>
             </button>
           </div>
 
-          <div className="relative overflow-hidden rounded-3xl border border-white/15 bg-white/[0.03] p-6 sm:p-8 backdrop-blur-3xl shadow-[0_20px_50px_rgba(0,0,0,0.5)] space-y-6">
-            <div className="pointer-events-none absolute inset-x-0 top-0 h-[1.5px] bg-gradient-to-r from-transparent via-[#f20089]/60 to-transparent" />
-            <div className="pointer-events-none absolute -top-20 -right-20 h-48 w-48 rounded-full bg-[#f20089]/10 blur-3xl" />
+          <div className="relative overflow-hidden rounded-3xl border border-white/15 bg-[#0e0e12] p-6 sm:p-8 shadow-2xl space-y-6">
+            <div className="pointer-events-none absolute inset-x-0 top-0 h-[1.5px] bg-gradient-to-r from-transparent via-white/40 to-transparent" />
+            <div className="pointer-events-none absolute -top-20 -right-20 h-48 w-48 rounded-full bg-white/5 blur-3xl" />
 
             <div>
               <h2 className="text-xl sm:text-2xl font-black text-white font-[family-name:var(--font-google-sans)]">
@@ -1399,7 +1396,7 @@ export default function EventsManager() {
                   placeholder="e.g. Hult Prize HITK 2027 Grand Kickoff"
                   value={eventFormData.title}
                   onChange={(e) => setEventFormData({ ...eventFormData, title: e.target.value })}
-                  className="w-full rounded-2xl border border-white/15 bg-white/[0.05] hover:bg-white/[0.08] focus:bg-white/[0.1] px-4 py-2.5 text-white placeholder-white/40 outline-none backdrop-blur-xl focus:border-[#f20089] focus:ring-1 focus:ring-[#f20089]/50 shadow-inner transition-all text-xs sm:text-sm font-medium"
+                  className="w-full rounded-2xl border border-white/15 bg-[#16161d] hover:border-white/30 focus:border-white/50 focus:ring-1 focus:ring-white/20 px-4 py-2.5 text-white placeholder-white/40 outline-none shadow-inner transition-all text-xs sm:text-sm font-medium"
                 />
               </div>
 
@@ -1409,14 +1406,14 @@ export default function EventsManager() {
                   <select
                     value={eventFormData.tag}
                     onChange={(e) => setEventFormData({ ...eventFormData, tag: e.target.value })}
-                    className="w-full rounded-2xl border border-white/15 bg-white/[0.05] hover:bg-white/[0.08] focus:bg-white/[0.1] px-4 py-2.5 text-white outline-none backdrop-blur-xl focus:border-[#f20089] focus:ring-1 focus:ring-[#f20089]/50 shadow-inner transition-all cursor-pointer"
+                    className="w-full rounded-2xl border border-white/15 bg-[#16161d] hover:border-white/30 focus:border-white/50 focus:ring-1 focus:ring-white/20 px-4 py-2.5 text-white outline-none shadow-inner transition-all cursor-pointer"
                   >
-                    <option value="Flagship" className="bg-neutral-900 text-white">Flagship</option>
-                    <option value="Workshop" className="bg-neutral-900 text-white">Workshop</option>
-                    <option value="Masterclass" className="bg-neutral-900 text-white">Masterclass</option>
-                    <option value="Sprint" className="bg-neutral-900 text-white">Design Sprint</option>
-                    <option value="Clinic" className="bg-neutral-900 text-white">Mentorship Clinic</option>
-                    <option value="Info Session" className="bg-neutral-900 text-white">Info Session</option>
+                    <option value="Flagship" className="bg-[#16161d] text-white">Flagship</option>
+                    <option value="Workshop" className="bg-[#16161d] text-white">Workshop</option>
+                    <option value="Masterclass" className="bg-[#16161d] text-white">Masterclass</option>
+                    <option value="Sprint" className="bg-[#16161d] text-white">Design Sprint</option>
+                    <option value="Clinic" className="bg-[#16161d] text-white">Mentorship Clinic</option>
+                    <option value="Info Session" className="bg-[#16161d] text-white">Info Session</option>
                   </select>
                 </div>
 
@@ -1428,7 +1425,7 @@ export default function EventsManager() {
                     onChange={(e) =>
                       setEventFormData({ ...eventFormData, order: Number(e.target.value) })
                     }
-                    className="w-full rounded-2xl border border-white/15 bg-white/[0.05] hover:bg-white/[0.08] focus:bg-white/[0.1] px-4 py-2.5 text-white outline-none backdrop-blur-xl focus:border-[#f20089] focus:ring-1 focus:ring-[#f20089]/50 shadow-inner transition-all font-mono"
+                    className="w-full rounded-2xl border border-white/15 bg-[#16161d] hover:border-white/30 focus:border-white/50 focus:ring-1 focus:ring-white/20 px-4 py-2.5 text-white outline-none shadow-inner transition-all font-mono"
                   />
                   <span className="text-[10px] text-white/40 mt-1 block">
                     Display order on website (0 = standard)
@@ -1451,7 +1448,7 @@ export default function EventsManager() {
                         minTeamMembers: Math.max(1, Number(e.target.value)),
                       })
                     }
-                    className="w-full rounded-2xl border border-white/15 bg-white/[0.05] hover:bg-white/[0.08] focus:bg-white/[0.1] px-4 py-2.5 text-white outline-none backdrop-blur-xl focus:border-[#f20089] focus:ring-1 focus:ring-[#f20089]/50 shadow-inner font-mono transition-all"
+                    className="w-full rounded-2xl border border-white/15 bg-[#16161d] hover:border-white/30 focus:border-white/50 focus:ring-1 focus:ring-white/20 px-4 py-2.5 text-white outline-none shadow-inner font-mono transition-all"
                   />
                   <span className="text-[10px] text-white/40 mt-1 block">Default: 3 members</span>
                 </div>
@@ -1469,7 +1466,7 @@ export default function EventsManager() {
                         maxTeamMembers: Math.max(1, Number(e.target.value)),
                       })
                     }
-                    className="w-full rounded-2xl border border-white/15 bg-white/[0.05] hover:bg-white/[0.08] focus:bg-white/[0.1] px-4 py-2.5 text-white outline-none backdrop-blur-xl focus:border-[#f20089] focus:ring-1 focus:ring-[#f20089]/50 shadow-inner font-mono transition-all"
+                    className="w-full rounded-2xl border border-white/15 bg-[#16161d] hover:border-white/30 focus:border-white/50 focus:ring-1 focus:ring-white/20 px-4 py-2.5 text-white outline-none shadow-inner font-mono transition-all"
                   />
                   <span className="text-[10px] text-white/40 mt-1 block">Default: 5 members</span>
                 </div>
@@ -1480,7 +1477,7 @@ export default function EventsManager() {
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div>
                     <label className="block text-white/70 font-semibold mb-1 flex items-center gap-1.5">
-                      <span>📅</span>
+                      <Calendar className="h-3.5 w-3.5 text-white/70" />
                       <span>Start Date & Time * (Calendar)</span>
                     </label>
                     <input
@@ -1496,7 +1493,7 @@ export default function EventsManager() {
                           date: formatted || eventFormData.date,
                         });
                       }}
-                      className="w-full rounded-2xl border border-white/15 bg-white/[0.05] hover:bg-white/[0.08] focus:bg-white/[0.1] px-4 py-2.5 text-white outline-none backdrop-blur-xl focus:border-[#f20089] focus:ring-1 focus:ring-[#f20089]/50 shadow-inner transition-all [color-scheme:dark] cursor-pointer"
+                      className="w-full rounded-2xl border border-white/15 bg-[#16161d] hover:border-white/30 focus:border-white/50 focus:ring-1 focus:ring-white/20 px-4 py-2.5 text-white outline-none shadow-inner transition-all [color-scheme:dark] cursor-pointer"
                     />
                     <span className="text-[10px] text-white/40 mt-1 block">
                       Pick event start date and time from calendar
@@ -1505,7 +1502,7 @@ export default function EventsManager() {
 
                   <div>
                     <label className="block text-white/70 font-semibold mb-1 flex items-center gap-1.5">
-                      <span>📅</span>
+                      <Calendar className="h-3.5 w-3.5 text-white/70" />
                       <span>End Date & Time (Calendar)</span>
                     </label>
                     <input
@@ -1521,7 +1518,7 @@ export default function EventsManager() {
                           date: formatted || eventFormData.date,
                         });
                       }}
-                      className="w-full rounded-2xl border border-white/15 bg-white/[0.05] hover:bg-white/[0.08] focus:bg-white/[0.1] px-4 py-2.5 text-white outline-none backdrop-blur-xl focus:border-[#f20089] focus:ring-1 focus:ring-[#f20089]/50 shadow-inner transition-all [color-scheme:dark] cursor-pointer"
+                      className="w-full rounded-2xl border border-white/15 bg-[#16161d] hover:border-white/30 focus:border-white/50 focus:ring-1 focus:ring-white/20 px-4 py-2.5 text-white outline-none shadow-inner transition-all [color-scheme:dark] cursor-pointer"
                     />
                     <span className="text-[10px] text-white/40 mt-1 block">
                       Optional event conclusion / pitch wrap-up
@@ -1530,9 +1527,9 @@ export default function EventsManager() {
                 </div>
 
                 {eventFormData.date && (
-                  <div className="rounded-2xl border border-white/15 bg-white/[0.04] backdrop-blur-xl px-4 py-2.5 flex items-center justify-between gap-2 text-xs flex-wrap shadow-inner">
+                  <div className="rounded-2xl border border-white/15 bg-[#16161d] px-4 py-2.5 flex items-center justify-between gap-2 text-xs flex-wrap shadow-inner">
                     <div className="flex items-center gap-2 text-white/70 font-mono">
-                      <span className="text-[#f20089] font-bold">Schedule Summary:</span>
+                      <span className="text-white font-bold">Schedule Summary:</span>
                       <span className="font-semibold text-white">{eventFormData.date}</span>
                     </div>
                   </div>
@@ -1547,7 +1544,7 @@ export default function EventsManager() {
                   placeholder="e.g. CME212 / Main Auditorium"
                   value={eventFormData.venue}
                   onChange={(e) => setEventFormData({ ...eventFormData, venue: e.target.value })}
-                  className="w-full rounded-2xl border border-white/15 bg-white/[0.05] hover:bg-white/[0.08] focus:bg-white/[0.1] px-4 py-2.5 text-white placeholder-white/40 outline-none backdrop-blur-xl focus:border-[#f20089] focus:ring-1 focus:ring-[#f20089]/50 shadow-inner transition-all"
+                  className="w-full rounded-2xl border border-white/15 bg-[#16161d] hover:border-white/30 focus:border-white/50 focus:ring-1 focus:ring-white/20 px-4 py-2.5 text-white placeholder-white/40 outline-none shadow-inner transition-all"
                 />
               </div>
 
@@ -1561,7 +1558,7 @@ export default function EventsManager() {
                   onChange={(e) =>
                     setEventFormData({ ...eventFormData, description: e.target.value })
                   }
-                  className="w-full rounded-2xl border border-white/15 bg-white/[0.05] hover:bg-white/[0.08] focus:bg-white/[0.1] px-4 py-2.5 text-white placeholder-white/40 outline-none backdrop-blur-xl focus:border-[#f20089] focus:ring-1 focus:ring-[#f20089]/50 shadow-inner transition-all leading-relaxed"
+                  className="w-full rounded-2xl border border-white/15 bg-[#16161d] hover:border-white/30 focus:border-white/50 focus:ring-1 focus:ring-white/20 px-4 py-2.5 text-white placeholder-white/40 outline-none shadow-inner transition-all leading-relaxed"
                 />
               </div>
 
@@ -1573,7 +1570,7 @@ export default function EventsManager() {
                   onChange={(e) =>
                     setEventFormData({ ...eventFormData, isPublished: e.target.checked })
                   }
-                  className="rounded border-white/20 text-[#f20089] accent-[#f20089]"
+                  className="rounded border-white/20 accent-white"
                 />
                 <label htmlFor="createPublishImmediately" className="text-white/80 cursor-pointer select-none">
                   Publish this event live on the website immediately
@@ -1581,19 +1578,22 @@ export default function EventsManager() {
               </div>
 
               <div className="pt-4 border-t border-white/10 flex justify-end gap-3">
-                <button
+                <Button
                   type="button"
+                  variant="outline"
+                  size="default"
                   onClick={handleBackToEventsList}
-                  className="rounded-2xl bg-white/[0.08] hover:bg-white/15 px-5 py-2.5 text-xs font-semibold text-white cursor-pointer"
                 >
                   Cancel
-                </button>
-                <button
+                </Button>
+                <Button
                   type="submit"
-                  className="rounded-2xl bg-[#f20089] hover:bg-[#d8007a] px-6 py-2.5 text-xs font-bold text-white shadow-lg shadow-[#f20089]/30 cursor-pointer font-[family-name:var(--font-google-sans)]"
+                  variant="default"
+                  size="default"
+                  className="font-[family-name:var(--font-google-sans)]"
                 >
                   Create Event
-                </button>
+                </Button>
               </div>
             </form>
           </div>
@@ -1614,8 +1614,11 @@ export default function EventsManager() {
               </p>
             </div>
 
-            <button
+            <Button
               type="button"
+              variant="default"
+              size="default"
+              className="font-[family-name:var(--font-google-sans)]"
               onClick={() => {
                 setIsCreatingNew(true);
                 setSelectedEventId(null);
@@ -1637,10 +1640,9 @@ export default function EventsManager() {
                   maxTeamMembers: 5,
                 });
               }}
-              className="rounded-2xl bg-[#f20089] hover:bg-[#d8007a] px-5 py-2.5 text-xs sm:text-sm font-bold text-white shadow-lg shadow-[#f20089]/30 transition-all hover:scale-105 active:scale-95 cursor-pointer font-[family-name:var(--font-google-sans)] flex items-center gap-2"
             >
-              <span>+ Create New Event</span>
-            </button>
+              + Create New Event
+            </Button>
           </div>
 
           {/* Cards Grid */}
@@ -1649,15 +1651,16 @@ export default function EventsManager() {
               Loading events...
             </div>
           ) : events.length === 0 ? (
-            <div className="rounded-3xl border border-white/10 bg-white/[0.02] p-12 text-center">
+            <div className="rounded-3xl border border-white/15 bg-[#0e0e12] p-12 text-center shadow-2xl">
               <p className="text-neutral-400 text-sm mb-4">No events found in database.</p>
-              <button
+              <Button
                 type="button"
+                variant="default"
+                size="default"
                 onClick={() => setIsCreatingNew(true)}
-                className="rounded-2xl bg-[#f20089] hover:bg-[#d8007a] px-5 py-2 text-xs font-bold text-white shadow-md shadow-[#f20089]/30 cursor-pointer"
               >
                 Create your first event
-              </button>
+              </Button>
             </div>
           ) : (
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -1674,13 +1677,13 @@ export default function EventsManager() {
                   <div
                     key={event._id}
                     onClick={() => handleGoInsideEvent(event)}
-                    className="group relative rounded-3xl border border-white/15 bg-white/[0.03] hover:border-[#f20089]/50 hover:bg-white/[0.05] p-6 sm:p-7 backdrop-blur-2xl transition-all duration-300 flex flex-col justify-between shadow-xl cursor-pointer hover:shadow-[0_10px_30px_rgba(242,0,137,0.15)]"
+                    className="group relative rounded-3xl border border-white/15 bg-[#0e0e12] hover:border-white/35 hover:bg-[#15151c] p-6 sm:p-7 transition-all duration-300 flex flex-col justify-between shadow-2xl cursor-pointer hover:shadow-[0_16px_40px_rgba(0,0,0,0.8)]"
                   >
                     <div>
                       {/* Top Bar Badges */}
                       <div className="flex items-center justify-between gap-2 mb-4 flex-wrap">
                         <div className="flex items-center gap-2">
-                          <span className="rounded-full bg-[#f20089]/20 border border-[#f20089]/40 px-3 py-0.5 text-[10px] font-bold uppercase tracking-wider text-[#f20089]">
+                          <span className="rounded-full bg-[#16161d] border border-white/20 px-3 py-0.5 text-[10px] font-bold uppercase tracking-wider text-white">
                             {event.tag}
                           </span>
 
@@ -1690,7 +1693,7 @@ export default function EventsManager() {
                               Registrations Open
                             </span>
                           ) : (
-                            <span className="inline-flex items-center gap-1.5 rounded-full bg-neutral-800 border border-white/10 px-2.5 py-0.5 text-[10px] font-medium text-white/50">
+                            <span className="inline-flex items-center gap-1.5 rounded-full bg-[#16161d] border border-white/10 px-2.5 py-0.5 text-[10px] font-medium text-white/50">
                               Registrations Closed
                             </span>
                           )}
@@ -1706,7 +1709,7 @@ export default function EventsManager() {
                             className={`rounded-full px-3 py-0.5 text-[10px] font-bold uppercase tracking-wider cursor-pointer border transition-colors ${
                               event.isPublished
                                 ? "bg-emerald-500/15 text-emerald-300 border-emerald-500/30 hover:bg-emerald-500/25"
-                                : "bg-white/5 text-white/50 border-white/10 hover:bg-white/10"
+                                : "bg-[#16161d] text-white/50 border-white/10 hover:bg-[#202028]"
                             }`}
                           >
                             {event.isPublished ? "● Live on Site" : "○ Draft"}
@@ -1715,18 +1718,18 @@ export default function EventsManager() {
                       </div>
 
                       {/* Event Title */}
-                      <h3 className="text-xl sm:text-2xl font-black text-white mb-2.5 font-[family-name:var(--font-google-sans)] group-hover:text-pink-100 transition-colors leading-tight">
+                      <h3 className="text-xl sm:text-2xl font-black text-white mb-2.5 font-[family-name:var(--font-google-sans)] group-hover:text-white transition-colors leading-tight">
                         {event.title}
                       </h3>
 
                       {/* Schedule & Venue Meta */}
                       <div className="space-y-1.5 text-xs text-white/70 mb-3.5 font-sans">
                         <div className="flex items-center gap-2">
-                          <span className="font-mono text-[9px] text-white/50 uppercase font-bold border border-white/10 bg-white/5 rounded px-1.5 py-0.5">DATE</span>
+                          <span className="font-mono text-[9px] text-white/50 uppercase font-bold border border-white/10 bg-[#16161d] rounded px-1.5 py-0.5">DATE</span>
                           <span className="font-semibold text-white font-mono tabular-nums">{event.date}</span>
                         </div>
                         <div className="flex items-center gap-2">
-                          <span className="font-mono text-[9px] text-white/50 uppercase font-bold border border-white/10 bg-white/5 rounded px-1.5 py-0.5">VENUE</span>
+                          <span className="font-mono text-[9px] text-white/50 uppercase font-bold border border-white/10 bg-[#16161d] rounded px-1.5 py-0.5">VENUE</span>
                           <span>{event.venue}</span>
                         </div>
                       </div>
@@ -1737,13 +1740,13 @@ export default function EventsManager() {
                       </p>
 
                       {/* Roster, Cutoff & Member Limits Strip */}
-                      <div className="flex items-center justify-between gap-3 py-2.5 px-3.5 rounded-2xl bg-white/[0.04] border border-white/15 backdrop-blur-xl shadow-inner text-xs mb-5 flex-wrap">
+                      <div className="flex items-center justify-between gap-3 py-2.5 px-3.5 rounded-2xl bg-[#16161d] border border-white/10 shadow-inner text-xs mb-5 flex-wrap">
                         <div className="flex items-center gap-2">
                           <span className="font-mono text-[9px] text-emerald-400 uppercase font-bold border border-emerald-500/20 bg-emerald-500/10 rounded px-1.5 py-0.5">ROSTER</span>
                           <span className="font-bold text-white font-mono tabular-nums">
                             {registeredCount} Registered {registeredCount === 1 ? "Team" : "Teams"}
                           </span>
-                          <span className="text-[11px] text-[#f20089] font-medium font-mono">
+                          <span className="text-[11px] text-neutral-300 font-medium font-mono">
                             ({minMem}–{maxMem} members/team)
                           </span>
                         </div>
@@ -1777,7 +1780,7 @@ export default function EventsManager() {
                         }}
                         className={`rounded-xl px-3 py-1.5 text-xs font-semibold transition-all cursor-pointer border ${
                           isRegOpen
-                            ? "border-white/15 bg-white/[0.04] text-white/70 hover:text-red-300 hover:border-red-500/40 hover:bg-red-500/10"
+                            ? "border-white/15 bg-[#16161d] text-white/70 hover:text-red-300 hover:border-red-500/40 hover:bg-red-950/40"
                             : "border-emerald-500/40 bg-emerald-500/15 text-emerald-300 hover:bg-emerald-500/25"
                         }`}
                       >
@@ -1785,9 +1788,17 @@ export default function EventsManager() {
                       </button>
 
                       <div className="flex items-center gap-2">
-                        <span className="inline-flex items-center gap-1.5 rounded-xl bg-[#f20089] hover:bg-[#d8007a] text-white px-4 py-1.5 text-xs font-bold transition-all shadow-md shadow-[#f20089]/30">
-                          <span>Manage Event →</span>
-                        </span>
+                        <Button
+                          type="button"
+                          variant="default"
+                          size="sm"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleGoInsideEvent(event);
+                          }}
+                        >
+                          Manage Event →
+                        </Button>
 
                         <button
                           type="button"

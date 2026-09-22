@@ -153,7 +153,7 @@ export default function AdminTeamsPage() {
             placeholder="Search team name, venture idea, code, or leader..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="w-full pl-10 pr-4 py-2.5 text-xs bg-neutral-900 border border-white/10 rounded-xl text-white placeholder-neutral-500 focus:outline-none focus:border-rose-500/50"
+            className="w-full pl-10 pr-4 py-2.5 text-xs bg-[#16161d] border border-white/15 rounded-xl text-white placeholder-neutral-500 focus:outline-none focus:border-rose-500/50"
           />
         </div>
 
@@ -164,8 +164,8 @@ export default function AdminTeamsPage() {
               onClick={() => setStatusFilter(st)}
               className={`px-3 py-2 text-xs font-medium rounded-xl capitalize transition-colors cursor-pointer border ${
                 statusFilter === st
-                  ? "bg-rose-500/15 text-rose-300 border-rose-500/30"
-                  : "bg-white/5 text-neutral-400 border-white/10 hover:text-white"
+                  ? "bg-rose-500/20 text-rose-300 border-rose-500/40"
+                  : "bg-[#16161d] text-neutral-300 border-white/15 hover:bg-[#202028] hover:text-white"
               }`}
             >
               {st}
@@ -175,7 +175,7 @@ export default function AdminTeamsPage() {
       </div>
 
       {/* Teams Table */}
-      <div className="rounded-2xl border border-white/10 bg-neutral-900/40 backdrop-blur-sm overflow-hidden">
+      <div className="rounded-2xl border border-white/15 bg-[#0e0e12] shadow-2xl overflow-hidden">
         {loading ? (
           <div className="py-20 text-center text-xs text-neutral-500 font-mono">
             Loading team rosters...
@@ -184,7 +184,7 @@ export default function AdminTeamsPage() {
           <div className="overflow-x-auto">
             <table className="w-full text-left text-xs">
               <thead>
-                <tr className="border-b border-white/10 text-neutral-400 bg-white/[0.02]">
+                <tr className="border-b border-white/10 text-neutral-300 bg-[#16161d]">
                   <th className="py-3.5 px-4 font-semibold">Team & Code</th>
                   <th className="py-3.5 px-4 font-semibold">Venture Idea</th>
                   <th className="py-3.5 px-4 font-semibold">Team Leader</th>
@@ -196,7 +196,7 @@ export default function AdminTeamsPage() {
               </thead>
               <tbody className="divide-y divide-white/5">
                 {filteredTeams.map((team) => (
-                  <tr key={team._id} className="hover:bg-white/[0.02] transition-colors">
+                  <tr key={team._id} className="hover:bg-[#16161d]/60 transition-colors">
                     <td className="py-3.5 px-4">
                       <div className="font-semibold text-white">{team.teamName}</div>
                       <div className="font-mono text-[10px] text-rose-400 font-bold">
@@ -252,7 +252,7 @@ export default function AdminTeamsPage() {
                       <select
                         value={team.status}
                         onChange={(e) => updateTeamStatus(team._id, e.target.value)}
-                        className={`text-[11px] font-mono font-semibold rounded-lg px-2.5 py-1 border bg-neutral-900 focus:outline-none cursor-pointer ${
+                        className={`text-[11px] font-mono font-semibold rounded-lg px-2.5 py-1 border bg-[#16161d] focus:outline-none cursor-pointer ${
                           team.status === "confirmed"
                             ? "text-emerald-400 border-emerald-500/30"
                             : team.status === "pending"
@@ -262,10 +262,10 @@ export default function AdminTeamsPage() {
                             : "text-red-400 border-red-500/30"
                         }`}
                       >
-                        <option value="confirmed">Confirmed</option>
-                        <option value="pending">Pending</option>
-                        <option value="waitlist">Waitlist</option>
-                        <option value="disqualified">Disqualified</option>
+                        <option value="confirmed" className="bg-[#16161d] text-white">Confirmed</option>
+                        <option value="pending" className="bg-[#16161d] text-white">Pending</option>
+                        <option value="waitlist" className="bg-[#16161d] text-white">Waitlist</option>
+                        <option value="disqualified" className="bg-[#16161d] text-white">Disqualified</option>
                       </select>
                     </td>
 
@@ -275,7 +275,7 @@ export default function AdminTeamsPage() {
                         className={`inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-[10px] font-mono font-semibold cursor-pointer transition-colors ${
                           team.checkedIn
                             ? "bg-emerald-500/20 text-emerald-400 border border-emerald-500/40"
-                            : "bg-white/5 text-neutral-400 border border-white/10 hover:bg-white/10"
+                            : "bg-[#16161d] text-neutral-300 border border-white/10 hover:bg-[#202028] hover:text-white"
                         }`}
                       >
                         <CheckCircle2 className="h-3 w-3" />
@@ -296,8 +296,8 @@ export default function AdminTeamsPage() {
 
       {/* Team Details Modal */}
       {selectedTeam && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
-          <div className="relative w-full max-w-lg rounded-2xl border border-white/10 bg-[#0d0d14] p-6 shadow-2xl space-y-4">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80">
+          <div className="relative w-full max-w-lg rounded-2xl border border-white/20 bg-[#0e0e12] p-6 shadow-2xl space-y-4">
             <div className="flex items-center justify-between pb-3 border-b border-white/10">
               <div>
                 <h3 className="text-base font-bold text-white">{selectedTeam.teamName}</h3>
@@ -312,14 +312,14 @@ export default function AdminTeamsPage() {
             </div>
 
             <div className="space-y-3 text-xs">
-              <div className="p-3 rounded-xl bg-white/[0.02] border border-white/5 space-y-1">
+              <div className="p-3 rounded-xl bg-[#16161d] border border-white/10 space-y-1">
                 <div className="font-semibold text-white">Venture Track / Idea:</div>
                 <div className="text-neutral-300">{selectedTeam.ventureName || "None provided"}</div>
               </div>
 
               <div>
                 <div className="font-semibold text-white mb-2">Team Leader:</div>
-                <div className="p-3 rounded-xl bg-white/[0.02] border border-white/5 space-y-1">
+                <div className="p-3 rounded-xl bg-[#16161d] border border-white/10 space-y-1">
                   <div className="text-white font-medium">{selectedTeam.lead.name}</div>
                   <div className="text-neutral-400 font-mono">{selectedTeam.lead.email}</div>
                   <div className="text-neutral-400">{selectedTeam.lead.department}</div>
@@ -333,7 +333,7 @@ export default function AdminTeamsPage() {
                     {selectedTeam.members.map((m, idx) => (
                       <div
                         key={idx}
-                        className="p-3 rounded-xl bg-white/[0.02] border border-white/5 space-y-0.5"
+                        className="p-3 rounded-xl bg-[#16161d] border border-white/10 space-y-0.5"
                       >
                         <div className="text-white font-medium">{m.name}</div>
                         <div className="text-neutral-400 font-mono">{m.email}</div>

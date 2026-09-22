@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect, useRef } from "react";
 import { parseHeritageEmail } from "@/lib/heritage-parser";
+import { Button } from "@/components/ui/button";
 import type { AdminRecord, Participant, UserRole } from "@/types";
 
 interface AdminUserManagerProps {
@@ -212,7 +213,7 @@ export default function AdminUserManager({ currentUserEmail }: AdminUserManagerP
     switch (role) {
       case "master_admin":
         return (
-          <span className="inline-flex items-center gap-1.5 rounded-full bg-gradient-to-r from-amber-500/25 to-[#f20089]/25 border border-amber-500/40 px-3 py-0.5 text-[10px] font-extrabold text-amber-300 uppercase tracking-wider shadow-sm font-mono">
+          <span className="inline-flex items-center gap-1.5 rounded-full bg-amber-500/20 border border-amber-500/40 px-3 py-0.5 text-[10px] font-extrabold text-amber-300 uppercase tracking-wider shadow-sm font-mono">
             <span className="h-1.5 w-1.5 rounded-full bg-amber-400" />
             <span>Master Admin</span>
           </span>
@@ -246,10 +247,10 @@ export default function AdminUserManager({ currentUserEmail }: AdminUserManagerP
       {/* Toast Feedback */}
       {statusMessage && (
         <div
-          className={`flex items-center justify-between rounded-2xl px-5 py-3.5 text-sm backdrop-blur-2xl border animate-fadeIn ${
+          className={`flex items-center justify-between rounded-2xl px-5 py-3.5 text-sm border shadow-lg animate-fadeIn ${
             statusMessage.type === "success"
-              ? "bg-emerald-950/60 border-emerald-500/40 text-emerald-200"
-              : "bg-red-950/60 border-red-500/40 text-red-200"
+              ? "bg-[#0a1f18] border-emerald-500/40 text-emerald-200"
+              : "bg-[#240c10] border-red-500/40 text-red-200"
           }`}
         >
           <span>{statusMessage.text}</span>
@@ -263,11 +264,10 @@ export default function AdminUserManager({ currentUserEmail }: AdminUserManagerP
       )}
 
       {/* INVITE USER Card */}
-      <div className="relative mx-auto max-w-xl w-full rounded-3xl border border-white/15 bg-white/[0.03] p-6 sm:p-8 backdrop-blur-2xl shadow-2xl overflow-hidden animate-fadeIn">
+      <div className="relative mx-auto max-w-xl w-full rounded-3xl border border-white/15 bg-[#0e0e12] p-6 sm:p-8 shadow-2xl overflow-hidden animate-fadeIn">
         {/* Iridescent Top Glow */}
         <div className="pointer-events-none absolute inset-x-0 top-0 h-[1px] bg-gradient-to-r from-transparent via-white/40 to-transparent" />
-        <div className="pointer-events-none absolute -top-16 -right-16 h-40 w-40 rounded-full bg-[#f20089]/15 blur-3xl" />
-        <div className="pointer-events-none absolute -bottom-16 -left-16 h-40 w-40 rounded-full bg-purple-900/20 blur-3xl" />
+        <div className="pointer-events-none absolute -top-16 -right-16 h-40 w-40 rounded-full bg-white/5 blur-3xl" />
 
         <div className="relative z-10 text-center mb-6">
           <h3 className="text-xl sm:text-2xl font-extrabold uppercase tracking-widest text-white font-[family-name:var(--font-google-sans)] drop-shadow">
@@ -290,7 +290,7 @@ export default function AdminUserManager({ currentUserEmail }: AdminUserManagerP
               placeholder="e.g. rohit.sharma.cse28@heritageit.edu.in"
               value={adminEmailInput}
               onChange={(e) => setAdminEmailInput(e.target.value)}
-              className="w-full rounded-2xl border border-white/20 bg-black/60 px-5 py-3 text-xs sm:text-sm text-white placeholder-white/30 outline-none backdrop-blur-xl transition-all focus:border-[#f20089] focus:ring-1 focus:ring-[#f20089]/50 font-mono"
+              className="w-full rounded-2xl border border-white/15 bg-[#16161d] px-5 py-3 text-xs sm:text-sm text-white placeholder-white/30 outline-none transition-all focus:border-white/50 focus:ring-1 focus:ring-white/20 font-mono shadow-inner"
             />
           </div>
 
@@ -302,7 +302,7 @@ export default function AdminUserManager({ currentUserEmail }: AdminUserManagerP
             <button
               type="button"
               onClick={() => setRoleDropdownOpen((prev) => !prev)}
-              className="w-full flex items-center justify-between rounded-2xl border border-white/20 bg-black/60 px-5 py-3 text-xs sm:text-sm text-white outline-none hover:border-[#f20089]/70 focus:border-[#f20089] cursor-pointer transition-all shadow-md"
+              className="w-full flex items-center justify-between rounded-2xl border border-white/15 bg-[#16161d] px-5 py-3 text-xs sm:text-sm text-white outline-none hover:border-white/40 focus:border-white/50 cursor-pointer transition-all shadow-inner"
             >
               <span className="font-semibold text-white">
                 {selectedRole === "master_admin"
@@ -312,7 +312,7 @@ export default function AdminUserManager({ currentUserEmail }: AdminUserManagerP
                   : "Junior Admin"}
               </span>
               <svg
-                className={`w-4 h-4 text-[#f20089] transition-transform duration-200 ${
+                className={`w-4 h-4 text-white/70 transition-transform duration-200 ${
                   roleDropdownOpen ? "rotate-180" : ""
                 }`}
                 fill="none"
@@ -325,7 +325,7 @@ export default function AdminUserManager({ currentUserEmail }: AdminUserManagerP
             </button>
 
             {roleDropdownOpen && (
-              <div className="absolute z-30 mt-2 w-full rounded-2xl border border-white/15 bg-black/95 backdrop-blur-3xl shadow-2xl overflow-hidden py-1.5 divide-y divide-white/5 animate-fadeIn">
+              <div className="absolute z-30 mt-2 w-full rounded-2xl border border-white/15 bg-[#16161d] shadow-2xl overflow-hidden py-1.5 divide-y divide-white/5 animate-fadeIn">
                 {[
                   { value: "master_admin" as const, label: "Master Admin" },
                   { value: "lead_admin" as const, label: "Lead Admin" },
@@ -342,11 +342,11 @@ export default function AdminUserManager({ currentUserEmail }: AdminUserManagerP
                       }}
                       className={`w-full flex items-center gap-2.5 px-5 py-3 text-xs sm:text-sm text-left transition-colors cursor-pointer ${
                         isSelected
-                          ? "bg-[#f20089]/20 text-white font-bold"
+                          ? "bg-white/15 text-white font-bold"
                           : "text-white/80 hover:bg-white/10 hover:text-white"
                       }`}
                     >
-                      <span className="w-4 text-center font-bold text-[#f20089]">
+                      <span className="w-4 text-center font-bold text-amber-400">
                         {isSelected ? "✓" : ""}
                       </span>
                       <span>{opt.label}</span>
@@ -359,7 +359,7 @@ export default function AdminUserManager({ currentUserEmail }: AdminUserManagerP
 
           {/* Email Identity Preview */}
           {adminEmailParsed && (
-            <div className="rounded-2xl border border-emerald-500/30 bg-emerald-950/20 p-4 animate-fadeIn flex flex-wrap items-center gap-3 text-xs font-mono">
+            <div className="rounded-2xl border border-emerald-500/30 bg-[#0a1f18] p-4 animate-fadeIn flex flex-wrap items-center gap-3 text-xs font-mono shadow-inner">
               <span className="text-emerald-400 font-bold uppercase tracking-wider text-[10px]">
                 Identity Preview:
               </span>
@@ -377,19 +377,22 @@ export default function AdminUserManager({ currentUserEmail }: AdminUserManagerP
 
           {/* INVITE Button */}
           <div className="pt-2">
-            <button
+            <Button
               type="submit"
               disabled={isSubmittingAdmin}
-              className="rounded-2xl bg-[#f20089] hover:bg-[#d8007a] disabled:opacity-50 px-8 py-3 text-xs sm:text-sm font-bold uppercase tracking-wider text-white shadow-lg shadow-[#f20089]/40 transition-all hover:scale-105 active:scale-95 cursor-pointer font-[family-name:var(--font-google-sans)]"
+              loading={isSubmittingAdmin}
+              variant="default"
+              size="lg"
+              className="rounded-2xl px-8 font-bold font-[family-name:var(--font-google-sans)]"
             >
               {isSubmittingAdmin ? "INVITING..." : "INVITE"}
-            </button>
+            </Button>
           </div>
         </form>
       </div>
 
       {/* Card 2: Current Administrators Table */}
-      <div className="rounded-3xl border border-white/15 bg-white/[0.03] p-6 sm:p-8 backdrop-blur-2xl shadow-xl space-y-4">
+      <div className="rounded-3xl border border-white/15 bg-[#0e0e12] p-6 sm:p-8 shadow-2xl space-y-4">
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
           <div>
             <h3 className="text-lg font-bold text-white font-[family-name:var(--font-google-sans)]">
@@ -407,9 +410,9 @@ export default function AdminUserManager({ currentUserEmail }: AdminUserManagerP
           </div>
         </div>
 
-        <div className="overflow-x-auto rounded-2xl border border-white/10 bg-white/[0.02]">
-          <table className="w-full text-left text-xs text-neutral-300">
-            <thead className="border-b border-white/10 bg-white/[0.04] text-[11px] uppercase tracking-wider text-white/60 font-[family-name:var(--font-google-sans)]">
+        <div className="overflow-x-auto rounded-2xl border border-white/15 bg-[#16161d] shadow-inner">
+          <table className="w-full text-left text-xs text-neutral-200">
+            <thead className="border-b border-white/10 bg-[#121217] text-[11px] uppercase tracking-wider text-white/70 font-[family-name:var(--font-google-sans)]">
               <tr>
                 <th className="px-5 py-4">Administrator</th>
                 <th className="px-5 py-4">College Email</th>
@@ -440,61 +443,71 @@ export default function AdminUserManager({ currentUserEmail }: AdminUserManagerP
                         <div
                           className={`h-8 w-8 rounded-full flex items-center justify-center text-xs font-extrabold text-white shrink-0 ${
                             admin.role === "master_admin"
-                              ? "bg-gradient-to-tr from-amber-500 to-[#f20089] shadow-md shadow-amber-500/30"
+                              ? "bg-amber-500/20 text-amber-300 border border-amber-500/30"
                               : admin.role === "lead_admin"
-                              ? "bg-gradient-to-tr from-sky-400 to-blue-600 shadow-md shadow-sky-500/20"
-                              : "bg-gradient-to-tr from-[#f20089] to-purple-600"
+                              ? "bg-sky-500/20 text-sky-300 border border-sky-500/30"
+                              : "bg-purple-500/20 text-purple-300 border border-purple-500/30"
                           }`}
                         >
                           {parsed.firstName.charAt(0).toUpperCase()}
                         </div>
                         <div>
                           <span className="block font-bold">
-                            {parsed.fullName || admin.name}
+                            {parsed.fullName || admin.name || "Administrator"}
                           </span>
-                          <span className="text-[10px] text-white/50">{admin.name}</span>
+                          <span className="text-[10px] text-white/50 font-normal">
+                            Added {new Date(admin.createdAt).toLocaleDateString()}
+                          </span>
                         </div>
                       </td>
-                      <td className="px-5 py-4 font-mono text-[11px] text-white/90">
+
+                      <td className="px-5 py-4 font-mono text-white/80">
                         {admin.email}
                       </td>
+
                       <td className="px-5 py-4">
-                        <span className="block text-white font-medium">
+                        <span className="block text-white/80 font-medium">
                           {parsed.branchName || admin.department}
                         </span>
                         <span className="text-[10px] text-white/50">
                           {parsed.academicYear || admin.year}
                         </span>
                       </td>
+
                       <td className="px-5 py-4">
                         {renderRoleBadge(admin.role)}
                       </td>
+
                       <td className="px-5 py-4">
-                        <select
-                          value={admin.role}
-                          onChange={(e) =>
-                            handleChangeRole(admin, e.target.value as UserRole)
-                          }
-                          className="rounded-xl border border-white/15 bg-[#121216] px-2.5 py-1 text-[11px] text-white outline-none hover:border-[#f20089] focus:border-[#f20089] cursor-pointer"
-                        >
-                          <option value="junior_admin">Junior Admin</option>
-                          <option value="lead_admin">Lead Admin</option>
-                          <option value="master_admin">Master Admin</option>
-                        </select>
+                        {isSelf ? (
+                          <span className="text-[10px] text-white/40 italic font-mono">Current User</span>
+                        ) : (
+                          <select
+                            value={admin.role}
+                            onChange={(e) =>
+                              handleChangeRole(admin, e.target.value as UserRole)
+                            }
+                            className="rounded-xl border border-white/15 bg-[#121217] px-2.5 py-1 text-xs text-white outline-none focus:border-white/50 cursor-pointer"
+                          >
+                            <option value="junior_admin">Junior Admin</option>
+                            <option value="lead_admin">Lead Admin</option>
+                            <option value="master_admin">Master Admin</option>
+                          </select>
+                        )}
                       </td>
+
                       <td className="px-5 py-4 text-right">
                         {isSelf ? (
-                          <span className="text-[11px] text-amber-300/80 font-medium">
-                            Current User
-                          </span>
+                          <span className="text-[10px] text-white/40 italic font-mono">Protected</span>
                         ) : (
-                          <button
-                            type="button"
+                          <Button
+                            variant="destructive"
+                            size="xs"
                             onClick={() => handleRevokeAdmin(admin)}
-                            className="rounded-full border border-red-500/30 bg-red-950/20 hover:bg-red-900/40 px-3 py-1 text-[11px] font-semibold text-red-300 transition-all cursor-pointer"
+                            className="rounded-lg font-mono text-[10px]"
                           >
                             Revoke
-                          </button>
+                          </Button>
                         )}
                       </td>
                     </tr>
@@ -507,7 +520,7 @@ export default function AdminUserManager({ currentUserEmail }: AdminUserManagerP
       </div>
 
       {/* Card 3: Quick Promote from Registered Students */}
-      <div className="rounded-3xl border border-white/15 bg-white/[0.03] p-6 sm:p-8 backdrop-blur-2xl shadow-xl space-y-4">
+      <div className="rounded-3xl border border-white/15 bg-[#0e0e12] p-6 sm:p-8 shadow-2xl space-y-4">
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
           <div>
             <h3 className="text-lg font-bold text-white font-[family-name:var(--font-google-sans)]">
@@ -521,7 +534,7 @@ export default function AdminUserManager({ currentUserEmail }: AdminUserManagerP
             <select
               value={quickPromoteRole}
               onChange={(e) => setQuickPromoteRole(e.target.value as "junior_admin" | "lead_admin" | "master_admin")}
-              className="rounded-2xl border border-white/15 bg-[#121216] px-3 py-2 text-xs text-white outline-none focus:border-[#f20089] cursor-pointer"
+              className="rounded-2xl border border-white/15 bg-[#16161d] px-3 py-2 text-xs text-white outline-none focus:border-white/50 cursor-pointer shadow-inner"
             >
               <option value="junior_admin">as Junior Admin</option>
               <option value="lead_admin">as Lead Admin</option>
@@ -532,12 +545,12 @@ export default function AdminUserManager({ currentUserEmail }: AdminUserManagerP
               placeholder="Filter students..."
               value={searchStudentForAdmin}
               onChange={(e) => setSearchStudentForAdmin(e.target.value)}
-              className="w-full sm:w-56 rounded-2xl border border-white/15 bg-black/60 px-4 py-2 text-xs text-white placeholder-white/40 outline-none backdrop-blur-xl focus:border-[#f20089]"
+              className="w-full sm:w-56 rounded-2xl border border-white/15 bg-[#16161d] px-4 py-2 text-xs text-white placeholder-white/40 outline-none focus:border-white/50 shadow-inner"
             />
           </div>
         </div>
 
-        <div className="max-h-64 overflow-y-auto rounded-2xl border border-white/10 divide-y divide-white/5 bg-white/[0.01]">
+        <div className="max-h-64 overflow-y-auto rounded-2xl border border-white/15 divide-y divide-white/5 bg-[#16161d] shadow-inner">
           {participants
             .filter((p) => {
               const q = searchStudentForAdmin.toLowerCase();

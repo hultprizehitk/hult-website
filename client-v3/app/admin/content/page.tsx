@@ -208,8 +208,8 @@ export default function AdminContentPage() {
           onClick={() => setActiveTab("announcement")}
           className={`flex items-center gap-2 px-4 py-2 text-xs font-semibold rounded-xl transition-all cursor-pointer border ${
             activeTab === "announcement"
-              ? "bg-rose-500/15 text-rose-300 border-rose-500/30 shadow-sm"
-              : "bg-white/5 text-neutral-400 border-white/10 hover:text-white"
+              ? "bg-rose-500/20 text-rose-300 border-rose-500/40 shadow-sm"
+              : "bg-[#16161d] text-neutral-300 border-white/15 hover:bg-[#202028] hover:text-white"
           }`}
         >
           <Radio className="h-3.5 w-3.5" />
@@ -220,8 +220,8 @@ export default function AdminContentPage() {
           onClick={() => setActiveTab("committee")}
           className={`flex items-center gap-2 px-4 py-2 text-xs font-semibold rounded-xl transition-all cursor-pointer border ${
             activeTab === "committee"
-              ? "bg-rose-500/15 text-rose-300 border-rose-500/30 shadow-sm"
-              : "bg-white/5 text-neutral-400 border-white/10 hover:text-white"
+              ? "bg-rose-500/20 text-rose-300 border-rose-500/40 shadow-sm"
+              : "bg-[#16161d] text-neutral-300 border-white/15 hover:bg-[#202028] hover:text-white"
           }`}
         >
           <Users className="h-3.5 w-3.5" />
@@ -232,8 +232,8 @@ export default function AdminContentPage() {
           onClick={() => setActiveTab("sponsor")}
           className={`flex items-center gap-2 px-4 py-2 text-xs font-semibold rounded-xl transition-all cursor-pointer border ${
             activeTab === "sponsor"
-              ? "bg-rose-500/15 text-rose-300 border-rose-500/30 shadow-sm"
-              : "bg-white/5 text-neutral-400 border-white/10 hover:text-white"
+              ? "bg-rose-500/20 text-rose-300 border-rose-500/40 shadow-sm"
+              : "bg-[#16161d] text-neutral-300 border-white/15 hover:bg-[#202028] hover:text-white"
           }`}
         >
           <Award className="h-3.5 w-3.5" />
@@ -242,7 +242,7 @@ export default function AdminContentPage() {
       </div>
 
       {/* Items Table / Cards */}
-      <div className="rounded-2xl border border-white/10 bg-neutral-900/40 backdrop-blur-sm overflow-hidden">
+      <div className="rounded-2xl border border-white/15 bg-[#0e0e12] shadow-2xl overflow-hidden">
         {loading ? (
           <div className="py-20 text-center text-xs text-neutral-500 font-mono">
             Loading {activeTab} records...
@@ -251,7 +251,7 @@ export default function AdminContentPage() {
           <div className="overflow-x-auto">
             <table className="w-full text-left text-xs">
               <thead>
-                <tr className="border-b border-white/10 text-neutral-400 bg-white/[0.02]">
+                <tr className="border-b border-white/10 text-neutral-300 bg-[#16161d]">
                   <th className="py-3.5 px-4 font-semibold">
                     {activeTab === "committee" ? "Member" : "Title / Headline"}
                   </th>
@@ -265,7 +265,7 @@ export default function AdminContentPage() {
               </thead>
               <tbody className="divide-y divide-white/5">
                 {items.map((item) => (
-                  <tr key={item._id} className="hover:bg-white/[0.02] transition-colors">
+                  <tr key={item._id} className="hover:bg-[#16161d]/60 transition-colors">
                     <td className="py-3.5 px-4">
                       <div className="flex items-center gap-2.5">
                         {item.image && (
@@ -283,7 +283,7 @@ export default function AdminContentPage() {
                     </td>
 
                     <td className="py-3.5 px-4">
-                      <span className="inline-block rounded-md border border-white/10 bg-white/5 px-2 py-0.5 text-[10px] font-mono text-neutral-300">
+                      <span className="inline-block rounded-md border border-white/15 bg-[#16161d] px-2 py-0.5 text-[10px] font-mono text-neutral-300">
                         {item.category}
                       </span>
                     </td>
@@ -298,7 +298,7 @@ export default function AdminContentPage() {
                         className={`inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-[10px] font-mono font-medium cursor-pointer transition-colors ${
                           item.isActive
                             ? "bg-emerald-500/15 text-emerald-400 border border-emerald-500/30"
-                            : "bg-white/5 text-neutral-400 border border-white/10 hover:bg-white/10"
+                            : "bg-[#16161d] text-neutral-400 border border-white/10 hover:bg-[#202028]"
                         }`}
                       >
                         <span
@@ -340,8 +340,8 @@ export default function AdminContentPage() {
 
       {/* Modal */}
       {modalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
-          <div className="relative w-full max-w-lg rounded-2xl border border-white/10 bg-[#0d0d14] p-6 shadow-2xl">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80">
+          <div className="relative w-full max-w-lg rounded-2xl border border-white/20 bg-[#0e0e12] p-6 shadow-2xl">
             <div className="flex items-center justify-between pb-3 border-b border-white/10 mb-4">
               <h3 className="text-base font-bold text-white">
                 {editingItem ? "Edit Entry" : "Create New Entry"}
@@ -365,7 +365,7 @@ export default function AdminContentPage() {
                   placeholder="e.g. Campus Director / Live Announcement"
                   value={formData.title}
                   onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-                  className="w-full px-3.5 py-2.5 bg-neutral-900 border border-white/10 rounded-xl text-white placeholder-neutral-500 focus:outline-none focus:border-rose-500"
+                  className="w-full px-3.5 py-2.5 bg-[#16161d] border border-white/15 rounded-xl text-white placeholder-neutral-500 focus:outline-none focus:border-rose-500"
                 />
               </div>
 
@@ -378,7 +378,7 @@ export default function AdminContentPage() {
                   placeholder="e.g. Lead Organizer / Title Partner"
                   value={formData.subtitle}
                   onChange={(e) => setFormData({ ...formData, subtitle: e.target.value })}
-                  className="w-full px-3.5 py-2.5 bg-neutral-900 border border-white/10 rounded-xl text-white placeholder-neutral-500 focus:outline-none focus:border-rose-500"
+                  className="w-full px-3.5 py-2.5 bg-[#16161d] border border-white/15 rounded-xl text-white placeholder-neutral-500 focus:outline-none focus:border-rose-500"
                 />
               </div>
 
@@ -391,7 +391,7 @@ export default function AdminContentPage() {
                   placeholder="e.g. leadership, tech, event_management, sponsor"
                   value={formData.category}
                   onChange={(e) => setFormData({ ...formData, category: e.target.value })}
-                  className="w-full px-3.5 py-2.5 bg-neutral-900 border border-white/10 rounded-xl text-white placeholder-neutral-500 focus:outline-none focus:border-rose-500"
+                  className="w-full px-3.5 py-2.5 bg-[#16161d] border border-white/15 rounded-xl text-white placeholder-neutral-500 focus:outline-none focus:border-rose-500"
                 />
               </div>
 
@@ -404,7 +404,7 @@ export default function AdminContentPage() {
                   placeholder="https://..."
                   value={formData.image}
                   onChange={(e) => setFormData({ ...formData, image: e.target.value })}
-                  className="w-full px-3.5 py-2.5 bg-neutral-900 border border-white/10 rounded-xl text-white placeholder-neutral-500 focus:outline-none focus:border-rose-500"
+                  className="w-full px-3.5 py-2.5 bg-[#16161d] border border-white/15 rounded-xl text-white placeholder-neutral-500 focus:outline-none focus:border-rose-500"
                 />
               </div>
 
@@ -417,7 +417,7 @@ export default function AdminContentPage() {
                   placeholder="Brief description or announcement action message..."
                   value={formData.description}
                   onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                  className="w-full px-3.5 py-2.5 bg-neutral-900 border border-white/10 rounded-xl text-white placeholder-neutral-500 focus:outline-none focus:border-rose-500 resize-none"
+                  className="w-full px-3.5 py-2.5 bg-[#16161d] border border-white/15 rounded-xl text-white placeholder-neutral-500 focus:outline-none focus:border-rose-500 resize-none"
                 />
               </div>
 
@@ -435,7 +435,7 @@ export default function AdminContentPage() {
                       links: { linkedin: e.target.value, website: e.target.value },
                     })
                   }
-                  className="w-full px-3.5 py-2.5 bg-neutral-900 border border-white/10 rounded-xl text-white placeholder-neutral-500 focus:outline-none focus:border-rose-500"
+                  className="w-full px-3.5 py-2.5 bg-[#16161d] border border-white/15 rounded-xl text-white placeholder-neutral-500 focus:outline-none focus:border-rose-500"
                 />
               </div>
 

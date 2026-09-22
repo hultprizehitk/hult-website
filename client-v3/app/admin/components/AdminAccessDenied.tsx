@@ -4,7 +4,8 @@ import React from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { signOut } from "next-auth/react";
-import AnimatedGradient from "@/components/ui/animated-gradient";
+import { DotPattern } from "@/components/ui/dot-pattern";
+import { Button } from "@/components/ui/button";
 
 interface AdminAccessDeniedProps {
   userEmail: string;
@@ -18,15 +19,21 @@ export default function AdminAccessDenied({ userEmail }: AdminAccessDeniedProps)
 
   return (
     <div className="relative min-h-screen w-full bg-black font-sans text-white selection:bg-red-600 selection:text-white flex flex-col justify-between overflow-x-hidden">
-      {/* Ambient Red/Dark Aurora Background */}
-      <div className="fixed inset-0 z-0 pointer-events-none opacity-75">
-        <AnimatedGradient config={{ preset: "Amber", speed: 10 }} noise={{ opacity: 0.12, scale: 1 }} />
-        <div className="absolute inset-0 bg-gradient-to-t from-black via-black/70 to-black/90" />
-        <div className="absolute inset-0 bg-radial from-transparent via-black/40 to-black" />
+      {/* Lightweight Dot Pattern Background */}
+      <div className="fixed inset-0 z-0 pointer-events-none overflow-hidden">
+        <DotPattern
+          width={28}
+          height={28}
+          cx={1.5}
+          cy={1.5}
+          cr={1.2}
+          className="fill-red-500/[0.06] [mask-image:radial-gradient(ellipse_at_center,white,transparent_80%)]"
+        />
+        <div className="absolute inset-0 bg-gradient-to-b from-black/60 via-transparent to-black/90" />
       </div>
 
       {/* Header */}
-      <header className="relative z-20 flex items-center justify-between px-6 py-4 border-b border-white/10 bg-black/40 backdrop-blur-2xl">
+      <header className="relative z-20 flex items-center justify-between px-6 py-4 border-b border-white/10 bg-[#08080a] shadow-md">
         <div className="flex items-center gap-3">
           <Link href={isSubdomain ? mainSiteUrl : "/"} className="relative aspect-[1080/659] h-7 sm:h-8">
             <Image src="/Hult-Prize.png" alt="Hult Prize Logo" fill sizes="48px" className="object-contain" />
@@ -38,7 +45,7 @@ export default function AdminAccessDenied({ userEmail }: AdminAccessDeniedProps)
         </div>
         <Link
           href={isSubdomain ? mainSiteUrl : "/"}
-          className="rounded-full border border-white/20 bg-white/[0.06] hover:bg-white/15 px-4 py-1.5 text-xs font-semibold text-white transition-all font-[family-name:var(--font-google-sans)]"
+          className="rounded-full border border-white/20 bg-[#16161d] hover:bg-[#202028] px-4 py-1.5 text-xs font-semibold text-white transition-all font-[family-name:var(--font-google-sans)]"
         >
           ← Return to Website
         </Link>
@@ -47,7 +54,7 @@ export default function AdminAccessDenied({ userEmail }: AdminAccessDeniedProps)
       {/* Main Alert Card */}
       <main className="relative z-10 flex flex-1 items-center justify-center px-4 py-12">
         <div className="w-full max-w-lg">
-          <div className="relative overflow-hidden rounded-[2.5rem] border border-red-500/30 bg-red-950/20 p-8 sm:p-12 text-center shadow-[0_24px_60px_rgba(0,0,0,0.8),inset_0_1.5px_1px_rgba(239,68,68,0.2)] backdrop-blur-3xl animate-in zoom-in-95 duration-200">
+          <div className="relative overflow-hidden rounded-[2.5rem] border border-red-500/40 bg-[#14080a] p-8 sm:p-12 text-center shadow-2xl animate-in zoom-in-95 duration-200">
             {/* Ambient Red Glow */}
             <div className="pointer-events-none absolute -top-20 -right-20 h-60 w-60 rounded-full bg-red-600/20 blur-3xl" />
             <div className="pointer-events-none absolute -bottom-20 -left-20 h-60 w-60 rounded-full bg-rose-900/30 blur-3xl" />
@@ -73,7 +80,7 @@ export default function AdminAccessDenied({ userEmail }: AdminAccessDeniedProps)
             </p>
 
             {/* Identity Info Box */}
-            <div className="rounded-2xl border border-white/10 bg-black/50 p-4 mb-8 text-left text-xs font-mono">
+            <div className="rounded-2xl border border-white/10 bg-[#0d0506] p-4 mb-8 text-left text-xs font-mono">
               <div className="flex items-center justify-between text-neutral-400 mb-1.5">
                 <span className="text-[10px] uppercase tracking-wider text-white/50">Signed in as:</span>
                 <span className="text-[10px] text-red-400 font-bold uppercase">Role: Student</span>
@@ -89,19 +96,19 @@ export default function AdminAccessDenied({ userEmail }: AdminAccessDeniedProps)
 
             {/* Action Buttons */}
             <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
-              <Link
-                href={isSubdomain ? mainSiteUrl : "/"}
-                className="w-full sm:w-auto rounded-full bg-white hover:bg-neutral-200 text-neutral-900 px-7 py-3 text-xs sm:text-sm font-bold shadow-xl transition-all hover:scale-105 font-[family-name:var(--font-google-sans)]"
-              >
-                Go to Homepage →
-              </Link>
-              <button
-                type="button"
+              <Button asChild variant="default" size="lg" className="w-full sm:w-auto rounded-full font-[family-name:var(--font-google-sans)]">
+                <Link href={isSubdomain ? mainSiteUrl : "/"}>
+                  Go to Homepage →
+                </Link>
+              </Button>
+              <Button
+                variant="outline"
+                size="lg"
                 onClick={() => signOut({ callbackUrl: "/" })}
-                className="w-full sm:w-auto rounded-full border border-white/20 bg-white/[0.08] hover:bg-white/15 px-6 py-3 text-xs sm:text-sm font-semibold text-white transition-all cursor-pointer font-[family-name:var(--font-google-sans)]"
+                className="w-full sm:w-auto rounded-full font-[family-name:var(--font-google-sans)]"
               >
                 Sign In with Different Account
-              </button>
+              </Button>
             </div>
           </div>
         </div>

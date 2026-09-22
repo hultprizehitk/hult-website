@@ -21,7 +21,9 @@ import {
   Camera,
   ScanLine,
   Lightbulb,
+  AlertTriangle,
 } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import LiveCameraScannerModal from "@/components/admin/LiveCameraScannerModal";
 
 interface TeamMember {
@@ -551,17 +553,21 @@ export default function LiveEventManager() {
   }, [events, eventSearch]);
 
   return (
-    <div className="space-y-8 animate-fadeIn text-white font-sans selection:bg-[#f20089] selection:text-white pb-16">
+    <div className="space-y-8 animate-fadeIn text-white font-sans selection:bg-white/25 selection:text-white pb-16">
       {/* Toast Notification */}
       {toast && (
         <div
-          className={`fixed bottom-6 right-6 z-50 flex items-center gap-3 rounded-2xl border px-5 py-3.5 text-sm font-semibold shadow-2xl backdrop-blur-2xl animate-in slide-in-from-bottom-5 duration-300 ${
+          className={`fixed bottom-6 right-6 z-50 flex items-center gap-3 rounded-2xl border px-5 py-3.5 text-sm font-semibold shadow-2xl animate-in slide-in-from-bottom-5 duration-300 ${
             toast.type === "success"
-              ? "border-emerald-500/50 bg-emerald-950/90 text-emerald-200 shadow-emerald-900/30"
-              : "border-rose-500/50 bg-rose-950/90 text-rose-200 shadow-rose-900/30"
+              ? "border-emerald-500/50 bg-[#0a1f18] text-emerald-200 shadow-emerald-900/30"
+              : "border-rose-500/50 bg-[#240c10] text-rose-200 shadow-rose-900/30"
           }`}
         >
-          <span>{toast.type === "success" ? "✓" : "⚠"}</span>
+          {toast.type === "success" ? (
+            <Check className="h-4 w-4 text-emerald-400 shrink-0" />
+          ) : (
+            <AlertTriangle className="h-4 w-4 text-rose-400 shrink-0" />
+          )}
           <span>{toast.message}</span>
         </div>
       )}
@@ -571,14 +577,13 @@ export default function LiveEventManager() {
       {/* ========================================================================= */}
       {!selectedEventId ? (
         <div className="space-y-8">
-          {/* Header Banner with Rich Translucent Glassmorphism */}
-          <div className="relative overflow-hidden rounded-[2.5rem] border border-white/15 bg-gradient-to-br from-white/[0.08] via-white/[0.03] to-[#f20089]/[0.08] p-8 sm:p-12 backdrop-blur-2xl shadow-[0_20px_50px_rgba(0,0,0,0.4)]">
-            <div className="pointer-events-none absolute inset-x-0 top-0 h-[1.5px] bg-gradient-to-r from-transparent via-[#f20089] to-purple-500" />
-            <div className="pointer-events-none absolute -top-24 -right-24 h-72 w-72 rounded-full bg-[#f20089]/20 blur-[100px]" />
-            <div className="pointer-events-none absolute -bottom-24 -left-24 h-72 w-72 rounded-full bg-purple-600/20 blur-[100px]" />
+          {/* Header Banner */}
+          <div className="relative overflow-hidden rounded-[2.5rem] border border-white/15 bg-[#0e0e12] p-8 sm:p-12 shadow-2xl">
+            <div className="pointer-events-none absolute inset-x-0 top-0 h-[1.5px] bg-gradient-to-r from-transparent via-white/40 to-white/10" />
+            <div className="pointer-events-none absolute -top-24 -right-24 h-72 w-72 rounded-full bg-white/5 blur-[100px]" />
 
             <div className="relative z-10 max-w-3xl">
-              <span className="inline-flex items-center gap-2 rounded-full border border-emerald-500/40 bg-emerald-500/15 px-3.5 py-1 text-[11px] font-extrabold uppercase tracking-widest text-emerald-300 mb-4 shadow-sm backdrop-blur-md">
+              <span className="inline-flex items-center gap-2 rounded-full border border-emerald-500/40 bg-[#0a1f18] px-3.5 py-1 text-[11px] font-extrabold uppercase tracking-widest text-emerald-300 mb-4 shadow-sm">
                 <span className="h-2 w-2 rounded-full bg-emerald-400 animate-pulse" />
                 Live Event Operations Console
               </span>
@@ -590,21 +595,21 @@ export default function LiveEventManager() {
               </p>
 
               <div className="flex flex-wrap items-center gap-3">
-                <Link
-                  href="/admin"
-                  className="rounded-2xl bg-gradient-to-r from-[#f20089] to-purple-600 hover:from-[#ff1a9b] hover:to-purple-500 px-5 py-2.5 text-xs font-bold text-white shadow-lg shadow-[#f20089]/30 transition-all hover:scale-105 flex items-center gap-2 font-[family-name:var(--font-google-sans)]"
-                >
-                  <Plus className="h-4 w-4" />
-                  <span>Create New Event in Events Manager</span>
-                </Link>
-                <button
+                <Button asChild variant="default" size="default" className="font-[family-name:var(--font-google-sans)]">
+                  <Link href="/admin">
+                    <Plus className="h-4 w-4" />
+                    <span>Create New Event in Events Manager</span>
+                  </Link>
+                </Button>
+                <Button
                   type="button"
+                  variant="outline"
+                  size="default"
                   onClick={fetchEvents}
-                  className="rounded-2xl bg-white/[0.08] hover:bg-white/15 border border-white/20 px-4 py-2.5 text-xs font-semibold text-white/90 hover:text-white transition-all flex items-center gap-1.5 cursor-pointer backdrop-blur-md"
                 >
                   <RefreshCw className="h-4 w-4" />
                   <span>Refresh Events</span>
-                </button>
+                </Button>
               </div>
             </div>
           </div>
@@ -626,7 +631,7 @@ export default function LiveEventManager() {
                 value={eventSearch}
                 onChange={(e) => setEventSearch(e.target.value)}
                 placeholder="Search events by title, tag, or venue..."
-                className="w-full rounded-2xl border border-white/15 bg-white/[0.06] hover:bg-white/[0.09] focus:bg-white/[0.12] px-4 py-2.5 text-xs text-white placeholder:text-white/40 focus:border-[#f20089] focus:outline-none focus:ring-1 focus:ring-[#f20089] backdrop-blur-xl shadow-inner transition-all"
+                className="w-full rounded-2xl border border-white/15 bg-[#16161d] px-4 py-2.5 text-xs text-white placeholder:text-white/40 focus:border-white/50 focus:outline-none focus:ring-1 focus:ring-white/20 shadow-inner transition-all"
               />
               {eventSearch && (
                 <button
@@ -643,12 +648,12 @@ export default function LiveEventManager() {
           {/* Events Grid */}
           {loadingEvents ? (
             <div className="py-20 text-center">
-              <div className="inline-block h-8 w-8 animate-spin rounded-full border-2 border-[#f20089] border-t-transparent mb-4" />
+              <div className="inline-block h-8 w-8 animate-spin rounded-full border-2 border-white border-t-transparent mb-4" />
               <p className="text-sm text-white/50 font-mono">Loading events from database...</p>
             </div>
           ) : filteredEventsList.length === 0 ? (
-            <div className="rounded-3xl border border-white/15 bg-gradient-to-b from-white/[0.06] via-white/[0.02] to-transparent p-12 text-center backdrop-blur-2xl shadow-xl">
-              <Calendar className="h-10 w-10 text-[#f20089] mx-auto mb-3" />
+            <div className="rounded-3xl border border-white/15 bg-[#0e0e12] p-12 text-center shadow-2xl">
+              <Calendar className="h-10 w-10 text-white mx-auto mb-3" />
               <h3 className="text-lg font-bold text-white font-[family-name:var(--font-google-sans)] mb-2">
                 No Events Found
               </h3>
@@ -657,26 +662,25 @@ export default function LiveEventManager() {
                   ? `No events match "${eventSearch}". Try a different search term.`
                   : "You haven't created any events yet. Create your first event in the Events Manager to begin receiving team registrations."}
               </p>
-              <Link
-                href="/admin"
-                className="inline-flex items-center gap-2 rounded-2xl bg-gradient-to-r from-[#f20089] to-purple-600 px-6 py-2.5 text-xs font-bold text-white shadow-lg shadow-[#f20089]/30 transition-all hover:scale-105 font-[family-name:var(--font-google-sans)]"
-              >
-                Go to Events Manager →
-              </Link>
+              <Button asChild variant="default" size="default" className="font-[family-name:var(--font-google-sans)]">
+                <Link href="/admin">
+                  Go to Events Manager →
+                </Link>
+              </Button>
             </div>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {filteredEventsList.map((ev) => (
                 <div
                   key={ev._id}
-                  className="group relative overflow-hidden rounded-3xl border border-white/15 bg-gradient-to-b from-white/[0.08] via-white/[0.03] to-black/30 p-6 backdrop-blur-2xl hover:border-[#f20089]/60 hover:shadow-[0_20px_45px_rgba(242,0,137,0.18)] hover:-translate-y-1 transition-all duration-300 flex flex-col justify-between shadow-xl"
+                  className="group relative overflow-hidden rounded-3xl border border-white/15 bg-[#0e0e12] hover:bg-[#15151c] p-6 hover:border-white/40 hover:shadow-[0_20px_45px_rgba(0,0,0,0.8)] hover:-translate-y-1 transition-all duration-300 flex flex-col justify-between shadow-2xl"
                 >
-                  <div className="pointer-events-none absolute inset-x-0 top-0 h-[2px] bg-gradient-to-r from-transparent via-[#f20089] to-transparent" />
+                  <div className="pointer-events-none absolute inset-x-0 top-0 h-[2px] bg-gradient-to-r from-transparent via-white/40 to-transparent" />
 
                   <div>
                     {/* Tags & Status */}
                     <div className="flex items-center justify-between gap-2 mb-4">
-                      <span className="rounded-full bg-[#f20089]/20 border border-[#f20089]/40 px-3 py-0.5 text-[10px] font-extrabold uppercase tracking-wider text-pink-300">
+                      <span className="rounded-full bg-white/10 border border-white/20 px-3 py-0.5 text-[10px] font-extrabold uppercase tracking-wider text-white">
                         {ev.tag || "Event"}
                       </span>
                       <span
@@ -693,18 +697,18 @@ export default function LiveEventManager() {
                     </div>
 
                     {/* Title */}
-                    <h3 className="text-xl font-bold text-white font-[family-name:var(--font-google-sans)] group-hover:text-pink-100 transition-colors mb-2 line-clamp-2">
+                    <h3 className="text-xl font-bold text-white font-[family-name:var(--font-google-sans)] group-hover:text-white transition-colors mb-2 line-clamp-2">
                       {ev.title}
                     </h3>
 
                     {/* Venue & Date */}
                     <div className="space-y-1.5 text-xs text-white/70 mb-4 font-mono">
                       <div className="flex items-center gap-2">
-                        <MapPin className="h-3 w-3 text-pink-400" />
+                        <MapPin className="h-3 w-3 text-neutral-400" />
                         <span className="truncate">{ev.venue}</span>
                       </div>
                       <div className="flex items-center gap-2">
-                        <Calendar className="h-3 w-3 text-pink-400" />
+                        <Calendar className="h-3 w-3 text-neutral-400" />
                         <span>{ev.date}</span>
                       </div>
                     </div>
@@ -724,14 +728,16 @@ export default function LiveEventManager() {
                       </span>
                     </div>
 
-                    <button
+                    <Button
                       type="button"
+                      variant="default"
+                      size="default"
+                      className="w-full font-[family-name:var(--font-google-sans)]"
                       onClick={() => handleSelectEvent(ev._id)}
-                      className="w-full rounded-2xl bg-gradient-to-r from-[#f20089] to-purple-600 hover:from-[#ff1a9b] hover:to-purple-500 py-3 px-4 text-xs sm:text-sm font-bold text-white shadow-lg shadow-[#f20089]/25 hover:shadow-[#f20089]/40 hover:scale-[1.02] active:scale-[0.98] transition-all flex items-center justify-center gap-2 cursor-pointer font-[family-name:var(--font-google-sans)]"
                     >
                       <span>Enter Event & Manage Teams</span>
                       <span>→</span>
-                    </button>
+                    </Button>
                   </div>
                 </div>
               ))}
@@ -744,7 +750,7 @@ export default function LiveEventManager() {
         /* ========================================================================= */
         <div className="space-y-8 animate-fadeIn">
           {/* Top Breadcrumb & Switcher Bar */}
-          <div className="rounded-2xl border border-white/15 bg-gradient-to-r from-white/[0.08] via-white/[0.04] to-white/[0.08] backdrop-blur-2xl p-4 shadow-xl flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+          <div className="rounded-2xl border border-white/15 bg-[#0e0e12] p-4 shadow-2xl flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
             <div className="flex items-center gap-3 flex-wrap">
               <button
                 type="button"
@@ -753,7 +759,7 @@ export default function LiveEventManager() {
                   setTeams([]);
                   setSearchQuery("");
                 }}
-                className="rounded-xl bg-white/[0.08] hover:bg-white/15 border border-white/20 px-3.5 py-2 text-xs font-bold text-white hover:text-[#f20089] transition-all flex items-center gap-1.5 cursor-pointer font-[family-name:var(--font-google-sans)]"
+                className="rounded-xl bg-white/[0.08] hover:bg-white/15 border border-white/20 px-3.5 py-2 text-xs font-bold text-white hover:text-white transition-all flex items-center gap-1.5 cursor-pointer font-[family-name:var(--font-google-sans)]"
                 title="Return to Events list"
               >
                 <span>←</span>
@@ -767,7 +773,7 @@ export default function LiveEventManager() {
                 <select
                   value={selectedEventId}
                   onChange={(e) => handleSelectEvent(e.target.value)}
-                  className="rounded-xl border border-white/20 bg-white/[0.08] hover:bg-white/15 px-3 py-1.5 text-xs font-bold text-white focus:border-[#f20089] focus:outline-none cursor-pointer appearance-none pr-8 font-[family-name:var(--font-google-sans)] shadow-inner"
+                  className="rounded-xl border border-white/20 bg-neutral-900 hover:bg-neutral-800 px-3 py-1.5 text-xs font-bold text-white focus:border-white/50 focus:outline-none cursor-pointer appearance-none pr-8 font-[family-name:var(--font-google-sans)] shadow-inner"
                 >
                   {events.map((e) => (
                     <option key={e._id} value={e._id} className="bg-neutral-900 text-white">
@@ -825,14 +831,14 @@ export default function LiveEventManager() {
           </div>
 
           {/* Event Header Card Banner */}
-          <div className="relative overflow-hidden rounded-[2.5rem] border border-white/15 bg-gradient-to-br from-white/[0.09] via-white/[0.03] to-[#f20089]/[0.06] p-6 sm:p-8 backdrop-blur-2xl shadow-2xl space-y-4">
-            <div className="pointer-events-none absolute inset-x-0 top-0 h-[1.5px] bg-gradient-to-r from-transparent via-[#f20089] to-transparent" />
-            <div className="pointer-events-none absolute -top-16 -right-16 h-48 w-48 rounded-full bg-[#f20089]/15 blur-3xl" />
+          <div className="relative overflow-hidden rounded-[2.5rem] border border-white/15 bg-[#0e0e12] p-6 sm:p-8 shadow-2xl space-y-4">
+            <div className="pointer-events-none absolute inset-x-0 top-0 h-[1.5px] bg-gradient-to-r from-transparent via-white/40 to-transparent" />
+            <div className="pointer-events-none absolute -top-16 -right-16 h-48 w-48 rounded-full bg-white/5 blur-3xl" />
 
             <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
               <div>
                 <div className="flex items-center gap-2 mb-2 flex-wrap">
-                  <span className="rounded-full bg-[#f20089]/20 border border-[#f20089]/40 px-3 py-0.5 text-[10px] font-extrabold uppercase tracking-wider text-pink-300">
+                  <span className="rounded-full bg-white/10 border border-white/20 px-3 py-0.5 text-[10px] font-extrabold uppercase tracking-wider text-white">
                     {eventMeta?.tag || selectedEvent?.tag || "Live Event"}
                   </span>
                   <span
@@ -846,38 +852,29 @@ export default function LiveEventManager() {
                   </span>
                 </div>
 
-                <h1 className="text-2xl sm:text-4xl font-black text-white font-[family-name:var(--font-google-sans)] tracking-tight">
-                  {eventMeta?.title || selectedEvent?.title || "Event Management"}
-                </h1>
-
-                <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-white/70 font-mono mt-2">
-                  <span className="flex items-center gap-1">
-                    <MapPin className="h-3.5 w-3.5 text-pink-400" />
-                    <span>{eventMeta?.venue || selectedEvent?.venue}</span>
-                  </span>
-                  <span>•</span>
-                  <span className="flex items-center gap-1">
-                    <Calendar className="h-3.5 w-3.5 text-pink-400" />
-                    <span>{eventMeta?.date || selectedEvent?.date}</span>
-                  </span>
-                </div>
+                <h2 className="text-2xl sm:text-3xl font-black text-white font-[family-name:var(--font-google-sans)]">
+                  {eventMeta?.title || selectedEvent?.title || "Active Pitch Session"}
+                </h2>
+                <p className="text-xs text-white/60 font-sans mt-1">
+                  Venue: <strong className="text-white">{eventMeta?.venue || selectedEvent?.venue || "Heritage Auditorium"}</strong> • Scheduled: {eventMeta?.date || selectedEvent?.date || "TBD"}
+                </p>
               </div>
 
-              <div className="flex items-center gap-2">
-                <span className="rounded-2xl border border-white/15 bg-white/[0.05] px-4 py-2 text-xs font-mono text-white backdrop-blur-md shadow-sm">
+              <div className="flex items-center gap-3">
+                <span className="rounded-2xl border border-white/15 bg-[#16161d] px-4 py-2 text-xs font-mono text-white shadow-sm">
                   Capacity: <strong className="text-emerald-300">{stats.total}</strong> / {eventMeta?.maxTeams || 40} Teams
                 </span>
               </div>
             </div>
           </div>
 
-          {/* 4 Rich Glassmorphism Stat Metric Cards */}
+          {/* 4 Rich Stat Metric Cards */}
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
             {/* Stat 1: Total Registered */}
-            <div className="rounded-3xl border border-white/15 bg-gradient-to-b from-white/[0.08] via-white/[0.04] to-white/[0.01] p-5 backdrop-blur-2xl shadow-xl hover:border-white/25 transition-all">
+            <div className="rounded-3xl border border-white/15 bg-[#0e0e12] p-5 shadow-2xl hover:border-white/25 transition-all">
               <div className="flex items-center justify-between text-xs text-white/60 uppercase tracking-wider mb-2 font-mono">
                 <span>Registered Teams</span>
-                <Users className="h-4 w-4 text-pink-300" />
+                <Users className="h-4 w-4 text-neutral-300" />
               </div>
               <div className="text-2xl sm:text-3xl font-black text-white font-[family-name:var(--font-google-sans)] mb-1">
                 {stats.total}
@@ -888,10 +885,10 @@ export default function LiveEventManager() {
             </div>
 
             {/* Stat 2: Confirmed */}
-            <div className="rounded-3xl border border-emerald-500/30 bg-gradient-to-b from-emerald-500/[0.12] via-emerald-500/[0.04] to-transparent p-5 backdrop-blur-2xl shadow-xl shadow-emerald-950/20 hover:border-emerald-400/50 transition-all">
+            <div className="rounded-3xl border border-emerald-500/30 bg-[#0a1f18] p-5 shadow-2xl shadow-emerald-950/20 hover:border-emerald-400/50 transition-all">
               <div className="flex items-center justify-between text-xs text-emerald-400 uppercase tracking-wider mb-2 font-mono">
                 <span>Confirmed Teams</span>
-                <span>✓</span>
+                <span className="font-mono text-[10px] font-bold">READY</span>
               </div>
               <div className="text-2xl sm:text-3xl font-black text-emerald-300 font-[family-name:var(--font-google-sans)] mb-1">
                 {stats.confirmed}
@@ -902,10 +899,10 @@ export default function LiveEventManager() {
             </div>
 
             {/* Stat 3: Venue Checked-In */}
-            <div className="rounded-3xl border border-sky-500/30 bg-gradient-to-b from-sky-500/[0.12] via-sky-500/[0.04] to-transparent p-5 backdrop-blur-2xl shadow-xl shadow-sky-950/20 hover:border-sky-400/50 transition-all">
+            <div className="rounded-3xl border border-sky-500/30 bg-[#081a2e] p-5 shadow-2xl shadow-sky-950/20 hover:border-sky-400/50 transition-all">
               <div className="flex items-center justify-between text-xs text-sky-400 uppercase tracking-wider mb-2 font-mono">
                 <span>Venue Checked-In</span>
-                <span>🪪</span>
+                <span className="font-mono text-[10px] font-bold">PASS</span>
               </div>
               <div className="text-2xl sm:text-3xl font-black text-sky-300 font-[family-name:var(--font-google-sans)] mb-1">
                 {stats.checkedIn} / {stats.total}
@@ -922,10 +919,10 @@ export default function LiveEventManager() {
             </div>
 
             {/* Stat 4: Pending / Waitlist */}
-            <div className="rounded-3xl border border-amber-500/30 bg-gradient-to-b from-amber-500/[0.12] via-amber-500/[0.04] to-transparent p-5 backdrop-blur-2xl shadow-xl shadow-amber-950/20 hover:border-amber-400/50 transition-all">
+            <div className="rounded-3xl border border-amber-500/30 bg-[#241a08] p-5 shadow-2xl shadow-amber-950/20 hover:border-amber-400/50 transition-all">
               <div className="flex items-center justify-between text-xs text-amber-400 uppercase tracking-wider mb-2 font-mono">
                 <span>Pending / Waitlist</span>
-                <span>⏳</span>
+                <span className="font-mono text-[10px] font-bold">QUEUE</span>
               </div>
               <div className="text-2xl sm:text-3xl font-black text-amber-300 font-[family-name:var(--font-google-sans)] mb-1">
                 {stats.pending + stats.waitlist}
@@ -940,13 +937,13 @@ export default function LiveEventManager() {
           <div className="space-y-4">
             <div className="flex flex-col sm:flex-row items-center justify-between gap-3">
               <div className="relative w-full sm:w-96">
-                <span className="absolute left-3.5 top-3 text-white/50 text-xs">🔍</span>
+                <Search className="absolute left-3.5 top-3 h-4 w-4 text-white/40" />
                 <input
                   type="text"
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   placeholder="Search by Team, Venture, Code, Leader, Member email..."
-                  className="w-full rounded-2xl border border-white/15 bg-white/[0.06] hover:bg-white/[0.09] focus:bg-white/[0.12] pl-9 pr-8 py-2.5 text-xs text-white placeholder:text-white/40 focus:border-[#f20089] focus:outline-none focus:ring-1 focus:ring-[#f20089] backdrop-blur-xl shadow-inner transition-all"
+                  className="w-full rounded-2xl border border-white/15 bg-[#16161d] pl-9 pr-8 py-2.5 text-xs text-white placeholder:text-white/40 focus:border-white/50 focus:outline-none focus:ring-1 focus:ring-white/20 shadow-inner transition-all"
                 />
                 {searchQuery && (
                   <button
@@ -972,7 +969,7 @@ export default function LiveEventManager() {
                 onClick={() => setActiveFilter("all")}
                 className={`rounded-xl px-4 py-2 text-xs font-bold uppercase tracking-wider transition-all whitespace-nowrap cursor-pointer font-[family-name:var(--font-google-sans)] ${
                   activeFilter === "all"
-                    ? "bg-[#f20089] text-white shadow-lg shadow-[#f20089]/30 scale-105"
+                    ? "bg-white text-black font-bold shadow-md shadow-white/10 scale-105"
                     : "bg-white/[0.06] text-white/70 hover:text-white hover:bg-white/15 border border-white/10"
                 }`}
               >
@@ -1044,12 +1041,12 @@ export default function LiveEventManager() {
           {/* Registered Teams Grid */}
           {loadingTeams ? (
             <div className="py-20 text-center">
-              <div className="inline-block h-8 w-8 animate-spin rounded-full border-2 border-[#f20089] border-t-transparent mb-4" />
+              <div className="inline-block h-8 w-8 animate-spin rounded-full border-2 border-white border-t-transparent mb-4" />
               <p className="text-sm text-white/50 font-mono">Loading registered teams for this event...</p>
             </div>
           ) : filteredTeams.length === 0 ? (
-            <div className="rounded-3xl border border-white/15 bg-gradient-to-b from-white/[0.06] via-white/[0.02] to-transparent p-12 text-center backdrop-blur-2xl shadow-xl">
-              <div className="text-4xl mb-3">👥</div>
+            <div className="rounded-3xl border border-white/15 bg-[#0e0e12] p-12 text-center shadow-2xl">
+              <Users className="h-10 w-10 text-neutral-400 mx-auto mb-3" />
               <h3 className="text-lg font-bold text-white font-[family-name:var(--font-google-sans)] mb-2">
                 No Teams in this View
               </h3>
@@ -1060,26 +1057,28 @@ export default function LiveEventManager() {
                   ? "No teams have registered for this event yet. You can add walk-in teams using the 'Register Team' button."
                   : "No teams match the selected filter tab."}
               </p>
-              <button
+              <Button
                 type="button"
+                variant="default"
+                size="default"
+                className="font-[family-name:var(--font-google-sans)]"
                 onClick={() => setShowAddTeamModal(true)}
-                className="rounded-2xl bg-gradient-to-r from-[#f20089] to-purple-600 hover:from-[#ff1a9b] hover:to-purple-500 px-6 py-2.5 text-xs font-bold text-white shadow-lg shadow-[#f20089]/30 transition-all hover:scale-105 cursor-pointer font-[family-name:var(--font-google-sans)]"
               >
                 + Register First Walk-In Team
-              </button>
+              </Button>
             </div>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               {filteredTeams.map((team) => (
                 <div
                   key={team.id}
-                  className="group relative overflow-hidden rounded-3xl border border-white/15 bg-gradient-to-b from-white/[0.08] via-white/[0.03] to-black/30 p-6 backdrop-blur-2xl hover:border-[#f20089]/60 hover:shadow-[0_20px_45px_rgba(242,0,137,0.15)] transition-all duration-300 flex flex-col justify-between shadow-xl"
+                  className="group relative overflow-hidden rounded-3xl border border-white/15 bg-[#0e0e12] hover:bg-[#15151c] p-6 hover:border-white/40 hover:shadow-[0_20px_45px_rgba(0,0,0,0.8)] transition-all duration-300 flex flex-col justify-between shadow-2xl"
                 >
                   <div
                     className={`pointer-events-none absolute inset-x-0 top-0 h-[2px] ${
                       team.checkedIn
                         ? "bg-gradient-to-r from-transparent via-emerald-400 to-transparent"
-                        : "bg-gradient-to-r from-transparent via-[#f20089] to-transparent"
+                        : "bg-gradient-to-r from-transparent via-white/40 to-transparent"
                     }`}
                   />
 
@@ -1088,7 +1087,7 @@ export default function LiveEventManager() {
                     <div className="flex flex-wrap items-center justify-between gap-2 mb-4">
                       {/* Code Badge */}
                       <div className="flex items-center gap-1.5">
-                        <span className="font-mono text-xs font-bold tracking-wider rounded-xl bg-[#f20089]/15 border border-[#f20089]/40 text-pink-300 px-3 py-1 shadow-sm">
+                        <span className="font-mono text-xs font-bold tracking-wider rounded-xl bg-white/10 border border-white/20 text-white px-3 py-1 shadow-sm">
                           {team.teamCode}
                         </span>
                         <button
@@ -1161,8 +1160,8 @@ export default function LiveEventManager() {
                         {team.teamName}
                       </h3>
                       {team.ventureName ? (
-                        <div className="flex items-center gap-1.5 text-xs text-[#f20089] font-medium mb-2">
-                          <Lightbulb className="h-3.5 w-3.5 text-[#f20089]" />
+                        <div className="flex items-center gap-1.5 text-xs text-amber-400 font-medium mb-2">
+                          <Lightbulb className="h-3.5 w-3.5 text-amber-400" />
                           <span className="truncate">{team.ventureName}</span>
                         </div>
                       ) : (
@@ -1177,7 +1176,7 @@ export default function LiveEventManager() {
                     </div>
 
                     {/* Leader Details Card */}
-                    <div className="rounded-2xl border border-white/10 bg-white/[0.04] p-4 mb-4 backdrop-blur-md">
+                    <div className="rounded-2xl border border-white/10 bg-[#16161d] p-4 mb-4 shadow-inner">
                       <div className="flex items-center justify-between mb-2">
                         <span className="text-[10px] uppercase font-bold text-white/60 tracking-wider font-mono">
                           Team Leader
@@ -1196,9 +1195,9 @@ export default function LiveEventManager() {
                       <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-white/70 font-mono">
                         <a
                           href={`mailto:${team.lead.email}`}
-                          className="hover:text-[#f20089] transition-colors flex items-center gap-1"
+                          className="hover:text-white transition-colors flex items-center gap-1"
                         >
-                          <Mail className="h-3.5 w-3.5 text-pink-400" />
+                          <Mail className="h-3.5 w-3.5 text-neutral-400" />
                           <span className="truncate max-w-[180px]">{team.lead.email}</span>
                         </a>
                         {team.lead.phone && (
@@ -1225,7 +1224,7 @@ export default function LiveEventManager() {
                           {team.members.map((member, idx) => (
                             <div
                               key={idx}
-                              className="rounded-xl border border-white/10 bg-white/[0.03] p-2.5 text-xs flex flex-col justify-between backdrop-blur-sm"
+                              className="rounded-xl border border-white/10 bg-[#16161d] p-2.5 text-xs flex flex-col justify-between shadow-inner"
                             >
                               <div className="font-semibold text-white truncate font-[family-name:var(--font-google-sans)]">
                                 {member.name || "Co-Founder"}
@@ -1242,7 +1241,7 @@ export default function LiveEventManager() {
                           ))}
                         </div>
                       ) : (
-                        <div className="rounded-xl border border-white/10 bg-white/[0.02] p-3 text-xs text-white/50 italic">
+                        <div className="rounded-xl border border-white/10 bg-[#16161d] p-3 text-xs text-white/50 italic">
                           No additional team members joined yet.
                         </div>
                       )}
@@ -1314,8 +1313,8 @@ export default function LiveEventManager() {
 
           {/* MODAL 1: TEAM FULL DOSSIER INSPECTOR */}
           {inspectingTeam && (
-            <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/85 backdrop-blur-2xl animate-in fade-in duration-200">
-              <div className="relative w-full max-w-2xl max-h-[90vh] overflow-y-auto rounded-[2.5rem] border border-white/20 bg-neutral-950/95 p-6 sm:p-8 shadow-2xl backdrop-blur-3xl">
+            <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/90 animate-in fade-in duration-200">
+              <div className="relative w-full max-w-2xl max-h-[90vh] overflow-y-auto rounded-[2.5rem] border border-white/20 bg-[#0e0e12] p-6 sm:p-8 shadow-2xl">
                 <button
                   type="button"
                   onClick={() => setInspectingTeam(null)}
@@ -1326,7 +1325,7 @@ export default function LiveEventManager() {
 
                 <div className="border-b border-white/10 pb-6 mb-6">
                   <div className="flex items-center gap-2 mb-2">
-                    <span className="font-mono text-xs font-bold rounded-xl bg-[#f20089]/20 border border-[#f20089]/40 text-pink-300 px-3 py-1">
+                    <span className="font-mono text-xs font-bold rounded-xl bg-white/10 border border-white/20 text-white px-3 py-1">
                       {inspectingTeam.teamCode}
                     </span>
                     <span
@@ -1344,8 +1343,8 @@ export default function LiveEventManager() {
                     {inspectingTeam.teamName}
                   </h2>
                   {inspectingTeam.ventureName && (
-                    <p className="text-sm text-[#f20089] font-medium mt-1 inline-flex items-center gap-1.5">
-                      <Lightbulb className="h-3.5 w-3.5 text-[#f20089]" />
+                    <p className="text-sm text-amber-400 font-medium mt-1 inline-flex items-center gap-1.5">
+                      <Lightbulb className="h-3.5 w-3.5 text-amber-400" />
                       <span>Project: {inspectingTeam.ventureName}</span>
                     </p>
                   )}
@@ -1354,7 +1353,7 @@ export default function LiveEventManager() {
                   </p>
                 </div>
 
-                <div className="rounded-2xl border border-white/15 bg-white/[0.04] p-5 mb-6 backdrop-blur-md">
+                <div className="rounded-2xl border border-white/15 bg-[#16161d] p-5 mb-6 shadow-inner">
                   <h4 className="text-xs font-mono font-bold uppercase tracking-wider text-white/60 mb-3">
                     Team Leader Information
                   </h4>
@@ -1367,7 +1366,7 @@ export default function LiveEventManager() {
                       <span className="text-white/40 block">Email Address:</span>
                       <a
                         href={`mailto:${inspectingTeam.lead.email}`}
-                        className="text-[#f20089] hover:underline"
+                        className="text-white hover:underline"
                       >
                         {inspectingTeam.lead.email}
                       </a>
@@ -1398,7 +1397,7 @@ export default function LiveEventManager() {
                       {inspectingTeam.members.map((member, i) => (
                         <div
                           key={i}
-                          className="rounded-2xl border border-white/10 bg-white/[0.03] p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs font-mono"
+                          className="rounded-2xl border border-white/10 bg-[#16161d] p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs font-mono shadow-inner"
                         >
                           <div>
                             <div className="text-sm font-bold text-white font-sans">
@@ -1410,7 +1409,12 @@ export default function LiveEventManager() {
                             )}
                           </div>
                           <div className="text-right sm:text-right text-white/50 text-[11px]">
-                            {member.phone && <div>📞 {member.phone}</div>}
+                            {member.phone && (
+                              <div className="flex items-center gap-1 justify-end">
+                                <Phone className="h-3 w-3 text-emerald-400" />
+                                <span>{member.phone}</span>
+                              </div>
+                            )}
                             {member.roll && <div>Roll: {member.roll}</div>}
                           </div>
                         </div>
@@ -1462,8 +1466,8 @@ export default function LiveEventManager() {
 
           {/* MODAL 2: REGISTER WALK-IN TEAM */}
           {showAddTeamModal && (
-            <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/85 backdrop-blur-2xl animate-in fade-in duration-200">
-              <div className="relative w-full max-w-2xl max-h-[90vh] overflow-y-auto rounded-[2.5rem] border border-white/20 bg-neutral-950/95 p-6 sm:p-8 shadow-2xl backdrop-blur-3xl">
+            <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/90 animate-in fade-in duration-200">
+              <div className="relative w-full max-w-2xl max-h-[90vh] overflow-y-auto rounded-[2.5rem] border border-white/20 bg-[#0e0e12] p-6 sm:p-8 shadow-2xl">
                 <button
                   type="button"
                   onClick={() => setShowAddTeamModal(false)}
@@ -1473,7 +1477,7 @@ export default function LiveEventManager() {
                 </button>
 
                 <div className="border-b border-white/10 pb-4 mb-6">
-                  <span className="rounded-full bg-[#f20089]/20 border border-[#f20089]/40 text-pink-300 text-[10px] font-bold uppercase tracking-wider px-3 py-0.5">
+                  <span className="rounded-full bg-white/10 border border-white/20 text-white text-[10px] font-bold uppercase tracking-wider px-3 py-0.5">
                     Walk-In / Stage Registration
                   </span>
                   <h2 className="text-2xl font-black text-white font-[family-name:var(--font-google-sans)] mt-2">
@@ -1488,7 +1492,7 @@ export default function LiveEventManager() {
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div>
                       <label className="block text-xs font-mono text-white/70 mb-1">
-                        Team Name <span className="text-[#f20089]">*</span>
+                        Team Name <span className="text-red-400">*</span>
                       </label>
                       <input
                         type="text"
@@ -1496,7 +1500,7 @@ export default function LiveEventManager() {
                         value={newTeam.teamName}
                         onChange={(e) => setNewTeam({ ...newTeam, teamName: e.target.value })}
                         placeholder="e.g. SolarBloom"
-                        className="w-full rounded-xl border border-white/15 bg-white/[0.06] px-3.5 py-2 text-xs text-white placeholder:text-white/30 focus:border-[#f20089] focus:outline-none"
+                        className="w-full rounded-xl border border-white/15 bg-[#16161d] px-3.5 py-2 text-xs text-white placeholder:text-white/30 focus:border-white/50 focus:outline-none shadow-inner"
                       />
                     </div>
                     <div>
@@ -1508,12 +1512,12 @@ export default function LiveEventManager() {
                         value={newTeam.ventureName}
                         onChange={(e) => setNewTeam({ ...newTeam, ventureName: e.target.value })}
                         placeholder="e.g. Decentralized Clean Water"
-                        className="w-full rounded-xl border border-white/15 bg-white/[0.06] px-3.5 py-2 text-xs text-white placeholder:text-white/30 focus:border-[#f20089] focus:outline-none"
+                        className="w-full rounded-xl border border-white/15 bg-[#16161d] px-3.5 py-2 text-xs text-white placeholder:text-white/30 focus:border-white/50 focus:outline-none shadow-inner"
                       />
                     </div>
                   </div>
 
-                  <div className="rounded-2xl border border-white/15 bg-white/[0.04] p-4 space-y-3 backdrop-blur-md">
+                  <div className="rounded-2xl border border-white/15 bg-[#16161d] p-4 space-y-3 shadow-inner">
                     <span className="text-xs font-bold text-white uppercase tracking-wider font-mono">
                       Team Leader Details
                     </span>
@@ -1521,7 +1525,7 @@ export default function LiveEventManager() {
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                       <div>
                         <label className="block text-[11px] font-mono text-white/60 mb-1">
-                          Leader Name <span className="text-[#f20089]">*</span>
+                          Leader Name <span className="text-red-400">*</span>
                         </label>
                         <input
                           type="text"
@@ -1529,13 +1533,13 @@ export default function LiveEventManager() {
                           value={newTeam.leadName}
                           onChange={(e) => setNewTeam({ ...newTeam, leadName: e.target.value })}
                           placeholder="Leader full name"
-                          className="w-full rounded-xl border border-white/15 bg-white/[0.06] px-3 py-2 text-xs text-white focus:border-[#f20089] focus:outline-none"
+                          className="w-full rounded-xl border border-white/15 bg-[#121217] px-3 py-2 text-xs text-white focus:border-white/50 focus:outline-none shadow-inner"
                         />
                       </div>
 
                       <div>
                         <label className="block text-[11px] font-mono text-white/60 mb-1">
-                          Leader Email <span className="text-[#f20089]">*</span>
+                          Leader Email <span className="text-red-400">*</span>
                         </label>
                         <input
                           type="email"
@@ -1543,7 +1547,7 @@ export default function LiveEventManager() {
                           value={newTeam.leadEmail}
                           onChange={(e) => setNewTeam({ ...newTeam, leadEmail: e.target.value })}
                           placeholder="leader@heritageit.edu.in"
-                          className="w-full rounded-xl border border-white/15 bg-white/[0.06] px-3 py-2 text-xs text-white focus:border-[#f20089] focus:outline-none"
+                          className="w-full rounded-xl border border-white/15 bg-[#121217] px-3 py-2 text-xs text-white focus:border-white/50 focus:outline-none shadow-inner"
                         />
                       </div>
 
@@ -1556,7 +1560,7 @@ export default function LiveEventManager() {
                           value={newTeam.leadPhone}
                           onChange={(e) => setNewTeam({ ...newTeam, leadPhone: e.target.value })}
                           placeholder="+91 98765 43210"
-                          className="w-full rounded-xl border border-white/15 bg-white/[0.06] px-3 py-2 text-xs text-white focus:border-[#f20089] focus:outline-none"
+                          className="w-full rounded-xl border border-white/15 bg-[#121217] px-3 py-2 text-xs text-white focus:border-white/50 focus:outline-none shadow-inner"
                         />
                       </div>
 
@@ -1569,13 +1573,13 @@ export default function LiveEventManager() {
                           value={newTeam.department}
                           onChange={(e) => setNewTeam({ ...newTeam, department: e.target.value })}
                           placeholder="CSE, ECE, Biotechnology..."
-                          className="w-full rounded-xl border border-white/15 bg-white/[0.06] px-3 py-2 text-xs text-white focus:border-[#f20089] focus:outline-none"
+                          className="w-full rounded-xl border border-white/15 bg-[#121217] px-3 py-2 text-xs text-white focus:border-white/50 focus:outline-none shadow-inner"
                         />
                       </div>
                     </div>
                   </div>
 
-                  <div className="rounded-2xl border border-white/15 bg-white/[0.04] p-4 space-y-3 backdrop-blur-md">
+                  <div className="rounded-2xl border border-white/15 bg-[#16161d] p-4 space-y-3 shadow-inner">
                     <span className="text-xs font-bold text-white uppercase tracking-wider font-mono">
                       Co-Founders / Members (Optional)
                     </span>
@@ -1591,7 +1595,7 @@ export default function LiveEventManager() {
                             updated[idx].name = e.target.value;
                             setNewTeam({ ...newTeam, members: updated });
                           }}
-                          className="rounded-xl border border-white/15 bg-white/[0.05] px-3 py-1.5 text-xs text-white placeholder:text-white/30 focus:border-[#f20089] focus:outline-none"
+                          className="rounded-xl border border-white/15 bg-[#121217] px-3 py-1.5 text-xs text-white placeholder:text-white/30 focus:border-white/50 focus:outline-none shadow-inner"
                         />
                         <input
                           type="email"
@@ -1602,26 +1606,29 @@ export default function LiveEventManager() {
                             updated[idx].email = e.target.value;
                             setNewTeam({ ...newTeam, members: updated });
                           }}
-                          className="rounded-xl border border-white/15 bg-white/[0.05] px-3 py-1.5 text-xs text-white placeholder:text-white/30 focus:border-[#f20089] focus:outline-none"
+                          className="rounded-xl border border-white/15 bg-[#121217] px-3 py-1.5 text-xs text-white placeholder:text-white/30 focus:border-white/50 focus:outline-none shadow-inner"
                         />
                       </div>
                     ))}
                   </div>
 
                   <div className="pt-4 border-t border-white/10 flex items-center justify-end gap-3">
-                    <button
+                    <Button
                       type="button"
+                      variant="outline"
+                      size="default"
                       onClick={() => setShowAddTeamModal(false)}
-                      className="rounded-xl bg-white/[0.08] hover:bg-white/15 px-4 py-2 text-xs font-bold text-white cursor-pointer"
                     >
                       Cancel
-                    </button>
-                    <button
+                    </Button>
+                    <Button
                       type="submit"
-                      className="rounded-xl bg-gradient-to-r from-[#f20089] to-purple-600 hover:from-[#ff1a9b] hover:to-purple-500 px-6 py-2 text-xs font-bold text-white shadow-lg shadow-[#f20089]/40 hover:scale-105 transition-all cursor-pointer font-[family-name:var(--font-google-sans)]"
+                      variant="default"
+                      size="default"
+                      className="font-[family-name:var(--font-google-sans)]"
                     >
                       Confirm Registration
-                    </button>
+                    </Button>
                   </div>
                 </form>
               </div>
@@ -1694,8 +1701,8 @@ export default function LiveEventManager() {
           {/* MODAL 3: ADMIN GRACE CLEARANCE MODAL (/lgic)                              */}
           {/* ========================================================================= */}
           {showGraceModal && graceTeam && (
-            <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-2xl flex items-center justify-center p-4 animate-fadeIn">
-              <div className="relative overflow-hidden rounded-[2rem] border border-purple-500/40 bg-neutral-900 p-6 sm:p-8 max-w-md w-full space-y-5 shadow-2xl">
+            <div className="fixed inset-0 z-50 bg-black/90 flex items-center justify-center p-4 animate-fadeIn">
+              <div className="relative overflow-hidden rounded-[2rem] border border-purple-500/40 bg-[#0e0e12] p-6 sm:p-8 max-w-md w-full space-y-5 shadow-2xl">
                 <button
                   type="button"
                   onClick={() => {
@@ -1729,7 +1736,7 @@ export default function LiveEventManager() {
                     value={graceNote}
                     onChange={(e) => setGraceNote(e.target.value)}
                     placeholder="e.g. Member absent due to illness, approved by lead admin"
-                    className="w-full rounded-xl border border-white/15 bg-white/[0.06] px-3.5 py-2.5 text-xs text-white placeholder-white/30 focus:border-[#f20089] focus:outline-none"
+                    className="w-full rounded-xl border border-white/15 bg-[#16161d] px-3.5 py-2.5 text-xs text-white placeholder-white/30 focus:border-white/50 focus:outline-none shadow-inner"
                   />
                 </div>
 
