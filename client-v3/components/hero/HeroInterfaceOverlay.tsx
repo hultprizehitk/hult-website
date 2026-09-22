@@ -4,6 +4,7 @@ import React, { useState, useEffect } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { ArrowRight, Play } from "lucide-react";
+import { useSession, signOut } from "next-auth/react";
 
 interface HeroInterfaceOverlayProps {
   scrollProgress?: number;
@@ -227,6 +228,7 @@ export default function HeroInterfaceOverlay({ scrollProgress = 0 }: HeroInterfa
 }
 
 export function HeroCenterpiece({ scrollProgress = 0 }: HeroInterfaceOverlayProps) {
+  const { data: session, status } = useSession();
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
@@ -308,10 +310,10 @@ export function HeroCenterpiece({ scrollProgress = 0 }: HeroInterfaceOverlayProp
           }`}
         >
           <Link
-            href="/register"
+            href={status === "authenticated" ? "/profile" : "/register"}
             className="flex items-center gap-2 rounded-full bg-white hover:bg-neutral-100 px-8 py-3.5 text-sm font-semibold text-neutral-950 shadow-xl shadow-black/40 border border-white/80 transition-all duration-300 hover:scale-105 active:scale-95 cursor-pointer"
           >
-            <span>Be the Change</span>
+            <span>{status === "authenticated" ? "View Student Pass" : "Be the Change"}</span>
             <ArrowRight className="h-4 w-4" />
           </Link>
         </div>
@@ -321,6 +323,9 @@ export function HeroCenterpiece({ scrollProgress = 0 }: HeroInterfaceOverlayProp
 }
 
 export function HeroNavbar() {
+  const { data: session, status } = useSession();
+  const firstName = session?.user?.name ? session.user.name.split(" ")[0] : "Student";
+
   return (
     <header className="absolute top-0 left-0 right-0 z-40 flex items-center justify-between px-6 sm:px-10 md:px-14 py-5 bg-transparent text-white pointer-events-auto select-none">
       {/* Brand Lockup Left */}
@@ -370,17 +375,38 @@ export function HeroNavbar() {
       </nav>
 
       {/* Right CTA Group */}
-      <div className="flex items-center gap-4 select-none">
+      <div className="flex items-center gap-3 sm:gap-4 select-none">
         <span className="hidden lg:inline-block font-serif italic text-xs text-white/70 tracking-wide drop-shadow-[0_1px_4px_rgba(0,0,0,0.6)]">
           Ideas for a Brighter Tomorrow
         </span>
-        <Link
-          href="/register"
-          className="flex items-center gap-2 rounded-full bg-white hover:bg-neutral-100 px-5 py-2 text-xs font-semibold text-neutral-950 shadow-md shadow-black/30 border border-white/80 transition-all duration-300 hover:scale-105 active:scale-95"
-        >
-          <span>Register Now</span>
-          <ArrowRight className="h-3.5 w-3.5" />
-        </Link>
+
+        {status === "authenticated" && session?.user ? (
+          <div className="flex items-center gap-2 sm:gap-3">
+            <Link
+              href="/profile"
+              className="flex items-center gap-2 rounded-full bg-white/10 hover:bg-white/20 backdrop-blur-md px-3.5 py-1.5 sm:px-4 sm:py-2 text-xs font-semibold text-white border border-white/25 shadow-md transition-all duration-200 hover:border-white/50"
+              title="View Student Profile"
+            >
+              <span className="h-2 w-2 rounded-full bg-emerald-400 animate-pulse" />
+              <span className="max-w-[100px] sm:max-w-[130px] truncate">{firstName}</span>
+            </Link>
+            <button
+              type="button"
+              onClick={() => signOut({ callbackUrl: "/" })}
+              className="text-xs text-white/70 hover:text-white transition-colors duration-200 px-2 py-1 cursor-pointer font-medium"
+            >
+              Sign Out
+            </button>
+          </div>
+        ) : (
+          <Link
+            href="/register"
+            className="flex items-center gap-2 rounded-full bg-white hover:bg-neutral-100 px-5 py-2 text-xs font-semibold text-neutral-950 shadow-md shadow-black/30 border border-white/80 transition-all duration-300 hover:scale-105 active:scale-95"
+          >
+            <span>Register Now</span>
+            <ArrowRight className="h-3.5 w-3.5" />
+          </Link>
+        )}
       </div>
     </header>
   );

@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from "react";
 import Image from "next/image";
 import Link from "next/link";
+import { useSession, signOut } from "next-auth/react";
 
 interface SiteHeaderProps {
   className?: string;
@@ -19,6 +20,7 @@ export default function SiteHeader({
   theme = "dark",
   isLandingRevealed = true,
 }: SiteHeaderProps) {
+  const { data: session, status } = useSession();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
 
@@ -43,6 +45,8 @@ export default function SiteHeader({
   const visibilityClass = isLandingRevealed
     ? "opacity-100 translate-y-0"
     : "opacity-0 -translate-y-4 pointer-events-none";
+
+  const firstName = session?.user?.name ? session.user.name.split(" ")[0] : "Student";
 
   return (
     <>
@@ -102,23 +106,64 @@ export default function SiteHeader({
             Ideas for a Brighter Tomorrow
           </span>
 
-          <Link
-            href="/register"
-            className="rounded-full bg-neutral-900 hover:bg-neutral-800 px-4 sm:px-5 py-1.5 sm:py-2 text-xs sm:text-sm font-bold tracking-wide text-white shadow-lg shadow-neutral-900/20 border border-neutral-700 transition-all duration-200 hover:scale-[1.05] active:scale-[0.98] inline-flex items-center gap-1.5"
-          >
-            <span>Register Now</span>
-            <span>→</span>
-          </Link>
+          {status === "authenticated" && session?.user ? (
+            <div className="flex items-center gap-3">
+              <Link
+                href="/profile"
+                className={`inline-flex items-center gap-1.5 rounded-full border px-3.5 py-1.5 text-xs font-bold shadow-sm hover:scale-[1.02] transition-all ${
+                  theme === "light"
+                    ? "border-[#2b161f]/20 bg-[#2b161f]/5 hover:bg-[#2b161f]/10 text-[#2b161f]"
+                    : "border-white/20 bg-white/10 hover:bg-white/15 text-white"
+                }`}
+                title="View Student Profile"
+              >
+                <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                <span>{firstName}</span>
+              </Link>
+              <button
+                type="button"
+                onClick={() => signOut({ callbackUrl: "/register" })}
+                className={`text-xs font-semibold transition-colors cursor-pointer ${
+                  theme === "light"
+                    ? "text-[#2b161f]/70 hover:text-neutral-950"
+                    : "text-white/70 hover:text-white"
+                }`}
+              >
+                Sign Out
+              </button>
+            </div>
+          ) : (
+            <Link
+              href="/register"
+              className="rounded-full bg-neutral-900 hover:bg-neutral-800 px-4 sm:px-5 py-1.5 sm:py-2 text-xs sm:text-sm font-bold tracking-wide text-white shadow-lg shadow-neutral-900/20 border border-neutral-700 transition-all duration-200 hover:scale-[1.05] active:scale-[0.98] inline-flex items-center gap-1.5"
+            >
+              <span>Register Now</span>
+              <span>→</span>
+            </Link>
+          )}
         </nav>
 
-        {/* Mobile Right Bar: Register + Hamburger Button */}
+        {/* Mobile Right Bar */}
         <div className="flex md:hidden items-center gap-2">
-          <Link
-            href="/register"
-            className="rounded-full bg-neutral-900 hover:bg-neutral-800 px-3.5 py-1.5 text-[11px] font-bold tracking-wide text-white shadow-md shadow-neutral-900/20 border border-neutral-700 active:scale-95"
-          >
-            Register
-          </Link>
+          {status === "authenticated" && session?.user ? (
+            <Link
+              href="/profile"
+              className={`rounded-full border px-3 py-1.5 text-[11px] font-bold tracking-wide shadow-md active:scale-95 ${
+                theme === "light"
+                  ? "border-[#2b161f]/20 bg-[#2b161f]/5 text-[#2b161f]"
+                  : "border-white/20 bg-white/[0.1] text-white"
+              }`}
+            >
+              {firstName}
+            </Link>
+          ) : (
+            <Link
+              href="/register"
+              className="rounded-full bg-neutral-900 hover:bg-neutral-800 px-3.5 py-1.5 text-[11px] font-bold tracking-wide text-white shadow-md shadow-neutral-900/20 border border-neutral-700 active:scale-95"
+            >
+              Register
+            </Link>
+          )}
           <button
             type="button"
             onClick={() => setMobileMenuOpen((prev) => !prev)}
@@ -169,20 +214,35 @@ export default function SiteHeader({
           >
             Organizing Team
           </Link>
-          <Link
-            href="/register"
-            onClick={() => setMobileMenuOpen(false)}
-            className="text-base font-semibold text-white/90 hover:text-white py-2 border-b border-white/5 transition-colors"
-          >
-            Student Portal & Registration
-          </Link>
-          <Link
-            href="/profile"
-            onClick={() => setMobileMenuOpen(false)}
-            className="text-base font-semibold text-white/90 hover:text-white py-2 border-b border-white/5 transition-colors"
-          >
-            Student Digital ID
-          </Link>
+          {status === "authenticated" ? (
+            <>
+              <Link
+                href="/profile"
+                onClick={() => setMobileMenuOpen(false)}
+                className="text-base font-semibold text-white/90 hover:text-white py-2 border-b border-white/5 transition-colors"
+              >
+                Student Profile &amp; Pass
+              </Link>
+              <button
+                type="button"
+                onClick={() => {
+                  setMobileMenuOpen(false);
+                  signOut({ callbackUrl: "/register" });
+                }}
+                className="text-left text-base font-semibold text-rose-400 py-2 transition-colors cursor-pointer"
+              >
+                Sign Out
+              </button>
+            </>
+          ) : (
+            <Link
+              href="/register"
+              onClick={() => setMobileMenuOpen(false)}
+              className="text-base font-semibold text-white/90 hover:text-white py-2 border-b border-white/5 transition-colors"
+            >
+              Student Portal &amp; Registration
+            </Link>
+          )}
         </div>
       )}
     </>
