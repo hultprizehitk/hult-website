@@ -85,18 +85,28 @@ export default function SiteHeader({
             href="/"
             className={`text-xs sm:text-sm font-semibold tracking-wide transition-colors duration-200 ${
               theme === "light"
-                ? "text-[#2b161f]/85 hover:text-[#e60067]"
+                ? "text-[#2b161f]/85 hover:text-neutral-950"
                 : "text-white/85 drop-shadow hover:text-white"
             }`}
           >
             Home
           </Link>
 
+          <a
+            href="#about"
+            className={`text-xs sm:text-sm font-semibold tracking-wide transition-colors duration-200 ${
+              theme === "light"
+                ? "text-[#2b161f]/85 hover:text-neutral-950"
+                : "text-white/85 drop-shadow hover:text-white"
+            }`}
+          >
+            About
+          </a>
           <Link
             href="/events"
             className={`text-xs sm:text-sm font-semibold tracking-wide transition-colors duration-200 ${
               theme === "light"
-                ? "text-[#2b161f]/85 hover:text-[#e60067]"
+                ? "text-[#2b161f]/85 hover:text-neutral-950"
                 : "text-white/85 drop-shadow hover:text-white"
             }`}
           >
@@ -107,19 +117,23 @@ export default function SiteHeader({
             href="/team"
             className={`text-xs sm:text-sm font-semibold tracking-wide transition-colors duration-200 ${
               theme === "light"
-                ? "text-[#2b161f]/85 hover:text-[#e60067]"
+                ? "text-[#2b161f]/85 hover:text-neutral-950"
                 : "text-white/85 drop-shadow hover:text-white"
             }`}
           >
             Team
           </Link>
 
+          <span className="hidden xl:inline text-xs font-serif italic text-white/60 tracking-wider">
+            Ideas for a Brighter Tomorrow
+          </span>
+
           {status === "authenticated" && session?.user ? (
             <div className="flex items-center gap-3">
               {isAdmin && (
                 <Link
                   href="/portal"
-                  className="inline-flex items-center gap-1 rounded-full border border-[#f20089]/60 bg-[#f20089]/20 hover:bg-[#f20089]/30 px-3 py-1.5 text-xs font-mono font-bold text-pink-300 hover:text-white transition-all shadow-sm hover:scale-[1.02]"
+                  className="inline-flex items-center gap-1 rounded-full border border-neutral-700 bg-neutral-800/80 hover:bg-neutral-800 px-3 py-1.5 text-xs font-mono font-bold text-neutral-200 hover:text-white transition-all shadow-sm hover:scale-[1.02]"
                 >
                   <span>
                     {userRole === "master_admin"
@@ -139,7 +153,7 @@ export default function SiteHeader({
                 }`}
                 title="View User Profile"
               >
-                <span className="h-1.5 w-1.5 rounded-full bg-[#f20089]" />
+                <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
                 {session.user.name?.split(" ")[0]}
               </Link>
               <button
@@ -147,7 +161,7 @@ export default function SiteHeader({
                 onClick={() => signOut()}
                 className={`text-xs font-semibold transition-colors cursor-pointer ${
                   theme === "light"
-                    ? "text-[#2b161f]/70 hover:text-[#e60067]"
+                    ? "text-[#2b161f]/70 hover:text-neutral-950"
                     : "text-white/70 hover:text-white"
                 }`}
               >
@@ -157,9 +171,10 @@ export default function SiteHeader({
           ) : (
             <Link
               href="/register"
-              className="rounded-full bg-[#f20089] hover:bg-[#d8007a] px-4 sm:px-5 py-1.5 sm:py-2 text-xs sm:text-sm font-bold tracking-wide text-white shadow-lg shadow-[#f20089]/40 transition-all duration-200 hover:scale-[1.05] active:scale-[0.98]"
+              className="rounded-full bg-neutral-900 hover:bg-neutral-800 px-4 sm:px-5 py-1.5 sm:py-2 text-xs sm:text-sm font-bold tracking-wide text-white shadow-lg shadow-neutral-900/20 border border-neutral-700 transition-all duration-200 hover:scale-[1.05] active:scale-[0.98] inline-flex items-center gap-1.5"
             >
-              Register Now
+              <span>Register Now</span>
+              <span>→</span>
             </Link>
           )}
         </nav>
@@ -171,7 +186,7 @@ export default function SiteHeader({
               {isAdmin && (
                 <Link
                   href="/portal"
-                  className="rounded-full bg-[#f20089]/20 border border-[#f20089]/50 px-2.5 py-1 text-[10px] font-mono font-bold text-pink-200 uppercase tracking-wider"
+                  className="rounded-full bg-neutral-800 border border-neutral-700 px-2.5 py-1 text-[10px] font-mono font-bold text-neutral-200 uppercase tracking-wider"
                 >
                   Admin CMS
                 </Link>
@@ -190,7 +205,7 @@ export default function SiteHeader({
           ) : (
             <Link
               href="/register"
-              className="rounded-full bg-[#f20089] hover:bg-[#d8007a] px-3.5 py-1.5 text-[11px] font-bold tracking-wide text-white shadow-md shadow-[#f20089]/40 active:scale-95"
+              className="rounded-full bg-neutral-900 hover:bg-neutral-800 px-3.5 py-1.5 text-[11px] font-bold tracking-wide text-white shadow-md shadow-neutral-900/20 border border-neutral-700 active:scale-95"
             >
               Register
             </Link>
@@ -206,12 +221,12 @@ export default function SiteHeader({
             }`}
           >
             {mobileMenuOpen ? (
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+              <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
               </svg>
             ) : (
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5" />
+              <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
               </svg>
             )}
           </button>
@@ -227,28 +242,28 @@ export default function SiteHeader({
           <Link
             href="/"
             onClick={() => setMobileMenuOpen(false)}
-            className="text-base font-semibold text-white/90 hover:text-[#f20089] py-2 border-b border-white/5 transition-colors"
+            className="text-base font-semibold text-white/90 hover:text-white py-2 border-b border-white/5 transition-colors"
           >
             Home
           </Link>
           <Link
             href="/events"
             onClick={() => setMobileMenuOpen(false)}
-            className="text-base font-semibold text-white/90 hover:text-[#f20089] py-2 border-b border-white/5 transition-colors"
+            className="text-base font-semibold text-white/90 hover:text-white py-2 border-b border-white/5 transition-colors"
           >
             Events Calendar
           </Link>
           <Link
             href="/team"
             onClick={() => setMobileMenuOpen(false)}
-            className="text-base font-semibold text-white/90 hover:text-[#f20089] py-2 border-b border-white/5 transition-colors"
+            className="text-base font-semibold text-white/90 hover:text-white py-2 border-b border-white/5 transition-colors"
           >
             Organizing Team
           </Link>
           <Link
             href="/register"
             onClick={() => setMobileMenuOpen(false)}
-            className="text-base font-semibold text-white/90 hover:text-[#f20089] py-2 border-b border-white/5 transition-colors"
+            className="text-base font-semibold text-white/90 hover:text-white py-2 border-b border-white/5 transition-colors"
           >
             Team Registration
           </Link>
@@ -257,7 +272,7 @@ export default function SiteHeader({
               <Link
                 href="/profile"
                 onClick={() => setMobileMenuOpen(false)}
-                className="text-base font-semibold text-white/90 hover:text-[#f20089] py-2 border-b border-white/5 transition-colors"
+                className="text-base font-semibold text-white/90 hover:text-white py-2 border-b border-white/5 transition-colors"
               >
                 Student Profile & Pass
               </Link>
@@ -265,7 +280,7 @@ export default function SiteHeader({
                 <Link
                   href="/portal"
                   onClick={() => setMobileMenuOpen(false)}
-                  className="text-base font-semibold text-pink-300 hover:text-white py-2 border-b border-white/5 transition-colors"
+                  className="text-base font-semibold text-neutral-300 hover:text-white py-2 border-b border-white/5 transition-colors"
                 >
                   Admin CMS Portal
                 </Link>

@@ -57,17 +57,17 @@ export default function HeroInterfaceOverlay({ scrollProgress = 0 }: HeroInterfa
           font-family: 'Caveat', cursive;
         }
 
-        /* HULT: #211B1C → #6F302B → #241D1E at roughly 148° */
+        /* HULT: Deep Heritage Charcoal-Black */
         .hult-title-gradient {
-          background: linear-gradient(148deg, #211B1C 0%, #6F302B 52%, #241D1E 100%);
+          background: linear-gradient(148deg, #090d16 0%, #1e293b 52%, #0f172a 100%);
           -webkit-background-clip: text;
           -webkit-text-fill-color: transparent;
           display: inline-block;
         }
 
-        /* PRIZE: #F6A0AE → #E96F82 → #D9435B at roughly 148° */
+        /* PRIZE: Deep Monumental Heritage Charcoal-Slate */
         .prize-title-gradient {
-          background: linear-gradient(148deg, #F6A0AE 0%, #E96F82 48%, #D9435B 100%);
+          background: linear-gradient(148deg, #090d16 0%, #1e293b 50%, #0f172a 100%);
           -webkit-background-clip: text;
           -webkit-text-fill-color: transparent;
           display: inline-block;
@@ -75,214 +75,7 @@ export default function HeroInterfaceOverlay({ scrollProgress = 0 }: HeroInterfa
       `}</style>
 
       {/* ========================================================= */}
-      {/* 1. TOP NAVBAR (z-[90])                                    */}
-      {/* ========================================================= */}
-      <header
-        className={`fixed top-0 left-0 right-0 z-[90] flex items-center justify-between px-6 sm:px-10 md:px-14 py-4 transition-all duration-700 ease-out pointer-events-auto ${
-          mounted ? "translate-y-0 opacity-100" : "-translate-y-4 opacity-0"
-        } ${
-          isScrolled
-            ? "bg-white/85 backdrop-blur-xl border-b border-[#6F302B]/15 shadow-lg shadow-[#6F302B]/5 text-neutral-900"
-            : "bg-transparent text-neutral-900"
-        }`}
-      >
-        {/* Brand Lockup Left */}
-        <div className="flex items-center gap-3 select-none">
-          {/* Official EF Hult Prize Logo */}
-          <Link href="/" className="flex items-center gap-2 group">
-            <div className="relative h-9 w-[54px] transition-transform duration-300 group-hover:scale-105">
-              <Image
-                src="/ef-hult-prize-logo.png"
-                alt="EF Hult Prize Logo"
-                fill
-                sizes="54px"
-                className="object-contain"
-                priority
-              />
-            </div>
-          </Link>
-
-          {/* Thin Hairline Divider */}
-          <div className="h-6 w-px bg-[#6F302B]/20" />
-
-          {/* 25 Heritage Institute of Technology Badge */}
-          <div className="flex items-center gap-2">
-            <span className="font-hult-serif text-2xl font-bold leading-none text-neutral-900">
-              25
-            </span>
-            <div className="flex flex-col text-[8.5px] font-semibold uppercase tracking-[0.14em] leading-tight max-w-[125px] text-neutral-800">
-              <span>Heritage</span>
-              <span>Institute of Technology</span>
-            </div>
-          </div>
-        </div>
-
-        {/* Navigation Links Center */}
-        <nav className="hidden md:flex items-center gap-8 text-[13px] font-medium select-none text-neutral-800">
-          <Link
-            href="/"
-            className="relative transition-colors duration-200 hover:text-[#e60067] after:absolute after:-bottom-1 after:left-0 after:h-[1.5px] after:w-0 after:bg-[#e60067] hover:after:w-full after:transition-all after:duration-200"
-          >
-            Home
-          </Link>
-          <Link
-            href="#about"
-            className="relative transition-colors duration-200 hover:text-[#e60067] after:absolute after:-bottom-1 after:left-0 after:h-[1.5px] after:w-0 after:bg-[#e60067] hover:after:w-full after:transition-all after:duration-200"
-          >
-            About
-          </Link>
-          <Link
-            href="/events"
-            className="relative transition-colors duration-200 hover:text-[#e60067] after:absolute after:-bottom-1 after:left-0 after:h-[1.5px] after:w-0 after:bg-[#e60067] hover:after:w-full after:transition-all after:duration-200"
-          >
-            Events
-          </Link>
-        </nav>
-
-        {/* Right CTA Group */}
-        <div className="flex items-center gap-4 select-none">
-          <span className="hidden lg:inline-block font-serif italic text-xs text-neutral-500 tracking-wide">
-            Ideas for a Brighter Tomorrow
-          </span>
-          <Link
-            href="/register"
-            className="flex items-center gap-2 rounded-full bg-gradient-to-r from-[#e60067] via-[#db155a] to-[#c70b4c] px-5 py-2 text-xs font-semibold text-white shadow-md shadow-pink-600/20 transition-all duration-300 hover:scale-105 hover:shadow-pink-600/40 active:scale-95"
-          >
-            <span>Register Now</span>
-            <ArrowRight className="h-3.5 w-3.5" />
-          </Link>
-        </div>
-      </header>
-
-      {/* ========================================================= */}
-      {/* 2. CENTERPIECE MONUMENTAL TYPOGRAPHY (z-[55])             */}
-      {/* ========================================================= */}
-      <div
-        className="absolute inset-0 z-[55] flex flex-col items-center justify-center pointer-events-none select-none px-4 transition-transform duration-75 ease-out"
-        style={{
-          opacity: contentOpacity,
-          transform: `translate3d(0, ${-scrollProgress * 110}px, 0) scale(${Math.max(0.88, 1 - scrollProgress * 0.08)})`,
-        }}
-      >
-        {/* Subtle warm radial glow behind letters */}
-        <div
-          className={`absolute pointer-events-none -z-10 transition-opacity duration-1000 ${
-            mounted ? "opacity-100" : "opacity-0"
-          }`}
-          style={{
-            top: "32%",
-            left: "52%",
-            width: "420px",
-            height: "280px",
-            background:
-              "radial-gradient(ellipse at center, rgba(246, 160, 174, 0.26) 0%, rgba(233, 111, 130, 0.16) 42%, rgba(111, 48, 43, 0.08) 68%, transparent 85%)",
-            filter: "blur(38px)",
-            transform: "translate3d(-15%, -8%, 0)",
-          }}
-        />
-
-        {/* Top Eyebrow Hairline Bar (Entrance Slide Down) */}
-        <div
-          className={`flex items-center gap-3 sm:gap-4 mb-2 sm:mb-3 transition-all duration-1000 delay-300 ease-out ${
-            mounted ? "opacity-95 translate-y-0" : "opacity-0 -translate-y-3"
-          }`}
-        >
-          <span className="h-px w-10 sm:w-16 bg-neutral-800/30" />
-          <span className="text-[10px] sm:text-xs font-semibold tracking-[0.28em] text-neutral-800 uppercase">
-            A Global Movement For A Better Tomorrow
-          </span>
-          <span className="h-px w-10 sm:w-16 bg-neutral-800/30" />
-        </div>
-
-        {/* Main Double-Row Headline */}
-        <div className="relative flex flex-col items-center text-center leading-[0.82] tracking-tight">
-          {/* Row 1: HULT (Entrance glide down from top) */}
-          <div
-            className={`relative transition-all duration-1000 delay-500 ease-out ${
-              mounted ? "opacity-100 translate-y-0" : "opacity-0 -translate-y-6"
-            }`}
-          >
-            <h1 className="font-jomolhari text-6xl xs:text-7xl sm:text-8xl md:text-9xl lg:text-[10.8rem] xl:text-[12.2rem] font-normal tracking-tight hult-title-gradient drop-shadow-[0_2px_18px_rgba(0,0,0,0.08)]">
-              HULT
-            </h1>
-
-            {/* Resting Sakura Petal on letter 'U'/'L' junction (Flutter drop entrance) */}
-            <div
-              className={`absolute bottom-[4%] left-[44%] w-8 h-8 sm:w-12 sm:h-12 pointer-events-none drop-shadow-md transition-all duration-1000 delay-1000 ease-out ${
-                mounted ? "opacity-100 scale-100 rotate-[-22deg]" : "opacity-0 scale-50 rotate-[-75deg] translate-y-[-15px]"
-              }`}
-            >
-              <svg viewBox="0 0 100 100" fill="none" className="w-full h-full">
-                <path
-                  d="M50 12 C72 16, 92 38, 85 66 C79 84, 58 89, 46 85 C28 77, 18 56, 22 34 C25 18, 36 9, 50 12 Z"
-                  fill="url(#restingPetalGrad)"
-                />
-                <path
-                  d="M48 18 Q55 48 46 78"
-                  stroke="rgba(255,255,255,0.45)"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                />
-              </svg>
-            </div>
-          </div>
-
-          {/* Row 2: PRIZE™ (Entrance glide up from bottom) */}
-          <div
-            className={`relative -mt-3 sm:-mt-6 md:-mt-9 lg:-mt-11 transition-all duration-1000 delay-700 ease-out ${
-              mounted ? "opacity-100 translate-y-0" : "opacity-0 translate-y-6"
-            }`}
-          >
-            <span className="font-jomolhari text-6xl xs:text-7xl sm:text-8xl md:text-9xl lg:text-[10.8rem] xl:text-[12.2rem] font-normal tracking-tight prize-title-gradient drop-shadow-[0_4px_24px_rgba(233,111,130,0.22)]">
-              PRIZE
-            </span>
-          </div>
-        </div>
-
-        {/* Lower Subtitle (Entrance fade in) */}
-        <div
-          className={`mt-4 sm:mt-5 flex flex-col items-center text-center font-semibold text-[10px] sm:text-xs tracking-[0.3em] text-neutral-800 uppercase leading-snug transition-all duration-1000 delay-900 ease-out ${
-            mounted ? "opacity-100 translate-y-0" : "opacity-0 translate-y-3"
-          }`}
-        >
-          <span>Turning Bold Ideas</span>
-          <span>Into A Brighter Tomorrow</span>
-        </div>
-
-        {/* Dual Call-to-Action Buttons (Entrance slide up) */}
-        <div
-          className={`mt-6 sm:mt-7 flex items-center gap-4 pointer-events-auto transition-all duration-1000 delay-1100 ease-out ${
-            mounted ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"
-          }`}
-        >
-          {/* Primary Pill Button */}
-          <Link
-            href="/register"
-            className="flex items-center gap-2 rounded-full bg-gradient-to-r from-[#e60067] via-[#dc165b] to-[#c70b4c] px-7 py-3 text-xs sm:text-sm font-semibold text-white shadow-lg shadow-pink-600/30 transition-all duration-300 hover:scale-105 hover:shadow-pink-600/50 active:scale-95"
-          >
-            <span>Be the Change</span>
-            <ArrowRight className="h-4 w-4" />
-          </Link>
-
-          {/* Secondary Watch Video Button */}
-          <button
-            type="button"
-            className="group flex items-center gap-2.5 text-xs sm:text-sm font-semibold text-neutral-800 transition-colors duration-200 hover:text-[#df286a] cursor-pointer"
-            onClick={() => {
-              const el = document.getElementById("about");
-              if (el) el.scrollIntoView({ behavior: "smooth" });
-            }}
-          >
-            <span className="flex h-9 w-9 items-center justify-center rounded-full border border-neutral-400/60 bg-white/60 shadow-sm backdrop-blur-sm transition-transform duration-200 group-hover:scale-110 group-hover:border-[#df286a]/80 group-hover:bg-white">
-              <Play className="h-3.5 w-3.5 fill-current text-neutral-800 transition-colors group-hover:text-[#df286a] ml-0.5" />
-            </span>
-            <span>Explore Details</span>
-          </button>
-        </div>
-      </div>
-
-      {/* ========================================================= */}
-      {/* 3. LEFT COLUMN ACCENTS (z-[55])                           */}
+      {/* 1. LEFT COLUMN ACCENTS (z-[55])                           */}
       {/* ========================================================= */}
       <div
         className={`absolute left-6 sm:left-10 top-1/2 -translate-y-1/2 z-[55] hidden sm:flex flex-col items-center pointer-events-none select-none transition-all duration-1000 delay-800 ease-out ${
@@ -359,14 +152,14 @@ export default function HeroInterfaceOverlay({ scrollProgress = 0 }: HeroInterfa
             const el = document.getElementById("about");
             if (el) el.scrollIntoView({ behavior: "smooth" });
           }}
-          className="flex items-center gap-2 text-neutral-700 hover:text-[#e60067] transition-colors pointer-events-auto cursor-pointer group"
+          className="flex items-center gap-2 text-neutral-700 hover:text-neutral-950 transition-colors pointer-events-auto cursor-pointer group"
           aria-label="Scroll down to About section"
         >
-          <div className="h-7 w-5 rounded-full border border-neutral-600/70 p-0.5 flex justify-center group-hover:border-[#e60067]">
-            <span className="h-1.5 w-0.5 rounded-full bg-neutral-700 group-hover:bg-[#e60067] animate-bounce" />
+          <div className="h-7 w-5 rounded-full border border-neutral-600/70 p-0.5 flex justify-center group-hover:border-neutral-900">
+            <span className="h-1.5 w-0.5 rounded-full bg-neutral-700 group-hover:bg-neutral-900 animate-bounce" />
           </div>
           <div className="flex flex-col text-[9px] leading-none tracking-widest font-semibold uppercase text-left">
-            <span className="text-neutral-900 group-hover:text-[#e60067]">Scroll</span>
+            <span className="text-neutral-900 group-hover:text-black">Scroll</span>
             <span className="text-neutral-500 lowercase text-[8px]">to explore</span>
           </div>
         </button>
@@ -387,7 +180,7 @@ export default function HeroInterfaceOverlay({ scrollProgress = 0 }: HeroInterfa
               href="https://instagram.com"
               target="_blank"
               rel="noopener noreferrer"
-              className="transition-colors hover:text-[#df286a]"
+              className="transition-colors hover:text-neutral-950"
               aria-label="Instagram"
             >
               <svg className="h-3.5 w-3.5 fill-current" viewBox="0 0 24 24">
@@ -398,7 +191,7 @@ export default function HeroInterfaceOverlay({ scrollProgress = 0 }: HeroInterfa
               href="https://linkedin.com"
               target="_blank"
               rel="noopener noreferrer"
-              className="transition-colors hover:text-[#df286a]"
+              className="transition-colors hover:text-neutral-950"
               aria-label="LinkedIn"
             >
               <svg className="h-3.5 w-3.5 fill-current" viewBox="0 0 24 24">
@@ -409,7 +202,7 @@ export default function HeroInterfaceOverlay({ scrollProgress = 0 }: HeroInterfa
               href="https://youtube.com"
               target="_blank"
               rel="noopener noreferrer"
-              className="transition-colors hover:text-[#df286a]"
+              className="transition-colors hover:text-neutral-950"
               aria-label="YouTube"
             >
               <svg className="h-3.5 w-3.5 fill-current" viewBox="0 0 24 24">
@@ -424,5 +217,171 @@ export default function HeroInterfaceOverlay({ scrollProgress = 0 }: HeroInterfa
         </div>
       </footer>
     </>
+  );
+}
+
+export function HeroCenterpiece({ scrollProgress = 0 }: HeroInterfaceOverlayProps) {
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    const timer = setTimeout(() => setMounted(true), 60);
+    return () => clearTimeout(timer);
+  }, []);
+
+  const contentOpacity = Math.max(0, 1 - scrollProgress * 2.2);
+
+  return (
+    <>
+      {/* Centerpiece Monumental Typography at z-index 8 (layered behind Z09 and Z10 people) */}
+      <div
+        className="absolute inset-0 z-[8] flex flex-col items-center justify-center pt-12 sm:pt-16 pointer-events-none select-none px-4 transition-transform duration-75 ease-out"
+        style={{
+          opacity: contentOpacity,
+          transform: `translate3d(0, ${-scrollProgress * 110}px, 0) scale(${Math.max(0.88, 1 - scrollProgress * 0.08)})`,
+        }}
+      >
+        {/* Subtle neutral radial glow behind letters */}
+        <div
+          className={`absolute pointer-events-none -z-10 transition-opacity duration-1000 ${
+            mounted ? "opacity-100" : "opacity-0"
+          }`}
+          style={{
+            top: "32%",
+            left: "52%",
+            width: "420px",
+            height: "280px",
+            background:
+              "radial-gradient(ellipse at center, rgba(15, 23, 42, 0.04) 0%, rgba(15, 23, 42, 0.01) 42%, transparent 75%)",
+            filter: "blur(38px)",
+            transform: "translate3d(-15%, -8%, 0)",
+          }}
+        />
+
+        {/* Top Eyebrow Hairline Bar (Entrance Slide Down) */}
+        <div
+          className={`flex items-center gap-3 sm:gap-4 mb-2 sm:mb-3 transition-all duration-1000 delay-300 ease-out ${
+            mounted ? "opacity-95 translate-y-0" : "opacity-0 -translate-y-3"
+          }`}
+        >
+          <span className="h-px w-10 sm:w-16 bg-white/50" />
+          <span className="text-[10px] sm:text-xs font-semibold tracking-[0.28em] text-white uppercase drop-shadow-[0_1px_8px_rgba(0,0,0,0.7)]">
+            A Global Movement For A Better Tomorrow
+          </span>
+          <span className="h-px w-10 sm:w-16 bg-white/50" />
+        </div>
+
+        {/* Main Double-Row Headline */}
+        <div className="relative flex flex-col items-center text-center leading-[0.82] tracking-tight">
+          {/* Row 1: HULT (Entrance glide down from top) */}
+          <div
+            className={`relative transition-all duration-1000 delay-500 ease-out ${
+              mounted ? "opacity-100 translate-y-0" : "opacity-0 -translate-y-6"
+            }`}
+          >
+            <h1 className="font-jomolhari text-4xl xs:text-5xl sm:text-7xl md:text-8xl lg:text-[9rem] xl:text-[10rem] font-normal tracking-tight hult-title-gradient drop-shadow-[0_2px_18px_rgba(0,0,0,0.08)]">
+              HULT
+            </h1>
+          </div>
+
+          {/* Row 2: PRIZE™ (Entrance glide up from bottom) */}
+          <div
+            className={`relative mt-1 sm:mt-2 md:mt-3 transition-all duration-1000 delay-700 ease-out ${
+              mounted ? "opacity-100 translate-y-0" : "opacity-0 translate-y-6"
+            }`}
+          >
+            <span className="font-jomolhari text-4xl xs:text-5xl sm:text-7xl md:text-8xl lg:text-[9rem] xl:text-[10rem] font-normal tracking-tight prize-title-gradient drop-shadow-[0_2px_18px_rgba(0,0,0,0.08)]">
+              PRIZE
+            </span>
+          </div>
+        </div>
+
+        {/* Primary CTA — standalone, high z-index, no backing box */}
+        <div
+          className={`relative z-[60] mt-6 sm:mt-8 pointer-events-auto transition-all duration-1000 delay-900 ease-out ${
+            mounted ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"
+          }`}
+        >
+          <Link
+            href="/register"
+            className="flex items-center gap-2 rounded-full bg-neutral-900 hover:bg-neutral-800 px-8 py-3.5 text-sm font-semibold text-white shadow-xl shadow-neutral-900/40 border border-neutral-700/50 transition-all duration-300 hover:scale-105 active:scale-95"
+          >
+            <span>Be the Change</span>
+            <ArrowRight className="h-4 w-4" />
+          </Link>
+        </div>
+      </div>
+    </>
+  );
+}
+
+export function HeroNavbar() {
+  return (
+    <header className="absolute top-0 left-0 right-0 z-40 flex items-center justify-between px-6 sm:px-10 md:px-14 py-5 bg-transparent text-neutral-900 pointer-events-auto select-none">
+      {/* Brand Lockup Left */}
+      <div className="flex items-center gap-3 select-none">
+        <Link href="/" className="flex items-center gap-2 group">
+          <div className="relative h-9 w-[54px] transition-transform duration-300 group-hover:scale-105">
+            <Image
+              src="/ef-hult-prize-logo.png"
+              alt="EF Hult Prize Logo"
+              fill
+              sizes="54px"
+              className="object-contain"
+              priority
+            />
+          </div>
+        </Link>
+
+        {/* Thin Hairline Divider */}
+        <div className="h-6 w-px bg-[#6F302B]/20" />
+
+        {/* 25 Heritage Institute of Technology Badge */}
+        <div className="flex items-center gap-2">
+          <span className="font-hult-serif text-2xl font-bold leading-none text-neutral-900">
+            25
+          </span>
+          <div className="flex flex-col text-[8.5px] font-semibold uppercase tracking-[0.14em] leading-tight max-w-[125px] text-neutral-800">
+            <span>Heritage</span>
+            <span>Institute of Technology</span>
+          </div>
+        </div>
+      </div>
+
+      {/* Navigation Links Center */}
+      <nav className="hidden md:flex items-center gap-8 text-[13px] font-medium select-none text-neutral-800">
+        <Link
+          href="/"
+          className="relative transition-colors duration-200 hover:text-neutral-900 after:absolute after:-bottom-1 after:left-0 after:h-[1.5px] after:w-0 after:bg-neutral-900 hover:after:w-full after:transition-all after:duration-200"
+        >
+          Home
+        </Link>
+        <Link
+          href="#about"
+          className="relative transition-colors duration-200 hover:text-neutral-900 after:absolute after:-bottom-1 after:left-0 after:h-[1.5px] after:w-0 after:bg-neutral-900 hover:after:w-full after:transition-all after:duration-200"
+        >
+          About
+        </Link>
+        <Link
+          href="/events"
+          className="relative transition-colors duration-200 hover:text-neutral-900 after:absolute after:-bottom-1 after:left-0 after:h-[1.5px] after:w-0 after:bg-neutral-900 hover:after:w-full after:transition-all after:duration-200"
+        >
+          Events
+        </Link>
+      </nav>
+
+      {/* Right CTA Group */}
+      <div className="flex items-center gap-4 select-none">
+        <span className="hidden lg:inline-block font-serif italic text-xs text-neutral-500 tracking-wide">
+          Ideas for a Brighter Tomorrow
+        </span>
+        <Link
+          href="/register"
+          className="flex items-center gap-2 rounded-full bg-neutral-900 hover:bg-neutral-800 px-5 py-2 text-xs font-semibold text-white shadow-md shadow-neutral-900/20 border border-neutral-700/40 transition-all duration-300 hover:scale-105 active:scale-95"
+        >
+          <span>Register Now</span>
+          <ArrowRight className="h-3.5 w-3.5" />
+        </Link>
+      </div>
+    </header>
   );
 }

@@ -1,7 +1,22 @@
 import type { Metadata } from "next";
-import { Montserrat, Geist, Geist_Mono, Anton, Pirata_One, Cinzel_Decorative, Rye } from "next/font/google";
+import { Montserrat, Geist, Geist_Mono, Anton, Pirata_One, Cinzel_Decorative, Rye, Playfair_Display, Cinzel } from "next/font/google";
 import localFont from "next/font/local";
 import "./globals.css";
+
+const playfair = Playfair_Display({
+  variable: "--font-playfair",
+  subsets: ["latin"],
+  weight: ["400", "600", "700", "800", "900"],
+  style: ["normal", "italic"],
+  display: "swap",
+});
+
+const cinzel = Cinzel({
+  variable: "--font-cinzel",
+  subsets: ["latin"],
+  weight: ["400", "600", "700", "800", "900"],
+  display: "swap",
+});
 
 const blubly = localFont({
   src: "../public/Blubly Demo.otf",
@@ -137,7 +152,7 @@ export default function RootLayout({
     <html
       lang="en"
       data-scroll-behavior="smooth"
-      className={`${blubly.variable} ${montserrat.variable} ${anton.variable} ${googleSans.variable} ${pirataOne.variable} ${cinzelDecorative.variable} ${rye.variable} ${geistSans.variable} ${geistMono.variable} h-full antialiased`}
+      className={`${playfair.variable} ${cinzel.variable} ${blubly.variable} ${montserrat.variable} ${anton.variable} ${googleSans.variable} ${pirataOne.variable} ${cinzelDecorative.variable} ${rye.variable} ${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
       <body className="min-h-full flex flex-col font-sans">
         <SessionProvider>

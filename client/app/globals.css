@@ -8,8 +8,10 @@
   --font-sans: var(--font-google-sans), var(--font-geist-sans), -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
   --font-syne: var(--font-google-sans), "Google Sans", sans-serif;
   --font-google-sans: var(--font-google-sans), "Google Sans", sans-serif;
-  --font-pirata: var(--font-pirata), serif;
+  --font-serif: var(--font-playfair), var(--font-cinzel), Georgia, serif;
+  --font-playfair: var(--font-playfair), Georgia, serif;
   --font-cinzel: var(--font-cinzel), serif;
+  --font-pirata: var(--font-pirata), serif;
   --font-rye: var(--font-rye), serif;
   --font-blubly: var(--font-blubly), var(--font-anton), Impact, sans-serif;
   --font-anton: var(--font-anton), Impact, sans-serif;

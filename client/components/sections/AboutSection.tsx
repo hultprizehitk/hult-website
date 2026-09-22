@@ -1,7 +1,6 @@
 "use client";
 
 import React from "react";
-import Image from "next/image";
 import ScrollReveal from "@/components/ui/ScrollReveal";
 import { Trophy, Globe2, Rocket, Sparkles, ArrowUpRight, Target, Compass, ShieldCheck } from "lucide-react";
 
@@ -68,45 +67,43 @@ export default function AboutSection() {
   return (
     <section
       id="about"
-      className="relative w-full py-24 sm:py-32 px-6 sm:px-12 lg:px-20 overflow-hidden z-10 selection:bg-[#f20089] selection:text-white font-[family-name:var(--font-google-sans)] bg-gradient-to-b from-[#07070b] via-[#0b0811] to-[#07070b]"
+      className="relative w-full py-24 sm:py-32 px-6 sm:px-12 lg:px-20 overflow-hidden z-10 selection:bg-[#f20089] selection:text-white font-[family-name:var(--font-google-sans)]"
     >
-      {/* Background Ambience & Heritage Ceremony Blend */}
-      <div className="absolute inset-0 z-0 pointer-events-none">
-        <Image
-          src="/about-section.png"
-          alt="Hult Prize OnCampus Ceremony at Heritage Institute of Technology"
-          fill
-          sizes="100vw"
-          className="object-cover object-center opacity-15 mix-blend-screen"
-        />
-        <div className="absolute inset-0 bg-gradient-to-b from-[#07070b] via-[#07070b]/75 to-[#07070b]" />
-        <div className="absolute inset-0 bg-radial from-pink-950/20 via-transparent to-[#07070b]" />
-
-        {/* Ambient radial lighting orbs */}
-        <div className="absolute top-1/4 left-1/2 -translate-x-1/2 w-[700px] h-[350px] bg-[#f20089]/10 blur-[130px] rounded-full pointer-events-none" />
+      {/* Soft Ambient Radial Lighting */}
+      <div className="absolute inset-0 pointer-events-none">
+        <div className="absolute top-0 left-1/4 w-[600px] h-[400px] bg-pink-500/10 rounded-full blur-[140px]" />
+        <div className="absolute bottom-0 right-1/4 w-[500px] h-[350px] bg-purple-500/10 rounded-full blur-[140px]" />
       </div>
 
-      <div className="relative z-10 max-w-7xl mx-auto space-y-16">
-        {/* Section Header */}
+      <div className="relative z-10 max-w-7xl mx-auto">
         <ScrollReveal direction="up">
-          <div className="max-w-3xl space-y-4">
-            <div className="inline-flex items-center gap-2 rounded-full border border-pink-500/30 bg-pink-950/40 backdrop-blur-xl px-4 py-1.5 shadow-inner">
-              <span className="h-1.5 w-1.5 rounded-full bg-[#f20089] animate-pulse" />
-              <span className="font-mono text-[10px] font-bold uppercase tracking-[0.25em] text-pink-300">
-                ONCAMPUS CHAPTER / HERITAGE INSTITUTE OF TECHNOLOGY
-              </span>
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 lg:gap-16 items-start">
+            {/* Left Column: Chapter Badge & High-Contrast Serif Headline */}
+            <div className="lg:col-span-7 space-y-5">
+              <div className="inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/[0.05] backdrop-blur-xl px-4 py-1.5 text-[11px] font-mono font-bold uppercase tracking-[0.25em] text-pink-300 shadow-inner">
+                <span className="h-2 w-2 rounded-full bg-[#f20089] animate-pulse" />
+                <span>01 / OnCampus Chapter</span>
+              </div>
+
+              <h2 className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-serif font-bold tracking-tight text-white leading-[1.08] drop-shadow-sm">
+                Catalyzing Student Founders For A Brighter World
+              </h2>
             </div>
 
-            <h2 className="text-3xl sm:text-5xl md:text-6xl font-black tracking-tight text-white leading-[1.08]">
-              Catalyzing Student Founders for{" "}
-              <span className="bg-gradient-to-r from-white via-pink-200 to-[#f20089] bg-clip-text text-transparent">
-                Global Impact
-              </span>
-            </h2>
+            {/* Right Column: Narrative & Italic Motto */}
+            <div className="lg:col-span-5 lg:pt-14 space-y-6">
+              <p className="text-base sm:text-lg text-white/80 font-sans leading-relaxed font-normal">
+                The world&apos;s premier student social entrepreneurship incubator at{" "}
+                <strong className="text-white font-semibold">Heritage Institute of Technology</strong>, turning bold
+                ideas into scalable, investment-ready enterprises.
+              </p>
 
-            <p className="text-sm sm:text-base md:text-lg text-white/80 font-sans font-normal leading-relaxed">
-              The premier student entrepreneurship incubator at Heritage Institute of Technology, empowering university founders to transform bold ideas into scalable, investment-ready enterprises.
-            </p>
+              <div className="pt-2 border-t border-white/10">
+                <p className="text-lg sm:text-xl font-serif italic text-pink-200/90 tracking-wide">
+                  Ideas for a brighter tomorrow
+                </p>
+              </div>
+            </div>
           </div>
         </ScrollReveal>
 
