@@ -12,8 +12,6 @@ import type { PublicEvent } from "@/types";
 
 export type { PublicEvent };
 
-const TEAMS_STORAGE_KEY = "hult_v3_registered_teams";
-
 export default function EventsPage() {
   const { data: session, status } = useSession();
 
@@ -42,33 +40,6 @@ export default function EventsPage() {
     setEvents(SEED_EVENTS);
     setLoading(false);
   }, []);
-
-  // ── Load user registrations from client storage ──────────────────────────
-  useEffect(() => {
-    if (status !== "authenticated" || !session?.user?.email) return;
-    try {
-      const raw = localStorage.getItem(TEAMS_STORAGE_KEY);
-      if (raw) {
-        const teams: any[] = JSON.parse(raw);
-        const userEmail = session.user.email.toLowerCase();
-        const map: Record<string, any> = {};
-
-        teams.forEach((team) => {
-          const isLeader = team.leadEmail?.toLowerCase() === userEmail;
-          const isMember = (team.members || []).some(
-            (m: any) => m.email?.toLowerCase() === userEmail
-          );
-          if ((isLeader || isMember) && team.eventId) {
-            map[team.eventId] = team;
-          }
-        });
-
-        setUserRegistrations(map);
-      }
-    } catch {
-      // storage unavailable
-    }
-  }, [status, session]);
 
   // ── Navigation helpers ───────────────────────────────────────────────────
   const handleSelectEvent = (event: PublicEvent) => {

@@ -14,8 +14,8 @@ import { parseHeritageEmail } from "@/lib/heritage-parser";
  * Student identity portal, re-skinned in the "Kolkata" theme.
  *
  * Frontend-only note: Google OAuth + MongoDB arrive with the backend. Until
- * then a verified-college-email entry is the signing path — the supplied email
- * is parsed via @/lib/heritage-parser and persisted to a localStorage session
+ * When a Heritage email is submitted (e.g. 2024student@heritageit.edu.in), it
+ * is parsed via @/lib/heritage-parser and stored in active session state.
  * by @/lib/auth-client. Swap for OAuth when the API lands.
  */
 
@@ -65,9 +65,6 @@ export default function RegisterPage() {
     }
 
     setIsSigningIn(true);
-    try {
-      sessionStorage.setItem("hult_intro_played", "true");
-    } catch {}
     signIn("college-email", { email: email.trim(), callbackUrl: "/profile" });
   };
 

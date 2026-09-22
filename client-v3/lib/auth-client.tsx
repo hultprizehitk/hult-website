@@ -8,8 +8,6 @@ import React, {
 } from "react";
 import { parseHeritageEmail } from "@/lib/heritage-parser";
 
-const SESSION_KEY = "hult_v3_session";
-
 export interface SessionUser {
   name?: string | null;
   email?: string | null;
@@ -26,34 +24,8 @@ type Status = "loading" | "authenticated" | "unauthenticated";
 
 const NO_SESSION: Session | null = null;
 
-function readStoredSession(): Session | null {
-  if (typeof window === "undefined") return null;
-  try {
-    const raw = window.localStorage.getItem(SESSION_KEY);
-    if (!raw) return null;
-    const parsed = JSON.parse(raw) as Session;
-    if (!parsed?.user?.email) return null;
-    return parsed;
-  } catch {
-    return null;
-  }
-}
-
-function writeStoredSession(session: Session | null) {
-  if (typeof window === "undefined") return;
-  try {
-    if (session) {
-      window.localStorage.setItem(SESSION_KEY, JSON.stringify(session));
-    } else {
-      window.localStorage.removeItem(SESSION_KEY);
-    }
-  } catch {
-    // storage may be blocked
-  }
-}
-
-let cachedSession: Session | null =
-  typeof window !== "undefined" ? readStoredSession() : null;
+// In-memory session store (no localStorage persistence)
+let currentSession: Session | null = null;
 const sessionListeners = new Set<() => void>();
 
 function emitSessionChange() {
@@ -61,25 +33,18 @@ function emitSessionChange() {
 }
 
 function updateSession(session: Session | null) {
-  cachedSession = session;
-  writeStoredSession(session);
+  currentSession = session;
   emitSessionChange();
 }
 
 function getSessionSnapshot(): Session | null {
-  return cachedSession;
+  return currentSession;
 }
 
 function subscribeSession(listener: () => void) {
   sessionListeners.add(listener);
-  const onStorage = () => {
-    cachedSession = readStoredSession();
-    emitSessionChange();
-  };
-  window.addEventListener("storage", onStorage);
   return () => {
     sessionListeners.delete(listener);
-    window.removeEventListener("storage", onStorage);
   };
 }
 

@@ -17,46 +17,9 @@ interface UseEventRegistrationProps {
   onRegisterSuccess: (teamData: any) => void;
 }
 
-const TEAMS_STORAGE_KEY = "hult_v3_registered_teams";
-const RSVPS_STORAGE_KEY = "hult_v3_event_rsvps";
-
-function getStoredTeams(): any[] {
-  if (typeof window === "undefined") return [];
-  try {
-    const raw = localStorage.getItem(TEAMS_STORAGE_KEY);
-    return raw ? JSON.parse(raw) : [];
-  } catch {
-    return [];
-  }
-}
-
-function saveStoredTeams(teams: any[]) {
-  if (typeof window === "undefined") return;
-  try {
-    localStorage.setItem(TEAMS_STORAGE_KEY, JSON.stringify(teams));
-  } catch {
-    // storage unavailable
-  }
-}
-
-function getStoredRsvps(): Record<string, string[]> {
-  if (typeof window === "undefined") return {};
-  try {
-    const raw = localStorage.getItem(RSVPS_STORAGE_KEY);
-    return raw ? JSON.parse(raw) : {};
-  } catch {
-    return {};
-  }
-}
-
-function saveStoredRsvps(rsvps: Record<string, string[]>) {
-  if (typeof window === "undefined") return;
-  try {
-    localStorage.setItem(RSVPS_STORAGE_KEY, JSON.stringify(rsvps));
-  } catch {
-    // storage unavailable
-  }
-}
+// In-memory data structures (Zero localStorage, ready for DB hookup)
+let inMemoryTeams: any[] = [];
+let inMemoryRsvps: Record<string, string[]> = {};
 
 export function useEventRegistration({
   event,
@@ -106,8 +69,7 @@ export function useEventRegistration({
   // Fetch RSVP status if user has a registered team
   const fetchRsvpStatus = useCallback(() => {
     if (!registeredTeam || !event._id || !sessionUser?.email) return;
-    const rsvps = getStoredRsvps();
-    const eventRsvps = rsvps[event._id] || [];
+    const eventRsvps = inMemoryRsvps[event._id] || [];
     const userRsvpd = eventRsvps.includes(sessionUser.email.toLowerCase());
 
     const totalRoster = 1 + (registeredTeam?.members?.length || 0);
@@ -154,12 +116,10 @@ export function useEventRegistration({
     setErrorMessage(null);
 
     try {
-      const rsvps = getStoredRsvps();
-      const current = rsvps[event._id] || [];
+      const current = inMemoryRsvps[event._id] || [];
       const email = sessionUser.email.toLowerCase();
       if (!current.includes(email)) {
-        rsvps[event._id] = [...current, email];
-        saveStoredRsvps(rsvps);
+        inMemoryRsvps[event._id] = [...current, email];
       }
       fetchRsvpStatus();
     } catch {
@@ -217,10 +177,7 @@ export function useEventRegistration({
         status: "confirmed",
       };
 
-      const teams = getStoredTeams();
-      teams.push(newTeam);
-      saveStoredTeams(teams);
-
+      inMemoryTeams.push(newTeam);
       onRegisterSuccess(newTeam);
     } catch {
       setErrorMessage("Failed to create team. Please try again.");
@@ -260,8 +217,7 @@ export function useEventRegistration({
     setLoading(true);
 
     try {
-      const teams = getStoredTeams();
-      const teamIndex = teams.findIndex(
+      const teamIndex = inMemoryTeams.findIndex(
         (t) => t.teamCode?.toUpperCase() === cleanCode && t.eventId === event._id
       );
 
@@ -269,7 +225,7 @@ export function useEventRegistration({
         throw new Error("Invalid team code for this event. Please verify the code.");
       }
 
-      const team = teams[teamIndex];
+      const team = inMemoryTeams[teamIndex];
       const userEmail = sessionUser.email.toLowerCase();
 
       if (team.leadEmail?.toLowerCase() === userEmail) {
@@ -297,8 +253,7 @@ export function useEventRegistration({
       };
 
       team.members = [...(team.members || []), newMember];
-      teams[teamIndex] = team;
-      saveStoredTeams(teams);
+      inMemoryTeams[teamIndex] = team;
 
       onRegisterSuccess(team);
     } catch (err: any) {
@@ -313,8 +268,7 @@ export function useEventRegistration({
     setRefreshing(true);
     try {
       if (!registeredTeam) return;
-      const teams = getStoredTeams();
-      const updated = teams.find(
+      const updated = inMemoryTeams.find(
         (t) => t.id === registeredTeam.id || t.teamCode === registeredTeam.teamCode
       );
       if (updated) {
