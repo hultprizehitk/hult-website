@@ -24,9 +24,9 @@ export default function HeroInterfaceOverlay({ scrollProgress = 0 }: HeroInterfa
 
   return (
     <>
-      {/* External Perandory, Bodoni Moda, & Script Calligraphy Fonts */}
+      {/* External Bodoni Moda, Cinzel, & Script Calligraphy Fonts */}
       <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Bodoni+Moda:ital,opsz,wght@0,6..96,700;0,6..96,800;0,6..96,900;1,6..96,700;1,6..96,800&family=Libre+Bodoni:ital,wght@0,700;1,700&family=Playfair+Display:ital,wght@0,700;0,800;0,900;1,600&family=Caveat:wght@600;700&family=Plus+Jakarta+Sans:wght@500;600;700;800&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Bodoni+Moda:ital,opsz,wght@0,6..96,700;0,6..96,800;0,6..96,900;1,6..96,700;1,6..96,800&family=Cinzel:wght@600;700;800;900&family=Playfair+Display:ital,wght@0,700;0,800;0,900;1,600&family=Caveat:wght@600;700&family=Plus+Jakarta+Sans:wght@500;600;700;800&display=swap');
 
         @font-face {
           font-family: 'Jomolhari';
@@ -36,41 +36,47 @@ export default function HeroInterfaceOverlay({ scrollProgress = 0 }: HeroInterfa
           font-display: swap;
         }
 
+        .font-monumental {
+          font-family: 'Cinzel', 'Bodoni Moda', 'Playfair Display', Georgia, serif;
+          letter-spacing: 0.03em;
+        }
+
         .font-jomolhari {
-          font-family: 'Jomolhari', 'Bodoni Moda', 'Playfair Display', Georgia, serif;
+          font-family: 'Cinzel', 'Bodoni Moda', 'Playfair Display', Georgia, serif;
         }
 
         .font-bodoni,
         .font-bidoni {
-          font-family: 'Jomolhari', 'Bodoni Moda', 'Libre Bodoni', 'Bodoni MT', Didot, serif;
+          font-family: 'Cinzel', 'Bodoni Moda', 'Playfair Display', Georgia, serif;
         }
 
         .font-del-rose {
-          font-family: 'DelRose', 'Bodoni Moda', 'Playfair Display', Georgia, serif;
+          font-family: 'DelRose', 'Cinzel', 'Bodoni Moda', Georgia, serif;
         }
 
         .font-hult-serif {
-          font-family: 'Bodoni Moda', 'Playfair Display', Georgia, serif;
+          font-family: 'Cinzel', 'Bodoni Moda', 'Playfair Display', Georgia, serif;
         }
 
         .font-hult-script {
           font-family: 'Caveat', cursive;
         }
 
-        /* HULT: Deep Heritage Charcoal-Black */
+        /* Luminous Light White / Platinum Ivory Headlines */
         .hult-title-gradient {
-          background: linear-gradient(148deg, #090d16 0%, #1e293b 52%, #0f172a 100%);
+          background: linear-gradient(180deg, #FFFFFF 0%, #F8FAFC 45%, #E2E8F0 80%, #CBD5E1 100%);
           -webkit-background-clip: text;
           -webkit-text-fill-color: transparent;
           display: inline-block;
+          filter: drop-shadow(0 2px 24px rgba(255, 255, 255, 0.28)) drop-shadow(0 8px 32px rgba(0, 0, 0, 0.85));
         }
 
-        /* PRIZE: Deep Monumental Heritage Charcoal-Slate */
         .prize-title-gradient {
-          background: linear-gradient(148deg, #090d16 0%, #1e293b 50%, #0f172a 100%);
+          background: linear-gradient(180deg, #FFFFFF 0%, #F8FAFC 45%, #E2E8F0 80%, #94A3B8 100%);
           -webkit-background-clip: text;
           -webkit-text-fill-color: transparent;
           display: inline-block;
+          filter: drop-shadow(0 2px 24px rgba(255, 255, 255, 0.28)) drop-shadow(0 8px 32px rgba(0, 0, 0, 0.85));
         }
       `}</style>
 
@@ -86,15 +92,15 @@ export default function HeroInterfaceOverlay({ scrollProgress = 0 }: HeroInterfa
           transform: `translate3d(${-scrollProgress * 45 + (mounted ? 0 : -24)}px, -50%, 0)`,
         }}
       >
-        <span className="font-bold text-xs text-neutral-900 tracking-wider">01</span>
-        <div className="my-3 flex flex-col items-center gap-1.5 opacity-60">
-          <span className="h-1 w-1 rounded-full bg-neutral-800" />
-          <span className="h-1 w-1 rounded-full bg-neutral-800" />
-          <span className="h-1 w-1 rounded-full bg-neutral-800" />
-          <span className="h-1 w-1 rounded-full bg-neutral-800" />
-          <span className="h-10 w-px bg-neutral-800/30 my-1" />
+        <span className="font-bold text-xs text-white/90 tracking-wider drop-shadow-[0_1px_4px_rgba(0,0,0,0.8)]">01</span>
+        <div className="my-3 flex flex-col items-center gap-1.5 opacity-80">
+          <span className="h-1 w-1 rounded-full bg-white/70" />
+          <span className="h-1 w-1 rounded-full bg-white/70" />
+          <span className="h-1 w-1 rounded-full bg-white/70" />
+          <span className="h-1 w-1 rounded-full bg-white/70" />
+          <span className="h-10 w-px bg-white/30 my-1" />
         </div>
-        <div className="flex flex-col text-[8.5px] font-bold text-neutral-700 uppercase tracking-[0.25em] leading-loose text-center">
+        <div className="flex flex-col text-[8.5px] font-bold text-white/75 uppercase tracking-[0.25em] leading-loose text-center drop-shadow-[0_1px_4px_rgba(0,0,0,0.8)]">
           <span>Young</span>
           <span>Minds</span>
           <span>Bigger</span>
@@ -115,17 +121,17 @@ export default function HeroInterfaceOverlay({ scrollProgress = 0 }: HeroInterfa
         }}
       >
         {/* Soft Circular Glass Ring Background */}
-        <div className="absolute -top-16 -left-12 w-64 sm:w-80 h-64 sm:h-80 rounded-full border border-white/40 bg-white/[0.03] backdrop-blur-[1px] pointer-events-none -z-10" />
+        <div className="absolute -top-16 -left-12 w-64 sm:w-80 h-64 sm:h-80 rounded-full border border-white/20 bg-white/[0.02] backdrop-blur-[2px] pointer-events-none -z-10" />
 
         {/* Signature Script Calligraphy */}
-        <div className="font-hult-script text-3xl sm:text-4xl text-[#65535e] leading-[1.05] tracking-wide rotate-[-3deg] drop-shadow-sm">
+        <div className="font-hult-script text-3xl sm:text-4xl text-white/95 leading-[1.05] tracking-wide rotate-[-3deg] drop-shadow-[0_2px_8px_rgba(0,0,0,0.8)]">
           <div>People</div>
           <div className="ml-1.5">Ideas</div>
           <div className="ml-3">Impact</div>
         </div>
 
         {/* Lower Right Microcopy */}
-        <div className="mt-20 sm:mt-28 flex flex-col text-[8.5px] font-bold text-neutral-700 uppercase tracking-[0.25em] leading-loose">
+        <div className="mt-20 sm:mt-28 flex flex-col text-[8.5px] font-bold text-white/75 uppercase tracking-[0.25em] leading-loose drop-shadow-[0_1px_4px_rgba(0,0,0,0.8)]">
           <span>From</span>
           <span>Heritage</span>
           <span>To A Brighter</span>
@@ -152,35 +158,35 @@ export default function HeroInterfaceOverlay({ scrollProgress = 0 }: HeroInterfa
             const el = document.getElementById("about");
             if (el) el.scrollIntoView({ behavior: "smooth" });
           }}
-          className="flex items-center gap-2 text-neutral-700 hover:text-neutral-950 transition-colors pointer-events-auto cursor-pointer group"
+          className="flex items-center gap-2 text-white/80 hover:text-white transition-colors pointer-events-auto cursor-pointer group"
           aria-label="Scroll down to About section"
         >
-          <div className="h-7 w-5 rounded-full border border-neutral-600/70 p-0.5 flex justify-center group-hover:border-neutral-900">
-            <span className="h-1.5 w-0.5 rounded-full bg-neutral-700 group-hover:bg-neutral-900 animate-bounce" />
+          <div className="h-7 w-5 rounded-full border border-white/40 p-0.5 flex justify-center group-hover:border-white">
+            <span className="h-1.5 w-0.5 rounded-full bg-white group-hover:bg-white animate-bounce" />
           </div>
-          <div className="flex flex-col text-[9px] leading-none tracking-widest font-semibold uppercase text-left">
-            <span className="text-neutral-900 group-hover:text-black">Scroll</span>
-            <span className="text-neutral-500 lowercase text-[8px]">to explore</span>
+          <div className="flex flex-col text-[9px] leading-none tracking-widest font-semibold uppercase text-left drop-shadow-[0_1px_3px_rgba(0,0,0,0.7)]">
+            <span className="text-white group-hover:text-white">Scroll</span>
+            <span className="text-white/60 lowercase text-[8px]">to explore</span>
           </div>
         </button>
 
         {/* Center Heritage Tagline */}
         <div className="hidden md:flex items-center gap-3 pointer-events-none">
-          <span className="h-px w-8 bg-neutral-700/30" />
-          <span className="text-[9.5px] font-semibold tracking-[0.22em] text-neutral-800 uppercase">
+          <span className="h-px w-8 bg-white/30" />
+          <span className="text-[9.5px] font-semibold tracking-[0.22em] text-white/75 uppercase drop-shadow-[0_1px_4px_rgba(0,0,0,0.7)]">
             Hult Prize At Heritage Institute Of Technology
           </span>
-          <span className="h-px w-8 bg-neutral-700/30" />
+          <span className="h-px w-8 bg-white/30" />
         </div>
 
         {/* Right Socials & Motto */}
-        <div className="flex items-center gap-4 text-neutral-700 pointer-events-auto">
+        <div className="flex items-center gap-4 text-white/80 pointer-events-auto">
           <div className="flex items-center gap-3">
             <a
               href="https://instagram.com"
               target="_blank"
               rel="noopener noreferrer"
-              className="transition-colors hover:text-neutral-950"
+              className="transition-colors hover:text-white drop-shadow-[0_1px_4px_rgba(0,0,0,0.7)]"
               aria-label="Instagram"
             >
               <svg className="h-3.5 w-3.5 fill-current" viewBox="0 0 24 24">
@@ -191,7 +197,7 @@ export default function HeroInterfaceOverlay({ scrollProgress = 0 }: HeroInterfa
               href="https://linkedin.com"
               target="_blank"
               rel="noopener noreferrer"
-              className="transition-colors hover:text-neutral-950"
+              className="transition-colors hover:text-white drop-shadow-[0_1px_4px_rgba(0,0,0,0.7)]"
               aria-label="LinkedIn"
             >
               <svg className="h-3.5 w-3.5 fill-current" viewBox="0 0 24 24">
@@ -202,7 +208,7 @@ export default function HeroInterfaceOverlay({ scrollProgress = 0 }: HeroInterfa
               href="https://youtube.com"
               target="_blank"
               rel="noopener noreferrer"
-              className="transition-colors hover:text-neutral-950"
+              className="transition-colors hover:text-white drop-shadow-[0_1px_4px_rgba(0,0,0,0.7)]"
               aria-label="YouTube"
             >
               <svg className="h-3.5 w-3.5 fill-current" viewBox="0 0 24 24">
@@ -211,7 +217,7 @@ export default function HeroInterfaceOverlay({ scrollProgress = 0 }: HeroInterfa
             </a>
           </div>
 
-          <span className="hidden xl:inline-block text-[8px] font-semibold text-neutral-600 uppercase tracking-[0.2em] max-w-[150px] leading-tight text-right">
+          <span className="hidden xl:inline-block text-[8px] font-semibold text-white/70 uppercase tracking-[0.2em] max-w-[150px] leading-tight text-right drop-shadow-[0_1px_4px_rgba(0,0,0,0.7)]">
             A More Inclusive Sustainable And Thriving World
           </span>
         </div>
@@ -232,15 +238,15 @@ export function HeroCenterpiece({ scrollProgress = 0 }: HeroInterfaceOverlayProp
 
   return (
     <>
-      {/* Centerpiece Monumental Typography at z-index 8 (layered behind Z09 and Z10 people) */}
+      {/* Centerpiece Monumental Typography at z-index 50 (elevated in FRONT of all cutout layers) */}
       <div
-        className="absolute inset-0 z-[8] flex flex-col items-center justify-center pt-12 sm:pt-16 pointer-events-none select-none px-4 transition-transform duration-75 ease-out"
+        className="absolute inset-0 z-[50] flex flex-col items-center justify-center pt-12 sm:pt-16 pointer-events-none select-none px-4 transition-transform duration-75 ease-out"
         style={{
           opacity: contentOpacity,
           transform: `translate3d(0, ${-scrollProgress * 110}px, 0) scale(${Math.max(0.88, 1 - scrollProgress * 0.08)})`,
         }}
       >
-        {/* Subtle neutral radial glow behind letters */}
+        {/* Subtle luminous ambient glow behind letters */}
         <div
           className={`absolute pointer-events-none -z-10 transition-opacity duration-1000 ${
             mounted ? "opacity-100" : "opacity-0"
@@ -248,54 +254,54 @@ export function HeroCenterpiece({ scrollProgress = 0 }: HeroInterfaceOverlayProp
           style={{
             top: "32%",
             left: "52%",
-            width: "420px",
-            height: "280px",
+            width: "560px",
+            height: "360px",
             background:
-              "radial-gradient(ellipse at center, rgba(15, 23, 42, 0.04) 0%, rgba(15, 23, 42, 0.01) 42%, transparent 75%)",
-            filter: "blur(38px)",
-            transform: "translate3d(-15%, -8%, 0)",
+              "radial-gradient(ellipse at center, rgba(255, 255, 255, 0.12) 0%, rgba(226, 232, 240, 0.03) 45%, transparent 75%)",
+            filter: "blur(48px)",
+            transform: "translate3d(-50%, -50%, 0)",
           }}
         />
 
         {/* Top Eyebrow Hairline Bar (Entrance Slide Down) */}
         <div
           className={`flex items-center gap-3 sm:gap-4 mb-2 sm:mb-3 transition-all duration-1000 delay-300 ease-out ${
-            mounted ? "opacity-95 translate-y-0" : "opacity-0 -translate-y-3"
+            mounted ? "opacity-100 translate-y-0" : "opacity-0 -translate-y-3"
           }`}
         >
-          <span className="h-px w-10 sm:w-16 bg-white/50" />
-          <span className="text-[10px] sm:text-xs font-semibold tracking-[0.28em] text-white uppercase drop-shadow-[0_1px_8px_rgba(0,0,0,0.7)]">
+          <span className="h-px w-10 sm:w-16 bg-white/60" />
+          <span className="text-[10px] sm:text-xs font-semibold tracking-[0.28em] text-white uppercase drop-shadow-[0_2px_8px_rgba(0,0,0,0.8)]">
             A Global Movement For A Better Tomorrow
           </span>
-          <span className="h-px w-10 sm:w-16 bg-white/50" />
+          <span className="h-px w-10 sm:w-16 bg-white/60" />
         </div>
 
         {/* Main Double-Row Headline */}
-        <div className="relative flex flex-col items-center text-center leading-[0.82] tracking-tight">
+        <div className="relative flex flex-col items-center text-center leading-[0.85] tracking-tight">
           {/* Row 1: HULT (Entrance glide down from top) */}
           <div
             className={`relative transition-all duration-1000 delay-500 ease-out ${
               mounted ? "opacity-100 translate-y-0" : "opacity-0 -translate-y-6"
             }`}
           >
-            <h1 className="font-jomolhari text-4xl xs:text-5xl sm:text-7xl md:text-8xl lg:text-[9rem] xl:text-[10rem] font-normal tracking-tight hult-title-gradient drop-shadow-[0_2px_18px_rgba(0,0,0,0.08)]">
+            <h1 className="font-monumental text-5xl xs:text-6xl sm:text-7xl md:text-8xl lg:text-[9.5rem] xl:text-[11rem] font-bold tracking-wider hult-title-gradient">
               HULT
             </h1>
           </div>
 
-          {/* Row 2: PRIZE™ (Entrance glide up from bottom) */}
+          {/* Row 2: PRIZE (Entrance glide up from bottom) */}
           <div
             className={`relative mt-1 sm:mt-2 md:mt-3 transition-all duration-1000 delay-700 ease-out ${
               mounted ? "opacity-100 translate-y-0" : "opacity-0 translate-y-6"
             }`}
           >
-            <span className="font-jomolhari text-4xl xs:text-5xl sm:text-7xl md:text-8xl lg:text-[9rem] xl:text-[10rem] font-normal tracking-tight prize-title-gradient drop-shadow-[0_2px_18px_rgba(0,0,0,0.08)]">
+            <span className="font-monumental text-5xl xs:text-6xl sm:text-7xl md:text-8xl lg:text-[9.5rem] xl:text-[11rem] font-bold tracking-wider prize-title-gradient">
               PRIZE
             </span>
           </div>
         </div>
 
-        {/* Primary CTA — standalone, high z-index, no backing box */}
+        {/* Primary CTA — high-contrast white pill */}
         <div
           className={`relative z-[60] mt-6 sm:mt-8 pointer-events-auto transition-all duration-1000 delay-900 ease-out ${
             mounted ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"
@@ -303,7 +309,7 @@ export function HeroCenterpiece({ scrollProgress = 0 }: HeroInterfaceOverlayProp
         >
           <Link
             href="/register"
-            className="flex items-center gap-2 rounded-full bg-neutral-900 hover:bg-neutral-800 px-8 py-3.5 text-sm font-semibold text-white shadow-xl shadow-neutral-900/40 border border-neutral-700/50 transition-all duration-300 hover:scale-105 active:scale-95"
+            className="flex items-center gap-2 rounded-full bg-white hover:bg-neutral-100 px-8 py-3.5 text-sm font-semibold text-neutral-950 shadow-xl shadow-black/40 border border-white/80 transition-all duration-300 hover:scale-105 active:scale-95 cursor-pointer"
           >
             <span>Be the Change</span>
             <ArrowRight className="h-4 w-4" />
@@ -316,7 +322,7 @@ export function HeroCenterpiece({ scrollProgress = 0 }: HeroInterfaceOverlayProp
 
 export function HeroNavbar() {
   return (
-    <header className="absolute top-0 left-0 right-0 z-40 flex items-center justify-between px-6 sm:px-10 md:px-14 py-5 bg-transparent text-neutral-900 pointer-events-auto select-none">
+    <header className="absolute top-0 left-0 right-0 z-40 flex items-center justify-between px-6 sm:px-10 md:px-14 py-5 bg-transparent text-white pointer-events-auto select-none">
       {/* Brand Lockup Left */}
       <div className="flex items-center gap-3 select-none">
         <Link href="/" className="flex items-center gap-2 group">
@@ -326,21 +332,21 @@ export function HeroNavbar() {
               alt="EF Hult Prize Logo"
               fill
               sizes="54px"
-              className="object-contain"
+              className="object-contain drop-shadow-[0_2px_8px_rgba(0,0,0,0.6)]"
               priority
             />
           </div>
         </Link>
 
         {/* Thin Hairline Divider */}
-        <div className="h-6 w-px bg-[#6F302B]/20" />
+        <div className="h-6 w-px bg-white/25" />
 
         {/* 25 Heritage Institute of Technology Badge */}
         <div className="flex items-center gap-2">
-          <span className="font-hult-serif text-2xl font-bold leading-none text-neutral-900">
+          <span className="font-hult-serif text-2xl font-bold leading-none text-white drop-shadow-[0_2px_8px_rgba(0,0,0,0.6)]">
             25
           </span>
-          <div className="flex flex-col text-[8.5px] font-semibold uppercase tracking-[0.14em] leading-tight max-w-[125px] text-neutral-800">
+          <div className="flex flex-col text-[8.5px] font-semibold uppercase tracking-[0.14em] leading-tight max-w-[125px] text-white/80 drop-shadow-[0_1px_4px_rgba(0,0,0,0.6)]">
             <span>Heritage</span>
             <span>Institute of Technology</span>
           </div>
@@ -348,22 +354,22 @@ export function HeroNavbar() {
       </div>
 
       {/* Navigation Links Center */}
-      <nav className="hidden md:flex items-center gap-8 text-[13px] font-medium select-none text-neutral-800">
+      <nav className="hidden md:flex items-center gap-8 text-[13px] font-medium select-none text-white/85">
         <Link
           href="/"
-          className="relative transition-colors duration-200 hover:text-neutral-900 after:absolute after:-bottom-1 after:left-0 after:h-[1.5px] after:w-0 after:bg-neutral-900 hover:after:w-full after:transition-all after:duration-200"
+          className="relative transition-colors duration-200 hover:text-white after:absolute after:-bottom-1 after:left-0 after:h-[1.5px] after:w-0 after:bg-white hover:after:w-full after:transition-all after:duration-200 drop-shadow-[0_1px_4px_rgba(0,0,0,0.6)]"
         >
           Home
         </Link>
         <Link
           href="#about"
-          className="relative transition-colors duration-200 hover:text-neutral-900 after:absolute after:-bottom-1 after:left-0 after:h-[1.5px] after:w-0 after:bg-neutral-900 hover:after:w-full after:transition-all after:duration-200"
+          className="relative transition-colors duration-200 hover:text-white after:absolute after:-bottom-1 after:left-0 after:h-[1.5px] after:w-0 after:bg-white hover:after:w-full after:transition-all after:duration-200 drop-shadow-[0_1px_4px_rgba(0,0,0,0.6)]"
         >
           About
         </Link>
         <Link
           href="/events"
-          className="relative transition-colors duration-200 hover:text-neutral-900 after:absolute after:-bottom-1 after:left-0 after:h-[1.5px] after:w-0 after:bg-neutral-900 hover:after:w-full after:transition-all after:duration-200"
+          className="relative transition-colors duration-200 hover:text-white after:absolute after:-bottom-1 after:left-0 after:h-[1.5px] after:w-0 after:bg-white hover:after:w-full after:transition-all after:duration-200 drop-shadow-[0_1px_4px_rgba(0,0,0,0.6)]"
         >
           Events
         </Link>
@@ -371,12 +377,12 @@ export function HeroNavbar() {
 
       {/* Right CTA Group */}
       <div className="flex items-center gap-4 select-none">
-        <span className="hidden lg:inline-block font-serif italic text-xs text-neutral-500 tracking-wide">
+        <span className="hidden lg:inline-block font-serif italic text-xs text-white/70 tracking-wide drop-shadow-[0_1px_4px_rgba(0,0,0,0.6)]">
           Ideas for a Brighter Tomorrow
         </span>
         <Link
           href="/register"
-          className="flex items-center gap-2 rounded-full bg-neutral-900 hover:bg-neutral-800 px-5 py-2 text-xs font-semibold text-white shadow-md shadow-neutral-900/20 border border-neutral-700/40 transition-all duration-300 hover:scale-105 active:scale-95"
+          className="flex items-center gap-2 rounded-full bg-white hover:bg-neutral-100 px-5 py-2 text-xs font-semibold text-neutral-950 shadow-md shadow-black/30 border border-white/80 transition-all duration-300 hover:scale-105 active:scale-95"
         >
           <span>Register Now</span>
           <ArrowRight className="h-3.5 w-3.5" />

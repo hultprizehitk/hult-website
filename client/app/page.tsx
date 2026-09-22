@@ -1,7 +1,6 @@
 "use client";
 
 import React, { useState, useEffect, useRef } from "react";
-import Lenis from "lenis";
 import GrainOverlay from "@/components/hero/GrainOverlay";
 import HeroInterfaceOverlay, { HeroCenterpiece, HeroNavbar } from "@/components/hero/HeroInterfaceOverlay";
 import HeroThemeAbout from "@/components/sections/HeroThemeAbout";
@@ -30,8 +29,8 @@ export default function Home() {
 
 function HomeContent() {
   const { config } = useThemeTuner();
-  const [isGrainEnabled] = useState(true);
-  const [grainOpacity] = useState(0.75);
+  const [isGrainEnabled] = useState(false);
+  const [grainOpacity] = useState(0.04);
 
   const [isSkyLoaded, setIsSkyLoaded] = useState(false);
   const [assembledCount, setAssembledCount] = useState(0);
@@ -41,49 +40,45 @@ function HomeContent() {
   const [scrollProgress, setScrollProgress] = useState(0);
 
   useEffect(() => {
-    const skyTimer = setTimeout(() => setIsSkyLoaded(true), 80);
+    const skyTimer = setTimeout(() => setIsSkyLoaded(true), 60);
 
     let currentCount = 0;
-    const popInterval = setInterval(() => {
+    // Sequential layer slide-in interval: smooth, cascading arrival from the very bottom outside
+    const slideInterval = setInterval(() => {
       currentCount++;
       setAssembledCount(currentCount);
       if (currentCount >= KOLKATA_LAYERS.length) {
-        clearInterval(popInterval);
-        setTimeout(() => setIsAssemblyComplete(true), 2200);
+        clearInterval(slideInterval);
+        setTimeout(() => setIsAssemblyComplete(true), 1800);
       }
-    }, 52);
+    }, 46);
 
-    // Initialize Lenis with gentle, luxurious momentum
-    const lenis = new Lenis({
-      duration: 1.5,
-      easing: (t) => Math.min(1, 1.001 - Math.pow(2, -10 * t)),
-      smoothWheel: true,
-    });
-
+    // Silky-smooth RAF momentum scroll tracking
+    let targetScrollY = typeof window !== "undefined" ? window.scrollY : 0;
+    let currentSmoothY = targetScrollY;
     let rafId: number;
-    function raf(time: number) {
-      lenis.raf(time);
-      rafId = requestAnimationFrame(raf);
-    }
-    rafId = requestAnimationFrame(raf);
 
     const onScroll = () => {
-      const currentScrollY = window.scrollY;
-      const windowH = window.innerHeight || 800;
-      // Spread progress over 1.45x viewport height for extended, stately pacing
-      const progress = Math.min(1, Math.max(0, currentScrollY / (windowH * 1.45)));
-      setScrollY(currentScrollY);
-      setScrollProgress(progress);
+      targetScrollY = window.scrollY;
     };
 
-    lenis.on("scroll", onScroll);
+    const updateSmoothScroll = () => {
+      currentSmoothY += (targetScrollY - currentSmoothY) * 0.12;
+      const windowH = window.innerHeight || 800;
+      // Spread progress over 1.45x viewport height for extended, stately pacing
+      const progress = Math.min(1, Math.max(0, currentSmoothY / (windowH * 1.45)));
+      setScrollY(currentSmoothY);
+      setScrollProgress(progress);
+      rafId = requestAnimationFrame(updateSmoothScroll);
+    };
+
     window.addEventListener("scroll", onScroll, { passive: true });
+    rafId = requestAnimationFrame(updateSmoothScroll);
 
     return () => {
       clearTimeout(skyTimer);
-      clearInterval(popInterval);
+      clearInterval(slideInterval);
       cancelAnimationFrame(rafId);
-      lenis.destroy();
       window.removeEventListener("scroll", onScroll);
     };
   }, []);
@@ -91,14 +86,24 @@ function HomeContent() {
   return (
     <>
       <style>{`
-        @keyframes marvelPopIn {
-          0%   { opacity: 0; transform: scale(0.8) translateY(18px); }
-          65%  { opacity: 1; transform: scale(1.035) translateY(-2px); }
-          100% { opacity: 1; transform: scale(1) translateY(0); }
+        /* True bottom off-screen slide-in: starts 100% outside the viewport at the bottom */
+        @keyframes slideFromBottomOutside {
+          0% {
+            transform: translate3d(0, 115vh, 0);
+          }
+          100% {
+            transform: translate3d(0, 0, 0);
+          }
         }
         @keyframes boatFloat {
           0%, 100% { transform: translateY(0px) rotate(0deg); }
           50%       { transform: translateY(-2.8px) rotate(0.4deg); }
+        }
+        /* Smooth high-definition rendering (no crisp-edges nearest-neighbor pixelation) */
+        .kolkata-smooth-layer {
+          backface-visibility: hidden;
+          -webkit-backface-visibility: hidden;
+          transform: translateZ(0);
         }
       `}</style>
 
@@ -128,12 +133,12 @@ function HomeContent() {
             <img
               src="/assets/kolkata-ui/extreme-background.png"
               alt="Kolkata Base Sky"
-              className="absolute inset-0 w-full h-full block select-none pointer-events-none"
+              className="absolute inset-0 w-full h-full block select-none pointer-events-none kolkata-smooth-layer"
               draggable={false}
               style={{
                 zIndex: 1,
                 opacity: isSkyLoaded ? 1 : 0,
-                transition: "opacity 1.2s ease-out",
+                transition: "opacity 1.4s cubic-bezier(0.16, 1, 0.3, 1)",
               }}
             />
 
@@ -153,16 +158,22 @@ function HomeContent() {
                     width: `${layer.widthPct}%`,
                     height: `${layer.heightPct}%`,
                     zIndex: layer.zIndex,
-                    opacity: isPopped ? 1 : 0,
-                    transform: `translate3d(0, ${sy}px, 0)`,
+                    opacity: 1,
+                    transform: isAssemblyComplete
+                      ? `translate3d(0, ${sy}px, 0)`
+                      : isPopped
+                      ? "translate3d(0, 0, 0)"
+                      : "translate3d(0, 115vh, 0)",
                     transition: isAssemblyComplete ? "transform 0.1s ease-out" : undefined,
+                    willChange: "transform",
                   }}
                 >
                   <div
                     className="w-full h-full"
                     style={{
-                      animation: isPopped
-                        ? "marvelPopIn 0.38s cubic-bezier(0.34, 1.4, 0.64, 1) forwards"
+                      transform: isPopped ? "translate3d(0, 0, 0)" : "translate3d(0, 115vh, 0)",
+                      animation: isPopped && !isAssemblyComplete
+                        ? "slideFromBottomOutside 1.25s cubic-bezier(0.16, 1, 0.3, 1) forwards"
                         : undefined,
                     }}
                   >
@@ -178,7 +189,7 @@ function HomeContent() {
                       <img
                         src={layer.src}
                         alt={layer.id}
-                        className="w-full h-full block select-none pointer-events-none"
+                        className="w-full h-full block select-none pointer-events-none kolkata-smooth-layer"
                         draggable={false}
                       />
                     </div>
@@ -187,7 +198,7 @@ function HomeContent() {
               );
             })}
 
-            {/* Monumental Centerpiece Typography (zIndex: 8 — layered behind Z09, Z10 people, in front of background/monuments) */}
+            {/* Monumental Centerpiece Typography (zIndex: 50 — elevated in FRONT of all 26 cutout layers) */}
             <HeroCenterpiece scrollProgress={scrollProgress} />
           </div>
         </div>
@@ -203,12 +214,12 @@ function HomeContent() {
           }}
         />
 
-        {/* Bottom mist — hero fades softly into sections */}
+        {/* Bottom subtle gradient — hero fades softly into sections */}
         <div
           className="pointer-events-none absolute bottom-0 inset-x-0 h-48 z-[74]"
           style={{
             background:
-              "linear-gradient(to bottom, transparent 0%, rgba(255,255,255,0.15) 40%, rgba(255,255,255,0.55) 75%, rgba(255,255,255,0.82) 100%)",
+              "linear-gradient(to bottom, transparent 0%, rgba(8,9,13,0.3) 40%, rgba(8,9,13,0.85) 100%)",
             opacity: Math.max(0, 1 - scrollProgress * 1.5),
             transition: "opacity 0.2s ease-out",
           }}
@@ -226,7 +237,7 @@ function HomeContent() {
         │  so the fixed hero scene shows behind glass cards.      │
         └─────────────────────────────────────────────────────────┘
       */}
-      <div className="relative select-none text-[#111827] font-[family-name:var(--font-google-sans)]">
+      <div className="relative select-none text-white font-[family-name:var(--font-google-sans)]">
         {/* Transparent Top Navbar — non-sticky, naturally scrolls away */}
         <HeroNavbar />
 

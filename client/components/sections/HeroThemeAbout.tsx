@@ -85,18 +85,18 @@ function MetricCard({ m, uid, getCardStyle, bgOpacity }: {
         <rect x="0" y="0" width={cardSize.width} height={cardSize.height} rx="16" ry="16" fill={`rgba(255,255,255,${alpha})`} mask={`url(#${uid})`} />
         {/* SVG border — perfectly aligned with fill */}
         <rect x="0.5" y="0.5" width={cardSize.width - 1} height={cardSize.height - 1} rx="15.5" ry="15.5" fill="none" stroke={`rgba(255,255,255,${borderAlpha})`} strokeWidth="1" />
-        {/* Cutout border rim */}
-        <text x={titlePos.x} y={titlePos.y} fill="none" stroke="rgba(0,0,0,0.8)" strokeWidth="1.5" strokeLinejoin="round" mask={`url(#${uid})`} fontFamily="var(--font-jomolhari)" fontWeight="700" fontSize={titlePos.fontSize} dominantBaseline="hanging">{m.value}</text>
+        {/* Cutout border rim — pure white */}
+        <text x={titlePos.x} y={titlePos.y} fill="none" stroke="rgba(255,255,255,0.95)" strokeWidth="1.5" strokeLinejoin="round" mask={`url(#${uid})`} fontFamily="var(--font-jomolhari)" fontWeight="700" fontSize={titlePos.fontSize} dominantBaseline="hanging">{m.value}</text>
       </svg>
       <div className="relative z-10">
         <div className="flex items-center justify-between mb-4">
-          <div className="h-10 w-10 rounded-xl bg-neutral-900 border border-neutral-800 flex items-center justify-center text-white group-hover:scale-110 transition-transform shadow-sm"><Icon className="h-5 w-5" /></div>
-          <span className="font-mono text-xs font-semibold text-neutral-600 tracking-widest">{m.index}</span>
+          <div className="h-10 w-10 rounded-xl bg-white/10 border border-white/20 flex items-center justify-center text-white group-hover:scale-110 transition-transform shadow-sm backdrop-blur-sm"><Icon className="h-5 w-5" /></div>
+          <span className="font-mono text-xs font-semibold text-white/60 tracking-widest">{m.index}</span>
         </div>
         <div className="space-y-1">
           <div ref={titleRef as React.RefObject<HTMLDivElement>} className="font-jomolhari text-2xl sm:text-4xl font-bold tracking-tight opacity-0 pointer-events-none select-none">{m.value}</div>
-          <div className="text-xs font-bold uppercase tracking-wider text-neutral-900" style={{ textShadow: "0 0 1px rgba(255,255,255,0.9)" }}>{m.label}</div>
-          <div className="text-[11px] font-medium text-neutral-800" style={{ textShadow: "0 0 1px rgba(255,255,255,0.9)" }}>{m.sublabel}</div>
+          <div className="text-xs font-bold uppercase tracking-wider text-white drop-shadow-[0_1px_4px_rgba(0,0,0,0.8)]">{m.label}</div>
+          <div className="text-[11px] font-medium text-white/70 drop-shadow-[0_1px_3px_rgba(0,0,0,0.7)]">{m.sublabel}</div>
         </div>
       </div>
     </div>
@@ -144,8 +144,8 @@ function PillarCard({ pillar, idx, uid, getCardStyle, bgOpacity }: {
         <rect x="0" y="0" width={cardSize.width} height={cardSize.height} rx="24" ry="24" fill={`rgba(255,255,255,${alpha})`} mask={`url(#${uid})`} />
         {/* SVG border — perfectly aligned with fill */}
         <rect x="0.5" y="0.5" width={cardSize.width - 1} height={cardSize.height - 1} rx="23.5" ry="23.5" fill="none" stroke={`rgba(255,255,255,${borderAlpha})`} strokeWidth="1" />
-        {/* Cutout border rim */}
-        <text x={titlePos.x} y={titlePos.y} fill="none" stroke="rgba(0,0,0,0.8)" strokeWidth="1.5" strokeLinejoin="round" mask={`url(#${uid})`} fontFamily="var(--font-jomolhari)" fontWeight="700" fontSize={titlePos.fontSize} dominantBaseline="hanging">
+        {/* Cutout border rim — pure white */}
+        <text x={titlePos.x} y={titlePos.y} fill="none" stroke="rgba(255,255,255,0.95)" strokeWidth="1.5" strokeLinejoin="round" mask={`url(#${uid})`} fontFamily="var(--font-jomolhari)" fontWeight="700" fontSize={titlePos.fontSize} dominantBaseline="hanging">
           {lines.map((line, i) => (
             <tspan key={i} x={titlePos.x} dy={i === 0 ? 0 : "1.18em"}>
               {line}
@@ -154,16 +154,16 @@ function PillarCard({ pillar, idx, uid, getCardStyle, bgOpacity }: {
         </text>
       </svg>
       <div className="relative z-10 space-y-4">
-        <div className="flex items-center justify-between pb-4 border-b border-neutral-200/60">
-          <span className="font-mono text-[11px] font-bold text-neutral-900 tracking-widest">PHASE {pillar.step}</span>
-          <span className="rounded-full border border-neutral-300 px-3 py-0.5 text-[9px] font-mono uppercase tracking-widest text-neutral-800 font-semibold">{pillar.tag}</span>
+        <div className="flex items-center justify-between pb-4 border-b border-white/15">
+          <span className="font-mono text-[11px] font-bold text-white tracking-widest drop-shadow-[0_1px_3px_rgba(0,0,0,0.8)]">PHASE {pillar.step}</span>
+          <span className="rounded-full border border-white/30 bg-white/5 px-3 py-0.5 text-[9px] font-mono uppercase tracking-widest text-white/90 font-semibold backdrop-blur-sm">{pillar.tag}</span>
         </div>
-        <div className="h-12 w-12 rounded-2xl bg-neutral-900 border border-neutral-800 flex items-center justify-center text-white shadow-sm group-hover:scale-110 transition-transform"><Icon className="h-6 w-6" /></div>
+        <div className="h-12 w-12 rounded-2xl bg-white/10 border border-white/20 flex items-center justify-center text-white shadow-sm group-hover:scale-110 transition-transform backdrop-blur-sm"><Icon className="h-6 w-6" /></div>
       </div>
       <div className="relative z-10 space-y-3 pt-6 pb-2">
         <h3 ref={titleRef as React.RefObject<HTMLHeadingElement>} className="font-jomolhari text-2xl sm:text-3xl font-bold tracking-tight leading-snug opacity-0 pointer-events-none select-none">{pillar.title}</h3>
-        <p className="text-xs sm:text-sm text-neutral-900 leading-relaxed font-sans font-semibold" style={{ textShadow: "0 0 1px rgba(255,255,255,0.9)" }}>{pillar.desc}</p>
-        <div className="pt-4 flex items-center gap-2 text-[10.5px] font-mono font-semibold text-neutral-900">
+        <p className="text-xs sm:text-sm text-white/80 leading-relaxed font-sans font-medium drop-shadow-[0_1px_4px_rgba(0,0,0,0.7)]">{pillar.desc}</p>
+        <div className="pt-4 flex items-center gap-2 text-[10.5px] font-mono font-semibold text-white/90">
           <span>Track Stage 0{idx + 1}</span>
           <ArrowRight className="h-3 w-3 group-hover:translate-x-1 transition-transform" />
         </div>
@@ -233,7 +233,7 @@ export default function HeroThemeAbout() {
   return (
     <section
       id="about"
-      className="relative w-full py-24 sm:py-32 px-6 sm:px-12 lg:px-20 overflow-hidden font-[family-name:var(--font-google-sans)] bg-transparent text-neutral-900"
+      className="relative w-full py-24 sm:py-32 px-6 sm:px-12 lg:px-20 overflow-hidden font-[family-name:var(--font-google-sans)] bg-transparent text-white"
     >
       {/* ========================================================= */}
       {/* ATMOSPHERIC BACKGROUND ACCENTS                            */}
@@ -241,10 +241,10 @@ export default function HeroThemeAbout() {
       <div className="absolute inset-0 z-0 pointer-events-none overflow-hidden select-none">
         {/* Subtle grid */}
         <div
-          className="absolute inset-0 opacity-[0.03]"
+          className="absolute inset-0 opacity-[0.04]"
           style={{
             backgroundImage:
-              "linear-gradient(to right, #000 1px, transparent 1px), linear-gradient(to bottom, #000 1px, transparent 1px)",
+              "linear-gradient(to right, #fff 1px, transparent 1px), linear-gradient(to bottom, #fff 1px, transparent 1px)",
             backgroundSize: "64px 64px",
           }}
         />
@@ -253,10 +253,10 @@ export default function HeroThemeAbout() {
       <div className="relative z-10 max-w-7xl mx-auto space-y-16">
         {/* Editorial Section Header */}
         <ScrollReveal direction="up">
-          <div className="flex flex-col md:flex-row md:items-end justify-between gap-8 pb-6 border-b border-neutral-200">
+          <div className="flex flex-col md:flex-row md:items-end justify-between gap-8 pb-6 border-b border-white/15">
             <div className="max-w-2xl space-y-3">
               <h2
-                className="font-jomolhari text-3xl sm:text-5xl md:text-6xl font-normal tracking-tight text-neutral-900 leading-[1.05]"
+                className="font-jomolhari text-3xl sm:text-5xl md:text-6xl font-normal tracking-tight text-white leading-[1.05] drop-shadow-[0_2px_16px_rgba(0,0,0,0.85)]"
                 style={{
                   textShadow: getHeaderShadow(),
                 }}
@@ -267,14 +267,11 @@ export default function HeroThemeAbout() {
 
             <div className="max-w-md space-y-2">
               <p
-                className="text-xs sm:text-sm font-semibold text-neutral-900 leading-relaxed"
-                style={{
-                  textShadow: "0 0 1px rgba(255,255,255,0.9)",
-                }}
+                className="text-xs sm:text-sm font-medium text-white/80 leading-relaxed drop-shadow-[0_1px_4px_rgba(0,0,0,0.7)]"
               >
                 The world's premier student social entrepreneurship incubator at Heritage Institute of Technology, turning bold ideas into scalable, investment-ready enterprises.
               </p>
-              <div className="font-hult-script text-2xl text-neutral-700 rotate-[-2deg]">
+              <div className="font-hult-script text-2xl text-white/90 rotate-[-2deg] drop-shadow-[0_2px_8px_rgba(0,0,0,0.6)]">
                 Ideas for a brighter tomorrow
               </div>
             </div>
@@ -298,7 +295,7 @@ export default function HeroThemeAbout() {
                 <span
                   className="font-mono text-[10px] uppercase tracking-[0.25em] font-semibold"
                   style={{
-                    background: "linear-gradient(90deg, #be123c, #9f1239)",
+                    background: "linear-gradient(90deg, #f43f5e, #fb7185)",
                     WebkitBackgroundClip: "text",
                     WebkitTextFillColor: "transparent",
                   }}
@@ -306,7 +303,7 @@ export default function HeroThemeAbout() {
                   METHODOLOGY
                 </span>
                 <h3
-                  className="font-jomolhari text-2xl sm:text-3xl font-normal text-neutral-900 tracking-tight"
+                  className="font-jomolhari text-2xl sm:text-3xl font-normal text-white tracking-tight drop-shadow-[0_2px_12px_rgba(0,0,0,0.75)]"
                   style={{
                     textShadow: getHeaderShadow(),
                   }}
@@ -314,7 +311,7 @@ export default function HeroThemeAbout() {
                   The Founder Incubation Pathway
                 </h3>
               </div>
-              <span className="hidden sm:inline-block font-mono text-xs text-neutral-600 tracking-wider">
+              <span className="hidden sm:inline-block font-mono text-xs text-white/60 tracking-wider">
                 Three Strategic Acceleration Sprints
               </span>
             </div>
