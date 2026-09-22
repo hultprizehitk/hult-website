@@ -332,8 +332,8 @@ export default function TeamPage() {
       {/* Kolkata Ambient Hero Background (Same as Events page) */}
       <div className="fixed inset-0 z-0 pointer-events-none">
         <KolkataHero mouseOffset={{ x: 0, y: 0 }} isRevealed={true} hideText={true} hideForeground={true} />
+        <GrainOverlay opacity={0.65} zIndex={1} />
       </div>
-      <GrainOverlay opacity={0.65} />
 
       <SiteHeader />
 

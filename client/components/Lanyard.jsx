@@ -267,14 +267,13 @@ function Band({
         card.current?.setNextKinematicTranslation({ x: vec.x - dragged.x, y: vec.y - dragged.y, z: vec.z - dragged.z });
       }
       if (fixed.current && card.current && j1.current && j2.current && j3.current) {
+        const safeDelta = Math.min(delta, 1 / 30);
         [j1, j2].forEach(ref => {
           if (ref.current) {
             if (!ref.current.lerped) ref.current.lerped = new THREE.Vector3().copy(ref.current.translation());
             const clampedDistance = Math.max(0.1, Math.min(1, ref.current.lerped.distanceTo(ref.current.translation())));
-            ref.current.lerped.lerp(
-              ref.current.translation(),
-              delta * (minSpeed + clampedDistance * (maxSpeed - minSpeed))
-            );
+            const lerpFactor = Math.min(1, Math.max(0, safeDelta * (minSpeed + clampedDistance * (maxSpeed - minSpeed))));
+            ref.current.lerped.lerp(ref.current.translation(), lerpFactor);
           }
         });
 
@@ -298,8 +297,14 @@ function Band({
         if (bandLeft.current?.geometry) {
           bandLeft.current.geometry.setPoints(curveLeft.getPoints(isMobile ? 16 : 32));
         }
+        if (bandLeft.current?.material) {
+          bandLeft.current.material.resolution.set(state.size.width, state.size.height);
+        }
         if (bandRight.current?.geometry) {
           bandRight.current.geometry.setPoints(curveRight.getPoints(isMobile ? 16 : 32));
+        }
+        if (bandRight.current?.material) {
+          bandRight.current.material.resolution.set(state.size.width, state.size.height);
         }
 
         ang.copy(card.current.angvel());
