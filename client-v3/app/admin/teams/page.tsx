@@ -25,6 +25,9 @@ interface TeamRecord {
   teamCode: string;
   teamName: string;
   ventureName: string;
+  ventureDescription?: string;
+  submissionStatus?: "forming" | "ready" | "submitted";
+  submittedAt?: string;
   lead: {
     name: string;
     email: string;
@@ -208,11 +211,22 @@ export default function AdminTeamsPage() {
                       <div className="text-neutral-200 truncate font-medium">
                         {team.ventureName || "General Impact Venture"}
                       </div>
-                      {team.eventId && (
-                        <div className="text-[10px] text-neutral-400 truncate">
-                          {team.eventId.title}
-                        </div>
-                      )}
+                      <div className="flex items-center gap-1.5 mt-0.5 flex-wrap">
+                        {team.submissionStatus === "submitted" ? (
+                          <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[9px] font-mono font-bold bg-purple-500/20 text-purple-300 border border-purple-500/30">
+                            Submitted
+                          </span>
+                        ) : (
+                          <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[9px] font-mono font-bold bg-amber-500/20 text-amber-300 border border-amber-500/30">
+                            Forming
+                          </span>
+                        )}
+                        {team.eventId && (
+                          <span className="text-[10px] text-neutral-400 truncate">
+                            {team.eventId.title}
+                          </span>
+                        )}
+                      </div>
                     </td>
 
                     <td className="py-3.5 px-4">
@@ -301,7 +315,18 @@ export default function AdminTeamsPage() {
             <div className="flex items-center justify-between pb-3 border-b border-white/10">
               <div>
                 <h3 className="text-base font-bold text-white">{selectedTeam.teamName}</h3>
-                <span className="font-mono text-xs text-rose-400">{selectedTeam.teamCode}</span>
+                <div className="flex items-center gap-2 mt-0.5">
+                  <span className="font-mono text-xs text-rose-400">{selectedTeam.teamCode}</span>
+                  {selectedTeam.submissionStatus === "submitted" ? (
+                    <span className="px-2 py-0.5 rounded text-[9px] font-mono font-bold bg-purple-500/20 text-purple-300 border border-purple-500/30">
+                      Application Submitted
+                    </span>
+                  ) : (
+                    <span className="px-2 py-0.5 rounded text-[9px] font-mono font-bold bg-amber-500/20 text-amber-300 border border-amber-500/30">
+                      Forming ({1 + (selectedTeam.members?.length || 0)} members)
+                    </span>
+                  )}
+                </div>
               </div>
               <button
                 onClick={() => setSelectedTeam(null)}
@@ -311,10 +336,15 @@ export default function AdminTeamsPage() {
               </button>
             </div>
 
-            <div className="space-y-3 text-xs">
+            <div className="space-y-3 text-xs max-h-[70vh] overflow-y-auto pr-1">
               <div className="p-3 rounded-xl bg-[#16161d] border border-white/10 space-y-1">
                 <div className="font-semibold text-white">Venture Track / Idea:</div>
                 <div className="text-neutral-300">{selectedTeam.ventureName || "None provided"}</div>
+                {selectedTeam.ventureDescription && (
+                  <p className="text-neutral-400 text-[11px] pt-1 leading-relaxed whitespace-pre-line border-t border-white/5 mt-1">
+                    {selectedTeam.ventureDescription}
+                  </p>
+                )}
               </div>
 
               <div>

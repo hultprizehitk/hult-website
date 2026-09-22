@@ -23,6 +23,10 @@ export interface ITeam extends Document {
   teamCode: string;
   teamName: string;
   ventureName: string;
+  ventureDescription?: string;
+  pitchDeckUrl?: string;
+  submissionStatus: "forming" | "ready" | "submitted";
+  submittedAt?: Date;
   lead: ITeamLead;
   leadEmail: string;
   membersCount: number;
@@ -31,7 +35,6 @@ export interface ITeam extends Document {
   status: "confirmed" | "pending" | "waitlist" | "disqualified";
   checkedIn: boolean;
   checkedInAt?: Date;
-  pitchDeckUrl?: string;
   registeredAt: Date;
   createdAt: Date;
   updatedAt: Date;
@@ -110,10 +113,24 @@ const TeamSchema = new Schema<ITeam>(
       type: [TeamMemberSchema],
       default: [],
     },
+    ventureDescription: {
+      type: String,
+      default: "",
+      trim: true,
+    },
     pitchDeckUrl: {
       type: String,
       default: "",
       trim: true,
+    },
+    submissionStatus: {
+      type: String,
+      enum: ["forming", "ready", "submitted"],
+      default: "forming",
+      index: true,
+    },
+    submittedAt: {
+      type: Date,
     },
     status: {
       type: String,

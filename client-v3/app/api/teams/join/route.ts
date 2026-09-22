@@ -142,6 +142,13 @@ export async function POST(req: Request) {
 
     // 7. Push to Team.members
     team.members.push(newMember);
+
+    const minMembers = event.minTeamMembers || 3;
+    const currentTotal = 1 + team.members.length;
+    if (team.submissionStatus !== "submitted") {
+      team.submissionStatus = currentTotal >= minMembers ? "ready" : "forming";
+    }
+
     await team.save();
 
     // 8. Synchronize to Event.registeredTeams
@@ -158,6 +165,7 @@ export async function POST(req: Request) {
           eventTeam.members = [];
         }
         eventTeam.members.push(newMember);
+        eventTeam.submissionStatus = team.submissionStatus;
         await event.save();
       }
     }

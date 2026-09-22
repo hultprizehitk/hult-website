@@ -19,6 +19,14 @@ import {
   Calendar,
   MapPin,
   Loader2,
+  CheckCircle2,
+  ExternalLink,
+  FileText,
+  Phone,
+  GraduationCap,
+  Clock,
+  Edit3,
+  Send,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import type { PublicEvent } from "@/types";
@@ -44,6 +52,10 @@ interface ExistingTeam {
   teamCode: string;
   teamName: string;
   ventureName?: string;
+  ventureDescription?: string;
+  pitchDeckUrl?: string;
+  submissionStatus?: "forming" | "ready" | "submitted";
+  submittedAt?: string;
   lead: {
     name: string;
     email: string;
@@ -95,8 +107,80 @@ export default function EventRegistrationModal({
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [copiedCode, setCopiedCode] = useState(false);
 
+  // Final Team Submission State (for Team Leader)
+  const [submissionForm, setSubmissionForm] = useState({
+    ventureName: "",
+    ventureDescription: "",
+    pitchDeckUrl: "",
+  });
+  const [submittingFinal, setSubmittingFinal] = useState(false);
+  const [finalSubmitError, setFinalSubmitError] = useState<string | null>(null);
+  const [finalSubmitSuccess, setFinalSubmitSuccess] = useState<string | null>(null);
+  const [isEditingSubmission, setIsEditingSubmission] = useState(false);
+
   const minMembers = event.minTeamMembers || 3;
   const maxMembers = event.maxTeamMembers || 5;
+
+  // Sync submission form with existing team data
+  useEffect(() => {
+    if (existingTeam) {
+      setSubmissionForm({
+        ventureName: existingTeam.ventureName || "",
+        ventureDescription: existingTeam.ventureDescription || "",
+        pitchDeckUrl: existingTeam.pitchDeckUrl || "",
+      });
+    }
+  }, [existingTeam]);
+
+  const handleFinalSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!existingTeam) return;
+
+    setSubmittingFinal(true);
+    setFinalSubmitError(null);
+    setFinalSubmitSuccess(null);
+
+    try {
+      const res = await fetch("/api/teams", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          teamId: existingTeam._id,
+          teamCode: existingTeam.teamCode,
+          ventureName: submissionForm.ventureName,
+          ventureDescription: submissionForm.ventureDescription,
+          pitchDeckUrl: submissionForm.pitchDeckUrl,
+        }),
+      });
+
+      const data = await res.json();
+      if (!res.ok || !data.success) {
+        throw new Error(data.error || "Failed to submit final team details.");
+      }
+
+      setFinalSubmitSuccess("Team information submitted successfully!");
+      setExistingTeam((prev) =>
+        prev
+          ? {
+              ...prev,
+              ventureName: submissionForm.ventureName,
+              ventureDescription: submissionForm.ventureDescription,
+              pitchDeckUrl: submissionForm.pitchDeckUrl,
+              submissionStatus: "submitted",
+              submittedAt: new Date().toISOString(),
+            }
+          : null
+      );
+      setIsEditingSubmission(false);
+      if (onRegistrationComplete) {
+        onRegistrationComplete();
+      }
+    } catch (err: unknown) {
+      setFinalSubmitError((err as Error).message);
+    } finally {
+      setSubmittingFinal(false);
+    }
+  };
 
   // Check if current user is already in a team for this event
   const checkUserTeam = useCallback(async () => {
@@ -308,145 +392,519 @@ export default function EventRegistrationModal({
             </Button>
           </div>
         ) : existingTeam ? (
-          /* ── STATE 3: ALREADY REGISTERED (TEAM CONFIRMATION CARD) ──────────── */
-          <div className="space-y-5 animate-fadeIn">
-            <div className="rounded-2xl border border-emerald-500/30 bg-[#0a1f18] p-4 flex items-center justify-between gap-3">
-              <div className="flex items-center gap-2.5">
-                <ShieldCheck className="h-5 w-5 text-emerald-400 shrink-0" />
-                <div>
-                  <span className="text-xs font-bold text-emerald-300 block">
-                    You are Registered for this Event!
-                  </span>
-                  <span className="text-[10px] text-emerald-400/80 font-mono">
-                    Status: Confirmed Participation
-                  </span>
-                </div>
-              </div>
-              <span className="rounded-full bg-emerald-500/20 border border-emerald-500/40 text-emerald-300 text-[10px] font-bold uppercase tracking-wider px-3 py-1 font-mono">
-                {userRole === "lead" ? "Team Leader" : "Team Member"}
-              </span>
-            </div>
+          /* ── STATE 3: ALREADY REGISTERED (FULL TEAM INFO & CRITERIA SUBMISSION) ──── */
+          (() => {
+            const currentMembersCount = 1 + (existingTeam.members?.length || 0);
+            const meetsMinCriteria = currentMembersCount >= minMembers;
+            const isSubmitted = existingTeam.submissionStatus === "submitted";
 
-            {/* Team Identity Card */}
-            <div className="rounded-2xl border border-white/15 bg-[#16161d] p-5 space-y-4">
-              <div>
-                <span className="text-[10px] font-mono uppercase tracking-wider text-white/40 block mb-1">
-                  Team Name
-                </span>
-                <h3 className="text-lg font-bold text-white font-[family-name:var(--font-google-sans)]">
-                  {existingTeam.teamName}
-                </h3>
-                {existingTeam.ventureName && (
-                  <p className="text-xs text-white/70 mt-0.5">
-                    Venture Idea: {existingTeam.ventureName}
-                  </p>
-                )}
-              </div>
-
-              {/* Unique Team Code Highlight Box */}
-              <div className="rounded-xl border border-white/20 bg-[#121217] p-4 flex items-center justify-between gap-3 flex-wrap">
-                <div>
-                  <span className="text-[10px] font-mono uppercase tracking-wider text-white/40 block mb-0.5">
-                    Team Invite Code
-                  </span>
-                  <span className="text-xl sm:text-2xl font-black font-mono tracking-widest text-emerald-400">
-                    {existingTeam.teamCode}
-                  </span>
-                </div>
-
-                <div className="flex items-center gap-2">
-                  <button
-                    type="button"
-                    onClick={() => handleCopyCode(existingTeam.teamCode)}
-                    className="inline-flex items-center gap-1.5 rounded-xl bg-[#1e1e28] hover:bg-[#282836] border border-white/15 px-3 py-2 text-xs font-semibold text-white transition-colors cursor-pointer"
-                  >
-                    {copiedCode ? (
-                      <>
-                        <Check className="h-3.5 w-3.5 text-emerald-400" />
-                        <span className="text-emerald-300">Copied!</span>
-                      </>
+            return (
+              <div className="space-y-5 animate-fadeIn">
+                {/* Status Bar */}
+                <div
+                  className={`rounded-2xl border p-4 flex items-center justify-between gap-3 ${
+                    isSubmitted
+                      ? "border-purple-500/40 bg-purple-950/20"
+                      : meetsMinCriteria
+                      ? "border-emerald-500/40 bg-emerald-950/20"
+                      : "border-amber-500/40 bg-amber-950/20"
+                  }`}
+                >
+                  <div className="flex items-center gap-2.5">
+                    {isSubmitted ? (
+                      <Sparkles className="h-5 w-5 text-purple-400 shrink-0" />
+                    ) : meetsMinCriteria ? (
+                      <CheckCircle2 className="h-5 w-5 text-emerald-400 shrink-0" />
                     ) : (
-                      <>
-                        <Copy className="h-3.5 w-3.5 text-white/70" />
-                        <span>Copy Code</span>
-                      </>
+                      <AlertCircle className="h-5 w-5 text-amber-400 shrink-0" />
                     )}
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={() => handleShareWhatsApp(existingTeam.teamCode, existingTeam.teamName)}
-                    className="inline-flex items-center gap-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 px-3 py-2 text-xs font-semibold text-white transition-colors cursor-pointer"
-                  >
-                    <Share2 className="h-3.5 w-3.5" />
-                    <span>WhatsApp</span>
-                  </button>
-                </div>
-              </div>
-
-              {/* Roster Progress */}
-              <div className="space-y-2 pt-2 border-t border-white/10">
-                <div className="flex items-center justify-between text-xs">
-                  <span className="text-white/60 font-semibold flex items-center gap-1.5">
-                    <Users className="h-3.5 w-3.5 text-white/60" />
-                    <span>Team Roster</span>
-                  </span>
-                  <span className="font-mono text-[11px] text-white/70">
-                    {1 + (existingTeam.members?.length || 0)} / {maxMembers} Members
-                  </span>
-                </div>
-
-                {/* Team Leader Row */}
-                <div className="rounded-xl bg-[#121217] border border-white/10 p-2.5 flex items-center justify-between text-xs">
-                  <div>
-                    <span className="font-semibold text-white block">{existingTeam.lead.name}</span>
-                    <span className="text-[10px] text-white/50 font-mono">{existingTeam.lead.email}</span>
+                    <div>
+                      <span className="text-xs font-bold text-white block">
+                        {isSubmitted
+                          ? "Application Officially Submitted"
+                          : meetsMinCriteria
+                          ? "Team Criteria Met (Eligible for Final Submission)"
+                          : "Forming Team (Roster Incomplete)"}
+                      </span>
+                      <span className="text-[10px] text-white/60 font-mono">
+                        {isSubmitted
+                          ? `Submitted on ${
+                              existingTeam.submittedAt
+                                ? new Date(existingTeam.submittedAt).toLocaleDateString()
+                                : "Confirmed record"
+                            }`
+                          : meetsMinCriteria
+                          ? `${currentMembersCount} of ${maxMembers} members enrolled`
+                          : `Needs ${minMembers - currentMembersCount} more member(s) to reach minimum`}
+                      </span>
+                    </div>
                   </div>
-                  <span className="text-[9px] font-mono font-bold uppercase tracking-wider px-2 py-0.5 rounded bg-white/10 text-white/80">
-                    Leader
-                  </span>
+
+                  <div className="flex items-center gap-2 flex-wrap">
+                    {isSubmitted && (
+                      <span className="rounded-full bg-purple-500/20 border border-purple-500/40 text-purple-300 text-[10px] font-bold uppercase tracking-wider px-2.5 py-0.5 font-mono">
+                        Submitted
+                      </span>
+                    )}
+                    <span
+                      className={`rounded-full border text-[10px] font-bold uppercase tracking-wider px-3 py-1 font-mono flex items-center gap-1 ${
+                        userRole === "lead"
+                          ? "bg-rose-500/20 border-rose-500/40 text-rose-300"
+                          : "bg-blue-500/20 border-blue-500/40 text-blue-300"
+                      }`}
+                    >
+                      {userRole === "lead" ? (
+                        <>
+                          <ShieldCheck size={11} />
+                          <span>Team Leader</span>
+                        </>
+                      ) : (
+                        <>
+                          <Users size={11} />
+                          <span>Team Member</span>
+                        </>
+                      )}
+                    </span>
+                  </div>
                 </div>
 
-                {/* Team Members List */}
-                {existingTeam.members && existingTeam.members.length > 0 && (
-                  <div className="space-y-1.5">
-                    {existingTeam.members.map((m, idx) => (
-                      <div
-                        key={idx}
-                        className="rounded-xl bg-[#121217] border border-white/10 p-2.5 flex items-center justify-between text-xs"
+                {/* Criteria Progress Card */}
+                <div className="rounded-2xl border border-white/15 bg-[#16161d] p-4.5 space-y-3">
+                  <div className="flex items-center justify-between text-xs">
+                    <span className="font-mono uppercase font-bold tracking-wider text-white/50 text-[10px] flex items-center gap-1.5">
+                      <Users size={13} className="text-[#f20089]" />
+                      <span>Roster Criteria Progress</span>
+                    </span>
+                    <span className="font-mono text-xs font-bold text-white">
+                      {currentMembersCount} / {maxMembers} Students{" "}
+                      <span className="text-white/40 font-normal">
+                        (Min required: {minMembers})
+                      </span>
+                    </span>
+                  </div>
+
+                  {/* Progress bar */}
+                  <div className="w-full bg-white/10 h-2 rounded-full overflow-hidden">
+                    <div
+                      className={`h-full transition-all duration-300 ${
+                        isSubmitted
+                          ? "bg-purple-500"
+                          : meetsMinCriteria
+                          ? "bg-emerald-500"
+                          : "bg-amber-500"
+                      }`}
+                      style={{
+                        width: `${Math.min(
+                          100,
+                          Math.max(15, (currentMembersCount / maxMembers) * 100)
+                        )}%`,
+                      }}
+                    />
+                  </div>
+
+                  {/* Context Guidance Alert */}
+                  {!meetsMinCriteria ? (
+                    <div className="rounded-xl border border-amber-500/30 bg-amber-950/20 p-3 text-xs text-amber-200/90 flex items-start gap-2">
+                      <AlertCircle size={14} className="text-amber-400 shrink-0 mt-0.5" />
+                      <div>
+                        <span className="font-bold text-amber-300 block">
+                          Criteria Pending: Minimum {minMembers} Members Required
+                        </span>
+                        <p className="text-[11px] text-amber-200/80 mt-0.5">
+                          Share your Team Code below with classmates. Once at least {minMembers} students join, the Team Leader can submit the official venture details.
+                        </p>
+                      </div>
+                    </div>
+                  ) : !isSubmitted ? (
+                    <div className="rounded-xl border border-emerald-500/30 bg-emerald-950/20 p-3 text-xs text-emerald-200/90 flex items-start gap-2">
+                      <CheckCircle2 size={14} className="text-emerald-400 shrink-0 mt-0.5" />
+                      <div>
+                        <span className="font-bold text-emerald-300 block">
+                          Team Criteria Satisfied ({currentMembersCount} Members)
+                        </span>
+                        <p className="text-[11px] text-emerald-200/80 mt-0.5">
+                          {userRole === "lead"
+                            ? "As Team Leader, you can now finalize and submit your venture proposal and pitch deck below."
+                            : "Your team satisfies the member threshold. Your Team Leader can now submit the final venture proposal."}
+                        </p>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="rounded-xl border border-purple-500/30 bg-purple-950/20 p-3 text-xs text-purple-200/90 flex items-start gap-2">
+                      <Sparkles size={14} className="text-purple-400 shrink-0 mt-0.5" />
+                      <div>
+                        <span className="font-bold text-purple-300 block">
+                          Roster &amp; Application Confirmed
+                        </span>
+                        <p className="text-[11px] text-purple-200/80 mt-0.5">
+                          All criteria matched and final team details are recorded for judging.
+                        </p>
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                {/* Team Name & Invite Code Block */}
+                <div className="rounded-2xl border border-white/15 bg-[#16161d] p-5 space-y-4">
+                  <div>
+                    <span className="text-[10px] font-mono uppercase tracking-wider text-white/40 block mb-1">
+                      Registered Team Name
+                    </span>
+                    <h3 className="text-xl font-bold text-white font-[family-name:var(--font-google-sans)]">
+                      {existingTeam.teamName}
+                    </h3>
+                  </div>
+
+                  {/* Team Code Bar */}
+                  <div className="rounded-xl border border-white/20 bg-[#121217] p-4 flex items-center justify-between gap-3 flex-wrap">
+                    <div>
+                      <span className="text-[10px] font-mono uppercase tracking-wider text-white/40 block mb-0.5">
+                        Team Invite Code
+                      </span>
+                      <span className="text-xl sm:text-2xl font-black font-mono tracking-widest text-[#f20089]">
+                        {existingTeam.teamCode}
+                      </span>
+                    </div>
+
+                    <div className="flex items-center gap-2">
+                      <button
+                        type="button"
+                        onClick={() => handleCopyCode(existingTeam.teamCode)}
+                        className="inline-flex items-center gap-1.5 rounded-xl bg-[#1e1e28] hover:bg-[#282836] border border-white/15 px-3 py-2 text-xs font-semibold text-white transition-colors cursor-pointer"
                       >
-                        <div>
-                          <span className="font-medium text-white block">{m.name}</span>
-                          <span className="text-[10px] text-white/50 font-mono">{m.email}</span>
+                        {copiedCode ? (
+                          <>
+                            <Check className="h-3.5 w-3.5 text-emerald-400" />
+                            <span className="text-emerald-300">Copied!</span>
+                          </>
+                        ) : (
+                          <>
+                            <Copy className="h-3.5 w-3.5 text-white/70" />
+                            <span>Copy Code</span>
+                          </>
+                        )}
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() =>
+                          handleShareWhatsApp(existingTeam.teamCode, existingTeam.teamName)
+                        }
+                        className="inline-flex items-center gap-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 px-3 py-2 text-xs font-semibold text-white transition-colors cursor-pointer"
+                      >
+                        <Share2 className="h-3.5 w-3.5" />
+                        <span>WhatsApp</span>
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Comprehensive Team Roster Dossier */}
+                  <div className="space-y-2.5 pt-2 border-t border-white/10">
+                    <div className="flex items-center justify-between text-xs">
+                      <span className="text-white/70 font-semibold flex items-center gap-1.5 font-mono uppercase text-[10px]">
+                        <Users className="h-3.5 w-3.5 text-white/60" />
+                        <span>Full Team Roster ({currentMembersCount} Students)</span>
+                      </span>
+                      <span className="text-[10px] text-white/40 font-mono">
+                        Heritage Verified
+                      </span>
+                    </div>
+
+                    {/* Team Leader Dossier Card */}
+                    <div className="rounded-xl bg-[#121217] border border-white/15 p-3.5 flex flex-col gap-1.5">
+                      <div className="flex items-center justify-between gap-2">
+                        <div className="flex items-center gap-2">
+                          <span className="font-bold text-white text-xs">
+                            {existingTeam.lead.name}
+                          </span>
+                          <span className="text-[9px] font-mono font-bold uppercase tracking-wider px-2 py-0.5 rounded bg-rose-500/20 border border-rose-500/30 text-rose-300">
+                            Team Leader
+                          </span>
                         </div>
-                        <span className="text-[9px] font-mono text-white/40 uppercase tracking-wider">
-                          Member
+                        {existingTeam.lead.roll && (
+                          <span className="text-[10px] font-mono text-white/60">
+                            Roll: {existingTeam.lead.roll}
+                          </span>
+                        )}
+                      </div>
+
+                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-1.5 text-[11px] text-white/60 pt-1 font-mono">
+                        <span className="truncate">{existingTeam.lead.email}</span>
+                        <span>Dept: {existingTeam.lead.department || "General"}</span>
+                        <span>Phone: {existingTeam.lead.phone || "Not recorded"}</span>
+                      </div>
+                    </div>
+
+                    {/* Team Members List */}
+                    {existingTeam.members && existingTeam.members.length > 0 && (
+                      <div className="space-y-2">
+                        {existingTeam.members.map((m, idx) => (
+                          <div
+                            key={idx}
+                            className="rounded-xl bg-[#121217] border border-white/10 p-3 flex flex-col gap-1.5"
+                          >
+                            <div className="flex items-center justify-between gap-2">
+                              <div className="flex items-center gap-2">
+                                <span className="font-medium text-white text-xs">
+                                  {m.name}
+                                </span>
+                                <span className="text-[9px] font-mono text-blue-300 uppercase tracking-wider px-2 py-0.5 rounded bg-blue-500/10 border border-blue-500/20">
+                                  Member
+                                </span>
+                              </div>
+                              {m.roll && (
+                                <span className="text-[10px] font-mono text-white/50">
+                                  Roll: {m.roll}
+                                </span>
+                              )}
+                            </div>
+
+                            <div className="grid grid-cols-1 sm:grid-cols-3 gap-1.5 text-[11px] text-white/50 pt-0.5 font-mono">
+                              <span className="truncate">{m.email}</span>
+                              <span>Dept: {m.department || "General"}</span>
+                              <span>Phone: {m.phone || "Not recorded"}</span>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+
+                    {/* Slots Remaining Guidance */}
+                    {currentMembersCount < maxMembers && (
+                      <p className="text-[11px] text-white/50 pt-1 leading-normal font-sans">
+                        Share code <span className="text-[#f20089] font-mono font-bold">{existingTeam.teamCode}</span> with up to {maxMembers - currentMembersCount} more student(s) to complete your roster.
+                      </p>
+                    )}
+                  </div>
+                </div>
+
+                {/* Venture Proposal & Submission Dossier */}
+                <div className="rounded-2xl border border-white/15 bg-[#16161d] p-5 space-y-4">
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="font-mono uppercase font-bold tracking-wider text-white/60 text-[10px] flex items-center gap-1.5">
+                      <FileText size={13} className="text-[#f20089]" />
+                      <span>Venture Proposal &amp; Pitch Deck</span>
+                    </span>
+
+                    {userRole === "lead" && !isEditingSubmission && (
+                      <button
+                        type="button"
+                        onClick={() => setIsEditingSubmission(true)}
+                        className="inline-flex items-center gap-1 text-[11px] text-[#f20089] hover:underline font-semibold cursor-pointer"
+                      >
+                        <Edit3 size={12} />
+                        <span>Edit Details</span>
+                      </button>
+                    )}
+                  </div>
+
+                  {userRole === "lead" ? (
+                    isEditingSubmission ||
+                    (!existingTeam.ventureDescription && !existingTeam.pitchDeckUrl) ? (
+                      /* Team Leader Edit / Submit Form */
+                      <form onSubmit={handleFinalSubmit} className="space-y-3.5 pt-1">
+                        {finalSubmitError && (
+                          <div className="rounded-xl border border-rose-500/40 bg-rose-950/30 p-3 text-xs text-rose-200">
+                            {finalSubmitError}
+                          </div>
+                        )}
+                        {finalSubmitSuccess && (
+                          <div className="rounded-xl border border-emerald-500/40 bg-emerald-950/30 p-3 text-xs text-emerald-200">
+                            {finalSubmitSuccess}
+                          </div>
+                        )}
+
+                        <div>
+                          <label className="block text-[10px] font-mono uppercase tracking-wider text-white/50 mb-1">
+                            Venture Track / Project Name
+                          </label>
+                          <input
+                            type="text"
+                            required
+                            placeholder="e.g. EcoPack Innovations"
+                            value={submissionForm.ventureName}
+                            onChange={(e) =>
+                              setSubmissionForm((p) => ({ ...p, ventureName: e.target.value }))
+                            }
+                            className="w-full rounded-xl border border-white/15 bg-[#121217] px-3.5 py-2.5 text-xs text-white placeholder-white/30 focus:border-[#f20089] focus:outline-none"
+                          />
+                        </div>
+
+                        <div>
+                          <label className="block text-[10px] font-mono uppercase tracking-wider text-white/50 mb-1">
+                            Executive Problem &amp; Solution Summary
+                          </label>
+                          <textarea
+                            rows={3}
+                            placeholder="Briefly describe your venture's social impact, target problem, and proposed innovation..."
+                            value={submissionForm.ventureDescription}
+                            onChange={(e) =>
+                              setSubmissionForm((p) => ({
+                                ...p,
+                                ventureDescription: e.target.value,
+                              }))
+                            }
+                            className="w-full rounded-xl border border-white/15 bg-[#121217] px-3.5 py-2.5 text-xs text-white placeholder-white/30 focus:border-[#f20089] focus:outline-none resize-none"
+                          />
+                        </div>
+
+                        <div>
+                          <label className="block text-[10px] font-mono uppercase tracking-wider text-white/50 mb-1">
+                            Pitch Deck Link (Google Drive / Canva / Notion)
+                          </label>
+                          <input
+                            type="url"
+                            placeholder="https://drive.google.com/... or Canva presentation link"
+                            value={submissionForm.pitchDeckUrl}
+                            onChange={(e) =>
+                              setSubmissionForm((p) => ({ ...p, pitchDeckUrl: e.target.value }))
+                            }
+                            className="w-full rounded-xl border border-white/15 bg-[#121217] px-3.5 py-2.5 text-xs text-white placeholder-white/30 focus:border-[#f20089] focus:outline-none font-mono"
+                          />
+                        </div>
+
+                        <div className="flex items-center gap-2 pt-2">
+                          <Button
+                            type="submit"
+                            variant="default"
+                            disabled={!meetsMinCriteria || submittingFinal}
+                            className="flex-1 rounded-xl bg-white hover:bg-neutral-100 text-neutral-950 font-bold text-xs py-2.5 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+                          >
+                            {submittingFinal ? (
+                              <span className="flex items-center justify-center gap-2">
+                                <Loader2 className="h-4 w-4 animate-spin" />
+                                <span>Submitting Application...</span>
+                              </span>
+                            ) : (
+                              <span className="flex items-center justify-center gap-1.5">
+                                <Send size={13} />
+                                <span>Submit Official Team Application</span>
+                              </span>
+                            )}
+                          </Button>
+
+                          {isEditingSubmission && (
+                            <Button
+                              type="button"
+                              variant="outline"
+                              onClick={() => setIsEditingSubmission(false)}
+                              className="rounded-xl font-semibold text-xs"
+                            >
+                              Cancel
+                            </Button>
+                          )}
+                        </div>
+
+                        {!meetsMinCriteria && (
+                          <p className="text-[10px] text-amber-300 font-mono text-center">
+                            Submission unlocks once your team reaches at least {minMembers} members.
+                          </p>
+                        )}
+                      </form>
+                    ) : (
+                      /* Team Leader Read View */
+                      <div className="space-y-3 pt-1 text-xs">
+                        <div>
+                          <span className="text-[10px] font-mono uppercase text-white/40 block">
+                            Track / Project Title
+                          </span>
+                          <span className="font-bold text-white block mt-0.5">
+                            {existingTeam.ventureName || "General Track"}
+                          </span>
+                        </div>
+
+                        <div>
+                          <span className="text-[10px] font-mono uppercase text-white/40 block">
+                            Description &amp; Problem Statement
+                          </span>
+                          <p className="text-white/80 whitespace-pre-line text-xs mt-0.5 leading-relaxed bg-[#121217] border border-white/10 p-3 rounded-xl">
+                            {existingTeam.ventureDescription || "No description provided."}
+                          </p>
+                        </div>
+
+                        <div>
+                          <span className="text-[10px] font-mono uppercase text-white/40 block mb-1">
+                            Pitch Deck Presentation
+                          </span>
+                          {existingTeam.pitchDeckUrl ? (
+                            <a
+                              href={existingTeam.pitchDeckUrl}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="inline-flex items-center gap-1.5 rounded-xl border border-white/15 bg-white/5 hover:bg-white/10 px-3 py-2 text-xs font-semibold text-white transition-colors"
+                            >
+                              <ExternalLink size={13} className="text-[#f20089]" />
+                              <span className="truncate max-w-xs">{existingTeam.pitchDeckUrl}</span>
+                            </a>
+                          ) : (
+                            <span className="text-white/40 font-mono text-[11px]">
+                              Pitch deck not yet attached.
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                    )
+                  ) : (
+                    /* Team Member Read-Only View */
+                    <div className="space-y-3 pt-1 text-xs">
+                      <div>
+                        <span className="text-[10px] font-mono uppercase text-white/40 block">
+                          Track / Project Title
+                        </span>
+                        <span className="font-bold text-white block mt-0.5">
+                          {existingTeam.ventureName || "General Impact Track"}
                         </span>
                       </div>
-                    ))}
-                  </div>
-                )}
 
-                {/* Empty slots indicator */}
-                {1 + (existingTeam.members?.length || 0) < maxMembers && (
-                  <p className="text-[11px] text-white/50 pt-1 leading-normal">
-                    Share your team code (<span className="text-emerald-300 font-mono font-bold">{existingTeam.teamCode}</span>)
-                    with up to {maxMembers - (1 + (existingTeam.members?.length || 0))} more classmates to join.
-                  </p>
-                )}
+                      <div>
+                        <span className="text-[10px] font-mono uppercase text-white/40 block">
+                          Description &amp; Problem Statement
+                        </span>
+                        <p className="text-white/80 whitespace-pre-line text-xs mt-0.5 leading-relaxed bg-[#121217] border border-white/10 p-3 rounded-xl">
+                          {existingTeam.ventureDescription || "Pending submission by Team Leader."}
+                        </p>
+                      </div>
+
+                      <div>
+                        <span className="text-[10px] font-mono uppercase text-white/40 block mb-1">
+                          Pitch Deck Link
+                        </span>
+                        {existingTeam.pitchDeckUrl ? (
+                          <a
+                            href={existingTeam.pitchDeckUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="inline-flex items-center gap-1.5 rounded-xl border border-white/15 bg-white/5 hover:bg-white/10 px-3 py-2 text-xs font-semibold text-white transition-colors"
+                          >
+                            <ExternalLink size={13} className="text-[#f20089]" />
+                            <span className="truncate max-w-xs">{existingTeam.pitchDeckUrl}</span>
+                          </a>
+                        ) : (
+                          <span className="text-white/40 font-mono text-[11px]">
+                            Pending upload by Team Leader.
+                          </span>
+                        )}
+                      </div>
+
+                      <p className="text-[10px] text-white/40 font-mono pt-1">
+                        Read-only: Only your Team Leader ({existingTeam.lead.name}) is authorized to update submission details.
+                      </p>
+                    </div>
+                  )}
+                </div>
+
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="default"
+                  onClick={onClose}
+                  className="w-full font-semibold cursor-pointer"
+                >
+                  Close Window
+                </Button>
               </div>
-            </div>
-
-            <Button
-              type="button"
-              variant="outline"
-              size="default"
-              onClick={onClose}
-              className="w-full font-semibold"
-            >
-              Close Window
-            </Button>
-          </div>
+            );
+          })()
         ) : mode === "select" ? (
           /* ── STATE 4: THE DUAL CHOICE (CREATE TEAM vs JOIN TEAM) ─────────── */
           <div className="space-y-4 animate-fadeIn">

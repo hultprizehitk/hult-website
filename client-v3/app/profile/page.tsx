@@ -17,6 +17,8 @@ import {
   Check,
   Share2,
   Sparkles,
+  AlertCircle,
+  ExternalLink,
 } from "lucide-react";
 import SiteHeader from "@/components/layout/SiteHeader";
 import GrainOverlay from "@/components/hero/GrainOverlay";
@@ -25,6 +27,7 @@ import KolkataHero from "@/components/hero/KolkataHero";
 interface TeamMember {
   name: string;
   email: string;
+  phone?: string;
   department?: string;
   roll?: string;
 }
@@ -34,6 +37,10 @@ interface UserTeam {
   teamCode: string;
   teamName: string;
   ventureName?: string;
+  ventureDescription?: string;
+  pitchDeckUrl?: string;
+  submissionStatus?: "forming" | "ready" | "submitted";
+  submittedAt?: string;
   lead: {
     name: string;
     email: string;
@@ -51,6 +58,8 @@ interface UserTeam {
     tag?: string;
     date?: string;
     venue?: string;
+    minTeamMembers?: number;
+    maxTeamMembers?: number;
   };
 }
 
@@ -278,17 +287,37 @@ export default function StudentProfilePage() {
                               <span className="text-xs font-bold text-white truncate max-w-[240px]">
                                 {t.eventId?.title || "Hult Prize Competition"}
                               </span>
-                              {isLead ? (
-                                <span className="inline-flex items-center gap-1 rounded-full bg-rose-500/15 border border-rose-500/30 px-2.5 py-0.5 text-[10px] font-bold text-rose-300 uppercase tracking-widest font-mono">
-                                  <ShieldCheck size={11} />
-                                  <span>Leader</span>
-                                </span>
-                              ) : (
-                                <span className="inline-flex items-center gap-1 rounded-full bg-blue-500/15 border border-blue-500/30 px-2.5 py-0.5 text-[10px] font-bold text-blue-300 uppercase tracking-widest font-mono">
-                                  <Users size={11} />
-                                  <span>Member</span>
-                                </span>
-                              )}
+
+                              <div className="flex items-center gap-1.5 flex-wrap">
+                                {t.submissionStatus === "submitted" ? (
+                                  <span className="inline-flex items-center gap-1 rounded-full bg-purple-500/15 border border-purple-500/30 px-2.5 py-0.5 text-[10px] font-bold text-purple-300 uppercase tracking-widest font-mono">
+                                    <Sparkles size={11} />
+                                    <span>Submitted</span>
+                                  </span>
+                                ) : (1 + (t.members?.length || 0)) >= (t.eventId?.minTeamMembers || 3) ? (
+                                  <span className="inline-flex items-center gap-1 rounded-full bg-emerald-500/15 border border-emerald-500/30 px-2.5 py-0.5 text-[10px] font-bold text-emerald-300 uppercase tracking-widest font-mono">
+                                    <CheckCircle2 size={11} />
+                                    <span>Criteria Met</span>
+                                  </span>
+                                ) : (
+                                  <span className="inline-flex items-center gap-1 rounded-full bg-amber-500/15 border border-amber-500/30 px-2.5 py-0.5 text-[10px] font-bold text-amber-300 uppercase tracking-widest font-mono">
+                                    <AlertCircle size={11} />
+                                    <span>Forming ({1 + (t.members?.length || 0)}/{t.eventId?.minTeamMembers || 3} Min)</span>
+                                  </span>
+                                )}
+
+                                {isLead ? (
+                                  <span className="inline-flex items-center gap-1 rounded-full bg-rose-500/15 border border-rose-500/30 px-2.5 py-0.5 text-[10px] font-bold text-rose-300 uppercase tracking-widest font-mono">
+                                    <ShieldCheck size={11} />
+                                    <span>Leader</span>
+                                  </span>
+                                ) : (
+                                  <span className="inline-flex items-center gap-1 rounded-full bg-blue-500/15 border border-blue-500/30 px-2.5 py-0.5 text-[10px] font-bold text-blue-300 uppercase tracking-widest font-mono">
+                                    <Users size={11} />
+                                    <span>Member</span>
+                                  </span>
+                                )}
+                              </div>
                             </div>
 
                             {/* Team Name & Venture */}
@@ -297,9 +326,27 @@ export default function StudentProfilePage() {
                                 {t.teamName}
                               </h4>
                               {t.ventureName && (
-                                <p className="text-xs text-zinc-400 mt-0.5">
-                                  Track / Venture: {t.ventureName}
+                                <p className="text-xs text-zinc-300 mt-0.5">
+                                  Track / Venture: <strong className="text-white">{t.ventureName}</strong>
                                 </p>
+                              )}
+                              {t.ventureDescription && (
+                                <p className="text-[11px] text-zinc-400 mt-1 line-clamp-2 leading-relaxed bg-[#0e0e12] border border-white/5 p-2 rounded-lg">
+                                  {t.ventureDescription}
+                                </p>
+                              )}
+                              {t.pitchDeckUrl && (
+                                <div className="mt-1.5">
+                                  <a
+                                    href={t.pitchDeckUrl}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="inline-flex items-center gap-1 text-[11px] text-[#f20089] hover:underline font-mono"
+                                  >
+                                    <ExternalLink size={12} />
+                                    <span>View Pitch Deck Link</span>
+                                  </a>
+                                </div>
                               )}
                             </div>
 
@@ -349,7 +396,7 @@ export default function StudentProfilePage() {
                             {/* Members Roster Summary */}
                             <div className="pt-2 border-t border-white/10 text-xs">
                               <span className="block text-[10px] font-mono uppercase font-bold tracking-widest text-zinc-400 mb-1.5">
-                                Roster ({1 + (t.members?.length || 0)} Students)
+                                Full Roster ({1 + (t.members?.length || 0)} Students)
                               </span>
                               <div className="space-y-1">
                                 <div className="flex items-center justify-between text-zinc-300 text-[11px]">
@@ -357,20 +404,21 @@ export default function StudentProfilePage() {
                                     {t.lead?.name || t.leadEmail} (Lead)
                                   </span>
                                   <span className="text-zinc-400 font-mono text-[10px]">
-                                    {t.lead?.department || "Lead"}
+                                    {t.lead?.department || "General"} {t.lead?.roll ? `• ${t.lead.roll}` : ""}
                                   </span>
                                 </div>
-                                {t.members && t.members.map((m, idx) => (
-                                  <div
-                                    key={idx}
-                                    className="flex items-center justify-between text-zinc-400 text-[11px]"
-                                  >
-                                    <span>{m.name || m.email}</span>
-                                    <span className="text-zinc-400 font-mono text-[10px]">
-                                      {m.department || "Member"}
-                                    </span>
-                                  </div>
-                                ))}
+                                {t.members &&
+                                  t.members.map((m, idx) => (
+                                    <div
+                                      key={idx}
+                                      className="flex items-center justify-between text-zinc-400 text-[11px]"
+                                    >
+                                      <span>{m.name || m.email}</span>
+                                      <span className="text-zinc-400 font-mono text-[10px]">
+                                        {m.department || "Member"} {m.roll ? `• ${m.roll}` : ""}
+                                      </span>
+                                    </div>
+                                  ))}
                               </div>
                             </div>
                           </div>

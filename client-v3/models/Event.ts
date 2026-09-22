@@ -14,6 +14,8 @@ export interface IRegisteredTeam {
   teamCode?: string;
   teamName: string;
   ventureName?: string;
+  ventureDescription?: string;
+  pitchDeckUrl?: string;
   leadName: string;
   leadEmail: string;
   leadPhone?: string;
@@ -22,6 +24,8 @@ export interface IRegisteredTeam {
   members?: ITeamMember[];
   registeredAt: Date;
   status: "confirmed" | "pending" | "waitlist" | "disqualified";
+  submissionStatus?: "forming" | "ready" | "submitted";
+  submittedAt?: Date;
   checkedIn?: boolean;
   checkedInAt?: Date;
 }
@@ -147,6 +151,10 @@ const EventSchema = new Schema<IEvent>(
         ],
         registeredAt: { type: Date, default: Date.now },
         status: { type: String, enum: ["confirmed", "pending", "waitlist", "disqualified"], default: "confirmed" },
+        ventureDescription: { type: String, default: "" },
+        pitchDeckUrl: { type: String, default: "" },
+        submissionStatus: { type: String, enum: ["forming", "ready", "submitted"], default: "forming" },
+        submittedAt: { type: Date },
         checkedIn: { type: Boolean, default: false },
         checkedInAt: { type: Date },
       },

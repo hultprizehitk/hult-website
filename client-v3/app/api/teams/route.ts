@@ -177,7 +177,9 @@ export async function POST(req: Request) {
     const cleanVenture = ventureName?.trim() || "";
     const cleanPhone = phone?.trim() || "";
     const cleanRoll = roll?.trim() || "";
+    const minMembers = event.minTeamMembers || 3;
     const maxMembers = event.maxTeamMembers || 5;
+    const initialSubmissionStatus = 1 >= minMembers ? "ready" : "forming";
 
     // 7. Create Team Document
     const newTeam = await Team.create({
@@ -197,6 +199,7 @@ export async function POST(req: Request) {
       department: userDept,
       members: [],
       status: "confirmed",
+      submissionStatus: initialSubmissionStatus,
       checkedIn: false,
       registeredAt: new Date(),
     });
@@ -219,6 +222,7 @@ export async function POST(req: Request) {
       members: [],
       registeredAt: new Date(),
       status: "confirmed",
+      submissionStatus: initialSubmissionStatus,
       checkedIn: false,
     });
     event.registeredTeamsCount = event.registeredTeams.length;
@@ -236,5 +240,138 @@ export async function POST(req: Request) {
   } catch (error: unknown) {
     console.error("POST /api/teams error:", error);
     return NextResponse.json({ error: "Failed to create team: " + (error as Error).message }, { status: 500 });
+  }
+}
+
+/**
+ * PATCH /api/teams (Finalize / Submit Team Info by Team Leader)
+ */
+export async function PATCH(req: Request) {
+  try {
+    const session = await auth();
+    if (!session?.user?.email) {
+      return NextResponse.json(
+        { error: "Authentication required. Please sign in." },
+        { status: 401 }
+      );
+    }
+
+    const email = session.user.email.toLowerCase().trim();
+    const body = await req.json();
+    const { teamId, teamCode, ventureName, ventureDescription, pitchDeckUrl } = body;
+
+    if (!teamId && !teamCode) {
+      return NextResponse.json(
+        { error: "Team ID or Team Code is required to update team details." },
+        { status: 400 }
+      );
+    }
+
+    await connectDB();
+
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const filter: Record<string, any> = {};
+    if (teamId && mongoose.Types.ObjectId.isValid(teamId)) {
+      filter._id = new mongoose.Types.ObjectId(teamId);
+    } else if (teamCode) {
+      filter.teamCode = String(teamCode).trim().toUpperCase();
+    } else {
+      return NextResponse.json({ error: "Invalid team identifier provided." }, { status: 400 });
+    }
+
+    const team = await Team.findOne(filter);
+    if (!team) {
+      return NextResponse.json({ error: "Team not found." }, { status: 404 });
+    }
+
+    // Verify caller is the Team Leader
+    const isLead =
+      team.leadEmail?.toLowerCase() === email ||
+      team.lead?.email?.toLowerCase() === email;
+
+    if (!isLead) {
+      return NextResponse.json(
+        { error: "Unauthorized. Only the Team Leader is authorized to submit or update team info." },
+        { status: 403 }
+      );
+    }
+
+    // Fetch associated event to verify criteria
+    const event = await Event.findById(team.eventId);
+    if (!event) {
+      return NextResponse.json({ error: "Associated event not found." }, { status: 404 });
+    }
+
+    const minMembers = event.minTeamMembers || 3;
+    const maxMembers = event.maxTeamMembers || 5;
+    const currentTotalMembers = 1 + (Array.isArray(team.members) ? team.members.length : 0);
+
+    // Enforce minimum members criteria
+    if (currentTotalMembers < minMembers) {
+      return NextResponse.json(
+        {
+          error: `Team criteria not met. Your team currently has ${currentTotalMembers} member(s). A minimum of ${minMembers} members is required before final submission.`,
+        },
+        { status: 400 }
+      );
+    }
+
+    // Enforce maximum members criteria
+    if (currentTotalMembers > maxMembers) {
+      return NextResponse.json(
+        {
+          error: `Team size exceeds maximum limit of ${maxMembers} members.`,
+        },
+        { status: 400 }
+      );
+    }
+
+    // Update details
+    if (ventureName && typeof ventureName === "string") {
+      team.ventureName = ventureName.trim();
+    }
+    if (ventureDescription !== undefined && typeof ventureDescription === "string") {
+      team.ventureDescription = ventureDescription.trim();
+    }
+    if (pitchDeckUrl !== undefined && typeof pitchDeckUrl === "string") {
+      team.pitchDeckUrl = pitchDeckUrl.trim();
+    }
+
+    team.submissionStatus = "submitted";
+    team.submittedAt = new Date();
+    team.status = "confirmed";
+    await team.save();
+
+    // Synchronize to Event.registeredTeams
+    if (Array.isArray(event.registeredTeams)) {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const eventTeam = event.registeredTeams.find(
+        (t: any) =>
+          t.id === team._id.toString() ||
+          t.teamCode?.toUpperCase() === team.teamCode.toUpperCase()
+      );
+
+      if (eventTeam) {
+        if (team.ventureName) eventTeam.ventureName = team.ventureName;
+        if (team.ventureDescription !== undefined) eventTeam.ventureDescription = team.ventureDescription;
+        if (team.pitchDeckUrl !== undefined) eventTeam.pitchDeckUrl = team.pitchDeckUrl;
+        eventTeam.submissionStatus = "submitted";
+        eventTeam.submittedAt = team.submittedAt;
+        eventTeam.status = "confirmed";
+        await event.save();
+      }
+    }
+
+    return NextResponse.json({
+      success: true,
+      message: "Team information and venture details submitted successfully!",
+      team,
+    });
+  } catch (error: unknown) {
+    console.error("PATCH /api/teams error:", error);
+    return NextResponse.json(
+      { error: "Failed to update team details: " + (error as Error).message },
+      { status: 500 }
+    );
   }
 }

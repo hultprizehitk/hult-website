@@ -65,6 +65,10 @@ export async function GET(req: Request) {
           teamCode: anyT.teamCode,
           teamName: anyT.teamName,
           ventureName: anyT.ventureName || "",
+          ventureDescription: anyT.ventureDescription || "",
+          pitchDeckUrl: anyT.pitchDeckUrl || "",
+          submissionStatus: anyT.submissionStatus || "forming",
+          submittedAt: anyT.submittedAt || null,
           lead: {
             name: anyT.lead?.name || "Team Leader",
             email: anyT.lead?.email || anyT.leadEmail || "",
