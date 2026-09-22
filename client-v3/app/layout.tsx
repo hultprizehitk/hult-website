@@ -96,7 +96,6 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
 });
 
-import SessionProvider from "@/components/providers/SessionProvider";
 import AnnouncementBanner from "@/components/ui/AnnouncementBanner";
 
 export const metadata: Metadata = {
@@ -155,10 +154,8 @@ export default function RootLayout({
       className={`${playfair.variable} ${cinzel.variable} ${blubly.variable} ${montserrat.variable} ${anton.variable} ${googleSans.variable} ${pirataOne.variable} ${cinzelDecorative.variable} ${rye.variable} ${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
       <body className="min-h-full flex flex-col font-sans">
-        <SessionProvider>
-          <AnnouncementBanner />
-          {children}
-        </SessionProvider>
+        <AnnouncementBanner />
+        {children}
       </body>
     </html>
   );

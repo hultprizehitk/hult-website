@@ -3,7 +3,6 @@
 import React, { useState, useEffect } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { useSession, signOut } from "@/lib/auth-client";
 
 interface SiteHeaderProps {
   className?: string;
@@ -20,7 +19,6 @@ export default function SiteHeader({
   theme = "dark",
   isLandingRevealed = true,
 }: SiteHeaderProps) {
-  const { data: session, status } = useSession();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
 
@@ -45,9 +43,6 @@ export default function SiteHeader({
   const visibilityClass = isLandingRevealed
     ? "opacity-100 translate-y-0"
     : "opacity-0 -translate-y-4 pointer-events-none";
-
-  const userRole = (session?.user as { role?: string })?.role || "";
-  const isAdmin = ["junior_admin", "lead_admin", "master_admin"].includes(userRole);
 
   return (
     <>
@@ -79,19 +74,8 @@ export default function SiteHeader({
           </div>
         </div>
 
-        {/* Desktop Nav Links */}
-        <nav className="hidden md:flex items-center gap-5 lg:gap-6 font-[family-name:var(--font-google-sans)]">
-          <Link
-            href="/"
-            className={`text-xs sm:text-sm font-semibold tracking-wide transition-colors duration-200 ${
-              theme === "light"
-                ? "text-[#2b161f]/85 hover:text-neutral-950"
-                : "text-white/85 drop-shadow hover:text-white"
-            }`}
-          >
-            Home
-          </Link>
-
+        {/* Desktop Navigation */}
+        <nav className="hidden md:flex items-center gap-6 lg:gap-8">
           <Link
             href="/events"
             className={`text-xs sm:text-sm font-semibold tracking-wide transition-colors duration-200 ${
@@ -118,88 +102,23 @@ export default function SiteHeader({
             Ideas for a Brighter Tomorrow
           </span>
 
-          {status === "authenticated" && session?.user ? (
-            <div className="flex items-center gap-3">
-              {isAdmin && (
-                <Link
-                  href="/portal"
-                  className="inline-flex items-center gap-1 rounded-full border border-neutral-700 bg-neutral-800/80 hover:bg-neutral-800 px-3 py-1.5 text-xs font-mono font-bold text-neutral-200 hover:text-white transition-all shadow-sm hover:scale-[1.02]"
-                >
-                  <span>
-                    {userRole === "master_admin"
-                      ? "Master Admin CMS"
-                      : userRole === "lead_admin"
-                      ? "Lead Admin CMS"
-                      : "Junior Admin CMS"}
-                  </span>
-                </Link>
-              )}
-              <Link
-                href="/profile"
-                className={`inline-flex items-center gap-1.5 rounded-full border px-3.5 py-1.5 text-xs font-bold shadow-sm hover:scale-[1.02] transition-all ${
-                  theme === "light"
-                    ? "border-[#2b161f]/20 bg-[#2b161f]/5 hover:bg-[#2b161f]/10 text-[#2b161f]"
-                    : "border-white/20 bg-white/10 hover:bg-white/15 text-white"
-                }`}
-                title="View User Profile"
-              >
-                <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
-                {session.user.name?.split(" ")[0]}
-              </Link>
-              <button
-                type="button"
-                onClick={() => signOut()}
-                className={`text-xs font-semibold transition-colors cursor-pointer ${
-                  theme === "light"
-                    ? "text-[#2b161f]/70 hover:text-neutral-950"
-                    : "text-white/70 hover:text-white"
-                }`}
-              >
-                Sign Out
-              </button>
-            </div>
-          ) : (
-            <Link
-              href="/register"
-              className="rounded-full bg-neutral-900 hover:bg-neutral-800 px-4 sm:px-5 py-1.5 sm:py-2 text-xs sm:text-sm font-bold tracking-wide text-white shadow-lg shadow-neutral-900/20 border border-neutral-700 transition-all duration-200 hover:scale-[1.05] active:scale-[0.98] inline-flex items-center gap-1.5"
-            >
-              <span>Register Now</span>
-              <span>→</span>
-            </Link>
-          )}
+          <Link
+            href="/register"
+            className="rounded-full bg-neutral-900 hover:bg-neutral-800 px-4 sm:px-5 py-1.5 sm:py-2 text-xs sm:text-sm font-bold tracking-wide text-white shadow-lg shadow-neutral-900/20 border border-neutral-700 transition-all duration-200 hover:scale-[1.05] active:scale-[0.98] inline-flex items-center gap-1.5"
+          >
+            <span>Register Now</span>
+            <span>→</span>
+          </Link>
         </nav>
 
-        {/* Mobile Right Bar: Register / User + Hamburger Button */}
+        {/* Mobile Right Bar: Register + Hamburger Button */}
         <div className="flex md:hidden items-center gap-2">
-          {status === "authenticated" && session?.user ? (
-            <div className="flex items-center gap-1.5">
-              {isAdmin && (
-                <Link
-                  href="/portal"
-                  className="rounded-full bg-neutral-800 border border-neutral-700 px-2.5 py-1 text-[10px] font-mono font-bold text-neutral-200 uppercase tracking-wider"
-                >
-                  Admin CMS
-                </Link>
-              )}
-              <Link
-                href="/profile"
-                className={`rounded-full border px-3 py-1.5 text-[11px] font-bold tracking-wide shadow-md active:scale-95 ${
-                  theme === "light"
-                    ? "border-[#2b161f]/20 bg-[#2b161f]/5 text-[#2b161f]"
-                    : "border-white/20 bg-white/[0.1] text-white"
-                }`}
-              >
-                {session.user.name?.split(" ")[0]}
-              </Link>
-            </div>
-          ) : (
-            <Link
-              href="/register"
-              className="rounded-full bg-neutral-900 hover:bg-neutral-800 px-3.5 py-1.5 text-[11px] font-bold tracking-wide text-white shadow-md shadow-neutral-900/20 border border-neutral-700 active:scale-95"
-            >
-              Register
-            </Link>
-          )}
+          <Link
+            href="/register"
+            className="rounded-full bg-neutral-900 hover:bg-neutral-800 px-3.5 py-1.5 text-[11px] font-bold tracking-wide text-white shadow-md shadow-neutral-900/20 border border-neutral-700 active:scale-95"
+          >
+            Register
+          </Link>
           <button
             type="button"
             onClick={() => setMobileMenuOpen((prev) => !prev)}
@@ -255,38 +174,15 @@ export default function SiteHeader({
             onClick={() => setMobileMenuOpen(false)}
             className="text-base font-semibold text-white/90 hover:text-white py-2 border-b border-white/5 transition-colors"
           >
-            Team Registration
+            Student Portal & Registration
           </Link>
-          {status === "authenticated" && (
-            <>
-              <Link
-                href="/profile"
-                onClick={() => setMobileMenuOpen(false)}
-                className="text-base font-semibold text-white/90 hover:text-white py-2 border-b border-white/5 transition-colors"
-              >
-                Student Profile & Pass
-              </Link>
-              {isAdmin && (
-                <Link
-                  href="/portal"
-                  onClick={() => setMobileMenuOpen(false)}
-                  className="text-base font-semibold text-neutral-300 hover:text-white py-2 border-b border-white/5 transition-colors"
-                >
-                  Admin CMS Portal
-                </Link>
-              )}
-              <button
-                type="button"
-                onClick={() => {
-                  setMobileMenuOpen(false);
-                  signOut();
-                }}
-                className="text-left text-base font-semibold text-red-400 py-2 transition-colors cursor-pointer"
-              >
-                Sign Out
-              </button>
-            </>
-          )}
+          <Link
+            href="/profile"
+            onClick={() => setMobileMenuOpen(false)}
+            className="text-base font-semibold text-white/90 hover:text-white py-2 border-b border-white/5 transition-colors"
+          >
+            Student Digital ID
+          </Link>
         </div>
       )}
     </>

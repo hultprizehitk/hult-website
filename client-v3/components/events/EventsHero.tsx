@@ -79,16 +79,14 @@ function StatusBadge({ status }: { status?: string }) {
 // ── EventCard ───────────────────────────────────────────────────────────────
 interface EventCardProps {
   event: PublicEvent;
-  registeredTeam: any | null;
   onClick: () => void;
   onRegisterClick: (e: React.MouseEvent) => void;
 }
 
-function EventCard({ event, registeredTeam, onClick, onRegisterClick }: EventCardProps) {
+function EventCard({ event, onClick, onRegisterClick }: EventCardProps) {
   const dateLabel = formatDateRange(event.startDate, event.endDate, event.date);
-  const totalJoined = registeredTeam ? 1 + (registeredTeam.members?.length || 0) : 0;
   const minReq = event.minTeamMembers || 3;
-  const isComplete = totalJoined >= minReq;
+  const maxReq = event.maxTeamMembers || 5;
   const tagLabel = event.tag ? event.tag.toUpperCase() : "FLAGSHIP";
 
   return (
@@ -135,27 +133,14 @@ function EventCard({ event, registeredTeam, onClick, onRegisterClick }: EventCar
           )}
           <div className="flex items-center gap-2">
             <Users size={14} className="text-rose-300/80 shrink-0" />
-            <span>{event.minTeamMembers || 3}–{event.maxTeamMembers || 5} Members</span>
+            <span>{minReq}–{maxReq} Members</span>
           </div>
         </div>
       </div>
 
       {/* CTA Button */}
       <div className="mt-auto pt-2" onClick={(e) => e.stopPropagation()}>
-        {registeredTeam ? (
-          <button
-            type="button"
-            className={`w-full flex items-center justify-between rounded-full px-4 py-2.5 text-xs font-bold uppercase tracking-wider shadow-md transition-transform hover:scale-105 cursor-pointer ${
-              isComplete
-                ? "bg-emerald-500/15 hover:bg-emerald-500/25 text-emerald-200 border border-emerald-400/30"
-                : "bg-amber-500/15 hover:bg-amber-500/25 text-amber-200 border border-amber-400/30"
-            }`}
-            onClick={onRegisterClick}
-          >
-            <span>{isComplete ? "Registered" : `Incomplete (${totalJoined}/${minReq})`}</span>
-            <ArrowRight size={14} />
-          </button>
-        ) : event.registrationStatus === "closed" ? (
+        {event.registrationStatus === "closed" ? (
           <button
             type="button"
             className="w-full flex items-center justify-between rounded-full bg-white/5 border border-white/10 px-4 py-2.5 text-xs font-bold uppercase tracking-wider text-white/40 cursor-not-allowed"
@@ -170,7 +155,7 @@ function EventCard({ event, registeredTeam, onClick, onRegisterClick }: EventCar
             className="w-full flex items-center justify-between rounded-full bg-white hover:bg-neutral-100 px-4 py-2.5 text-xs font-bold text-neutral-950 uppercase tracking-wider shadow-[0_4px_20px_rgba(0,0,0,0.35)] transition-all hover:scale-105 cursor-pointer"
             onClick={onRegisterClick}
           >
-            <span>Register Team</span>
+            <span>View Event &amp; Register</span>
             <ArrowRight size={14} />
           </button>
         )}
@@ -183,7 +168,6 @@ function EventCard({ event, registeredTeam, onClick, onRegisterClick }: EventCar
 interface EventsHeroProps {
   events: PublicEvent[];
   loading: boolean;
-  userRegistrations: Record<string, any>;
   onSelectEvent: (event: PublicEvent) => void;
 }
 
@@ -191,7 +175,6 @@ interface EventsHeroProps {
 export default function EventsHero({
   events,
   loading,
-  userRegistrations,
   onSelectEvent,
 }: EventsHeroProps) {
   const [activeTab, setActiveTab] = useState<Tab>("ALL");
@@ -360,7 +343,6 @@ export default function EventsHero({
                 <EventCard
                   key={event._id}
                   event={event}
-                  registeredTeam={userRegistrations[event._id] || null}
                   onClick={() => onSelectEvent(event)}
                   onRegisterClick={(e) => {
                     e.stopPropagation();

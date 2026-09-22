@@ -1,50 +1,20 @@
 "use client";
 
-import React, { useState, useEffect, useMemo } from "react";
+import React, { useState, useMemo } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
-import { useSession, signIn, signOut } from "@/lib/auth-client";
-import { Lock, ArrowRight } from "lucide-react";
+import { Lock, ArrowRight, CheckCircle2 } from "lucide-react";
 import SiteHeader from "@/components/layout/SiteHeader";
 import GrainOverlay from "@/components/hero/GrainOverlay";
 import KolkataHero from "@/components/hero/KolkataHero";
-import { parseHeritageEmail } from "@/lib/heritage-parser";
-
-/**
- * Student identity portal, re-skinned in the "Kolkata" theme.
- *
- * Frontend-only note: Google OAuth + MongoDB arrive with the backend. Until
- * When a Heritage email is submitted (e.g. 2024student@heritageit.edu.in), it
- * is parsed via @/lib/heritage-parser and stored in active session state.
- * by @/lib/auth-client. Swap for OAuth when the API lands.
- */
+import { parseHeritageEmail, ParsedStudentInfo } from "@/lib/heritage-parser";
 
 export default function RegisterPage() {
-  const router = useRouter();
-  const { data: session, status } = useSession();
-
   const [email, setEmail] = useState("");
-  const [errorMessage, setErrorMessage] = useState<string | null>(() => {
-    if (typeof window === "undefined") return null;
-    const error = new URLSearchParams(window.location.search).get("error");
-    if (error === "DomainRestricted") {
-      return "Access Restricted: Only official Heritage Institute college email addresses (@heritageit.edu.in) are permitted to sign in.";
-    }
-    if (error) {
-      return `Authentication notice (${error}): Please verify you are using your official @heritageit.edu.in account.`;
-    }
-    return null;
-  });
+  const [verifiedStudent, setVerifiedStudent] = useState<ParsedStudentInfo | null>(null);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [isSigningIn, setIsSigningIn] = useState(false);
 
-  // If already authenticated, redirect seamlessly to the student profile
-  useEffect(() => {
-    if (status === "authenticated") {
-      router.replace("/profile");
-    }
-  }, [status, router]);
-
-  // Computed student identity from the entered college email
+  // Computed student identity from the entered college email in real time
   const studentInfo = useMemo(() => {
     if (!email || !/@heritageit\.edu\.in$/i.test(email)) return null;
     return parseHeritageEmail(email);
@@ -65,12 +35,17 @@ export default function RegisterPage() {
     }
 
     setIsSigningIn(true);
-    signIn("college-email", { email: email.trim(), callbackUrl: "/profile" });
+    setTimeout(() => {
+      setVerifiedStudent(studentInfo);
+      setIsSigningIn(false);
+    }, 400);
   };
 
-  const sessionStudentInfo = session?.user?.email
-    ? parseHeritageEmail(session.user.email, session.user.name)
-    : null;
+  const handleReset = () => {
+    setVerifiedStudent(null);
+    setEmail("");
+    setErrorMessage(null);
+  };
 
   return (
     <div className="relative min-h-screen w-full overflow-hidden bg-black font-sans text-white selection:bg-white/90 selection:text-black flex flex-col">
@@ -87,48 +62,37 @@ export default function RegisterPage() {
 
       <SiteHeader transparent theme="light" />
 
-      {/* ================================================================
-          MAIN CONTENT
-          ================================================================ */}
+      {/* Main Content */}
       <main className="relative z-10 flex flex-1 items-center justify-center px-4 sm:px-6 pt-24 sm:pt-28 pb-10">
-        {status === "authenticated" && session?.user ? (
+        {verifiedStudent ? (
           /* ────────────────────────────────────────────────────────
-             AUTHENTICATED VIEW — dark Kolkata glass card
+             VERIFIED STUDENT IDENTITY VIEW
              ──────────────────────────────────────────────────────── */
           <div className="w-full max-w-lg md:max-w-xl animate-fadeIn">
-            <div className="relative overflow-hidden rounded-[2.5rem] border border-white/20 bg-white/[0.04] p-6 sm:p-8 md:p-10 shadow-[0_24px_60px_rgba(0,0,0,0.6),inset_0_1.5px_1px_rgba(255,255,255,0.35),inset_0_-1px_1px_rgba(255,255,255,0.1)] backdrop-blur-3xl">
+            <div className="relative overflow-hidden rounded-[2.5rem] border border-white/20 bg-white/[0.04] p-6 sm:p-8 md:p-10 shadow-[0_24px_60px_rgba(0,0,0,0.6),inset_0_1.5px_1px_rgba(255,255,255,0.35),inset_0_-1px_1px_rgba(255,255,255,0.1)] backdrop-blur-3xl text-center">
               {/* Ambient Glows */}
               <div className="pointer-events-none absolute -top-20 -right-20 h-64 w-64 rounded-full bg-white/10 blur-3xl" />
               <div className="pointer-events-none absolute -bottom-20 -left-20 h-64 w-64 rounded-full bg-white/[0.05] blur-3xl" />
 
               {/* Avatar */}
               <div className="relative mx-auto mb-4 flex h-20 w-20 items-center justify-center rounded-full border-2 border-white/40 bg-white/[0.08] text-3xl font-extrabold text-white shadow-[0_0_35px_rgba(255,255,255,0.15)] font-[family-name:var(--font-google-sans)] overflow-hidden backdrop-blur-xl">
-                {session.user.image ? (
-                  // eslint-disable-next-line @next/next/no-img-element
-                  <img
-                    src={session.user.image}
-                    alt={session.user.name || "Student"}
-                    className="h-full w-full object-cover"
-                  />
-                ) : (
-                  sessionStudentInfo?.firstName?.charAt(0) || "H"
-                )}
+                {verifiedStudent.firstName?.charAt(0) || "H"}
               </div>
 
               {/* Verified Badges */}
               <div className="flex items-center justify-center gap-2 mb-4 flex-wrap">
                 <div className="inline-flex items-center gap-1.5 rounded-full border border-emerald-500/40 bg-emerald-500/15 px-3.5 py-1 text-[10px] font-bold text-emerald-300 uppercase tracking-widest">
-                  <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse" />
-                  Verified HITK Scholar
+                  <CheckCircle2 size={12} className="text-emerald-400" />
+                  Verified HITK Student
                 </div>
               </div>
 
               {/* Student Name */}
               <h2 className="text-xl sm:text-2xl font-extrabold text-white text-center mb-0.5 font-[family-name:var(--font-google-sans)]">
-                {sessionStudentInfo?.fullName || session.user.name}
+                {verifiedStudent.fullName}
               </h2>
               <p className="text-xs text-white/50 text-center mb-6 font-mono font-medium tracking-tight">
-                {session.user.email}
+                {email}
               </p>
 
               {/* Student Info Grid */}
@@ -138,7 +102,7 @@ export default function RegisterPage() {
                     Department
                   </span>
                   <span className="text-sm font-bold text-white block font-[family-name:var(--font-google-sans)]">
-                    {sessionStudentInfo?.branchName || "General Engineering"}
+                    {verifiedStudent.branchName || "General Engineering"}
                   </span>
                 </div>
                 <div className="rounded-2xl border border-white/10 bg-[#121216] p-4">
@@ -146,10 +110,10 @@ export default function RegisterPage() {
                     Year of Study
                   </span>
                   <span className="text-sm font-bold text-white block font-[family-name:var(--font-google-sans)]">
-                    {sessionStudentInfo?.academicYear || "3rd Year"}
+                    {verifiedStudent.academicYear || "3rd Year"}
                   </span>
                   <span className="inline-block mt-2 rounded-md bg-rose-400/15 border border-rose-300/30 px-2 py-0.5 text-[10px] font-mono font-bold text-rose-200">
-                    {sessionStudentInfo?.batch || "Class of 2028"}
+                    {verifiedStudent.batch || "Class of 2028"}
                   </span>
                 </div>
               </div>
@@ -176,17 +140,17 @@ export default function RegisterPage() {
                 </Link>
                 <button
                   type="button"
-                  onClick={() => signOut({ callbackUrl: "/register" })}
+                  onClick={handleReset}
                   className="w-full rounded-2xl border border-red-500/30 bg-red-950/20 hover:bg-red-900/40 px-4 py-3 text-xs font-semibold text-red-300 transition-all cursor-pointer text-center font-[family-name:var(--font-google-sans)]"
                 >
-                  Sign Out
+                  Change Email
                 </button>
               </div>
             </div>
           </div>
         ) : (
           /* ────────────────────────────────────────────────────────
-             SIGN-IN VIEW — Kolkata glass identity portal
+             SIGN-IN / IDENTITY PORTAL VIEW
              ──────────────────────────────────────────────────────── */
           <div className="w-full max-w-[560px] animate-fadeIn">
             <div className="relative overflow-hidden rounded-[2.5rem] border border-white/20 bg-white/[0.04] p-8 sm:p-10 shadow-[0_24px_60px_rgba(0,0,0,0.6),inset_0_1.5px_1px_rgba(255,255,255,0.35),inset_0_-1px_1px_rgba(255,255,255,0.1)] backdrop-blur-3xl">
@@ -282,7 +246,7 @@ export default function RegisterPage() {
                         <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
                         <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
                       </svg>
-                      Authenticating...
+                      Verifying...
                     </span>
                   ) : (
                     <>
@@ -312,7 +276,6 @@ export default function RegisterPage() {
                       This competition platform is restricted strictly to verified Heritage Institute
                       students. Only college accounts ending in{" "}
                       <strong className="text-rose-300">@heritageit.edu.in</strong> are authorized.
-                      Personal accounts will be rejected.
                     </p>
                   </div>
                 </div>

@@ -39,8 +39,6 @@ const DEFAULT_CONFIG: ThemeTunerConfig = {
   parallaxMultiplier: 0.2,
 };
 
-const STORAGE_KEY = "hult_card_theme_tuner_config_v4";
-
 interface ThemeTunerContextType {
   config: ThemeTunerConfig;
   updateConfig: (key: keyof ThemeTunerConfig, value: any) => void;
@@ -58,36 +56,15 @@ export function ThemeTunerProvider({ children }: { children: React.ReactNode }) 
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
-    try {
-      const saved = localStorage.getItem(STORAGE_KEY);
-      if (saved) {
-        setConfig((prev) => ({ ...prev, ...JSON.parse(saved) }));
-      }
-    } catch (e) {
-      console.warn("Could not load tuner config from localStorage:", e);
-    }
     setMounted(true);
   }, []);
 
   const updateConfig = (key: keyof ThemeTunerConfig, value: any) => {
-    setConfig((prev) => {
-      const next = { ...prev, [key]: value };
-      try {
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(next));
-      } catch (e) {
-        console.warn("Could not save tuner config to localStorage:", e);
-      }
-      return next;
-    });
+    setConfig((prev) => ({ ...prev, [key]: value }));
   };
 
   const resetConfig = () => {
     setConfig(DEFAULT_CONFIG);
-    try {
-      localStorage.removeItem(STORAGE_KEY);
-    } catch (e) {
-      console.warn("Could not clear tuner config in localStorage:", e);
-    }
   };
 
   const copyJson = async (): Promise<boolean> => {

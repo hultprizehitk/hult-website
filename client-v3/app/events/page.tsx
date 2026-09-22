@@ -1,7 +1,6 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { useSession } from "@/lib/auth-client";
 import SiteHeader from "@/components/layout/SiteHeader";
 import EventsHero from "@/components/events/EventsHero";
 import EventInsideView from "@/components/events/EventInsideView";
@@ -13,11 +12,8 @@ import type { PublicEvent } from "@/types";
 export type { PublicEvent };
 
 export default function EventsPage() {
-  const { data: session, status } = useSession();
-
   const [events, setEvents] = useState<PublicEvent[]>([]);
   const [loading, setLoading] = useState(true);
-  const [userRegistrations, setUserRegistrations] = useState<Record<string, any>>({});
   const [selectedEventId, setSelectedEventId] = useState<string | null>(null);
 
   // ── Sync selected event with ?event= URL param ──────────────────────────
@@ -62,7 +58,7 @@ export default function EventsPage() {
     }
   };
 
-  // ── Inside view (event detail / registration) ────────────────────────────
+  // ── Inside view (event detail presentation) ──────────────────────────────
   if (selectedEventId) {
     const currentEvent = events.find((e) => e._id === selectedEventId);
 
@@ -103,15 +99,7 @@ export default function EventsPage() {
         <main className="relative z-10 w-full px-4 sm:px-6 pt-24 pb-16">
           <EventInsideView
             event={currentEvent}
-            sessionUser={session?.user || null}
-            registeredTeam={userRegistrations[currentEvent._id] || null}
             onBack={handleBackToEvents}
-            onRegisterSuccess={(teamData) => {
-              setUserRegistrations((prev) => ({
-                ...prev,
-                [currentEvent._id]: teamData,
-              }));
-            }}
           />
         </main>
       </div>
@@ -134,7 +122,6 @@ export default function EventsPage() {
         <EventsHero
           events={events}
           loading={loading}
-          userRegistrations={userRegistrations}
           onSelectEvent={handleSelectEvent}
         />
       </main>

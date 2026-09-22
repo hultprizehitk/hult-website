@@ -8,9 +8,3 @@ export interface ParsedStudentInfo {
   batch: string;
   academicYear: string;
 }
-
-export interface SessionUser {
-  name?: string | null;
-  email?: string | null;
-  image?: string | null;
-}

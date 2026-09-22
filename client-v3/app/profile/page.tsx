@@ -1,30 +1,21 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import Image from "next/image";
+import React from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
-import { useSession, signOut } from "@/lib/auth-client";
+import { CheckCircle2, Building, Calendar, Award } from "lucide-react";
 import AnimatedGradient from "@/components/ui/animated-gradient";
 import SiteHeader from "@/components/layout/SiteHeader";
-import { parseHeritageEmail } from "@/lib/heritage-parser";
 
 export default function StudentProfilePage() {
-  const router = useRouter();
-  const { data: session, status } = useSession();
-
-  const [registrations, setRegistrations] = useState<any[]>([]);
-
-  // If user is unauthenticated, redirect to registration/login
-  useEffect(() => {
-    if (status === "unauthenticated") {
-      router.replace("/register");
-    }
-  }, [status, router]);
-
-  const studentInfo = session?.user?.email
-    ? parseHeritageEmail(session.user.email, session.user.name)
-    : null;
+  const student = {
+    name: "HITK Student Scholar",
+    email: "student.scholar@heritageit.edu.in",
+    department: "Computer Science & Engineering",
+    branchCode: "CSE",
+    academicYear: "3rd Year",
+    batch: "Class of 2028",
+    campus: "Heritage Institute of Technology, Kolkata",
+  };
 
   return (
     <div className="relative min-h-screen w-full overflow-x-hidden bg-black font-sans text-white selection:bg-[#f20089] selection:text-white flex flex-col justify-between">
@@ -46,7 +37,7 @@ export default function StudentProfilePage() {
       {/* Main Container */}
       <main className="relative z-10 flex flex-1 items-center justify-center px-4 pt-20 sm:pt-24 pb-8 sm:pb-12">
         <div className="w-full max-w-xl sm:max-w-2xl">
-          {/* Glassmorphic Auth Card */}
+          {/* Glassmorphic ID Card */}
           <div className="relative overflow-hidden rounded-[2.5rem] border border-white/20 bg-white/[0.04] p-6 sm:p-10 md:p-12 shadow-[0_24px_60px_rgba(0,0,0,0.6),inset_0_1.5px_1px_rgba(255,255,255,0.35),inset_0_-1px_1px_rgba(255,255,255,0.1)] backdrop-blur-3xl transition-all duration-500 text-center">
             {/* Top Iridescent Glass Highlight */}
             <div className="pointer-events-none absolute inset-x-0 top-0 h-[1px] bg-gradient-to-r from-transparent via-white/60 to-transparent" />
@@ -55,176 +46,105 @@ export default function StudentProfilePage() {
             <div className="pointer-events-none absolute -top-20 -right-20 h-64 w-64 rounded-full bg-[#f20089]/25 blur-3xl" />
             <div className="pointer-events-none absolute -bottom-20 -left-20 h-64 w-64 rounded-full bg-purple-900/30 blur-3xl" />
 
-            {status === "loading" ? (
-              <div className="py-16 flex flex-col items-center justify-center gap-4">
-                <div className="h-14 w-14 rounded-full border-2 border-[#f20089] border-t-transparent animate-spin" />
-                <p className="text-xs font-medium text-white/60 uppercase tracking-widest font-mono">
-                  Loading Student Profile...
-                </p>
-              </div>
-            ) : status === "authenticated" && session?.user ? (
-              <div className="relative z-10 py-2 animate-fadeIn font-sans">
-                {/* Avatar with Glow Ring & 3D Shield Badge */}
-                <div className="relative mx-auto mb-4 flex items-center justify-center gap-4">
-                  <div className="relative flex h-20 w-20 items-center justify-center rounded-full bg-gradient-to-tr from-[#f20089] to-purple-600 text-3xl font-extrabold text-white shadow-[0_0_35px_rgba(242,0,137,0.6)] border-2 border-white/40 font-[family-name:var(--font-google-sans)] overflow-hidden">
-                    {session.user.image ? (
-                      <img
-                        src={session.user.image}
-                        alt={session.user.name || "Student"}
-                        className="h-full w-full object-cover"
-                      />
-                    ) : (
-                      studentInfo?.firstName?.charAt(0) || "H"
-                    )}
-                  </div>
-                </div>
-
-                {/* Verified Pill: Student Status */}
-                <div className="flex items-center justify-center gap-2 mb-3 flex-wrap">
-                  <div className="inline-flex items-center gap-2 rounded-full border border-emerald-500/40 bg-emerald-500/15 px-3.5 py-1 text-[11px] font-bold text-emerald-300 uppercase tracking-widest">
-                    <span className="h-2 w-2 rounded-full bg-emerald-400 animate-pulse" />
-                    <span>HITK Student</span>
-                  </div>
-                </div>
-
-                {/* Student Name */}
-                <h2 className="text-2xl sm:text-3xl font-extrabold text-white font-[family-name:var(--font-google-sans)] mb-1">
-                  {studentInfo?.fullName || session.user.name}
-                </h2>
-                <p className="text-xs sm:text-sm text-neutral-300 mb-6 font-mono font-medium tracking-tight">
-                  {session.user.email}
-                </p>
-
-                {/* Student Digital ID Bento Grid */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-left mb-6">
-                  {/* Branch / Department Tile */}
-                  <div className="rounded-2xl border border-white/10 bg-[#121216] p-4">
-                    <span className="block text-[10px] font-mono uppercase font-bold tracking-widest text-zinc-400 mb-1">
-                      Department
-                    </span>
-                    <span className="text-sm font-bold text-white block leading-snug font-[family-name:var(--font-google-sans)]">
-                      {studentInfo?.branchName || "Engineering"}
-                    </span>
-                    {studentInfo?.branchCode && (
-                      <span className="inline-block mt-2 rounded-md bg-[#f20089]/15 border border-[#f20089]/30 px-2 py-0.5 text-[10px] font-mono font-bold uppercase tracking-wider text-[#f20089]">
-                        {studentInfo.branchCode}
-                      </span>
-                    )}
-                  </div>
-
-                  {/* Current Year of Study & Batch Tile */}
-                  <div className="rounded-2xl border border-white/10 bg-[#121216] p-4">
-                    <span className="block text-[10px] font-mono uppercase font-bold tracking-widest text-zinc-400 mb-1">
-                      Year of Study
-                    </span>
-                    <span className="text-sm font-bold text-white block leading-snug font-[family-name:var(--font-google-sans)]">
-                      {studentInfo?.academicYear || "3rd Year"}
-                    </span>
-                    <div className="flex items-center gap-1.5 mt-2 flex-wrap font-mono">
-                      <span className="rounded-md bg-white/10 border border-white/15 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-zinc-200">
-                        {studentInfo?.batch || "Class of 2028"}
-                      </span>
-                    </div>
-                  </div>
-
-                  {/* Campus Affiliation */}
-                  <div className="rounded-2xl border border-white/10 bg-[#121216] p-4 sm:col-span-2">
-                    <div className="flex items-center justify-between gap-2">
-                      <div>
-                        <span className="block text-[10px] font-mono uppercase font-bold tracking-widest text-zinc-400 mb-0.5">
-                          Campus
-                        </span>
-                        <span className="text-xs font-semibold text-white">
-                          Heritage Institute of Technology, Kolkata
-                        </span>
-                      </div>
-                      <span className="rounded-full bg-white/10 border border-white/15 px-3 py-1 text-[10px] font-mono font-bold text-zinc-200">
-                        Hult Prize 2027
-                      </span>
-                    </div>
-                  </div>
-
-                  {/* Registered Events & Teams Tile */}
-                  {registrations && registrations.length > 0 && (
-                    <div className="rounded-2xl border border-white/15 bg-[#121216] p-4 sm:col-span-2 space-y-3">
-                      <div className="flex items-center justify-between">
-                        <span className="block text-[10px] font-mono font-bold uppercase tracking-widest text-[#f20089]">
-                          My Registered Events ({registrations.length})
-                        </span>
-                        <Link
-                          href="/events"
-                          className="text-[10px] font-mono font-bold text-zinc-400 hover:text-white"
-                        >
-                          View Events →
-                        </Link>
-                      </div>
-
-                      <div className="space-y-2 pt-1">
-                        {registrations.map((reg, idx) => (
-                          <div
-                            key={idx}
-                            className="rounded-xl border border-white/10 bg-[#09090b] p-3 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2.5 text-xs"
-                          >
-                            <div>
-                              <div className="flex items-center gap-2 flex-wrap">
-                                <span className="font-bold text-white">{reg.eventTitle}</span>
-                                <span className="rounded-full bg-[#f20089]/15 border border-[#f20089]/30 px-2 py-0.5 text-[9px] font-mono font-bold text-[#f20089] uppercase">
-                                  {reg.eventTag}
-                                </span>
-                              </div>
-                              <span className="text-[11px] text-zinc-400 block mt-0.5 font-mono">
-                                Team: <strong className="text-white">{reg.team?.teamName}</strong> ({reg.team?.membersCount} Members)
-                              </span>
-                            </div>
-                            <Link
-                              href="/events"
-                              className={`rounded-lg px-2.5 py-1 text-[10px] font-mono font-bold whitespace-nowrap transition-all ${
-                                reg.team?.status === "pending"
-                                  ? "bg-white/10 border border-white/15 text-zinc-300 hover:bg-white/15"
-                                  : "bg-[#f20089]/20 border border-[#f20089]/40 text-pink-300 hover:bg-[#f20089]/30"
-                              }`}
-                            >
-                              {reg.team?.status === "pending" ? "Team Incomplete" : "Confirmed"}
-                            </Link>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-                </div>
-
-                {/* Action Buttons Grid */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 w-full pt-2">
-                  {isAdmin && (
-                    <Link
-                      href="/portal"
-                      className="w-full rounded-2xl bg-[#f20089] hover:bg-[#d8007a] px-5 py-3 text-xs sm:text-sm font-bold text-white shadow-lg shadow-[#f20089]/40 transition-all hover:scale-[1.02] active:scale-95 font-[family-name:var(--font-google-sans)] flex items-center justify-center gap-1.5"
-                    >
-                      <span>Admin Dashboard →</span>
-                    </Link>
-                  )}
-                  <Link
-                    href="/"
-                    className="w-full rounded-2xl border border-white/20 bg-white/[0.06] hover:bg-white/15 px-5 py-3 text-xs sm:text-sm font-semibold text-white transition-all hover:scale-[1.02] active:scale-95 font-[family-name:var(--font-google-sans)] flex items-center justify-center"
-                  >
-                    Homepage →
-                  </Link>
-                  <Link
-                    href="/events"
-                    className="w-full rounded-2xl border border-white/20 bg-white/[0.06] hover:bg-white/15 px-5 py-3 text-xs sm:text-sm font-semibold text-white transition-all hover:scale-[1.02] active:scale-95 font-[family-name:var(--font-google-sans)] flex items-center justify-center"
-                  >
-                    View Events
-                  </Link>
-                  <button
-                    type="button"
-                    onClick={() => signOut({ callbackUrl: "/register" })}
-                    className="w-full rounded-2xl border border-red-500/30 bg-red-950/20 hover:bg-red-900/40 px-5 py-3 text-xs sm:text-sm font-semibold text-red-300 transition-all cursor-pointer font-[family-name:var(--font-google-sans)] flex items-center justify-center"
-                  >
-                    Sign Out
-                  </button>
+            <div className="relative z-10 py-2 animate-fadeIn font-sans">
+              {/* Avatar with Glow Ring */}
+              <div className="relative mx-auto mb-4 flex items-center justify-center gap-4">
+                <div className="relative flex h-20 w-20 items-center justify-center rounded-full bg-gradient-to-tr from-[#f20089] to-purple-600 text-3xl font-extrabold text-white shadow-[0_0_35px_rgba(242,0,137,0.6)] border-2 border-white/40 font-[family-name:var(--font-google-sans)] overflow-hidden">
+                  H
                 </div>
               </div>
-            ) : null}
+
+              {/* Verified Pill */}
+              <div className="flex items-center justify-center gap-2 mb-3 flex-wrap">
+                <div className="inline-flex items-center gap-2 rounded-full border border-emerald-500/40 bg-emerald-500/15 px-3.5 py-1 text-[11px] font-bold text-emerald-300 uppercase tracking-widest">
+                  <CheckCircle2 size={13} className="text-emerald-400" />
+                  <span>Verified HITK Scholar</span>
+                </div>
+              </div>
+
+              {/* Student Name */}
+              <h2 className="text-2xl sm:text-3xl font-extrabold text-white font-[family-name:var(--font-google-sans)] mb-1">
+                {student.name}
+              </h2>
+              <p className="text-xs sm:text-sm text-neutral-300 mb-6 font-mono font-medium tracking-tight">
+                {student.email}
+              </p>
+
+              {/* Student Digital ID Bento Grid */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-left mb-6">
+                {/* Branch / Department Tile */}
+                <div className="rounded-2xl border border-white/10 bg-[#121216] p-4 flex flex-col justify-between">
+                  <div>
+                    <span className="flex items-center gap-1.5 text-[10px] font-mono uppercase font-bold tracking-widest text-zinc-400 mb-1">
+                      <Building size={12} className="text-[#f20089]" />
+                      <span>Department</span>
+                    </span>
+                    <span className="text-sm font-bold text-white block leading-snug font-[family-name:var(--font-google-sans)]">
+                      {student.department}
+                    </span>
+                  </div>
+                  <span className="inline-block mt-3 w-fit rounded-md bg-[#f20089]/15 border border-[#f20089]/30 px-2 py-0.5 text-[10px] font-mono font-bold uppercase tracking-wider text-[#f20089]">
+                    {student.branchCode}
+                  </span>
+                </div>
+
+                {/* Current Year of Study & Batch Tile */}
+                <div className="rounded-2xl border border-white/10 bg-[#121216] p-4 flex flex-col justify-between">
+                  <div>
+                    <span className="flex items-center gap-1.5 text-[10px] font-mono uppercase font-bold tracking-widest text-zinc-400 mb-1">
+                      <Calendar size={12} className="text-[#f20089]" />
+                      <span>Academic Year</span>
+                    </span>
+                    <span className="text-sm font-bold text-white block leading-snug font-[family-name:var(--font-google-sans)]">
+                      {student.academicYear}
+                    </span>
+                  </div>
+                  <span className="inline-block mt-3 w-fit rounded-md bg-white/10 border border-white/15 px-2 py-0.5 text-[10px] font-mono font-bold uppercase tracking-wider text-zinc-200">
+                    {student.batch}
+                  </span>
+                </div>
+
+                {/* Campus Affiliation */}
+                <div className="rounded-2xl border border-white/10 bg-[#121216] p-4 sm:col-span-2">
+                  <div className="flex items-center justify-between gap-2 flex-wrap">
+                    <div>
+                      <span className="flex items-center gap-1.5 text-[10px] font-mono uppercase font-bold tracking-widest text-zinc-400 mb-0.5">
+                        <Award size={12} className="text-[#f20089]" />
+                        <span>Campus Affiliation</span>
+                      </span>
+                      <span className="text-xs font-semibold text-white">
+                        {student.campus}
+                      </span>
+                    </div>
+                    <span className="rounded-full bg-white/10 border border-white/15 px-3 py-1 text-[10px] font-mono font-bold text-zinc-200">
+                      Hult Prize 2027
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Action Buttons Grid */}
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 w-full pt-2">
+                <Link
+                  href="/"
+                  className="w-full rounded-2xl border border-white/20 bg-white/[0.06] hover:bg-white/15 px-4 py-3 text-xs sm:text-sm font-semibold text-white transition-all hover:scale-[1.02] active:scale-95 font-[family-name:var(--font-google-sans)] flex items-center justify-center text-center"
+                >
+                  Homepage
+                </Link>
+                <Link
+                  href="/events"
+                  className="w-full rounded-2xl border border-white/20 bg-white/[0.06] hover:bg-white/15 px-4 py-3 text-xs sm:text-sm font-semibold text-white transition-all hover:scale-[1.02] active:scale-95 font-[family-name:var(--font-google-sans)] flex items-center justify-center text-center"
+                >
+                  View Events
+                </Link>
+                <Link
+                  href="/register"
+                  className="w-full rounded-2xl bg-white hover:bg-neutral-100 px-4 py-3 text-xs sm:text-sm font-bold text-neutral-950 transition-all hover:scale-[1.02] active:scale-95 font-[family-name:var(--font-google-sans)] flex items-center justify-center text-center"
+                >
+                  Portal Sign-In
+                </Link>
+              </div>
+            </div>
           </div>
         </div>
       </main>
