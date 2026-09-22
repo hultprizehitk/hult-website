@@ -1,15 +1,64 @@
 "use client";
 
-import React from "react";
+import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import { useSession, signIn, signOut } from "next-auth/react";
-import { CheckCircle2, Building, Calendar, Award, LogOut, ArrowRight, Lock } from "lucide-react";
+import {
+  CheckCircle2,
+  Building,
+  Calendar,
+  Award,
+  LogOut,
+  ArrowRight,
+  Lock,
+  Users,
+  ShieldCheck,
+  Copy,
+  Check,
+  Share2,
+  Sparkles,
+} from "lucide-react";
 import SiteHeader from "@/components/layout/SiteHeader";
 import GrainOverlay from "@/components/hero/GrainOverlay";
 import KolkataHero from "@/components/hero/KolkataHero";
 
+interface TeamMember {
+  name: string;
+  email: string;
+  department?: string;
+  roll?: string;
+}
+
+interface UserTeam {
+  _id: string;
+  teamCode: string;
+  teamName: string;
+  ventureName?: string;
+  lead: {
+    name: string;
+    email: string;
+    phone?: string;
+    department?: string;
+    roll?: string;
+  };
+  leadEmail: string;
+  members: TeamMember[];
+  status: string;
+  checkedIn?: boolean;
+  eventId?: {
+    _id: string;
+    title: string;
+    tag?: string;
+    date?: string;
+    venue?: string;
+  };
+}
+
 export default function StudentProfilePage() {
   const { data: session, status } = useSession();
+  const [teams, setTeams] = useState<UserTeam[]>([]);
+  const [loadingTeams, setLoadingTeams] = useState(false);
+  const [copiedCode, setCopiedCode] = useState<string | null>(null);
 
   const user = session?.user as
     | {
@@ -20,6 +69,46 @@ export default function StudentProfilePage() {
         year?: string;
       }
     | undefined;
+
+  const userEmail = user?.email?.toLowerCase().trim();
+
+  useEffect(() => {
+    if (status === "authenticated") {
+      setLoadingTeams(true);
+      fetch("/api/teams")
+        .then((res) => res.json())
+        .then((data) => {
+          if (data.success && Array.isArray(data.teams)) {
+            setTeams(data.teams);
+          }
+        })
+        .catch((err) => {
+          console.error("Error fetching teams:", err);
+        })
+        .finally(() => {
+          setLoadingTeams(false);
+        });
+    }
+  }, [status]);
+
+  const handleCopyCode = (code: string) => {
+    if (typeof window !== "undefined") {
+      navigator.clipboard.writeText(code);
+      setCopiedCode(code);
+      setTimeout(() => setCopiedCode(null), 2000);
+    }
+  };
+
+  const handleShareWhatsApp = (team: UserTeam) => {
+    if (typeof window === "undefined") return;
+    const origin = window.location.origin;
+    const text = encodeURIComponent(
+      `Join my Hult Prize team "${team.teamName}"!\n\n` +
+      `Team Invite Code: ${team.teamCode}\n\n` +
+      `Register and join our team here:\n${origin}/events`
+    );
+    window.open(`https://api.whatsapp.com/send?text=${text}`, "_blank");
+  };
 
   return (
     <div className="relative min-h-screen w-full overflow-hidden bg-black font-sans text-white selection:bg-white/90 selection:text-black flex flex-col justify-between">
@@ -134,6 +223,161 @@ export default function StudentProfilePage() {
                       </span>
                     </div>
                   </div>
+                </div>
+
+                {/* My Event Teams Section */}
+                <div className="w-full text-left mb-6">
+                  <div className="flex items-center justify-between gap-2 mb-3">
+                    <span className="flex items-center gap-2 text-xs font-mono uppercase font-bold tracking-widest text-zinc-300">
+                      <Users size={14} className="text-[#f20089]" />
+                      <span>Event Teams &amp; Registrations</span>
+                    </span>
+                    {teams.length > 0 && (
+                      <span className="rounded-full bg-white/10 border border-white/15 px-2.5 py-0.5 text-[10px] font-mono font-bold text-white">
+                        {teams.length} {teams.length === 1 ? "Team" : "Teams"}
+                      </span>
+                    )}
+                  </div>
+
+                  {loadingTeams ? (
+                    <div className="rounded-2xl border border-white/10 bg-[#121216] p-6 text-center">
+                      <div className="w-5 h-5 border-2 border-white/20 border-t-white rounded-full animate-spin mx-auto mb-2" />
+                      <span className="text-[11px] font-mono text-white/50 uppercase tracking-wider">
+                        Syncing your teams...
+                      </span>
+                    </div>
+                  ) : teams.length === 0 ? (
+                    <div className="rounded-2xl border border-white/10 bg-[#121216] p-5 text-center flex flex-col items-center gap-3">
+                      <p className="text-xs text-zinc-400">
+                        You have not registered or joined any teams for active events yet.
+                      </p>
+                      <Link
+                        href="/events"
+                        className="inline-flex items-center gap-1.5 rounded-full bg-white/10 hover:bg-white/20 border border-white/20 px-4 py-2 text-xs font-semibold text-white transition-all hover:scale-105"
+                      >
+                        <Sparkles size={12} className="text-rose-300" />
+                        <span>Explore Events &amp; Form Team</span>
+                        <ArrowRight size={12} />
+                      </Link>
+                    </div>
+                  ) : (
+                    <div className="flex flex-col gap-3">
+                      {teams.map((t) => {
+                        const isLead =
+                          t.leadEmail?.toLowerCase() === userEmail ||
+                          t.lead?.email?.toLowerCase() === userEmail;
+                        const isCopied = copiedCode === t.teamCode;
+
+                        return (
+                          <div
+                            key={t._id}
+                            className="rounded-2xl border border-white/15 bg-[#121216] p-4.5 sm:p-5 flex flex-col gap-3 transition-all hover:border-white/25"
+                          >
+                            {/* Card Top Row */}
+                            <div className="flex items-center justify-between gap-2 flex-wrap">
+                              <span className="text-xs font-bold text-white truncate max-w-[240px]">
+                                {t.eventId?.title || "Hult Prize Competition"}
+                              </span>
+                              {isLead ? (
+                                <span className="inline-flex items-center gap-1 rounded-full bg-rose-500/15 border border-rose-500/30 px-2.5 py-0.5 text-[10px] font-bold text-rose-300 uppercase tracking-widest font-mono">
+                                  <ShieldCheck size={11} />
+                                  <span>Leader</span>
+                                </span>
+                              ) : (
+                                <span className="inline-flex items-center gap-1 rounded-full bg-blue-500/15 border border-blue-500/30 px-2.5 py-0.5 text-[10px] font-bold text-blue-300 uppercase tracking-widest font-mono">
+                                  <Users size={11} />
+                                  <span>Member</span>
+                                </span>
+                              )}
+                            </div>
+
+                            {/* Team Name & Venture */}
+                            <div>
+                              <h4 className="text-base font-bold text-white font-[family-name:var(--font-google-sans)]">
+                                {t.teamName}
+                              </h4>
+                              {t.ventureName && (
+                                <p className="text-xs text-zinc-400 mt-0.5">
+                                  Track / Venture: {t.ventureName}
+                                </p>
+                              )}
+                            </div>
+
+                            {/* Team Code Bar */}
+                            <div className="rounded-xl border border-white/10 bg-[#0e0e12] p-3 flex items-center justify-between gap-2 flex-wrap">
+                              <div>
+                                <span className="block text-[9px] font-mono uppercase font-bold tracking-widest text-zinc-400">
+                                  Team Invite Code
+                                </span>
+                                <span className="font-mono text-base font-extrabold text-[#f20089] tracking-wider">
+                                  {t.teamCode}
+                                </span>
+                              </div>
+
+                              <div className="flex items-center gap-2">
+                                <button
+                                  type="button"
+                                  onClick={() => handleCopyCode(t.teamCode)}
+                                  className="inline-flex items-center gap-1.5 rounded-lg border border-white/15 bg-white/5 hover:bg-white/10 px-3 py-1.5 text-[11px] font-medium text-white transition-all cursor-pointer"
+                                  title="Copy invite code"
+                                >
+                                  {isCopied ? (
+                                    <>
+                                      <Check size={12} className="text-emerald-400" />
+                                      <span className="text-emerald-300">Copied</span>
+                                    </>
+                                  ) : (
+                                    <>
+                                      <Copy size={12} />
+                                      <span>Copy</span>
+                                    </>
+                                  )}
+                                </button>
+
+                                <button
+                                  type="button"
+                                  onClick={() => handleShareWhatsApp(t)}
+                                  className="inline-flex items-center gap-1.5 rounded-lg border border-emerald-500/30 bg-emerald-500/10 hover:bg-emerald-500/20 px-3 py-1.5 text-[11px] font-medium text-emerald-300 transition-all cursor-pointer"
+                                  title="Share invite code via WhatsApp"
+                                >
+                                  <Share2 size={12} />
+                                  <span>Share</span>
+                                </button>
+                              </div>
+                            </div>
+
+                            {/* Members Roster Summary */}
+                            <div className="pt-2 border-t border-white/10 text-xs">
+                              <span className="block text-[10px] font-mono uppercase font-bold tracking-widest text-zinc-400 mb-1.5">
+                                Roster ({1 + (t.members?.length || 0)} Students)
+                              </span>
+                              <div className="space-y-1">
+                                <div className="flex items-center justify-between text-zinc-300 text-[11px]">
+                                  <span className="font-medium text-white">
+                                    {t.lead?.name || t.leadEmail} (Lead)
+                                  </span>
+                                  <span className="text-zinc-400 font-mono text-[10px]">
+                                    {t.lead?.department || "Lead"}
+                                  </span>
+                                </div>
+                                {t.members && t.members.map((m, idx) => (
+                                  <div
+                                    key={idx}
+                                    className="flex items-center justify-between text-zinc-400 text-[11px]"
+                                  >
+                                    <span>{m.name || m.email}</span>
+                                    <span className="text-zinc-400 font-mono text-[10px]">
+                                      {m.department || "Member"}
+                                    </span>
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
                 </div>
 
                 {/* Action Buttons Grid */}

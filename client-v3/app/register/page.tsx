@@ -3,19 +3,24 @@
 import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import { useSession, signIn, signOut } from "next-auth/react";
-import { Lock, ArrowRight, CheckCircle2, ShieldAlert, Sparkles } from "lucide-react";
+import { Lock, ArrowRight, CheckCircle2, ShieldAlert, Sparkles, Users } from "lucide-react";
 import SiteHeader from "@/components/layout/SiteHeader";
 import GrainOverlay from "@/components/hero/GrainOverlay";
 import KolkataHero from "@/components/hero/KolkataHero";
+import EventRegistrationModal from "@/components/events/EventRegistrationModal";
+import type { PublicEvent } from "@/types";
 
 export default function RegisterPage() {
   const { data: session, status } = useSession();
   const [isSigningIn, setIsSigningIn] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [targetEvent, setTargetEvent] = useState<PublicEvent | null>(null);
+  const [isEventModalOpen, setIsEventModalOpen] = useState(false);
 
   useEffect(() => {
     if (typeof window !== "undefined") {
-      const error = new URLSearchParams(window.location.search).get("error");
+      const params = new URLSearchParams(window.location.search);
+      const error = params.get("error");
       if (error === "DomainRestricted") {
         setErrorMessage(
           "Access Restricted: Only official Heritage Institute college email accounts (@heritageit.edu.in) are permitted to sign in. Personal Gmail accounts are strictly prohibited."
@@ -25,13 +30,29 @@ export default function RegisterPage() {
           `Authentication notice (${error}): Please verify you are using your official @heritageit.edu.in account.`
         );
       }
+
+      const eventId = params.get("event") || params.get("eventId");
+      if (eventId) {
+        fetch(`/api/events?id=${eventId}`)
+          .then((res) => res.json())
+          .then((data) => {
+            if (data.success && data.event) {
+              setTargetEvent(data.event);
+              setIsEventModalOpen(true);
+            }
+          })
+          .catch((err) => {
+            console.error("Error loading event for registration:", err);
+          });
+      }
     }
   }, []);
 
   const handleGoogleSignIn = () => {
     setIsSigningIn(true);
     setErrorMessage(null);
-    signIn("google", { callbackUrl: "/profile" });
+    const callback = typeof window !== "undefined" ? window.location.href : "/profile";
+    signIn("google", { callbackUrl: callback });
   };
 
   const user = session?.user as
@@ -120,6 +141,31 @@ export default function RegisterPage() {
                   </span>
                 </div>
               </div>
+
+              {/* Event Registration Banner */}
+              {targetEvent && (
+                <div className="mb-6 rounded-2xl border border-[#f20089]/40 bg-[#f20089]/10 p-4 text-left">
+                  <div className="flex items-center justify-between gap-2 mb-1">
+                    <span className="text-[10px] font-mono uppercase font-bold tracking-widest text-[#f20089]">
+                      Target Event
+                    </span>
+                    <span className="rounded-full bg-rose-500/20 px-2 py-0.5 text-[9px] font-mono text-rose-300 font-bold uppercase">
+                      {targetEvent.tag || "LIVE"}
+                    </span>
+                  </div>
+                  <h4 className="text-sm font-bold text-white mb-2 font-[family-name:var(--font-google-sans)]">
+                    {targetEvent.title}
+                  </h4>
+                  <button
+                    type="button"
+                    onClick={() => setIsEventModalOpen(true)}
+                    className="w-full rounded-xl bg-white hover:bg-neutral-100 text-neutral-950 px-4 py-2.5 text-xs font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer shadow-lg"
+                  >
+                    <Users size={13} />
+                    <span>Register Team (Create / Join)</span>
+                  </button>
+                </div>
+              )}
 
               {/* Action Buttons */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 w-full">
@@ -283,6 +329,15 @@ export default function RegisterPage() {
           &copy; 2027 Hult Prize at Heritage Institute of Technology. All rights reserved.
         </p>
       </footer>
+
+      {/* Target Event Registration Modal */}
+      {targetEvent && (
+        <EventRegistrationModal
+          event={targetEvent}
+          isOpen={isEventModalOpen}
+          onClose={() => setIsEventModalOpen(false)}
+        />
+      )}
     </div>
   );
 }

@@ -2,8 +2,9 @@
 
 import React, { useState } from "react";
 import Link from "next/link";
-import { ArrowLeft, Calendar, MapPin, Users, ExternalLink, Share2, Check, Sparkles } from "lucide-react";
+import { ArrowLeft, Calendar, MapPin, Users, ExternalLink, Share2, Check, Sparkles, ArrowRight } from "lucide-react";
 import type { PublicEvent } from "@/types";
+import EventRegistrationModal from "@/components/events/EventRegistrationModal";
 
 interface EventInsideViewProps {
   event: PublicEvent;
@@ -15,6 +16,7 @@ export default function EventInsideView({
   onBack,
 }: EventInsideViewProps) {
   const [copied, setCopied] = useState(false);
+  const [isRegistrationModalOpen, setIsRegistrationModalOpen] = useState(false);
 
   const minMembers = event.minTeamMembers || 3;
   const maxMembers = event.maxTeamMembers || 5;
@@ -196,30 +198,49 @@ export default function EventInsideView({
               ← Back to All Events
             </button>
 
-            <div className="flex items-center gap-3">
-              {event.link ? (
+            <div className="flex items-center gap-3 flex-wrap">
+              {event.link && (
                 <a
                   href={event.link}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="rounded-full bg-white hover:bg-neutral-100 px-6 py-2.5 text-xs font-bold text-neutral-950 shadow-lg shadow-white/10 transition-all cursor-pointer hover:scale-105 inline-flex items-center gap-1.5"
+                  className="rounded-full bg-white/10 hover:bg-white/20 border border-white/20 px-5 py-2.5 text-xs font-semibold text-white transition-all cursor-pointer inline-flex items-center gap-1.5"
                 >
-                  <span>Open Registration Form</span>
+                  <span>External Form</span>
                   <ExternalLink size={13} />
                 </a>
-              ) : (
-                <Link
-                  href="/register"
-                  className="rounded-full bg-white hover:bg-neutral-100 px-6 py-2.5 text-xs font-bold text-neutral-950 shadow-lg shadow-white/10 transition-all cursor-pointer hover:scale-105 inline-flex items-center gap-1.5"
+              )}
+
+              {event.registrationStatus === "closed" ? (
+                <button
+                  type="button"
+                  disabled
+                  className="rounded-full bg-zinc-800/80 border border-white/10 px-6 py-2.5 text-xs font-bold text-zinc-500 cursor-not-allowed inline-flex items-center gap-1.5"
                 >
-                  <span>Student Registration</span>
-                  <span>→</span>
-                </Link>
+                  Registrations Closed
+                </button>
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => setIsRegistrationModalOpen(true)}
+                  className="rounded-full bg-white hover:bg-neutral-100 px-6 py-2.5 text-xs font-bold text-neutral-950 shadow-lg shadow-white/10 transition-all cursor-pointer hover:scale-105 inline-flex items-center gap-2"
+                >
+                  <Users size={14} className="text-neutral-950" />
+                  <span>Register Team (Create / Join)</span>
+                  <ArrowRight size={13} />
+                </button>
               )}
             </div>
           </div>
         </div>
       </section>
+
+      {/* Team Registration & Roster Modal */}
+      <EventRegistrationModal
+        event={event}
+        isOpen={isRegistrationModalOpen}
+        onClose={() => setIsRegistrationModalOpen(false)}
+      />
     </div>
   );
 }
