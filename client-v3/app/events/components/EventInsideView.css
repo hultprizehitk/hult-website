@@ -1,0 +1,380 @@
+/* ============================================================
+   EventInsideView.css — Dark Kolkata Glassmorphic Detail Page
+   Matches the home page dark-glass / luminous white theme
+   ============================================================ */
+
+.event-inside-root {
+  position: relative;
+  width: 100%;
+  max-width: 960px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 1.75rem;
+  font-family: var(--font-google-sans, "Google Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif);
+  color: #ffffff;
+  animation: fadeIn 0.3s ease-out;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* ── Top Back Navigation Bar ───────────────────────────────── */
+.event-inside__nav {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.event-inside__back-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.55rem;
+  padding: 0.5rem 1.15rem;
+  border-radius: 9999px;
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  background: rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(255, 255, 255, 0.22);
+  color: rgba(255, 255, 255, 0.9);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.35);
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.event-inside__back-btn:hover {
+  background: rgba(255, 255, 255, 0.2);
+  color: #ffffff;
+  transform: translateX(-2px);
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.45);
+}
+
+.event-inside__breadcrumb {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.72rem;
+  font-weight: 500;
+  color: rgba(255,255,255,0.6);
+}
+
+.event-inside__breadcrumb a {
+  color: rgba(255,255,255,0.6);
+  text-decoration: none;
+  transition: color 0.15s ease;
+}
+
+.event-inside__breadcrumb a:hover {
+  color: #ffffff;
+}
+
+.event-inside__breadcrumb-current {
+  color: #ffffff;
+  font-weight: 700;
+  max-width: 240px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* ── Primary Glassmorphic Cards ────────────────────────────── */
+.event-inside__card {
+  position: relative;
+  border-radius: 24px;
+  background: rgba(12, 10, 18, 0.85);
+  backdrop-filter: blur(32px) saturate(180%);
+  -webkit-backdrop-filter: blur(32px) saturate(180%);
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  box-shadow:
+    0 20px 60px rgba(0, 0, 0, 0.6),
+    0 2px 8px rgba(0, 0, 0, 0.2),
+    inset 0 1px 0 rgba(255, 255, 255, 0.12);
+  padding: 2.2rem;
+  overflow: hidden;
+}
+
+.event-inside__card-sheen {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 35%;
+  background: linear-gradient(
+    180deg,
+    rgba(255, 255, 255, 0.08) 0%,
+    rgba(255, 255, 255, 0) 100%
+  );
+  pointer-events: none;
+  z-index: 1;
+}
+
+.event-inside__card-content {
+  position: relative;
+  z-index: 2;
+  display: flex;
+  flex-direction: column;
+  gap: 1.35rem;
+}
+
+/* ── Badges ────────────────────────────────────────────────── */
+.event-inside__badges {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  flex-wrap: wrap;
+}
+
+.event-inside__badge-tag {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.22rem 0.8rem;
+  border-radius: 9999px;
+  font-size: 0.62rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.28);
+  color: rgba(255, 255, 255, 0.9);
+}
+
+.event-inside__badge-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.22rem 0.8rem;
+  border-radius: 9999px;
+  font-size: 0.62rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.event-inside__badge-status--open,
+.event-inside__badge-status--extended {
+  background: rgba(6, 95, 70, 0.35);
+  border: 1px solid rgba(52, 211, 153, 0.5);
+  color: #6ee7b7;
+}
+
+.event-inside__status-dot {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: #059669;
+  box-shadow: 0 0 5px rgba(5, 150, 105, 0.7);
+  animation: pulseDot 1.4s infinite ease-in-out;
+}
+
+.event-inside__badge-status--closed {
+  background: rgba(127, 29, 29, 0.35);
+  border: 1px solid rgba(248, 113, 113, 0.4);
+  color: #fca5a5;
+}
+
+.event-inside__badge-limit {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.22rem 0.8rem;
+  border-radius: 9999px;
+  font-size: 0.62rem;
+  font-weight: 700;
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  color: rgba(255,255,255,0.75);
+}
+
+/* ── Event Title & Description ─────────────────────────────── */
+.event-inside__title {
+  font-family: 'Cinzel', var(--font-playfair, "Playfair Display"), "Didot", Georgia, serif;
+  font-size: clamp(2rem, 3.8vw, 2.75rem);
+  font-weight: 700;
+  line-height: 1.1;
+  color: #ffffff;
+  letter-spacing: -0.01em;
+  margin: 0;
+  text-shadow: 0 2px 24px rgba(255, 255, 255, 0.18), 0 10px 32px rgba(0, 0, 0, 0.7);
+}
+
+/* ── Grid Meta Tiles (Schedule, Venue, Limits) ─────────────── */
+.event-inside__meta-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.85rem;
+}
+
+.event-inside__meta-tile {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 16px;
+  padding: 1rem 1.15rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.25);
+}
+
+.event-inside__meta-label {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  font-size: 0.62rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.6);
+}
+
+.event-inside__meta-icon {
+  color: rgba(253, 164, 175, 0.9);
+  flex-shrink: 0;
+}
+
+.event-inside__meta-value {
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: #ffffff;
+  line-height: 1.3;
+}
+
+.event-inside__meta-value--highlight {
+  color: #ffffff;
+  font-weight: 700;
+}
+
+/* ── About Section ─────────────────────────────────────────── */
+.event-inside__about {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  padding-top: 0.5rem;
+  border-top: 1px solid rgba(255, 255, 255, 0.12);
+}
+
+.event-inside__about-label {
+  font-size: 0.65rem;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: rgba(255,255,255,0.6);
+}
+
+.event-inside__about-text {
+  font-size: 0.8rem;
+  line-height: 1.6;
+  color: rgba(255,255,255,0.8);
+  white-space: pre-line;
+  margin: 0;
+}
+
+/* ── External Link ─────────────────────────────────────────── */
+.event-inside__external-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: rgba(255, 255, 255, 0.8);
+  text-decoration: none;
+  transition: opacity 0.15s ease;
+}
+
+.event-inside__external-link:hover {
+  text-decoration: underline;
+  opacity: 0.85;
+}
+
+/* ── Studio / Wizard Container Overrides ───────────────────── */
+.event-inside-studio {
+  color: #ffffff;
+}
+
+.event-inside-studio h2,
+.event-inside-studio h3 {
+  color: #ffffff !important;
+}
+
+.event-inside-studio p {
+  color: rgba(255,255,255,0.75) !important;
+}
+
+.event-inside-studio label {
+  color: rgba(255,255,255,0.85) !important;
+}
+
+/* Option Cards (Create vs Join) */
+.event-inside-studio .border-white\/10 {
+  border-color: rgba(255, 255, 255, 0.85) !important;
+}
+
+.event-inside-studio .bg-white\/\[0\.02\],
+.event-inside-studio .bg-white\/\[0\.03\],
+.event-inside-studio .bg-white\/\[0\.04\] {
+  background-color: rgba(255, 255, 255, 0.08) !important;
+}
+
+.event-inside-studio .bg-\[\#09090b\],
+.event-inside-studio .bg-\[\#121216\] {
+  background-color: rgba(255, 255, 255, 0.12) !important;
+  border-color: rgba(255, 255, 255, 0.25) !important;
+}
+
+.event-inside-studio input,
+.event-inside-studio select,
+.event-inside-studio textarea {
+  background-color: rgba(255,255,255,0.12) !important;
+  color: #ffffff !important;
+  border-color: rgba(255, 255, 255, 0.25) !important;
+}
+
+.event-inside-studio input:focus,
+.event-inside-studio select:focus {
+  background-color: rgba(255, 255, 255, 0.16) !important;
+  border-color: #ffffff !important;
+  outline: none !important;
+}
+
+.event-inside-studio input::placeholder {
+  color: rgba(255, 255, 255, 0.4) !important;
+}
+
+.event-inside-studio select option {
+  background-color: #0b0b10 !important;
+  color: #ffffff !important;
+}
+
+/* Progress bar inside wizard */
+.event-inside-studio .bg-white\/10 {
+  background-color: rgba(255, 255, 255, 0.15) !important;
+}
+
+/* Button overrides — home hero pill language */
+.event-inside-studio .bg-\[\#f20089\],
+.event-inside-studio .bg-\[\#e60067\] {
+  background: #ffffff !important;
+  color: #0a0a0a !important;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.35) !important;
+}
+
+/* ── Responsive Adaptations ────────────────────────────────── */
+@media (max-width: 768px) {
+  .event-inside__card {
+    padding: 1.4rem;
+    border-radius: 20px;
+  }
+
+  .event-inside__meta-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .event-inside__breadcrumb-current {
+    max-width: 140px;
+  }
+}

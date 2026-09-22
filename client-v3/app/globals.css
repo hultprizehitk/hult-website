@@ -1,0 +1,415 @@
+@import "tailwindcss";
+
+@custom-variant dark (&:is(.dark *));
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --font-sans: var(--font-google-sans), var(--font-geist-sans), -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  --font-syne: var(--font-google-sans), "Google Sans", sans-serif;
+  --font-google-sans: var(--font-google-sans), "Google Sans", sans-serif;
+  --font-serif: var(--font-playfair), var(--font-cinzel), Georgia, serif;
+  --font-playfair: var(--font-playfair), Georgia, serif;
+  --font-cinzel: var(--font-cinzel), serif;
+  --font-pirata: var(--font-pirata), serif;
+  --font-rye: var(--font-rye), serif;
+  --font-blubly: var(--font-blubly), var(--font-anton), Impact, sans-serif;
+  --font-anton: var(--font-anton), Impact, sans-serif;
+  --font-mono: var(--font-geist-mono);
+  --font-heading: var(--font-sans);
+  --color-sidebar-ring: var(--sidebar-ring);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar: var(--sidebar);
+  --color-chart-5: var(--chart-5);
+  --color-chart-4: var(--chart-4);
+  --color-chart-3: var(--chart-3);
+  --color-chart-2: var(--chart-2);
+  --color-chart-1: var(--chart-1);
+  --color-ring: var(--ring);
+  --color-input: var(--input);
+  --color-border: var(--border);
+  --color-destructive: var(--destructive);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-accent: var(--accent);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-muted: var(--muted);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-secondary: var(--secondary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-primary: var(--primary);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-popover: var(--popover);
+  --color-card-foreground: var(--card-foreground);
+  --color-card: var(--card);
+  --radius-sm: calc(var(--radius) * 0.6);
+  --radius-md: calc(var(--radius) * 0.8);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) * 1.4);
+  --radius-2xl: calc(var(--radius) * 1.8);
+  --radius-3xl: calc(var(--radius) * 2.2);
+  --radius-4xl: calc(var(--radius) * 2.6);
+}
+
+:root {
+  --banner-height: 0px;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  background-color: #000000;
+  color: #ffffff;
+  font-family: var(--font-google-sans), var(--font-geist-sans), -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  overflow-x: hidden;
+  min-height: 100vh;
+}
+
+/* Custom Sleek Dark Scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: #000000;
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 9999px;
+  border: 2px solid #000000;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #f20089;
+}
+
+/* Hide scrollbar utility for scroll containers */
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+/* ==========================================================================
+   Upper Sky "HULT PRIZE" Cinematic Typography & Animations
+   ========================================================================== */
+
+.sky-hult-title {
+  font-family: var(--font-blubly), var(--font-anton), Impact, sans-serif;
+  color: #ffffff;
+  background: none;
+  -webkit-text-fill-color: #ffffff;
+}
+
+/* 1. Flat 2D Clean Continuous Slide Upward from Rooftop (Single smooth analytical curve) */
+@keyframes hultSkyEntrance {
+  0% {
+    opacity: 0;
+    transform: translate3d(0, 140px, 0);
+  }
+  14% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 1;
+    transform: translate3d(0, 0, 0);
+  }
+}
+
+/* 2. HULT PRIZE Continuous Gentle Floating Loop (7s ease-in-out) */
+@keyframes hultSkyFloat {
+  0% {
+    transform: translate3d(0, 0, 0);
+  }
+  50% {
+    transform: translate3d(0, -5px, 0);
+  }
+  100% {
+    transform: translate3d(0, 0, 0);
+  }
+}
+
+.animate-sky-entrance {
+  animation: hultSkyEntrance 4.0s cubic-bezier(0.16, 1, 0.3, 1) 0.1s both;
+  will-change: transform, opacity;
+}
+
+.animate-sky-floating {
+  animation: hultSkyFloat 7s ease-in-out infinite;
+  will-change: transform;
+}
+
+@keyframes auroraPulse {
+  0% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+  100% {
+    background-position: 0% 50%;
+  }
+}
+
+/* ==========================================================================
+   Natural Subtle Cloud Drift Parallax Loops
+   ========================================================================== */
+
+@keyframes cloudDriftLayer1 {
+  0% {
+    transform: translate3d(0, 0, 0);
+  }
+  50% {
+    transform: translate3d(-50px, 2px, 0);
+  }
+  100% {
+    transform: translate3d(0, 0, 0);
+  }
+}
+
+@keyframes cloudDriftLayer2 {
+  0% {
+    transform: translate3d(0, 0, 0);
+  }
+  50% {
+    transform: translate3d(45px, -3px, 0);
+  }
+  100% {
+    transform: translate3d(0, 0, 0);
+  }
+}
+
+.animate-cloud-drift-1 {
+  animation: cloudDriftLayer1 65s ease-in-out infinite;
+  will-change: transform;
+}
+
+.animate-cloud-drift-2 {
+  animation: cloudDriftLayer2 85s ease-in-out infinite;
+  will-change: transform;
+}
+
+/* ==========================================================================
+   H Logo Animation — Outline to Filled (0.80s Timeline)
+   Easing: cubic-bezier(0.65, 0, 0.35, 1)
+   ========================================================================== */
+
+/* 1. Group Translation: Holds at center (214.5px) for 0.20s, then glides to left (0px) */
+@keyframes hTranslateMotion {
+  0% {
+    transform: translate3d(214.5px, 0, 0);
+    animation-timing-function: cubic-bezier(0.65, 0, 0.35, 1);
+  }
+  25% {
+    transform: translate3d(214.5px, 0, 0);
+    animation-timing-function: cubic-bezier(0.65, 0, 0.35, 1);
+  }
+  100% {
+    transform: translate3d(0, 0, 0);
+  }
+}
+
+/* 2. Progressive Fill Wipe: Expands from 0px to 495px from 0.20s to 0.80s */
+@keyframes hFillProgress {
+  0% {
+    width: 0px;
+    animation-timing-function: cubic-bezier(0.65, 0, 0.35, 1);
+  }
+  25% {
+    width: 0px;
+    animation-timing-function: cubic-bezier(0.65, 0, 0.35, 1);
+  }
+  100% {
+    width: 495px;
+  }
+}
+
+/* 3. Outline Reveal: Appears smoothly over 0.00s -> 0.20s */
+@keyframes hOutlineFade {
+  0% {
+    opacity: 0;
+  }
+  25% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 1;
+  }
+}
+
+/* 4. Right-side "Hult Prize" text & wheat crest reveal: 0.45s -> 1.25s */
+@keyframes hultRightTextReveal {
+  0% {
+    opacity: 0;
+    transform: translate3d(24px, 0, 0);
+  }
+  100% {
+    opacity: 1;
+    transform: translate3d(0, 0, 0);
+  }
+}
+
+.animate-h-translation {
+  transform: translate3d(214.5px, 0, 0);
+  animation: hTranslateMotion 0.8s forwards;
+  will-change: transform;
+}
+
+.animate-h-fill-rect {
+  width: 0px;
+  animation: hFillProgress 0.8s forwards;
+}
+
+.animate-h-outline-stroke {
+  opacity: 0;
+  animation: hOutlineFade 0.8s forwards;
+}
+
+.animate-hult-right {
+  opacity: 0;
+  transform: translate3d(24px, 0, 0);
+  animation: hultRightTextReveal 0.75s cubic-bezier(0.65, 0, 0.35, 1) 0.45s both;
+  will-change: transform, opacity;
+}
+
+.translate-h-center {
+  transform: translate3d(214.5px, 0, 0);
+}
+
+/* Silky smooth opacity fade for Heritage Institute of Technology text (0.7s ease-out) */
+.fade-in-heritage {
+  transition: opacity 0.7s cubic-bezier(0.16, 1, 0.3, 1);
+  will-change: opacity;
+}
+
+/* Intro Overlay Fade Out */
+.intro-overlay-fade {
+  transition: opacity 0.8s cubic-bezier(0.65, 0, 0.35, 1), visibility 0.8s;
+}
+
+/* Landing Page Hero Image Entrance */
+@keyframes landingHeroFadeIn {
+  0% {
+    opacity: 0;
+    transform: scale(1.03);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.animate-landing-hero {
+  animation: landingHeroFadeIn 1s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  will-change: transform, opacity;
+}
+
+/* Parallax smoothing */
+.parallax-smooth {
+  transition: transform 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+:root {
+  --background: #000000;
+  --foreground: #ffffff;
+  --card: #09090b;
+  --card-foreground: #ffffff;
+  --popover: #09090b;
+  --popover-foreground: #ffffff;
+  --primary: #f20089;
+  --primary-foreground: #ffffff;
+  --secondary: #18181b;
+  --secondary-foreground: #ffffff;
+  --muted: #18181b;
+  --muted-foreground: #a1a1aa;
+  --accent: #27272a;
+  --accent-foreground: #ffffff;
+  --destructive: #ef4444;
+  --border: rgba(255, 255, 255, 0.12);
+  --input: rgba(255, 255, 255, 0.15);
+  --ring: #f20089;
+  --radius: 0.625rem;
+  --sidebar: #09090b;
+  --sidebar-foreground: #ffffff;
+  --sidebar-primary: #f20089;
+  --sidebar-primary-foreground: #ffffff;
+  --sidebar-accent: #18181b;
+  --sidebar-accent-foreground: #ffffff;
+  --sidebar-border: rgba(255, 255, 255, 0.12);
+  --sidebar-ring: #f20089;
+}
+
+.dark {
+  --background: oklch(0.145 0 0);
+  --foreground: oklch(0.985 0 0);
+  --card: oklch(0.205 0 0);
+  --card-foreground: oklch(0.985 0 0);
+  --popover: oklch(0.205 0 0);
+  --popover-foreground: oklch(0.985 0 0);
+  --primary: oklch(0.922 0 0);
+  --primary-foreground: oklch(0.205 0 0);
+  --secondary: oklch(0.269 0 0);
+  --secondary-foreground: oklch(0.985 0 0);
+  --muted: oklch(0.269 0 0);
+  --muted-foreground: oklch(0.708 0 0);
+  --accent: oklch(0.269 0 0);
+  --accent-foreground: oklch(0.985 0 0);
+  --destructive: oklch(0.704 0.191 22.216);
+  --border: oklch(1 0 0 / 10%);
+  --input: oklch(1 0 0 / 15%);
+  --ring: oklch(0.556 0 0);
+  --chart-1: oklch(0.87 0 0);
+  --chart-2: oklch(0.556 0 0);
+  --chart-3: oklch(0.439 0 0);
+  --chart-4: oklch(0.371 0 0);
+  --chart-5: oklch(0.269 0 0);
+  --sidebar: oklch(0.205 0 0);
+  --sidebar-foreground: oklch(0.985 0 0);
+  --sidebar-primary: oklch(0.488 0.243 264.376);
+  --sidebar-primary-foreground: oklch(0.985 0 0);
+  --sidebar-accent: oklch(0.269 0 0);
+  --sidebar-accent-foreground: oklch(0.985 0 0);
+  --sidebar-border: oklch(1 0 0 / 10%);
+  --sidebar-ring: oklch(0.556 0 0);
+}
+
+/* ==========================================================================
+   Fade-In Animation Utility
+   ========================================================================== */
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-fadeIn {
+  animation: fadeIn 0.6s ease-out both;
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  body {
+    @apply bg-background text-foreground;
+  }
+  html {
+    @apply font-sans;
+  }
+}
