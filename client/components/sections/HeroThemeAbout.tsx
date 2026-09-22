@@ -29,26 +29,63 @@ function useCutout() {
   return { cardRef, titleRef, cardSize, titlePos };
 }
 
+// ─── Word wrap helper for SVG text ───────────────────────────────────────────
+function wrapText(text: string, cardWidth: number, approxCharWidth: number): string[] {
+  const availableWidth = Math.max(160, cardWidth - 64);
+  const maxChars = Math.max(8, Math.floor(availableWidth / approxCharWidth));
+  const words = text.split(" ");
+  const lines: string[] = [];
+  let currentLine = "";
+
+  for (const word of words) {
+    if (!currentLine) {
+      currentLine = word;
+    } else if ((currentLine + " " + word).length <= maxChars) {
+      currentLine += " " + word;
+    } else {
+      lines.push(currentLine);
+      currentLine = word;
+    }
+  }
+  if (currentLine) lines.push(currentLine);
+  return lines;
+}
+
 interface MetricItem { index: string; value: string; label: string; sublabel: string; icon: React.ElementType; }
 interface PillarItem { step: string; tag: string; title: string; desc: string; icon: React.ElementType; }
 
-// ─── Metric Card with SVG stencil cutout ─────────────────────────────────────
 function MetricCard({ m, uid, getCardStyle, bgOpacity }: {
   m: MetricItem; uid: string; getCardStyle: (n?: number) => React.CSSProperties; bgOpacity: number;
 }) {
   const { cardRef, titleRef, cardSize, titlePos } = useCutout();
   const Icon = m.icon;
   const alpha = bgOpacity > 0 ? bgOpacity : 0.24;
+  const borderAlpha = 0.45;
   return (
-    <div ref={cardRef} style={{ ...getCardStyle(0), backdropFilter: "none", WebkitBackdropFilter: "none" }} className="group relative overflow-hidden rounded-2xl border p-6 transition-all duration-300 hover:-translate-y-1">
-      <svg className="absolute inset-0 w-full h-full pointer-events-none z-0" viewBox={`0 0 ${cardSize.width} ${cardSize.height}`} width="100%" height="100%" style={{ borderRadius: "1rem" }}>
+    <div
+      ref={cardRef}
+      style={{ background: "transparent", backdropFilter: "none", WebkitBackdropFilter: "none" }}
+      className="group relative overflow-hidden rounded-2xl p-6 transition-all duration-300 hover:-translate-y-1"
+    >
+      <svg
+        className="absolute inset-0 w-full h-full pointer-events-none z-0"
+        viewBox={`0 0 ${cardSize.width} ${cardSize.height}`}
+        width="100%"
+        height="100%"
+        preserveAspectRatio="none"
+        style={{ borderRadius: "1rem" }}
+      >
         <defs>
           <mask id={uid} maskUnits="userSpaceOnUse" x="0" y="0" width={cardSize.width} height={cardSize.height}>
             <rect x="0" y="0" width={cardSize.width} height={cardSize.height} fill="white" rx="16" ry="16" />
             <text x={titlePos.x} y={titlePos.y} fill="black" fontFamily="var(--font-jomolhari)" fontWeight="700" fontSize={titlePos.fontSize} dominantBaseline="hanging">{m.value}</text>
           </mask>
         </defs>
+        {/* White fill with cutout */}
         <rect x="0" y="0" width={cardSize.width} height={cardSize.height} rx="16" ry="16" fill={`rgba(255,255,255,${alpha})`} mask={`url(#${uid})`} />
+        {/* SVG border — perfectly aligned with fill */}
+        <rect x="0.5" y="0.5" width={cardSize.width - 1} height={cardSize.height - 1} rx="15.5" ry="15.5" fill="none" stroke={`rgba(255,255,255,${borderAlpha})`} strokeWidth="1" />
+        {/* Cutout border rim */}
         <text x={titlePos.x} y={titlePos.y} fill="none" stroke="rgba(0,0,0,0.8)" strokeWidth="1.5" strokeLinejoin="round" mask={`url(#${uid})`} fontFamily="var(--font-jomolhari)" fontWeight="700" fontSize={titlePos.fontSize} dominantBaseline="hanging">{m.value}</text>
       </svg>
       <div className="relative z-10">
@@ -73,17 +110,48 @@ function PillarCard({ pillar, idx, uid, getCardStyle, bgOpacity }: {
   const { cardRef, titleRef, cardSize, titlePos } = useCutout();
   const Icon = pillar.icon;
   const alpha = bgOpacity > 0 ? bgOpacity : 0.24;
+  const borderAlpha = 0.45;
+  const parsedSize = parseFloat(titlePos.fontSize) || 28;
+  const lines = wrapText(pillar.title, cardSize.width, parsedSize * 0.55);
+
   return (
-    <div ref={cardRef} style={{ ...getCardStyle(0), backdropFilter: "none", WebkitBackdropFilter: "none" }} className="group relative min-h-[300px] sm:min-h-[380px] md:min-h-[420px] overflow-hidden rounded-3xl border p-6 sm:p-8 md:p-10 transition-all duration-300 hover:-translate-y-1.5 flex flex-col justify-between">
-      <svg className="absolute inset-0 w-full h-full pointer-events-none z-0" viewBox={`0 0 ${cardSize.width} ${cardSize.height}`} width="100%" height="100%" style={{ borderRadius: "1.5rem" }}>
+    <div
+      ref={cardRef}
+      style={{ background: "transparent", backdropFilter: "none", WebkitBackdropFilter: "none" }}
+      className="group relative min-h-[300px] sm:min-h-[380px] md:min-h-[420px] overflow-hidden rounded-3xl p-6 sm:p-8 md:p-10 transition-all duration-300 hover:-translate-y-1.5 flex flex-col justify-between"
+    >
+      <svg
+        className="absolute inset-0 w-full h-full pointer-events-none z-0"
+        viewBox={`0 0 ${cardSize.width} ${cardSize.height}`}
+        width="100%"
+        height="100%"
+        preserveAspectRatio="none"
+        style={{ borderRadius: "1.5rem" }}
+      >
         <defs>
           <mask id={uid} maskUnits="userSpaceOnUse" x="0" y="0" width={cardSize.width} height={cardSize.height}>
             <rect x="0" y="0" width={cardSize.width} height={cardSize.height} fill="white" rx="24" ry="24" />
-            <text x={titlePos.x} y={titlePos.y} fill="black" fontFamily="var(--font-jomolhari)" fontWeight="700" fontSize={titlePos.fontSize} dominantBaseline="hanging">{pillar.title}</text>
+            <text x={titlePos.x} y={titlePos.y} fill="black" fontFamily="var(--font-jomolhari)" fontWeight="700" fontSize={titlePos.fontSize} dominantBaseline="hanging">
+              {lines.map((line, i) => (
+                <tspan key={i} x={titlePos.x} dy={i === 0 ? 0 : "1.18em"}>
+                  {line}
+                </tspan>
+              ))}
+            </text>
           </mask>
         </defs>
+        {/* White fill with cutout */}
         <rect x="0" y="0" width={cardSize.width} height={cardSize.height} rx="24" ry="24" fill={`rgba(255,255,255,${alpha})`} mask={`url(#${uid})`} />
-        <text x={titlePos.x} y={titlePos.y} fill="none" stroke="rgba(0,0,0,0.8)" strokeWidth="1.5" strokeLinejoin="round" mask={`url(#${uid})`} fontFamily="var(--font-jomolhari)" fontWeight="700" fontSize={titlePos.fontSize} dominantBaseline="hanging">{pillar.title}</text>
+        {/* SVG border — perfectly aligned with fill */}
+        <rect x="0.5" y="0.5" width={cardSize.width - 1} height={cardSize.height - 1} rx="23.5" ry="23.5" fill="none" stroke={`rgba(255,255,255,${borderAlpha})`} strokeWidth="1" />
+        {/* Cutout border rim */}
+        <text x={titlePos.x} y={titlePos.y} fill="none" stroke="rgba(0,0,0,0.8)" strokeWidth="1.5" strokeLinejoin="round" mask={`url(#${uid})`} fontFamily="var(--font-jomolhari)" fontWeight="700" fontSize={titlePos.fontSize} dominantBaseline="hanging">
+          {lines.map((line, i) => (
+            <tspan key={i} x={titlePos.x} dy={i === 0 ? 0 : "1.18em"}>
+              {line}
+            </tspan>
+          ))}
+        </text>
       </svg>
       <div className="relative z-10 space-y-4">
         <div className="flex items-center justify-between pb-4 border-b border-neutral-200/60">

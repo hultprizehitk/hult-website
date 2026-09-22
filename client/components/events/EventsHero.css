@@ -10,9 +10,9 @@
   height: 100vh;
   height: 100svh;
   overflow: hidden;
-  background-color: #fcecef;
+  background-color: transparent;
   font-family: var(--font-google-sans, "Google Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif);
-  color: #2b161f;
+  color: #ffffff;
 }
 
 /* ── Fixed Screen Framing Branches ────────────────────────────
@@ -144,16 +144,16 @@
   font-weight: 600;
   letter-spacing: 0.28em;
   text-transform: uppercase;
-  color: #6F302B;
-  opacity: 0.88;
+  color: #f20089;
+  opacity: 0.95;
 }
 
 .events-tagline-dot {
   width: 3px;
   height: 3px;
   border-radius: 50%;
-  background-color: #E96F82;
-  opacity: 0.8;
+  background-color: #f20089;
+  opacity: 0.9;
 }
 
 .events-tagline-rule {
@@ -163,20 +163,20 @@
   gap: 0.5rem;
   width: 120px;
   margin-top: 0.35rem;
-  opacity: 0.45;
+  opacity: 0.65;
 }
 
 .events-tagline-rule-line {
   flex: 1;
   height: 1px;
-  background: #6F302B;
+  background: #f20089;
 }
 
 .events-tagline-rule-diamond {
   width: 3.5px;
   height: 3.5px;
   transform: rotate(45deg);
-  background: #6F302B;
+  background: #f20089;
 }
 
 /* EVENTS Title styled with exact Home Page Palette & Typography */
@@ -194,21 +194,21 @@
 }
 
 .events-title-hult {
-  background: linear-gradient(148deg, #211B1C 0%, #6F302B 52%, #241D1E 100%);
+  background: linear-gradient(148deg, #ffffff 0%, #ffb3cc 52%, #f20089 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
   display: inline-block;
-  filter: drop-shadow(0 2px 14px rgba(33, 27, 28, 0.08));
+  filter: drop-shadow(0 2px 14px rgba(0, 0, 0, 0.4));
 }
 
 .events-title-prize {
-  background: linear-gradient(148deg, #F6A0AE 0%, #E96F82 48%, #D9435B 100%);
+  background: linear-gradient(148deg, #ffffff 0%, #f20089 48%, #e60067 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
   display: inline-block;
-  filter: drop-shadow(0 4px 20px rgba(233, 111, 130, 0.25));
+  filter: drop-shadow(0 4px 20px rgba(242, 0, 137, 0.35));
 }
 
 /* Subtitle */
@@ -217,10 +217,9 @@
   font-size: clamp(0.85rem, 1.4vw, 1.05rem);
   font-style: italic;
   font-weight: 400;
-  color: #6F302B;
+  color: rgba(255, 255, 255, 0.85);
   margin-top: 0.25rem;
   letter-spacing: 0.02em;
-  opacity: 0.88;
 }
 
 /* ── Filter Tabs ───────────────────────────────────────────── */
@@ -252,17 +251,17 @@
   font-weight: 600;
   letter-spacing: 0.16em;
   text-transform: uppercase;
-  color: #6a4454;
+  color: rgba(255, 255, 255, 0.7);
   padding: 0.25rem 0.2rem;
   transition: color 0.2s ease;
 }
 
 .events-tab-btn:hover {
-  color: #e60067;
+  color: #ffffff;
 }
 
 .events-tab-btn--active {
-  color: #e60067;
+  color: #f20089;
   font-weight: 700;
 }
 
@@ -274,8 +273,8 @@
   width: 5px;
   height: 5px;
   border-radius: 50%;
-  background: #e60067;
-  box-shadow: 0 0 6px rgba(230, 0, 103, 0.7);
+  background: #f20089;
+  box-shadow: 0 0 8px rgba(242, 0, 137, 0.8);
   z-index: 2;
 }
 
@@ -317,7 +316,7 @@
   font-family: var(--font-playfair, "Playfair Display"), Georgia, serif;
   font-size: 2rem;
   font-weight: 500;
-  color: #211B1C;
+  color: #ffffff;
   letter-spacing: -0.02em;
   margin-bottom: 1rem;
 }
@@ -338,8 +337,8 @@
   width: 1px;
   background: linear-gradient(
     180deg,
-    rgba(230, 0, 103, 0.5) 0%,
-    rgba(200, 130, 155, 0.35) 70%,
+    rgba(242, 0, 137, 0.6) 0%,
+    rgba(242, 0, 137, 0.2) 70%,
     transparent 100%
   );
 }
@@ -362,7 +361,7 @@
   font-weight: 600;
   letter-spacing: 0.14em;
   text-transform: uppercase;
-  color: #6F302B;
+  color: rgba(255, 255, 255, 0.7);
 }
 
 .events-timeline-day {
@@ -370,11 +369,11 @@
   font-size: 1.75rem;
   font-weight: 700;
   line-height: 1;
-  color: #e60067;
+  color: #f20089;
 }
 
 .events-timeline-node:not(.events-timeline-node--active) .events-timeline-day {
-  color: #7a4658;
+  color: rgba(255, 255, 255, 0.4);
   opacity: 0.85;
 }
 
@@ -388,14 +387,14 @@
 }
 
 .events-timeline-marker--filled {
-  background: #e60067;
-  box-shadow: 0 0 8px rgba(230, 0, 103, 0.5);
+  background: #f20089;
+  box-shadow: 0 0 10px rgba(242, 0, 137, 0.8);
   border: 2px solid #ffffff;
 }
 
 .events-timeline-marker--hollow {
-  background: #fbf0f3;
-  border: 1.5px solid rgba(180, 110, 135, 0.6);
+  background: rgba(255, 255, 255, 0.08);
+  border: 1.5px solid rgba(255, 255, 255, 0.3);
 }
 
 /* Scroll Cue */
@@ -406,7 +405,7 @@
   gap: 0.6rem;
   margin-top: auto;
   padding-bottom: 0.75rem;
-  opacity: 0.75;
+  opacity: 0.85;
   transition: opacity 0.3s ease;
 }
 
@@ -419,7 +418,7 @@
   width: 16px;
   height: 26px;
   border-radius: 10px;
-  border: 1.5px solid #6b3e4f;
+  border: 1.5px solid rgba(255, 255, 255, 0.4);
   display: flex;
   justify-content: center;
   padding-top: 4px;
@@ -429,7 +428,7 @@
   width: 2.5px;
   height: 5px;
   border-radius: 2px;
-  background: #e60067;
+  background: #f20089;
   animation: mouseWheel 1.5s ease-in-out infinite;
 }
 
@@ -445,7 +444,7 @@
   letter-spacing: 0.2em;
   text-transform: uppercase;
   line-height: 1.35;
-  color: #6b3e4f;
+  color: rgba(255, 255, 255, 0.65);
 }
 
 /* ── Middle Column: Event Cards Feed (This Scrolls) ────────── */
@@ -489,7 +488,7 @@
   border-radius: 20px;
   padding: 2.5rem 2rem;
   text-align: center;
-  color: #7a4658;
+  color: rgba(255,255,255,0.5);
   font-size: 0.85rem;
   display: flex;
   flex-direction: column;
@@ -788,7 +787,7 @@
   font-weight: 600;
   letter-spacing: 0.26em;
   text-transform: uppercase;
-  color: #7a4658;
+  color: rgba(255,255,255,0.5);
   opacity: 0.85;
   line-height: 1.4;
 }

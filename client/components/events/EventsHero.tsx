@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useRef } from "react";
 import Image from "next/image";
 import { Calendar, MapPin, Users, ArrowRight } from "lucide-react";
 import "./EventsHero.css";
@@ -55,8 +55,18 @@ function StatusBadge({ status }: { status?: string }) {
   const s = status ?? "open";
   const isLive = s === "open" || s === "extended";
   return (
-    <span className={`event-card__status event-card__status--${s}`}>
-      {isLive && <span className="event-card__status-dot" />}
+    <span
+      className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wider ${
+        s === "open"
+          ? "bg-emerald-500/20 border border-emerald-500/40 text-emerald-300"
+          : s === "extended"
+          ? "bg-amber-500/20 border border-amber-500/40 text-amber-300"
+          : s === "closed"
+          ? "bg-rose-500/20 border border-rose-500/40 text-rose-300"
+          : "bg-slate-500/20 border border-slate-500/40 text-slate-300"
+      }`}
+    >
+      {isLive && <span className="h-1.5 w-1.5 rounded-full bg-current animate-pulse" />}
       {s === "open"
         ? "REGISTERING"
         : s === "extended"
@@ -85,86 +95,87 @@ function EventCard({ event, registeredTeam, onClick, onRegisterClick }: EventCar
 
   return (
     <article
-      className="event-card"
+      className="group relative overflow-hidden rounded-2xl cursor-pointer flex-shrink-0 transition-all duration-300 hover:-translate-y-1.5 hover:shadow-[0_16px_40px_rgba(242,0,137,0.25)] border border-white/15 hover:border-[#f20089]/60 bg-neutral-950/80 backdrop-blur-2xl p-6 flex flex-col justify-between"
+      style={{
+        minHeight: "220px",
+        boxShadow: "0 10px 32px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.12)",
+      }}
       onClick={onClick}
       role="button"
       tabIndex={0}
       onKeyDown={(e) => e.key === "Enter" && onClick()}
     >
-      {/* Glossy card highlight sheen */}
-      <div className="event-card__glass-sheen" aria-hidden="true" />
+      {/* Top Iridescent Edge */}
+      <div className="pointer-events-none absolute inset-x-0 top-0 h-[1px] bg-gradient-to-r from-transparent via-white/30 to-transparent" />
+      <div className="pointer-events-none absolute -top-10 -right-10 h-32 w-32 rounded-full bg-[#f20089]/10 blur-2xl group-hover:bg-[#f20089]/20 transition-all" />
 
-      {/* Card Content (Left) */}
-      <div className="event-card__body">
-        {/* Tags */}
-        <div className="event-card__tags">
-          <span className="event-card__tag">{tagLabel}</span>
+      <div>
+        {/* Top header row: Category / Tag Badge + Status Badge */}
+        <div className="flex items-center justify-between gap-2 mb-3">
+          <span className="inline-flex items-center rounded-full border border-[#f20089]/40 bg-[#f20089]/15 px-3 py-0.5 text-[10px] font-mono font-bold uppercase tracking-wider text-[#f20089]">
+            {tagLabel}
+          </span>
           <StatusBadge status={event.registrationStatus} />
         </div>
 
         {/* Title */}
-        <h3 className="event-card__title">{event.title}</h3>
+        <h3 className="font-jomolhari text-2xl sm:text-3xl font-bold text-white group-hover:text-pink-100 transition-colors leading-snug mb-3">
+          {event.title}
+        </h3>
 
         {/* Metadata */}
-        <div className="event-card__meta">
-          <div className="event-card__meta-row">
-            <Calendar size={13} className="event-card__meta-icon" />
-            <span>{dateLabel}</span>
+        <div className="flex flex-col gap-2 text-xs text-white/80 font-medium mb-4">
+          <div className="flex items-center gap-2">
+            <Calendar size={14} className="text-[#f20089] shrink-0" />
+            <span className="truncate">{dateLabel}</span>
           </div>
-          <div className="event-card__meta-row">
-            <MapPin size={13} className="event-card__meta-icon" />
-            <span>{event.venue || "cc"}</span>
-          </div>
-          <div className="event-card__meta-row">
-            <Users size={13} className="event-card__meta-icon" />
-            <span>Limit: {event.minTeamMembers || 3} to {event.maxTeamMembers || 5} Members</span>
-          </div>
-        </div>
-
-        {/* CTA Button */}
-        <div className="event-card__cta" onClick={(e) => e.stopPropagation()}>
-          {registeredTeam ? (
-            <button
-              type="button"
-              className={`event-card__btn ${
-                isComplete ? "event-card__btn--registered" : "event-card__btn--incomplete"
-              }`}
-              onClick={onRegisterClick}
-            >
-              <span>{isComplete ? "Team Registered (Confirmed)" : `Roster Incomplete (${totalJoined}/${minReq})`}</span>
-              <ArrowRight size={13} />
-            </button>
-          ) : event.registrationStatus === "closed" ? (
-            <button
-              type="button"
-              className="event-card__btn event-card__btn--disabled"
-              onClick={onRegisterClick}
-            >
-              <span>Registrations Closed</span>
-              <ArrowRight size={13} />
-            </button>
-          ) : (
-            <button
-              type="button"
-              className="event-card__btn event-card__btn--primary"
-              onClick={onRegisterClick}
-            >
-              <span>Register Team</span>
-              <ArrowRight size={13} />
-            </button>
+          {event.venue && (
+            <div className="flex items-center gap-2">
+              <MapPin size={14} className="text-[#f20089] shrink-0" />
+              <span className="truncate">{event.venue}</span>
+            </div>
           )}
+          <div className="flex items-center gap-2">
+            <Users size={14} className="text-[#f20089] shrink-0" />
+            <span>{event.minTeamMembers || 3}–{event.maxTeamMembers || 5} Members</span>
+          </div>
         </div>
       </div>
 
-      {/* Card Branch Floral Image (Right) — Sourced strictly from event_mobile_ref.png */}
-      <div className="event-card__thumb" aria-hidden="true">
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img
-          src="/assets/events-page/parts/card-blossom.png"
-          alt=""
-          className="event-card__thumb-img"
-          loading="lazy"
-        />
+      {/* CTA Button */}
+      <div className="mt-auto pt-2" onClick={(e) => e.stopPropagation()}>
+        {registeredTeam ? (
+          <button
+            type="button"
+            className={`w-full flex items-center justify-between rounded-full px-4 py-2.5 text-xs font-bold uppercase tracking-wider text-white shadow-md transition-transform hover:scale-105 cursor-pointer ${
+              isComplete
+                ? "bg-emerald-600 hover:bg-emerald-500 border border-emerald-400/40"
+                : "bg-amber-600 hover:bg-amber-500 border border-amber-400/40"
+            }`}
+            onClick={onRegisterClick}
+          >
+            <span>{isComplete ? "Registered" : `Incomplete (${totalJoined}/${minReq})`}</span>
+            <ArrowRight size={14} />
+          </button>
+        ) : event.registrationStatus === "closed" ? (
+          <button
+            type="button"
+            className="w-full flex items-center justify-between rounded-full bg-white/5 border border-white/10 px-4 py-2.5 text-xs font-bold uppercase tracking-wider text-white/40 cursor-not-allowed"
+            onClick={onRegisterClick}
+          >
+            <span>Registrations Closed</span>
+            <ArrowRight size={14} />
+          </button>
+        ) : (
+          <button
+            type="button"
+            className="w-full flex items-center justify-between rounded-full bg-gradient-to-r from-[#f20089] to-[#e60067] hover:from-[#ff1a9b] hover:to-[#f20089] px-4 py-2.5 text-xs font-bold uppercase tracking-wider text-white shadow-[0_4px_20px_rgba(242,0,137,0.35)] transition-all hover:scale-105 cursor-pointer"
+            onClick={onRegisterClick}
+          >
+            <span>Register Team</span>
+            <ArrowRight size={14} />
+          </button>
+        )}
       </div>
     </article>
   );
@@ -212,69 +223,7 @@ export default function EventsHero({
   }, []);
 
   return (
-    <div className="events-root">
-      {/* ── Fixed Screen Framing Branches (Desktop + Mobile) ───────────
-          Swing automatically with gentle natural CSS breeze animation,
-          fixed to screen corners, completely independent of mouse.
-      ─────────────────────────────────────────────────────────────────── */}
-      {/* Fixed top-left branch for desktop */}
-      <div
-        className="events-fixed-branch events-fixed-branch--left events-fixed-branch--desktop"
-        aria-hidden="true"
-      >
-        <Image
-          src="/assets/hult-prize-hero/branches/cherry-branch-left.png"
-          alt=""
-          fill
-          sizes="50vw"
-          priority
-          style={{ objectFit: "contain", objectPosition: "top left" }}
-        />
-      </div>
-
-      {/* Fixed top-right branch for desktop */}
-      <div
-        className="events-fixed-branch events-fixed-branch--right events-fixed-branch--desktop"
-        aria-hidden="true"
-      >
-        <Image
-          src="/assets/hult-prize-hero/branches/cherry-branch-right.png"
-          alt=""
-          fill
-          sizes="48vw"
-          priority
-          style={{ objectFit: "contain", objectPosition: "top right" }}
-        />
-      </div>
-
-      {/* Bottom Atmosphere Bokeh Layer */}
-      <div className="events-bottom-bokeh" aria-hidden="true">
-        <Image
-          src="/assets/hult-prize-hero/foreground/atmosphere-bokeh.png"
-          alt=""
-          fill
-          sizes="100vw"
-          priority
-          style={{ objectFit: "cover", objectPosition: "bottom center" }}
-        />
-      </div>
-
-      {/* ── Base Background Layer (Desktop + Mobile responsive) ────────── */}
-      <div className="events-base-bg" aria-hidden="true">
-        <picture>
-          <source
-            media="(max-width: 768px)"
-            srcSet="/assets/events-page/parts/event-bak-mobile.png"
-          />
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img
-            src="/assets/events-page/parts/event-back_desktop.png"
-            alt=""
-            className="events-base-bg__img"
-            fetchPriority="high"
-          />
-        </picture>
-      </div>
+    <div className="events-root relative z-10 pt-20">
 
       {/* ── Main Interactive Content Container ───────────────────────── */}
       <div className="events-container">
@@ -294,9 +243,8 @@ export default function EventsHero({
           </div>
 
           {/* EVENTS Title with Home Page Gradient Palette */}
-          <h1 className="events-title">
-            <span className="events-title-hult">EVENT</span>
-            <span className="events-title-prize">S</span>
+          <h1 className="font-jomolhari text-6xl sm:text-7xl md:text-8xl tracking-tight text-white drop-shadow-[0_2px_18px_rgba(0,0,0,0.5)]">
+            EVENTS
           </h1>
 
           {/* Subtitle */}

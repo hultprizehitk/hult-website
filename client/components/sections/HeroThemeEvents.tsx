@@ -8,6 +8,28 @@ import { Calendar, MapPin, Users, ArrowRight, ExternalLink } from "lucide-react"
 import type { PublicEvent } from "@/app/events/page";
 import { useThemeTuner } from "@/context/ThemeTunerContext";
 
+// ─── Word wrap helper for SVG text ───────────────────────────────────────────
+function wrapText(text: string, cardWidth: number, approxCharWidth: number): string[] {
+  const availableWidth = Math.max(200, cardWidth - 96);
+  const maxChars = Math.max(8, Math.floor(availableWidth / approxCharWidth));
+  const words = text.split(" ");
+  const lines: string[] = [];
+  let currentLine = "";
+
+  for (const word of words) {
+    if (!currentLine) {
+      currentLine = word;
+    } else if ((currentLine + " " + word).length <= maxChars) {
+      currentLine += " " + word;
+    } else {
+      lines.push(currentLine);
+      currentLine = word;
+    }
+  }
+  if (currentLine) lines.push(currentLine);
+  return lines;
+}
+
 export default function HeroThemeEvents() {
   const { config, getCardStyle, getBigTextStyle, getHeaderShadow } = useThemeTuner();
   const [events, setEvents] = useState<PublicEvent[]>([]);
@@ -85,6 +107,8 @@ export default function HeroThemeEvents() {
   if (events.length === 0) return null;
 
   const featuredEvent = events[selectedIndex] || events[0];
+  const parsedFontSize = parseFloat(titlePos.fontSize) || 36;
+  const titleLines = wrapText(featuredEvent.title, cardSize.width, parsedFontSize * 0.55);
 
   return (
     <section
@@ -159,14 +183,14 @@ export default function HeroThemeEvents() {
             onMouseMove={handleMouseMove}
             onMouseLeave={handleMouseLeave}
             style={{
-              ...getCardStyle(0),
+              background: "transparent",
               backdropFilter: "none",
               WebkitBackdropFilter: "none",
               transform,
               transition: "transform 0.15s cubic-bezier(0.16, 1, 0.3, 1)",
               transformStyle: "preserve-3d",
             }}
-            className="group relative overflow-hidden rounded-3xl border p-8 sm:p-12 transition-all duration-300 space-y-8"
+            className="group relative overflow-hidden rounded-3xl p-8 sm:p-12 transition-all duration-300 space-y-8"
           >
             {/* Stencil Paper Cutout Surface — covers the ENTIRE card, punches hole for title */}
             <svg
@@ -174,6 +198,7 @@ export default function HeroThemeEvents() {
               viewBox={`0 0 ${cardSize.width} ${cardSize.height}`}
               width="100%"
               height="100%"
+              preserveAspectRatio="none"
               style={{ borderRadius: "1.5rem" }}
             >
               <defs>
@@ -197,7 +222,11 @@ export default function HeroThemeEvents() {
                     fontSize={titlePos.fontSize}
                     dominantBaseline="hanging"
                   >
-                    {featuredEvent.title}
+                    {titleLines.map((line, i) => (
+                      <tspan key={i} x={titlePos.x} dy={i === 0 ? 0 : "1.15em"}>
+                        {line}
+                      </tspan>
+                    ))}
                   </text>
                 </mask>
               </defs>
@@ -211,7 +240,16 @@ export default function HeroThemeEvents() {
                 fill={`rgba(255, 255, 255, ${config.cardBgOpacity > 0 ? config.cardBgOpacity : 0.24})`}
                 mask="url(#stencil-paper-cutout)"
               />
-              {/* 1px crisp white rim around the cutout hole */}
+              {/* SVG border — perfectly aligned with fill */}
+              <rect
+                x="0.5" y="0.5"
+                width={cardSize.width - 1} height={cardSize.height - 1}
+                rx="23.5" ry="23.5"
+                fill="none"
+                stroke={`rgba(255,255,255,${config.cardBorderOpacity > 0 ? config.cardBorderOpacity : 0.45})`}
+                strokeWidth="1"
+              />
+              {/* 1px crisp black rim around the cutout hole */}
               <text
                 x={titlePos.x}
                 y={titlePos.y}
@@ -225,7 +263,11 @@ export default function HeroThemeEvents() {
                 fontSize={titlePos.fontSize}
                 dominantBaseline="hanging"
               >
-                {featuredEvent.title}
+                {titleLines.map((line, i) => (
+                  <tspan key={i} x={titlePos.x} dy={i === 0 ? 0 : "1.15em"}>
+                    {line}
+                  </tspan>
+                ))}
               </text>
             </svg>
 

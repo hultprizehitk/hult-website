@@ -7,9 +7,11 @@ import { KOLKATA_LAYERS, KolkataLayer } from "@/lib/kolkata-layers-config";
 interface KolkataHeroProps {
   mouseOffset: { x: number; y: number };
   isRevealed: boolean;
+  hideText?: boolean;
+  hideForeground?: boolean;
 }
 
-export default function KolkataHero({ mouseOffset, isRevealed }: KolkataHeroProps) {
+export default function KolkataHero({ mouseOffset, isRevealed, hideText, hideForeground }: KolkataHeroProps) {
   // Split layers into background (below text) and foreground (above text)
   const { bgLayers, fgLayers } = useMemo(() => {
     const bg: KolkataLayer[] = [];
@@ -119,16 +121,17 @@ export default function KolkataHero({ mouseOffset, isRevealed }: KolkataHeroProp
           - Positioned in upper sky plane behind foreground crowd & Howrah bridge
           ====================================================================
         */}
-        <div
-          id="hero-layer-text"
-          className={`pointer-events-none absolute inset-x-0 top-[8%] sm:top-[9%] md:top-[10%] lg:top-[11%] z-[8] flex items-center justify-center px-4 transition-all duration-700 ease-out ${
-            isRevealed ? "opacity-100 translate-y-0" : "opacity-0 translate-y-8"
-          }`}
-          style={{
-            transform: `translate3d(${mouseOffset.x * 6}px, ${mouseOffset.y * 4}px, 0)`,
-          }}
-        >
-          <div className="flex flex-col items-center justify-center text-center">
+        {!hideText && (
+          <div
+            id="hero-layer-text"
+            className={`pointer-events-none absolute inset-x-0 top-[8%] sm:top-[9%] md:top-[10%] lg:top-[11%] z-[8] flex items-center justify-center px-4 transition-all duration-700 ease-out ${
+              isRevealed ? "opacity-100 translate-y-0" : "opacity-0 translate-y-8"
+            }`}
+            style={{
+              transform: `translate3d(${mouseOffset.x * 6}px, ${mouseOffset.y * 4}px, 0)`,
+            }}
+          >
+            <div className="flex flex-col items-center justify-center text-center">
             {/* Elegant Chapter Badge */}
             <div className="mb-2 sm:mb-3 inline-flex items-center gap-2 rounded-full border border-white/20 bg-black/40 backdrop-blur-md px-3.5 py-1 text-[9px] sm:text-[11px] font-mono font-bold uppercase tracking-[0.25em] text-pink-200">
               <span className="h-1.5 w-1.5 rounded-full bg-[#f20089] animate-pulse" />
@@ -154,6 +157,7 @@ export default function KolkataHero({ mouseOffset, isRevealed }: KolkataHeroProp
             </p>
           </div>
         </div>
+        )}
 
         {/* 
           ====================================================================
@@ -161,7 +165,7 @@ export default function KolkataHero({ mouseOffset, isRevealed }: KolkataHeroProp
           - Overlaps typography gracefully for true 3D stereoscopic depth
           ====================================================================
         */}
-        {fgLayers.map((layer) => {
+        {!hideForeground && fgLayers.map((layer) => {
           const offsetX = mouseOffset.x * layer.parallax * 15;
           const offsetY = mouseOffset.y * layer.parallax * 10;
 

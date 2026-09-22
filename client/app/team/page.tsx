@@ -5,7 +5,8 @@ import Image from "next/image";
 import Link from "next/link";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import SiteHeader from "@/components/SiteHeader";
-import AnimatedGradient from "@/components/ui/animated-gradient";
+import KolkataHero from "@/components/hero/KolkataHero";
+import GrainOverlay from "@/components/hero/GrainOverlay";
 import { TEAM_SECTIONS, INITIAL_TEAM_MEMBERS } from "@/lib/team-data";
 import type { TeamCategory, TeamMember } from "@/types";
 
@@ -328,19 +329,11 @@ export default function TeamPage() {
 
   return (
     <div className="relative min-h-screen w-full bg-black font-sans text-white selection:bg-[#f20089] selection:text-white overflow-x-hidden flex flex-col justify-between">
-      {/* WebGL Aurora Background */}
-      <div className="fixed inset-0 z-0 pointer-events-none opacity-85">
-        <AnimatedGradient
-          config={{ preset: "Aurora", speed: 16 }}
-          noise={{ opacity: 0.1, scale: 1 }}
-        />
-        <div className="absolute inset-0 bg-gradient-to-t from-black via-black/40 to-black/80" />
-        <div className="absolute inset-0 bg-radial from-transparent via-black/30 to-black/90" />
+      {/* Kolkata Ambient Hero Background (Same as Events page) */}
+      <div className="fixed inset-0 z-0 pointer-events-none">
+        <KolkataHero mouseOffset={{ x: 0, y: 0 }} isRevealed={true} hideText={true} hideForeground={true} />
       </div>
-
-      {/* Atmospheric Ambient Glow */}
-      <div className="pointer-events-none fixed top-20 left-1/4 w-[600px] h-[350px] bg-[#f20089]/15 blur-[160px] rounded-full z-0" />
-      <div className="pointer-events-none fixed bottom-10 right-10 w-[500px] h-[350px] bg-purple-900/20 blur-[150px] rounded-full z-0" />
+      <GrainOverlay opacity={0.65} />
 
       <SiteHeader />
 

@@ -6,6 +6,8 @@ import { useSession } from "next-auth/react";
 import SiteHeader from "@/components/SiteHeader";
 import EventsHero from "@/components/events/EventsHero";
 import EventInsideView from "./components/EventInsideView";
+import GrainOverlay from "@/components/hero/GrainOverlay";
+import KolkataHero from "@/components/hero/KolkataHero";
 import "@/components/events/EventsHero.css";
 
 // ── Public event shape (shared with EventInsideView) ──────────────────────
@@ -124,34 +126,11 @@ export default function EventsPage() {
     }
 
     return (
-      <div className="relative min-h-screen w-full bg-[#fcecef] overflow-x-hidden text-[#2b161f]">
-        {/* Fixed screen branches */}
-        <div className="events-fixed-branch events-fixed-branch--left events-fixed-branch--desktop" aria-hidden="true">
-          <Image src="/assets/hult-prize-hero/branches/cherry-branch-left.png" alt="" fill sizes="44vw" priority style={{ objectFit: "contain", objectPosition: "top left" }} />
+      <div className="relative min-h-screen w-full bg-black overflow-x-hidden text-white">
+        <div className="fixed inset-0 z-0 pointer-events-none">
+          <KolkataHero mouseOffset={{ x: 0, y: 0 }} isRevealed={true} hideText={true} hideForeground={true} />
         </div>
-        <div className="events-fixed-branch events-fixed-branch--right events-fixed-branch--desktop" aria-hidden="true">
-          <Image src="/assets/hult-prize-hero/branches/cherry-branch-right.png" alt="" fill sizes="42vw" priority style={{ objectFit: "contain", objectPosition: "top right" }} />
-        </div>
-        {/* Bottom Atmosphere Bokeh Layer */}
-        <div className="events-bottom-bokeh" aria-hidden="true">
-          <Image
-            src="/assets/hult-prize-hero/foreground/atmosphere-bokeh.png"
-            alt=""
-            fill
-            sizes="100vw"
-            priority
-            style={{ objectFit: "cover", objectPosition: "bottom center" }}
-          />
-        </div>
-
-        {/* Base Background picture */}
-        <div className="events-base-bg" aria-hidden="true">
-          <picture>
-            <source media="(max-width: 768px)" srcSet="/assets/events-page/parts/event-bak-mobile.png" />
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src="/assets/events-page/parts/event-back_desktop.png" alt="" className="events-base-bg__img" fetchPriority="high" />
-          </picture>
-        </div>
+        <GrainOverlay opacity={0.65} />
 
         {/* Transparent light site header */}
         <SiteHeader transparent theme="light" />
@@ -178,14 +157,18 @@ export default function EventsPage() {
   // ── Main events listing ──────────────────────────────────────────────────
   return (
     <div
-      className="relative h-screen max-h-screen w-full overflow-hidden"
-      style={{ background: "#fdf0f4" }}
+      className="relative h-screen max-h-screen w-full overflow-hidden bg-black text-white"
     >
+      <div className="absolute inset-0 z-0 pointer-events-none">
+        <KolkataHero mouseOffset={{ x: 0, y: 0 }} isRevealed={true} hideText={true} hideForeground={true} />
+      </div>
+      <GrainOverlay opacity={0.65} />
+
       {/* Transparent site header — z-50 */}
       <SiteHeader transparent theme="light" />
 
       {/* Hero scene + event cards */}
-      <main className="h-full w-full overflow-hidden">
+      <main className="h-full w-full overflow-hidden relative z-10">
         <EventsHero
           events={events}
           loading={loading}

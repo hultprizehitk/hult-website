@@ -39,22 +39,22 @@ export default function EventInsideView({
   return (
     <div className="event-inside-root">
       {/* ── Top Back Navigation Breadcrumb ───────────────────────── */}
-      <nav className="event-inside__nav" aria-label="Event navigation">
+      <nav className="flex items-center justify-between gap-4 flex-wrap" aria-label="Event navigation">
         <button
           type="button"
           onClick={onBack}
-          className="event-inside__back-btn"
+          className="inline-flex items-center gap-2 rounded-full bg-white/10 border border-white/20 backdrop-blur-md px-5 py-2.5 text-xs font-semibold tracking-wider text-white hover:bg-white/20 hover:scale-105 transition-all shadow-lg"
         >
-          <ArrowLeft size={13} className="text-[#e60067]" />
-          <span>Back to All Events</span>
+          <ArrowLeft size={14} className="text-white" />
+          <span className="uppercase">Back to Events</span>
         </button>
 
-        <div className="event-inside__breadcrumb">
-          <Link href="/events" onClick={onBack}>
+        <div className="flex items-center gap-2 text-xs font-medium text-white/50 uppercase tracking-widest">
+          <Link href="/events" onClick={onBack} className="hover:text-white transition-colors">
             Events
           </Link>
           <span>/</span>
-          <span className="event-inside__breadcrumb-current">
+          <span className="text-white font-bold max-w-[200px] truncate">
             {event.title}
           </span>
         </div>
@@ -93,7 +93,7 @@ export default function EventInsideView({
           </div>
 
           {/* Event Title */}
-          <h1 className="event-inside__title">
+          <h1 className="event-inside__title font-jomolhari tracking-tight drop-shadow-md">
             {event.title}
           </h1>
 
@@ -194,7 +194,7 @@ export default function EventInsideView({
                 <button
                   type="button"
                   onClick={onBack}
-                  className="rounded-full bg-white/70 hover:bg-white border border-white/90 px-5 py-2 text-xs font-semibold text-[#3b1b28] hover:text-[#e60067] shadow-sm transition-all cursor-pointer"
+                  className="rounded-full bg-white/10 hover:bg-white/20 border border-white/20 px-5 py-2 text-xs font-semibold text-white transition-all cursor-pointer shadow-lg"
                 >
                   ← Back to All Events
                 </button>
@@ -215,8 +215,8 @@ export default function EventInsideView({
                     }}
                     className={`rounded-full border px-4 py-2 text-xs font-semibold transition-all cursor-pointer ${
                       reg.isTeamCriteriaMet
-                        ? "bg-white/80 hover:bg-white border-white/90 text-[#3b1b28]"
-                        : "bg-white/40 border-white/50 text-[#7a4658]/60 cursor-not-allowed"
+                        ? "bg-white/10 hover:bg-white/20 border-white/20 text-white shadow-lg"
+                        : "bg-black/20 border-black/30 text-white/40 cursor-not-allowed"
                     }`}
                   >
                     <span>Copy Pass Info</span>
@@ -233,10 +233,10 @@ export default function EventInsideView({
                       }
                       window.print();
                     }}
-                    className={`rounded-full border px-5 py-2 text-xs font-bold transition-all cursor-pointer ${
+                    className={`rounded-full border px-5 py-2 text-xs font-bold transition-all cursor-pointer uppercase tracking-wider ${
                       reg.isTeamCriteriaMet
-                        ? "bg-gradient-to-r from-[#e60067] to-[#ff007f] text-white shadow-md shadow-[#e60067]/30 border-transparent"
-                        : "bg-white/30 border-white/40 text-[#7a4658]/40 cursor-not-allowed"
+                        ? "bg-black text-white hover:bg-neutral-800 shadow-xl border-transparent"
+                        : "bg-black/40 border-black/50 text-white/40 cursor-not-allowed"
                     }`}
                   >
                     <span>
