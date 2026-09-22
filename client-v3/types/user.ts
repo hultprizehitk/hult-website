@@ -1,31 +1,3 @@
-export type UserRole =
-  | "user"
-  | "junior_admin"
-  | "lead_admin"
-  | "master_admin";
-
-export interface Participant {
-  _id: string;
-  name: string;
-  email: string;
-  department: string;
-  year: string;
-  role: UserRole | string;
-  createdAt: string;
-  updatedAt?: string;
-}
-
-export interface AdminRecord {
-  _id: string;
-  name: string;
-  email: string;
-  department?: string;
-  year?: string;
-  role: UserRole;
-  createdAt: string;
-  updatedAt?: string;
-}
-
 export interface ParsedStudentInfo {
   firstName: string;
   lastName: string;
@@ -35,4 +7,11 @@ export interface ParsedStudentInfo {
   passingYear: string;
   batch: string;
   academicYear: string;
+}
+
+export interface SessionUser {
+  name?: string | null;
+  email?: string | null;
+  image?: string | null;
+  role?: string;
 }

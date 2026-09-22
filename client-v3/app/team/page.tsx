@@ -4,7 +4,7 @@ import React, { useState, useEffect, useRef, useCallback } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { ChevronLeft, ChevronRight } from "lucide-react";
-import SiteHeader from "@/components/SiteHeader";
+import SiteHeader from "@/components/layout/SiteHeader";
 import KolkataHero from "@/components/hero/KolkataHero";
 import GrainOverlay from "@/components/hero/GrainOverlay";
 import { TEAM_SECTIONS, INITIAL_TEAM_MEMBERS } from "@/lib/team-data";
@@ -12,7 +12,6 @@ import type { TeamCategory, TeamMember } from "@/types";
 
 export default function TeamPage() {
   const [activeCategory, setActiveCategory] = useState<"all" | TeamCategory>("all");
-  const [dbMembers, setDbMembers] = useState<TeamMember[]>([]);
   const filterScrollRef = useRef<HTMLDivElement>(null);
 
   const [canScrollLeft, setCanScrollLeft] = useState(false);
@@ -58,32 +57,7 @@ export default function TeamPage() {
     setTimeout(updateScrollButtons, 300);
   };
 
-  React.useEffect(() => {
-    fetch("/api/content?type=committee")
-      .then((res) => (res.ok ? res.json() : { items: [] }))
-      .then((data) => {
-        if (Array.isArray(data.items) && data.items.length > 0) {
-          const mapped: TeamMember[] = data.items.map((item: any) => ({
-            id: item._id,
-            slug: item.slug || item.title?.toLowerCase().replace(/\s+/g, "-"),
-            name: item.title,
-            role: item.subtitle,
-            category: item.category as TeamCategory,
-            department: item.description || "",
-            image: item.image || "",
-            socials: {
-              linkedin: item.links?.linkedin || "",
-              github: item.links?.github || "",
-              email: item.links?.email || "",
-            },
-          }));
-          setDbMembers(mapped);
-        }
-      })
-      .catch((err) => console.warn("Notice: Using static team data fallback:", err));
-  }, []);
-
-  const members = dbMembers.length > 0 ? dbMembers : INITIAL_TEAM_MEMBERS;
+  const members = INITIAL_TEAM_MEMBERS;
 
   const facultyMembers = members.filter((m) => m.category === "faculty_coordinator");
   const cdMembers = members.filter((m) => m.category === "cd");

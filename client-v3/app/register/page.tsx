@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useSession, signIn, signOut } from "@/lib/auth-client";
 import { Lock, ArrowRight } from "lucide-react";
-import SiteHeader from "@/components/SiteHeader";
+import SiteHeader from "@/components/layout/SiteHeader";
 import GrainOverlay from "@/components/hero/GrainOverlay";
 import KolkataHero from "@/components/hero/KolkataHero";
 import { parseHeritageEmail } from "@/lib/heritage-parser";

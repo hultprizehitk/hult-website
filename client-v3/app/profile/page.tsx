@@ -6,7 +6,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useSession, signOut } from "@/lib/auth-client";
 import AnimatedGradient from "@/components/ui/animated-gradient";
-import SiteHeader from "@/components/SiteHeader";
+import SiteHeader from "@/components/layout/SiteHeader";
 import { parseHeritageEmail } from "@/lib/heritage-parser";
 
 export default function StudentProfilePage() {
@@ -22,15 +22,26 @@ export default function StudentProfilePage() {
     }
   }, [status, router]);
 
-  // Fetch student's registered events
+  // Fetch student's registered events from client storage
   useEffect(() => {
-    if (status === "authenticated") {
-      fetch("/api/events/register")
-        .then((res) => (res.ok ? res.json() : { registrations: [] }))
-        .then((data) => setRegistrations(data.registrations || []))
-        .catch((err) => console.error("Error fetching registered events:", err));
+    if (status === "authenticated" && session?.user?.email) {
+      try {
+        const raw = localStorage.getItem("hult_v3_registered_teams");
+        if (raw) {
+          const teams: any[] = JSON.parse(raw);
+          const email = session.user.email.toLowerCase();
+          const userTeams = teams.filter(
+            (t) =>
+              t.leadEmail?.toLowerCase() === email ||
+              (t.members || []).some((m: any) => m.email?.toLowerCase() === email)
+          );
+          setRegistrations(userTeams);
+        }
+      } catch {
+        // storage unavailable
+      }
     }
-  }, [status]);
+  }, [status, session?.user?.email]);
 
   const studentInfo = session?.user?.email
     ? parseHeritageEmail(session.user.email, session.user.name)

@@ -23,27 +23,6 @@ export default function AnnouncementBanner() {
   const bannerRef = useRef<HTMLElement>(null);
 
   useEffect(() => {
-    let isMounted = true;
-
-    async function fetchAnnouncements() {
-      try {
-        const res = await fetch("/api/content?type=announcement", {
-          cache: "no-store",
-        });
-        if (!res.ok) return;
-
-        const data = await res.json();
-        if (isMounted && Array.isArray(data.items)) {
-          setAnnouncements(data.items);
-        }
-      } catch (err) {
-        console.warn("Notice: Failed to fetch active flash announcements:", err);
-      } finally {
-        if (isMounted) setLoaded(true);
-      }
-    }
-
-    // Load dismissed IDs from sessionStorage
     try {
       const stored = sessionStorage.getItem("hult_dismissed_announcements");
       if (stored) {
@@ -52,12 +31,7 @@ export default function AnnouncementBanner() {
     } catch {
       // sessionStorage restricted
     }
-
-    fetchAnnouncements();
-
-    return () => {
-      isMounted = false;
-    };
+    setLoaded(true);
   }, []);
 
   const activeAnnouncements = announcements.filter((a) => !dismissedIds.has(a._id));

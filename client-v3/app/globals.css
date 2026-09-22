@@ -161,6 +161,26 @@ body {
   }
 }
 
+@keyframes branchSwingLeft {
+  0% { transform: rotate(0deg); }
+  35% { transform: rotate(2deg); }
+  70% { transform: rotate(-1.2deg); }
+  100% { transform: rotate(0deg); }
+}
+
+@keyframes branchSwingRight {
+  0% { transform: rotate(0deg); }
+  40% { transform: rotate(-2.2deg); }
+  75% { transform: rotate(1.5deg); }
+  100% { transform: rotate(0deg); }
+}
+
+@keyframes mouseWheel {
+  0% { transform: translateY(0); opacity: 1; }
+  60% { transform: translateY(7px); opacity: 0; }
+  100% { transform: translateY(0); opacity: 0; }
+}
+
 /* ==========================================================================
    Natural Subtle Cloud Drift Parallax Loops
    ========================================================================== */

@@ -1,35 +1,19 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import Image from "next/image";
 import { useSession } from "@/lib/auth-client";
-import SiteHeader from "@/components/SiteHeader";
+import SiteHeader from "@/components/layout/SiteHeader";
 import EventsHero from "@/components/events/EventsHero";
-import EventInsideView from "./components/EventInsideView";
+import EventInsideView from "@/components/events/EventInsideView";
 import GrainOverlay from "@/components/hero/GrainOverlay";
 import KolkataHero from "@/components/hero/KolkataHero";
-import "@/components/events/EventsHero.css";
+import { SEED_EVENTS } from "@/lib/seed-data";
+import type { PublicEvent } from "@/types";
 
-// ── Public event shape (shared with EventInsideView) ──────────────────────
-export interface PublicEvent {
-  _id: string;
-  title: string;
-  tag: string;
-  date: string;
-  startDate?: string;
-  endDate?: string;
-  venue: string;
-  description: string;
-  link?: string;
-  registrationStatus?: "open" | "closed" | "extended" | "upcoming";
-  registrationDeadline?: string;
-  registeredTeamsCount?: number;
-  maxTeams?: number;
-  minTeamMembers?: number;
-  maxTeamMembers?: number;
-}
+export type { PublicEvent };
 
-// ─────────────────────────────────────────────────────────────────────────────
+const TEAMS_STORAGE_KEY = "hult_v3_registered_teams";
+
 export default function EventsPage() {
   const { data: session, status } = useSession();
 
@@ -53,28 +37,37 @@ export default function EventsPage() {
     return () => window.removeEventListener("popstate", onPop);
   }, []);
 
-  // ── Fetch events ─────────────────────────────────────────────────────────
+  // ── Load events from static seed data ────────────────────────────────────
   useEffect(() => {
-    fetch("/api/events")
-      .then((res) => (res.ok ? res.json() : { events: [] }))
-      .then((data) => setEvents(data.events || []))
-      .catch((err) => console.error("Error loading events:", err))
-      .finally(() => setLoading(false));
+    setEvents(SEED_EVENTS);
+    setLoading(false);
   }, []);
 
-  // ── Fetch user registrations ─────────────────────────────────────────────
+  // ── Load user registrations from client storage ──────────────────────────
   useEffect(() => {
     if (status !== "authenticated" || !session?.user?.email) return;
-    fetch("/api/events/register")
-      .then((res) => (res.ok ? res.json() : { registrations: [] }))
-      .then((data) => {
+    try {
+      const raw = localStorage.getItem(TEAMS_STORAGE_KEY);
+      if (raw) {
+        const teams: any[] = JSON.parse(raw);
+        const userEmail = session.user.email.toLowerCase();
         const map: Record<string, any> = {};
-        (data.registrations || []).forEach((reg: any) => {
-          if (reg.eventId) map[reg.eventId] = reg.team;
+
+        teams.forEach((team) => {
+          const isLeader = team.leadEmail?.toLowerCase() === userEmail;
+          const isMember = (team.members || []).some(
+            (m: any) => m.email?.toLowerCase() === userEmail
+          );
+          if ((isLeader || isMember) && team.eventId) {
+            map[team.eventId] = team;
+          }
         });
+
         setUserRegistrations(map);
-      })
-      .catch((err) => console.error("Error loading registrations:", err));
+      }
+    } catch {
+      // storage unavailable
+    }
   }, [status, session]);
 
   // ── Navigation helpers ───────────────────────────────────────────────────
@@ -156,9 +149,7 @@ export default function EventsPage() {
 
   // ── Main events listing ──────────────────────────────────────────────────
   return (
-    <div
-      className="relative h-screen max-h-screen w-full overflow-hidden bg-black text-white"
-    >
+    <div className="relative h-screen max-h-screen w-full overflow-hidden bg-black text-white">
       <div className="absolute inset-0 z-0 pointer-events-none">
         <KolkataHero mouseOffset={{ x: 0, y: 0 }} isRevealed={true} hideText={true} hideForeground={true} />
       </div>

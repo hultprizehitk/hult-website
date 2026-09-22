@@ -5,7 +5,8 @@ import Link from "next/link";
 import Image from "next/image";
 import ScrollReveal from "@/components/ui/ScrollReveal";
 import { Calendar, MapPin, Users, ArrowRight, ExternalLink } from "lucide-react";
-import type { PublicEvent } from "@/app/events/page";
+import type { PublicEvent } from "@/types";
+import { SEED_EVENTS } from "@/lib/seed-data";
 import { useThemeTuner } from "@/context/ThemeTunerContext";
 
 // ─── Word wrap helper for SVG text ───────────────────────────────────────────
@@ -62,11 +63,8 @@ export default function HeroThemeEvents() {
   };
 
   useEffect(() => {
-    fetch("/api/events")
-      .then((res) => (res.ok ? res.json() : { events: [] }))
-      .then((data) => setEvents(data.events || []))
-      .catch((err) => console.error("Failed to fetch events:", err))
-      .finally(() => setLoading(false));
+    setEvents(SEED_EVENTS);
+    setLoading(false);
   }, []);
 
   useEffect(() => {

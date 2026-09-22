@@ -5,7 +5,7 @@ import dynamic from "next/dynamic";
 import { ProfileData } from "@/types";
 
 // Dynamically import Lanyard with SSR disabled because it relies on WebGL and browser window
-const DynamicLanyard = dynamic(() => import("@/components/Lanyard"), {
+const DynamicLanyard = dynamic(() => import("@/components/lanyard/Lanyard"), {
   ssr: false,
   loading: () => (
     <div className="flex h-full min-h-[300px] sm:min-h-[400px] w-full items-center justify-center">

@@ -47,11 +47,13 @@ app/
   layout.tsx      ← fonts, metadata, SessionProvider, AnnouncementBanner
   globals.css     ← Tailwind v4 + Kolkata tokens/keyframes
 components/
-  hero/           ← KolkataHero, GrainOverlay, HeroInterfaceOverlay, ... (Kolkata only)
-  events/         ← EventsHero, TeamRegistrationWizard, TeamRosterCard, EventAuditoriumPass
-  sections/       ← HeroThemeAbout / HeroThemeEvents / HeroThemeFooter (home)
+  layout/         ← SiteHeader, SiteFooter
+  hero/           ← KolkataHero, GrainOverlay, HeroInterfaceOverlay
+  events/         ← EventsHero, EventInsideView, TeamRegistrationWizard, TeamRosterCard, EventAuditoriumPass
+  sections/       ← HeroThemeAbout, HeroThemeEvents, HeroThemeFooter (home)
+  lanyard/        ← Lanyard.jsx, Lanyard.css, Lanyard.d.ts
   profile/        ← ProfileLanyardCard (WebGL)
-  ui/             ← ScrollReveal, AnnouncementBanner, animated-gradient, ...
+  ui/             ← ScrollReveal, AnnouncementBanner, animated-gradient, TiltCard, button
   providers/      ← SessionProvider (auth-free mock)
   dev/            ← CardThemeDevTool (?tweak; theme tuning)
 lib/

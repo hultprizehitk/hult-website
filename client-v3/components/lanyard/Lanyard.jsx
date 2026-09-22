@@ -13,7 +13,6 @@ useGLTF.preload(cardGLB);
 useTexture.preload(lanyard);
 
 import * as THREE from 'three';
-import './Lanyard.css';
 
 extend({ MeshLineGeometry, MeshLineMaterial });
 
@@ -53,7 +52,7 @@ export default function Lanyard({
   const activeAnchorX = anchorX !== undefined ? anchorX : (isMobile ? 0 : -2.75);
 
   return (
-    <div className="lanyard-wrapper">
+    <div className="lanyard-wrapper relative z-0 w-full h-full min-h-[500px] flex justify-center items-center scale-100 origin-center">
       <Canvas
         camera={{ position: position, fov: fov }}
         dpr={[1, isMobile ? 1.5 : 2]}

@@ -2,7 +2,7 @@
   "name": "hult-hitk-frontend",
   "version": "0.1.0",
   "private": true,
-  "description": "Hult Prize HITK — Kolkata-theme frontend (client v3). Frontend-only; API stubs marked TEMPORARY.",
+  "description": "Hult Prize HITK — Kolkata-theme frontend (client v3). Pure frontend architecture.",
   "scripts": {
     "dev": "next dev",
     "build": "next build",

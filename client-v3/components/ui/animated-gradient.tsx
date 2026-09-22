@@ -3,7 +3,6 @@
 import { useRef, useEffect, useMemo, useState, CSSProperties } from "react";
 import { cn } from "@/lib/utils";
 import { WebGLErrorBoundary, WebGLFallback } from "@/components/ui/animated-gradient-utils/webgl-error-boundary";
-import { debug } from "@/lib/debug-logger";
 
 type PatternShape = "Checks" | "Stripes" | "Edge";
 
@@ -225,11 +224,10 @@ export function AnimatedGradient({
                 antialias: true,
             });
             if (!gl) {
-                debug.warn("intro", "AnimatedGradient: webgl2 getContext returned null");
+                console.warn("AnimatedGradient: webgl2 getContext returned null");
                 setHasWebGLError(true);
                 return;
             }
-            debug.log("intro", "AnimatedGradient: webgl2 context acquired");
 
             const vertexShaderSource = `#version 300 es
     in vec4 a_position;
@@ -241,7 +239,7 @@ export function AnimatedGradient({
             gl.shaderSource(vertexShader, vertexShaderSource);
             gl.compileShader(vertexShader);
             if (!gl.getShaderParameter(vertexShader, gl.COMPILE_STATUS)) {
-                debug.error("intro", "AnimatedGradient: vertex shader compile failed");
+                console.error("AnimatedGradient: vertex shader compile failed");
                 gl.deleteShader(vertexShader);
                 setHasWebGLError(true);
                 return;
@@ -252,17 +250,12 @@ export function AnimatedGradient({
             gl.compileShader(fragmentShader);
             if (!gl.getShaderParameter(fragmentShader, gl.COMPILE_STATUS)) {
                 const infoLog = gl.getShaderInfoLog(fragmentShader);
-                debug.error(
-                    "intro",
-                    "AnimatedGradient: fragment shader compile failed",
-                    infoLog
-                );
+                console.error("AnimatedGradient: fragment shader compile failed", infoLog);
                 gl.deleteShader(vertexShader);
                 gl.deleteShader(fragmentShader);
                 setHasWebGLError(true);
                 return;
             }
-            debug.log("intro", "AnimatedGradient: shaders compiled OK");
 
             const program = gl.createProgram()!;
             gl.attachShader(program, vertexShader);
@@ -270,7 +263,7 @@ export function AnimatedGradient({
             gl.linkProgram(program);
             if (!gl.getProgramParameter(program, gl.LINK_STATUS)) {
                 const infoLog = gl.getProgramInfoLog(program);
-                debug.error("intro", "AnimatedGradient: program link failed", infoLog);
+                console.error("AnimatedGradient: program link failed", infoLog);
                 gl.deleteProgram(program);
                 gl.deleteShader(vertexShader);
                 gl.deleteShader(fragmentShader);
@@ -360,10 +353,8 @@ export function AnimatedGradient({
             };
 
             frameIdRef.current = requestAnimationFrame(animate);
-            debug.log("intro", "AnimatedGradient: render loop started");
 
             return () => {
-                debug.log("intro", "AnimatedGradient: cleanup -> stopping loop, deleting GL resources");
                 if (frameIdRef.current !== undefined) {
                     cancelAnimationFrame(frameIdRef.current);
                 }
@@ -374,7 +365,7 @@ export function AnimatedGradient({
                 gl.deleteBuffer(positionBuffer);
             };
         } catch (err) {
-            debug.error("intro", "AnimatedGradient: init threw unexpectedly", err);
+            console.error("AnimatedGradient: init threw unexpectedly", err);
             setHasWebGLError(true);
             return;
         }

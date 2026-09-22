@@ -2,13 +2,12 @@
 
 import React from "react";
 import Link from "next/link";
-import { ArrowLeft, Calendar, MapPin, Users, ExternalLink, RefreshCw } from "lucide-react";
+import { ArrowLeft, Calendar, MapPin, Users, ExternalLink } from "lucide-react";
 import type { PublicEvent } from "../page";
 import { useEventRegistration } from "@/hooks/useEventRegistration";
 import EventAuditoriumPass from "@/components/events/EventAuditoriumPass";
 import TeamRosterCard from "@/components/events/TeamRosterCard";
 import TeamRegistrationWizard from "@/components/events/TeamRegistrationWizard";
-import "./EventInsideView.css";
 
 interface EventInsideViewProps {
   event: PublicEvent;
@@ -37,7 +36,7 @@ export default function EventInsideView({
   });
 
   return (
-    <div className="event-inside-root">
+    <div className="relative w-full max-w-[960px] mx-auto flex flex-col gap-7 text-white font-sans animate-fadeIn">
       {/* ── Top Back Navigation Breadcrumb ───────────────────────── */}
       <nav className="flex items-center justify-between gap-4 flex-wrap" aria-label="Event navigation">
         <button
@@ -61,70 +60,70 @@ export default function EventInsideView({
       </nav>
 
       {/* ── Hero Event Card (Frosted Glassmorphic) ───────────────── */}
-      <article className="event-inside__card">
-        <div className="event-inside__card-sheen" aria-hidden="true" />
+      <article className="relative rounded-3xl bg-[#0c0a12]/85 backdrop-blur-2xl border border-white/15 p-6 md:p-9 shadow-2xl overflow-hidden">
+        <div className="pointer-events-none absolute top-0 inset-x-0 h-[35%] bg-gradient-to-b from-white/10 to-transparent z-[1]" aria-hidden="true" />
 
-        <div className="event-inside__card-content">
+        <div className="relative z-[2] flex flex-col gap-5">
           {/* Status Badges */}
-          <div className="event-inside__badges">
-            <span className="event-inside__badge-tag">
+          <div className="flex items-center gap-2.5 flex-wrap">
+            <span className="inline-flex items-center px-3 py-1 rounded-full text-[10px] font-bold tracking-widest uppercase bg-white/10 border border-white/30 text-white/90">
               {event.tag || "FLAGSHIP"}
             </span>
 
             {event.registrationStatus === "closed" ? (
-              <span className="event-inside__badge-status event-inside__badge-status--closed">
+              <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-bold tracking-wider uppercase bg-rose-950/40 border border-rose-400/50 text-rose-300">
                 Registrations Closed
               </span>
             ) : event.registrationStatus === "extended" ? (
-              <span className="event-inside__badge-status event-inside__badge-status--extended">
-                <span className="event-inside__status-dot" />
+              <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-bold tracking-wider uppercase bg-amber-950/40 border border-amber-400/50 text-amber-300">
+                <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse" />
                 Extended Deadline
               </span>
             ) : (
-              <span className="event-inside__badge-status event-inside__badge-status--open">
-                <span className="event-inside__status-dot" />
+              <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-bold tracking-wider uppercase bg-emerald-950/40 border border-emerald-400/50 text-emerald-300">
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
                 Registrations Open
               </span>
             )}
 
-            <span className="event-inside__badge-limit">
+            <span className="inline-flex items-center px-3 py-1 rounded-full text-[10px] font-bold bg-white/10 border border-white/20 text-white/75">
               Team Size: {reg.minMembers} to {reg.maxMembers} Members
             </span>
           </div>
 
           {/* Event Title */}
-          <h1 className="event-inside__title font-jomolhari tracking-tight drop-shadow-md">
+          <h1 className="font-serif text-3xl sm:text-4xl md:text-5xl font-bold tracking-tight text-white drop-shadow-[0_2px_24px_rgba(255,255,255,0.18)]">
             {event.title}
           </h1>
 
           {/* Meta Grid (Schedule, Venue, Limits) */}
-          <div className="event-inside__meta-grid">
-            <div className="event-inside__meta-tile">
-              <span className="event-inside__meta-label">
-                <Calendar size={13} className="event-inside__meta-icon" />
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-3.5">
+            <div className="bg-white/5 border border-white/10 rounded-2xl p-4 flex flex-col gap-1.5 shadow-md">
+              <span className="flex items-center gap-2 text-[10px] font-bold tracking-widest uppercase text-white/60">
+                <Calendar size={13} className="text-rose-300/90 shrink-0" />
                 <span>Schedule & Time</span>
               </span>
-              <span className="event-inside__meta-value">
+              <span className="text-sm font-semibold text-white">
                 {event.date || "TBD"}
               </span>
             </div>
 
-            <div className="event-inside__meta-tile">
-              <span className="event-inside__meta-label">
-                <MapPin size={13} className="event-inside__meta-icon" />
+            <div className="bg-white/5 border border-white/10 rounded-2xl p-4 flex flex-col gap-1.5 shadow-md">
+              <span className="flex items-center gap-2 text-[10px] font-bold tracking-widest uppercase text-white/60">
+                <MapPin size={13} className="text-rose-300/90 shrink-0" />
                 <span>Venue Location</span>
               </span>
-              <span className="event-inside__meta-value">
+              <span className="text-sm font-semibold text-white">
                 {event.venue || "Heritage Campus (cc)"}
               </span>
             </div>
 
-            <div className="event-inside__meta-tile">
-              <span className="event-inside__meta-label">
-                <Users size={13} className="event-inside__meta-icon" />
+            <div className="bg-white/5 border border-white/10 rounded-2xl p-4 flex flex-col gap-1.5 shadow-md">
+              <span className="flex items-center gap-2 text-[10px] font-bold tracking-widest uppercase text-white/60">
+                <Users size={13} className="text-rose-300/90 shrink-0" />
                 <span>Team Size Limits</span>
               </span>
-              <span className="event-inside__meta-value event-inside__meta-value--highlight">
+              <span className="text-sm font-bold text-white">
                 {reg.minMembers} to {reg.maxMembers} Students / Team
               </span>
             </div>
@@ -132,11 +131,11 @@ export default function EventInsideView({
 
           {/* About Event Description */}
           {event.description && (
-            <div className="event-inside__about">
-              <span className="event-inside__about-label">
+            <div className="flex flex-col gap-1.5 pt-2 border-t border-white/10">
+              <span className="text-[11px] font-bold tracking-widest uppercase text-white/60">
                 About This Event
               </span>
-              <p className="event-inside__about-text">
+              <p className="text-sm leading-relaxed text-white/80 whitespace-pre-line">
                 {event.description}
               </p>
             </div>
@@ -149,7 +148,7 @@ export default function EventInsideView({
                 href={event.link}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="event-inside__external-link"
+                className="inline-flex items-center gap-2 text-xs font-bold text-white/80 hover:text-white hover:underline transition-opacity"
               >
                 <ExternalLink size={13} />
                 <span>External RSVP & Event Page</span>
@@ -160,10 +159,10 @@ export default function EventInsideView({
       </article>
 
       {/* ── Team Registration & Pass Studio Container ─────────────── */}
-      <section className="event-inside__card event-inside-studio" aria-label="Registration Studio">
-        <div className="event-inside__card-sheen" aria-hidden="true" />
+      <section className="relative rounded-3xl bg-[#0c0a12]/85 backdrop-blur-2xl border border-white/15 p-6 md:p-9 shadow-2xl overflow-hidden" aria-label="Registration Studio">
+        <div className="pointer-events-none absolute top-0 inset-x-0 h-[35%] bg-gradient-to-b from-white/10 to-transparent z-[1]" aria-hidden="true" />
 
-        <div className="event-inside__card-content">
+        <div className="relative z-[2] flex flex-col gap-5">
           {registeredTeam ? (
             <div className="space-y-6">
               <TeamRosterCard

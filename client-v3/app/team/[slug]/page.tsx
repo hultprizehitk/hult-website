@@ -3,7 +3,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { getProfileBySlug, getAllProfileSlugs, getAllProfiles } from "@/lib/profile-data";
 import ProfileLanyardCard from "@/components/profile/ProfileLanyardCard";
-import SiteHeader from "@/components/SiteHeader";
+import SiteHeader from "@/components/layout/SiteHeader";
 import KolkataHero from "@/components/hero/KolkataHero";
 import GrainOverlay from "@/components/hero/GrainOverlay";
 

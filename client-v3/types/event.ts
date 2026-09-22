@@ -47,19 +47,19 @@ export interface EventItem {
   updatedAt?: string;
 }
 
-export interface EventFormData {
+export interface PublicEvent {
+  _id: string;
   title: string;
-  tag: EventTag | string;
-  date: string;
+  tag?: string;
+  date?: string;
   startDate?: string;
   endDate?: string;
-  venue: string;
-  description: string;
-  link: string;
-  isPublished: boolean;
-  order: number;
+  venue?: string;
+  description?: string;
+  link?: string;
   registrationStatus?: "open" | "closed" | "extended" | "upcoming";
   registrationDeadline?: string;
+  registeredTeamsCount?: number;
   maxTeams?: number;
   minTeamMembers?: number;
   maxTeamMembers?: number;

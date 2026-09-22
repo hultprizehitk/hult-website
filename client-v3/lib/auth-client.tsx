@@ -1,17 +1,5 @@
 "use client";
 
-/**
- * Frontend-only auth stub for the Kolkata client v3.
- *
- * The live `client/` app signs students in via NextAuth + Google OAuth backed by
- * MongoDB. This folder ships without any backend, so the same component API
- * (`useSession`, `signIn`, `signOut`) is re-implemented here against a
- * localStorage session.
- *
- * SWAP POINT: when the backend lands, delete this file and restore
- * `next-auth/react` imports (`@/components/providers/SessionProvider`).
- */
-
 import React, {
   createContext,
   useContext,
@@ -21,7 +9,6 @@ import React, {
 import { parseHeritageEmail } from "@/lib/heritage-parser";
 
 const SESSION_KEY = "hult_v3_session";
-const SESSION_COOKIE = "hult_v3_session";
 
 export interface SessionUser {
   name?: string | null;
@@ -40,6 +27,7 @@ type Status = "loading" | "authenticated" | "unauthenticated";
 const NO_SESSION: Session | null = null;
 
 function readStoredSession(): Session | null {
+  if (typeof window === "undefined") return null;
   try {
     const raw = window.localStorage.getItem(SESSION_KEY);
     if (!raw) return null;
@@ -52,25 +40,18 @@ function readStoredSession(): Session | null {
 }
 
 function writeStoredSession(session: Session | null) {
+  if (typeof window === "undefined") return;
   try {
     if (session) {
       window.localStorage.setItem(SESSION_KEY, JSON.stringify(session));
-      // Mirror to a cookie so the frontend-only /api stubs can read the active
-      // student's email server-side (same swap point as a real session cookie).
-      document.cookie = `${SESSION_COOKIE}=${encodeURIComponent(
-        session.user.email || ""
-      )};path=/;max-age=604800;samesite=lax`;
     } else {
       window.localStorage.removeItem(SESSION_KEY);
-      document.cookie = `${SESSION_COOKIE}=;path=/;max-age=0`;
     }
   } catch {
     // storage may be blocked
   }
 }
 
-// Session store backed by localStorage, exposed through useSyncExternalStore so
-// components re-render when the session changes without manual hydration state.
 let cachedSession: Session | null =
   typeof window !== "undefined" ? readStoredSession() : null;
 const sessionListeners = new Set<() => void>();
@@ -149,8 +130,6 @@ export async function signIn(
 ): Promise<void> {
   const email = options?.email?.trim();
   if (!email) {
-    // No explicit email (e.g. legacy "google" button). Route to /register so the
-    // student can provide their heritage email.
     window.location.assign(options?.callbackUrl || "/register");
     return;
   }
