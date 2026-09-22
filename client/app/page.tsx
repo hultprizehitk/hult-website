@@ -12,10 +12,18 @@ import { ThemeTunerProvider, useThemeTuner } from "@/context/ThemeTunerContext";
 import { KOLKATA_LAYERS } from "@/lib/kolkata-layers-config";
 
 export default function Home() {
+  const [showDevTool, setShowDevTool] = useState(false);
+
+  useEffect(() => {
+    if (typeof window !== "undefined" && window.location.search.includes("tweak")) {
+      setShowDevTool(true);
+    }
+  }, []);
+
   return (
     <ThemeTunerProvider>
       <HomeContent />
-      <CardThemeDevTool />
+      {showDevTool && <CardThemeDevTool />}
     </ThemeTunerProvider>
   );
 }
