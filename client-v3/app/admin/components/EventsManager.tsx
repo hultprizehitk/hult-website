@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
-import { Calendar } from "lucide-react";
+import { Calendar, ExternalLink } from "lucide-react";
 
 import type { EventItem, RegisteredTeamItem } from "@/types";
 
@@ -1267,11 +1267,31 @@ export default function EventsManager() {
                                   {team.teamCode}
                                 </span>
                               )}
+                              {team.submissionStatus === "submitted" ? (
+                                <span className="font-mono text-[9px] font-bold text-purple-300 bg-purple-500/20 border border-purple-500/30 px-1.5 py-0.5 rounded">
+                                  Submitted
+                                </span>
+                              ) : (
+                                <span className="font-mono text-[9px] font-bold text-amber-300 bg-amber-500/20 border border-amber-500/30 px-1.5 py-0.5 rounded">
+                                  Forming
+                                </span>
+                              )}
                             </div>
                             {team.ventureName && (
                               <span className="text-[11px] text-white/60 block line-clamp-1 mt-0.5">
                                 {team.ventureName}
                               </span>
+                            )}
+                            {team.pitchDeckUrl && (
+                              <a
+                                href={team.pitchDeckUrl}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="inline-flex items-center gap-1 text-[10px] text-[#f20089] hover:underline font-mono mt-0.5"
+                              >
+                                <ExternalLink size={10} />
+                                <span>Pitch Deck</span>
+                              </a>
                             )}
                           </td>
                           <td className="px-5 py-3.5">

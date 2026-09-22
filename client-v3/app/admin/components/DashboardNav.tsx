@@ -33,9 +33,10 @@ export default function DashboardNav({ userEmail, isSuperAdmin }: DashboardNavPr
     pathname?.includes("/live-event") || pathname?.includes("/live");
   const isStudents =
     pathname?.includes("/students") || pathname?.includes("/student");
+  const isTeams = pathname?.includes("/teams");
   const isAdmins =
     pathname?.includes("/admins") || pathname?.includes("/admin/admin");
-  const isEvents = !isLiveEvent && !isStudents && !isAdmins;
+  const isEvents = !isLiveEvent && !isStudents && !isTeams && !isAdmins;
 
   const getHref = (path: string) => {
     if (isSubdomain) {
@@ -109,6 +110,17 @@ export default function DashboardNav({ userEmail, isSuperAdmin }: DashboardNavPr
             }`}
           >
             Events
+          </Link>
+
+          <Link
+            href={getHref("/teams")}
+            className={`rounded-xl px-5 py-2 text-xs sm:text-sm font-bold tracking-wide transition-all font-[family-name:var(--font-google-sans)] whitespace-nowrap ${
+              isTeams
+                ? "bg-white text-black shadow-lg shadow-white/15"
+                : "bg-[#16161d] text-white/70 hover:text-white hover:bg-[#202028] border border-white/10"
+            }`}
+          >
+            Teams
           </Link>
 
           <Link

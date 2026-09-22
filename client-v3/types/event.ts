@@ -14,6 +14,8 @@ export interface RegisteredTeamItem {
   teamCode?: string;
   teamName: string;
   ventureName?: string;
+  ventureDescription?: string;
+  pitchDeckUrl?: string;
   leadName: string;
   leadEmail: string;
   leadPhone?: string;
@@ -22,6 +24,8 @@ export interface RegisteredTeamItem {
   members?: TeamMemberItem[];
   registeredAt: string;
   status: "confirmed" | "pending" | "waitlist";
+  submissionStatus?: "forming" | "ready" | "submitted";
+  submittedAt?: string;
 }
 
 export interface EventItem {
