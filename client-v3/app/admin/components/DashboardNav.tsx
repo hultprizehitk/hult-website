@@ -6,6 +6,7 @@ import Image from "next/image";
 import { usePathname } from "next/navigation";
 import { signOut } from "next-auth/react";
 import { Button } from "@/components/ui/button";
+import { Camera } from "lucide-react";
 
 interface DashboardNavProps {
   userEmail: string;
@@ -34,9 +35,10 @@ export default function DashboardNav({ userEmail, isSuperAdmin }: DashboardNavPr
   const isStudents =
     pathname?.includes("/students") || pathname?.includes("/student");
   const isTeams = pathname?.includes("/teams");
+  const isScanner = pathname?.includes("/scanner");
   const isAdmins =
     pathname?.includes("/admins") || pathname?.includes("/admin/admin");
-  const isEvents = !isLiveEvent && !isStudents && !isTeams && !isAdmins;
+  const isEvents = !isLiveEvent && !isStudents && !isTeams && !isScanner && !isAdmins;
 
   const getHref = (path: string) => {
     if (isSubdomain) {
@@ -121,6 +123,18 @@ export default function DashboardNav({ userEmail, isSuperAdmin }: DashboardNavPr
             }`}
           >
             Teams
+          </Link>
+
+          <Link
+            href={getHref("/scanner")}
+            className={`flex items-center gap-1.5 rounded-xl px-5 py-2 text-xs sm:text-sm font-bold tracking-wide transition-all font-[family-name:var(--font-google-sans)] whitespace-nowrap ${
+              isScanner
+                ? "bg-white text-black shadow-lg shadow-white/15"
+                : "bg-[#16161d] text-white/70 hover:text-white hover:bg-[#202028] border border-white/10"
+            }`}
+          >
+            <Camera className={`h-3.5 w-3.5 ${isScanner ? "text-emerald-600" : "text-emerald-400"}`} />
+            <span>Scanner</span>
           </Link>
 
           <Link

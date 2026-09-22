@@ -281,10 +281,10 @@ export async function PUT(req: Request) {
   try {
     const session = await auth();
     const body = await req.json();
-    const { teamId, eventId, action } = body;
+    const { teamId, eventId, action, teamCode } = body;
 
-    if (!teamId) {
-      return NextResponse.json({ error: "Team ID is required." }, { status: 400 });
+    if (!teamId && !teamCode) {
+      return NextResponse.json({ error: "Team ID or Team Code is required." }, { status: 400 });
     }
 
     await connectDB();
@@ -292,22 +292,36 @@ export async function PUT(req: Request) {
     if (action === "toggle_check_in") {
       const checkedIn = Boolean(body.checkedIn);
       const checkedInAt = checkedIn ? new Date() : undefined;
+      const cleanCode = teamCode ? String(teamCode).trim().toUpperCase() : undefined;
 
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       let updatedTeam: any = null;
-      if (mongoose.Types.ObjectId.isValid(teamId)) {
+      if (teamId && mongoose.Types.ObjectId.isValid(teamId)) {
         updatedTeam = await Team.findByIdAndUpdate(
           teamId,
           { checkedIn, ...(checkedIn ? { checkedInAt } : { $unset: { checkedInAt: 1 } }) },
           { new: true }
         );
+      } else if (cleanCode) {
+        updatedTeam = await Team.findOneAndUpdate(
+          { teamCode: cleanCode },
+          { checkedIn, ...(checkedIn ? { checkedInAt } : { $unset: { checkedInAt: 1 } }) },
+          { new: true }
+        );
       }
 
-      if (eventId && mongoose.Types.ObjectId.isValid(eventId)) {
-        const ev = await Event.findById(eventId);
+      const effectiveEventId = eventId || updatedTeam?.eventId?.toString();
+
+      if (effectiveEventId && mongoose.Types.ObjectId.isValid(effectiveEventId)) {
+        const ev = await Event.findById(effectiveEventId);
         if (ev && Array.isArray(ev.registeredTeams)) {
           // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          const match = ev.registeredTeams.find((t: any) => t.id === teamId || t.teamCode === body.teamCode);
+          const match = ev.registeredTeams.find(
+            (t: any) =>
+              (teamId && t.id === teamId) ||
+              (cleanCode && t.teamCode?.toUpperCase() === cleanCode) ||
+              (updatedTeam && (t.id === updatedTeam._id.toString() || t.teamCode?.toUpperCase() === updatedTeam.teamCode?.toUpperCase()))
+          );
           if (match) {
             match.checkedIn = checkedIn;
             match.checkedInAt = checkedInAt;
@@ -316,14 +330,23 @@ export async function PUT(req: Request) {
         }
       }
 
+      if (!updatedTeam && !effectiveEventId) {
+        return NextResponse.json(
+          { error: `Team with code "${cleanCode || teamId}" was not found.` },
+          { status: 404 }
+        );
+      }
+
+      const effectiveTargetId = updatedTeam?._id?.toString() || teamId || cleanCode || "unknown";
+
       await logAdminAction({
         adminEmail: session?.user?.email || "admin",
         adminName: session?.user?.name || "Admin",
         adminRole: (session?.user as { role?: string })?.role || "admin",
         action: checkedIn ? "team_checkin" : "team_uncheckin",
         targetType: "team",
-        targetId: teamId,
-        details: { checkedIn, eventId, teamCode: body.teamCode },
+        targetId: effectiveTargetId,
+        details: { checkedIn, eventId: effectiveEventId, teamCode: cleanCode || updatedTeam?.teamCode },
         req,
       });
 
