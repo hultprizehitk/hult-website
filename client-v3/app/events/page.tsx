@@ -110,8 +110,8 @@ export default function EventsPage() {
         </div>
         <GrainOverlay opacity={0.65} />
 
-        {/* Transparent light site header */}
-        <SiteHeader transparent theme="light" />
+        {/* Unified fixed site header */}
+        <SiteHeader />
 
         {/* Main detail content */}
         <main className="relative z-10 w-full px-4 sm:px-6 pt-24 pb-16">
@@ -132,8 +132,8 @@ export default function EventsPage() {
       </div>
       <GrainOverlay opacity={0.65} />
 
-      {/* Transparent site header — z-50 */}
-      <SiteHeader transparent theme="light" />
+      {/* Unified fixed site header */}
+      <SiteHeader />
 
       {/* Hero scene + event cards */}
       <main className="h-full w-full overflow-hidden relative z-10">

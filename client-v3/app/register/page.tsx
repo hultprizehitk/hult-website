@@ -78,7 +78,7 @@ export default function RegisterPage() {
       </div>
       <GrainOverlay opacity={0.65} />
 
-      <SiteHeader transparent theme="light" />
+      <SiteHeader />
 
       {/* Main Content */}
       <main className="relative z-10 flex flex-1 items-center justify-center px-4 sm:px-6 pt-24 sm:pt-28 pb-10">

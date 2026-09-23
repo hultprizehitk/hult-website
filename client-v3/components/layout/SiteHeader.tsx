@@ -3,7 +3,9 @@
 import React, { useState, useEffect } from "react";
 import Image from "next/image";
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { useSession, signOut } from "next-auth/react";
+import { ArrowRight, Menu, X } from "lucide-react";
 
 interface SiteHeaderProps {
   className?: string;
@@ -15,36 +17,10 @@ interface SiteHeaderProps {
 
 export default function SiteHeader({
   className = "",
-  transparentUntilScroll = false,
-  transparent = false,
-  theme = "dark",
-  isLandingRevealed = true,
 }: SiteHeaderProps) {
   const { data: session, status } = useSession();
+  const pathname = usePathname() || "";
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const [isScrolled, setIsScrolled] = useState(false);
-
-  useEffect(() => {
-    if (!transparentUntilScroll) return;
-    const handleScroll = () => {
-      setIsScrolled(window.scrollY > 20);
-    };
-    handleScroll();
-    window.addEventListener("scroll", handleScroll, { passive: true });
-    return () => window.removeEventListener("scroll", handleScroll);
-  }, [transparentUntilScroll]);
-
-  const headerBgClass = transparent
-    ? "bg-transparent border-none py-3.5"
-    : transparentUntilScroll
-    ? isScrolled
-      ? "bg-black/75 backdrop-blur-xl border-b border-white/10 shadow-2xl py-3"
-      : "bg-transparent border-none py-3.5"
-    : "bg-black/75 backdrop-blur-xl border-b border-white/10 shadow-lg py-3";
-
-  const visibilityClass = isLandingRevealed
-    ? "opacity-100 translate-y-0"
-    : "opacity-0 -translate-y-4 pointer-events-none";
 
   const firstName = session?.user?.name ? session.user.name.split(" ")[0] : "Student";
 
@@ -52,82 +28,89 @@ export default function SiteHeader({
     <>
       <header
         style={{ top: "var(--banner-height, 0px)" }}
-        className={`fixed inset-x-0 z-50 flex w-full items-center justify-between px-4 sm:px-6 md:px-8 transition-all duration-300 font-[family-name:var(--font-google-sans)] ${headerBgClass} ${visibilityClass} ${className}`}
+        className={`fixed inset-x-0 z-50 flex w-full items-center justify-between px-6 sm:px-10 md:px-14 py-4 sm:py-5 bg-transparent border-none text-white select-none font-[family-name:var(--font-google-sans)] pointer-events-auto ${className}`}
       >
-        {/* Brand Logos */}
-        <div className="flex items-center gap-2 sm:gap-3 transition-opacity duration-700">
-          <Link href="/" className="relative aspect-[1080/659] h-7 sm:h-8 md:h-9">
-            <Image
-              src="/Hult-Prize.png"
-              alt="Hult Prize Logo"
-              fill
-              sizes="(max-width: 640px) 46px, 66px"
-              priority
-              className="object-contain drop-shadow-md"
-            />
+        {/* Brand Lockup Left */}
+        <div className="flex items-center gap-3 sm:gap-3.5 select-none">
+          <Link href="/" className="flex items-center gap-2 group">
+            <div className="relative h-8 sm:h-9 md:h-10 w-[48px] sm:w-[54px] md:w-[60px] transition-transform duration-300 group-hover:scale-105">
+              <Image
+                src="/ef-hult-prize-logo.png"
+                alt="EF Hult Prize Logo"
+                fill
+                sizes="(max-width: 640px) 48px, 60px"
+                className="object-contain drop-shadow-[0_2px_8px_rgba(0,0,0,0.6)]"
+                priority
+              />
+            </div>
           </Link>
-          <div className="relative aspect-[1024/895] h-7 sm:h-8 md:h-9">
-            <Image
-              src="/hitk-25-logo.png"
-              alt="Heritage Institute of Technology 25 Years Logo"
-              fill
-              sizes="(max-width: 640px) 40px, 56px"
-              priority
-              className="object-contain drop-shadow-md"
-            />
-          </div>
+
+          {/* Thin Hairline Divider */}
+          <div className="h-6 w-px bg-white/25" />
+
+          {/* Heritage Institute of Technology 25 Years Logo */}
+          <Link href="/" className="flex items-center group">
+            <div className="relative aspect-[1024/895] h-8 sm:h-9 md:h-10 transition-transform duration-300 group-hover:scale-105">
+              <Image
+                src="/hitk-25-logo.png"
+                alt="Heritage Institute of Technology 25 Years Logo"
+                fill
+                sizes="(max-width: 640px) 42px, 52px"
+                className="object-contain drop-shadow-[0_2px_8px_rgba(0,0,0,0.6)]"
+                priority
+              />
+            </div>
+          </Link>
         </div>
 
-        {/* Desktop Navigation */}
-        <nav className="hidden md:flex items-center gap-6 lg:gap-8">
+        {/* Navigation Links Center */}
+        <nav className="hidden md:flex items-center gap-8 text-[13px] font-medium select-none text-white/85">
+          <Link
+            href="/"
+            className={`relative transition-colors duration-200 hover:text-white after:absolute after:-bottom-1 after:left-0 after:h-[1.5px] after:bg-white hover:after:w-full after:transition-all after:duration-200 drop-shadow-[0_1px_4px_rgba(0,0,0,0.6)] ${
+              pathname === "/" ? "text-white font-semibold after:w-full" : "text-white/80 after:w-0"
+            }`}
+          >
+            Home
+          </Link>
           <Link
             href="/events"
-            className={`text-xs sm:text-sm font-semibold tracking-wide transition-colors duration-200 ${
-              theme === "light"
-                ? "text-[#2b161f]/85 hover:text-neutral-950"
-                : "text-white/85 drop-shadow hover:text-white"
+            className={`relative transition-colors duration-200 hover:text-white after:absolute after:-bottom-1 after:left-0 after:h-[1.5px] after:bg-white hover:after:w-full after:transition-all after:duration-200 drop-shadow-[0_1px_4px_rgba(0,0,0,0.6)] ${
+              pathname.startsWith("/events") ? "text-white font-semibold after:w-full" : "text-white/80 after:w-0"
             }`}
           >
             Events
           </Link>
+          {pathname.startsWith("/team") && (
+            <Link
+              href="/team"
+              className="relative text-white font-semibold after:w-full transition-colors duration-200 after:absolute after:-bottom-1 after:left-0 after:h-[1.5px] after:bg-white drop-shadow-[0_1px_4px_rgba(0,0,0,0.6)]"
+            >
+              Team
+            </Link>
+          )}
+        </nav>
 
-          <Link
-            href="/team"
-            className={`text-xs sm:text-sm font-semibold tracking-wide transition-colors duration-200 ${
-              theme === "light"
-                ? "text-[#2b161f]/85 hover:text-neutral-950"
-                : "text-white/85 drop-shadow hover:text-white"
-            }`}
-          >
-            Team
-          </Link>
-
-          <span className="hidden xl:inline text-xs font-serif italic text-white/60 tracking-wider">
+        {/* Right CTA Group */}
+        <div className="flex items-center gap-3 sm:gap-4 select-none">
+          <span className="hidden lg:inline-block font-serif italic text-xs text-white/70 tracking-wide drop-shadow-[0_1px_4px_rgba(0,0,0,0.6)]">
             Ideas for a Brighter Tomorrow
           </span>
 
           {status === "authenticated" && session?.user ? (
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-2 sm:gap-3">
               <Link
                 href="/profile"
-                className={`inline-flex items-center gap-1.5 rounded-full border px-3.5 py-1.5 text-xs font-bold shadow-sm hover:scale-[1.02] transition-all ${
-                  theme === "light"
-                    ? "border-[#2b161f]/20 bg-[#2b161f]/5 hover:bg-[#2b161f]/10 text-[#2b161f]"
-                    : "border-white/20 bg-white/10 hover:bg-white/15 text-white"
-                }`}
+                className="flex items-center gap-2 rounded-full bg-white/10 hover:bg-white/20 backdrop-blur-md px-3.5 py-1.5 sm:px-4 sm:py-2 text-xs font-semibold text-white border border-white/25 shadow-md transition-all duration-200 hover:border-white/50"
                 title="View Student Profile"
               >
-                <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse" />
-                <span>{firstName}</span>
+                <span className="h-2 w-2 rounded-full bg-emerald-400 animate-pulse" />
+                <span className="max-w-[100px] sm:max-w-[130px] truncate">{firstName}</span>
               </Link>
               <button
                 type="button"
-                onClick={() => signOut({ callbackUrl: "/register" })}
-                className={`text-xs font-semibold transition-colors cursor-pointer ${
-                  theme === "light"
-                    ? "text-[#2b161f]/70 hover:text-neutral-950"
-                    : "text-white/70 hover:text-white"
-                }`}
+                onClick={() => signOut({ callbackUrl: "/" })}
+                className="text-xs text-white/70 hover:text-white transition-colors duration-200 px-2 py-1 cursor-pointer font-medium"
               >
                 Sign Out
               </button>
@@ -135,53 +118,24 @@ export default function SiteHeader({
           ) : (
             <Link
               href="/register"
-              className="rounded-full bg-neutral-900 hover:bg-neutral-800 px-4 sm:px-5 py-1.5 sm:py-2 text-xs sm:text-sm font-bold tracking-wide text-white shadow-lg shadow-neutral-900/20 border border-neutral-700 transition-all duration-200 hover:scale-[1.05] active:scale-[0.98] inline-flex items-center gap-1.5"
+              className="flex items-center gap-2 rounded-full bg-white hover:bg-neutral-100 px-5 py-2 text-xs font-semibold text-neutral-950 shadow-md shadow-black/30 border border-white/80 transition-all duration-300 hover:scale-105 active:scale-95"
             >
               <span>Register Now</span>
-              <span>→</span>
+              <ArrowRight className="h-3.5 w-3.5" />
             </Link>
           )}
-        </nav>
 
-        {/* Mobile Right Bar */}
-        <div className="flex md:hidden items-center gap-2">
-          {status === "authenticated" && session?.user ? (
-            <Link
-              href="/profile"
-              className={`rounded-full border px-3 py-1.5 text-[11px] font-bold tracking-wide shadow-md active:scale-95 ${
-                theme === "light"
-                  ? "border-[#2b161f]/20 bg-[#2b161f]/5 text-[#2b161f]"
-                  : "border-white/20 bg-white/[0.1] text-white"
-              }`}
-            >
-              {firstName}
-            </Link>
-          ) : (
-            <Link
-              href="/register"
-              className="rounded-full bg-neutral-900 hover:bg-neutral-800 px-3.5 py-1.5 text-[11px] font-bold tracking-wide text-white shadow-md shadow-neutral-900/20 border border-neutral-700 active:scale-95"
-            >
-              Register
-            </Link>
-          )}
+          {/* Mobile Menu Toggle */}
           <button
             type="button"
             onClick={() => setMobileMenuOpen((prev) => !prev)}
             aria-label="Toggle navigation menu"
-            className={`p-1.5 rounded-full border transition-colors cursor-pointer ${
-              theme === "light"
-                ? "bg-black/[0.05] hover:bg-black/[0.1] border-black/15 text-[#2b161f]"
-                : "bg-white/[0.08] hover:bg-white/[0.15] border-white/20 text-white"
-            }`}
+            className="p-1.5 rounded-full border border-white/20 bg-white/10 hover:bg-white/20 text-white md:hidden cursor-pointer transition-colors"
           >
             {mobileMenuOpen ? (
-              <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-              </svg>
+              <X className="h-5 w-5" />
             ) : (
-              <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
-              </svg>
+              <Menu className="h-5 w-5" />
             )}
           </button>
         </div>
@@ -190,7 +144,7 @@ export default function SiteHeader({
       {/* Mobile Slide-Down Menu Overlay */}
       {mobileMenuOpen && (
         <div
-          style={{ top: "calc(var(--banner-height, 0px) + 52px)" }}
+          style={{ top: "calc(var(--banner-height, 0px) + 64px)" }}
           className="fixed inset-x-0 z-40 md:hidden bg-black/95 backdrop-blur-3xl border-b border-white/15 px-6 py-6 shadow-2xl flex flex-col gap-4 font-[family-name:var(--font-google-sans)] animate-in fade-in slide-in-from-top-2 duration-200"
         >
           <Link
@@ -207,13 +161,15 @@ export default function SiteHeader({
           >
             Events Calendar
           </Link>
-          <Link
-            href="/team"
-            onClick={() => setMobileMenuOpen(false)}
-            className="text-base font-semibold text-white/90 hover:text-white py-2 border-b border-white/5 transition-colors"
-          >
-            Organizing Team
-          </Link>
+          {pathname.startsWith("/team") && (
+            <Link
+              href="/team"
+              onClick={() => setMobileMenuOpen(false)}
+              className="text-base font-semibold text-white/90 hover:text-white py-2 border-b border-white/5 transition-colors"
+            >
+              Organizing Team
+            </Link>
+          )}
           {status === "authenticated" ? (
             <>
               <Link
@@ -227,7 +183,7 @@ export default function SiteHeader({
                 type="button"
                 onClick={() => {
                   setMobileMenuOpen(false);
-                  signOut({ callbackUrl: "/register" });
+                  signOut({ callbackUrl: "/" });
                 }}
                 className="text-left text-base font-semibold text-rose-400 py-2 transition-colors cursor-pointer"
               >
