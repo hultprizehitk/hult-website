@@ -239,6 +239,10 @@ export default function StudentProfilePage() {
   const [teamActionSuccess, setTeamActionSuccess] = useState<string | null>(null);
 
   const handleStartEditTeam = (team: UserTeam) => {
+    if (team.submissionStatus === "submitted") {
+      setTeamActionError("Official team registration has already been submitted. The team name is permanently locked and cannot be changed.");
+      return;
+    }
     setEditingTeamId(team._id);
     setEditTeamName(team.teamName || "");
     setTeamActionError(null);
@@ -246,6 +250,12 @@ export default function StudentProfilePage() {
 
   const handleSaveTeamEdit = async (teamId: string, e: React.FormEvent) => {
     e.preventDefault();
+    const targetTeam = teams.find((t) => t._id === teamId);
+    if (targetTeam?.submissionStatus === "submitted") {
+      setTeamActionError("Official team registration has already been submitted. The team name is permanently locked.");
+      return;
+    }
+
     if (!editTeamName.trim()) {
       setTeamActionError("Team Name cannot be blank.");
       return;
@@ -882,21 +892,21 @@ export default function StudentProfilePage() {
                               <div className="flex items-center justify-between gap-2 pt-2 border-t border-white/10 flex-wrap">
                                 <div className="flex items-center gap-2 flex-wrap">
                                   {isLead ? (
-                                    <>
-                                      <button
-                                        type="button"
-                                        onClick={() =>
-                                          editingTeamId === t._id
-                                            ? setEditingTeamId(null)
-                                            : handleStartEditTeam(t)
-                                        }
-                                        className="inline-flex items-center gap-1.5 rounded-lg border border-white/15 bg-white/5 hover:bg-white/15 px-3 py-1.5 text-[11px] font-medium text-white/90 hover:text-white transition-all cursor-pointer font-mono"
-                                      >
-                                        <Edit3 size={11} className="text-white/70" />
-                                        <span>{editingTeamId === t._id ? "Cancel" : "Edit Team"}</span>
-                                      </button>
+                                    t.submissionStatus !== "submitted" ? (
+                                      <>
+                                        <button
+                                          type="button"
+                                          onClick={() =>
+                                            editingTeamId === t._id
+                                              ? setEditingTeamId(null)
+                                              : handleStartEditTeam(t)
+                                          }
+                                          className="inline-flex items-center gap-1.5 rounded-lg border border-white/15 bg-white/5 hover:bg-white/15 px-3 py-1.5 text-[11px] font-medium text-white/90 hover:text-white transition-all cursor-pointer font-mono"
+                                        >
+                                          <Edit3 size={11} className="text-white/70" />
+                                          <span>{editingTeamId === t._id ? "Cancel" : "Edit Team"}</span>
+                                        </button>
 
-                                      {t.submissionStatus !== "submitted" ? (
                                         <button
                                           type="button"
                                           onClick={() => handleDeleteTeamFromProfile(t)}
@@ -910,13 +920,13 @@ export default function StudentProfilePage() {
                                           )}
                                           <span>Disband Team</span>
                                         </button>
-                                      ) : (
-                                        <span className="inline-flex items-center gap-1 text-[11px] font-mono text-white/60 bg-white/5 border border-white/10 px-2.5 py-1 rounded-lg">
-                                          <Lock size={10} className="text-emerald-400" />
-                                          <span>Roster Finalized</span>
-                                        </span>
-                                      )}
-                                    </>
+                                      </>
+                                    ) : (
+                                      <span className="inline-flex items-center gap-1 text-[11px] font-mono text-white/60 bg-white/5 border border-white/10 px-2.5 py-1 rounded-lg">
+                                        <Lock size={10} className="text-emerald-400" />
+                                        <span>Team Finalized &amp; Locked</span>
+                                      </span>
+                                    )
                                   ) : (
                                     t.submissionStatus !== "submitted" ? (
                                       <button

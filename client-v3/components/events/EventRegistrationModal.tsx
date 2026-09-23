@@ -277,6 +277,11 @@ export default function EventRegistrationModal({
     e.preventDefault();
     if (!existingTeam) return;
 
+    if (existingTeam.submissionStatus === "submitted") {
+      setActionError("Official team registration has already been submitted. The team name is permanently locked and cannot be changed.");
+      return;
+    }
+
     if (!editTeamForm.teamName.trim()) {
       setActionError("Team Name cannot be blank.");
       return;
@@ -682,21 +687,30 @@ export default function EventRegistrationModal({
                 {/* Team Management Action Buttons Row */}
                 {userRole === "lead" && (
                   <div className="flex items-center justify-between gap-2 pt-2 border-t border-white/10 flex-wrap">
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setIsEditingTeam(!isEditingTeam);
-                        setActionError(null);
-                      }}
-                      className="rounded-full bg-white/5 hover:bg-white/15 border border-white/15 px-3.5 py-1.5 text-xs font-semibold text-white/90 hover:text-white transition-all cursor-pointer inline-flex items-center gap-1.5 font-mono"
-                    >
-                      <Edit3 size={11} className="text-white/70" />
-                      <span>{isEditingTeam ? "Cancel Edit" : "Edit Team Name"}</span>
-                    </button>
+                    {!isSubmitted ? (
+                      <>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setIsEditingTeam(!isEditingTeam);
+                            setActionError(null);
+                          }}
+                          className="rounded-full bg-white/5 hover:bg-white/15 border border-white/15 px-3.5 py-1.5 text-xs font-semibold text-white/90 hover:text-white transition-all cursor-pointer inline-flex items-center gap-1.5 font-mono"
+                        >
+                          <Edit3 size={11} className="text-white/70" />
+                          <span>{isEditingTeam ? "Cancel Edit" : "Edit Team Name"}</span>
+                        </button>
 
-                    <span className="text-[10px] font-mono text-white/40">
-                      Leader control: rename team
-                    </span>
+                        <span className="text-[10px] font-mono text-white/40">
+                          Leader control: rename team
+                        </span>
+                      </>
+                    ) : (
+                      <span className="inline-flex items-center gap-1.5 text-[11px] font-mono text-white/50">
+                        <Lock size={11} className="text-emerald-400" />
+                        <span>Team Name Locked (Submitted)</span>
+                      </span>
+                    )}
                   </div>
                 )}
 

@@ -474,7 +474,16 @@ export async function PATCH(req: Request) {
       }
 
       if (teamName && typeof teamName === "string" && teamName.trim()) {
-        team.teamName = teamName.trim();
+        const cleanNewName = teamName.trim();
+        if (cleanNewName !== team.teamName) {
+          if (team.submissionStatus === "submitted") {
+            return NextResponse.json(
+              { error: "Official team registration has already been submitted. The team name is permanently locked and cannot be changed." },
+              { status: 400 }
+            );
+          }
+          team.teamName = cleanNewName;
+        }
       }
       if (ventureName !== undefined && typeof ventureName === "string") {
         team.ventureName = ventureName.trim();
