@@ -30,6 +30,19 @@ export interface IRegisteredTeam {
   checkedInAt?: Date;
 }
 
+export interface IEventRound {
+  roundNumber: number;
+  title: string;
+  type: string;
+  description: string;
+  details?: string[];
+}
+
+export interface IEventRuleCategory {
+  title: string;
+  items: string[];
+}
+
 export interface IEvent extends Document {
   _id: mongoose.Types.ObjectId;
   title: string;
@@ -49,6 +62,8 @@ export interface IEvent extends Document {
   maxTeamMembers: number;
   registeredTeamsCount: number;
   registeredTeams: IRegisteredTeam[];
+  rounds?: IEventRound[];
+  rules?: IEventRuleCategory[];
   createdAt: Date;
   updatedAt: Date;
 }
@@ -157,6 +172,21 @@ const EventSchema = new Schema<IEvent>(
         submittedAt: { type: Date },
         checkedIn: { type: Boolean, default: false },
         checkedInAt: { type: Date },
+      },
+    ],
+    rounds: [
+      {
+        roundNumber: { type: Number },
+        title: { type: String, trim: true },
+        type: { type: String, trim: true },
+        description: { type: String, trim: true },
+        details: [{ type: String, trim: true }],
+      },
+    ],
+    rules: [
+      {
+        title: { type: String, trim: true },
+        items: [{ type: String, trim: true }],
       },
     ],
   },

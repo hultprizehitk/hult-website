@@ -224,11 +224,11 @@ export default function EventRegistrationModal({
       setExistingTeam((prev) =>
         prev
           ? {
-              ...prev,
-              submissionStatus: "submitted",
-              status: "confirmed",
-              submittedAt: new Date().toISOString(),
-            }
+            ...prev,
+            submissionStatus: "submitted",
+            status: "confirmed",
+            submittedAt: new Date().toISOString(),
+          }
           : null
       );
       if (onRegistrationComplete) {
@@ -305,9 +305,9 @@ export default function EventRegistrationModal({
       setExistingTeam((prev) =>
         prev
           ? {
-              ...prev,
-              teamName: editTeamForm.teamName.trim(),
-            }
+            ...prev,
+            teamName: editTeamForm.teamName.trim(),
+          }
           : null
       );
       setIsEditingTeam(false);
@@ -460,8 +460,8 @@ export default function EventRegistrationModal({
       const origin = window.location.origin;
       const text = encodeURIComponent(
         `Join my Hult Prize team "${teamName}" for ${event.title}!\n\n` +
-          `Team Invite Code: ${code}\n\n` +
-          `Join our team directly here:\n${origin}/events?event=${event._id}`
+        `Team Invite Code: ${code}\n\n` +
+        `Join our team directly here:\n${origin}/events?event=${event._id}`
       );
       window.open(`https://api.whatsapp.com/send?text=${text}`, "_blank");
     }
@@ -1315,10 +1315,7 @@ export default function EventRegistrationModal({
             {/* Section Header */}
             <div className="flex items-start justify-between gap-4 flex-wrap pb-4 border-b border-white/10">
               <div>
-                <span className="inline-flex items-center gap-1.5 text-[10px] font-mono font-bold uppercase tracking-widest text-[#f20089] mb-1">
-                  <Sparkles size={12} />
-                  <span>Competition Workspace</span>
-                </span>
+
                 <h2 className="font-serif text-2xl sm:text-3xl md:text-4xl font-bold tracking-tight text-white drop-shadow-[0_2px_24px_rgba(255,255,255,0.18)]">
                   Team Registration &amp; Roster
                 </h2>

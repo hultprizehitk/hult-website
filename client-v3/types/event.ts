@@ -47,8 +47,23 @@ export interface EventItem {
   maxTeamMembers?: number;
   registeredTeamsCount?: number;
   registeredTeams?: RegisteredTeamItem[];
+  rounds?: EventRound[];
+  rules?: EventRuleCategory[];
   createdAt: string;
   updatedAt?: string;
+}
+
+export interface EventRound {
+  roundNumber: number;
+  title: string;
+  type: string;
+  description: string;
+  details?: string[];
+}
+
+export interface EventRuleCategory {
+  title: string;
+  items: string[];
 }
 
 export interface EventFormData {
@@ -83,4 +98,7 @@ export interface PublicEvent {
   registrationDeadline?: string;
   minTeamMembers?: number;
   maxTeamMembers?: number;
+  rounds?: EventRound[];
+  rules?: EventRuleCategory[];
 }
+
