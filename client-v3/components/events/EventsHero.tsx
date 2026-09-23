@@ -1,24 +1,16 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
-import { Calendar, MapPin, Users, ArrowRight } from "lucide-react";
-import type { PublicEvent } from "@/app/events/page";
-
-// ── Tab definition ──────────────────────────────────────────────────────────
-const TABS = ["ALL", "FLAGSHIP", "REGISTRATION", "QUIZ"] as const;
-type Tab = (typeof TABS)[number];
-
-// ── Sidebar decorative copy (matches reference) ─────────────────────────────
-const RIGHT_SIDEBAR = [
-  ["SMALL", "STEPS", "BIGGER", "TOMORROWS"],
-  ["IDEAS.", "PEOPLE.", "IMPACT."],
-];
+import React, { useEffect, useState, useRef } from "react";
+import { Calendar, MapPin, Users, ArrowRight, ChevronLeft, ChevronRight, Sparkles } from "lucide-react";
+import type { PublicEvent } from "@/types";
 
 // ── Helpers ─────────────────────────────────────────────────────────────────
-function formatDate(dateStr: string) {
+function formatDate(dateStr?: string) {
   if (!dateStr) return "TBD";
   try {
-    return new Date(dateStr).toLocaleDateString("en-US", {
+    const d = new Date(dateStr);
+    if (isNaN(d.getTime())) return dateStr;
+    return d.toLocaleDateString("en-US", {
       weekday: "short",
       month: "short",
       day: "numeric",
@@ -34,18 +26,41 @@ function formatDate(dateStr: string) {
 
 function formatDateRange(start?: string, end?: string, fallback?: string) {
   if (start && end) {
+    try {
+      const s = new Date(start);
+      const e = new Date(end);
+      if (!isNaN(s.getTime()) && !isNaN(e.getTime())) {
+        const isSameDay =
+          s.getFullYear() === e.getFullYear() &&
+          s.getMonth() === e.getMonth() &&
+          s.getDate() === e.getDate();
+        if (isSameDay) {
+          const datePart = s.toLocaleDateString("en-US", {
+            weekday: "short",
+            month: "short",
+            day: "numeric",
+          });
+          const startTime = s.toLocaleTimeString("en-US", {
+            hour: "numeric",
+            minute: "2-digit",
+            hour12: true,
+          });
+          const endTime = e.toLocaleTimeString("en-US", {
+            hour: "numeric",
+            minute: "2-digit",
+            hour12: true,
+          });
+          return `${datePart} · ${startTime} – ${endTime}`;
+        }
+      }
+    } catch {
+      // fallback
+    }
     const s = formatDate(start);
     const e = formatDate(end);
     return `${s} – ${e}`;
   }
   return fallback ? formatDate(fallback) : "TBD";
-}
-
-function parseEventDate(ev: PublicEvent) {
-  const raw = ev.startDate || ev.date;
-  if (!raw) return null;
-  const d = new Date(raw);
-  return isNaN(d.getTime()) ? null : d;
 }
 
 // ── StatusBadge ─────────────────────────────────────────────────────────────
@@ -54,7 +69,7 @@ function StatusBadge({ status }: { status?: string }) {
   const isLive = s === "open" || s === "extended";
   return (
     <span
-      className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wider ${
+      className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wider font-mono ${
         s === "open"
           ? "bg-emerald-500/15 border border-emerald-400/30 text-emerald-200"
           : s === "extended"
@@ -76,14 +91,14 @@ function StatusBadge({ status }: { status?: string }) {
   );
 }
 
-// ── EventCard ───────────────────────────────────────────────────────────────
-interface EventCardProps {
+// ── EventBox (Horizontal Box Card) ──────────────────────────────────────────
+interface EventBoxProps {
   event: PublicEvent;
   onClick: () => void;
   onRegisterClick: (e: React.MouseEvent) => void;
 }
 
-function EventCard({ event, onClick, onRegisterClick }: EventCardProps) {
+function EventBox({ event, onClick, onRegisterClick }: EventBoxProps) {
   const dateLabel = formatDateRange(event.startDate, event.endDate, event.date);
   const minReq = event.minTeamMembers || 3;
   const maxReq = event.maxTeamMembers || 5;
@@ -91,10 +106,10 @@ function EventCard({ event, onClick, onRegisterClick }: EventCardProps) {
 
   return (
     <article
-      className="group relative overflow-hidden rounded-2xl cursor-pointer flex-shrink-0 transition-all duration-300 hover:-translate-y-1.5 hover:shadow-[0_20px_50px_rgba(0,0,0,0.55)] border border-white/20 bg-white/[0.06] hover:border-white/45 hover:bg-white/[0.09] backdrop-blur-2xl p-6 flex flex-col justify-between"
+      className="group relative overflow-hidden rounded-3xl cursor-pointer shrink-0 snap-center transition-all duration-300 hover:-translate-y-2 hover:shadow-[0_24px_60px_rgba(0,0,0,0.8)] border border-white/15 bg-[#0c0a12]/85 hover:border-white/35 hover:bg-[#0c0a12]/95 backdrop-blur-2xl p-6 sm:p-7 flex flex-col justify-between w-[85vw] max-w-[360px] sm:w-[380px] md:w-[420px] select-none"
       style={{
-        minHeight: "220px",
-        boxShadow: "0 10px 32px rgba(0, 0, 0, 0.45), inset 0 1px 0 rgba(255, 255, 255, 0.18)",
+        minHeight: "360px",
+        boxShadow: "0 14px 40px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.15)",
       }}
       onClick={onClick}
       role="button"
@@ -102,48 +117,56 @@ function EventCard({ event, onClick, onRegisterClick }: EventCardProps) {
       onKeyDown={(e) => e.key === "Enter" && onClick()}
     >
       {/* Top Iridescent Edge */}
-      <div className="pointer-events-none absolute inset-x-0 top-0 h-[1px] bg-gradient-to-r from-transparent via-white/40 to-transparent" />
-      <div className="pointer-events-none absolute -top-10 -right-10 h-32 w-32 rounded-full bg-white/10 blur-2xl group-hover:bg-white/20 transition-all" />
+      <div className="pointer-events-none absolute inset-x-0 top-0 h-[1.5px] bg-gradient-to-r from-transparent via-white/40 to-transparent" />
+      <div className="pointer-events-none absolute -top-12 -right-12 h-36 w-36 rounded-full bg-white/5 blur-2xl group-hover:bg-[#f20089]/10 transition-all" />
 
-      <div>
+      <div className="flex flex-col gap-4">
         {/* Top header row: Category / Tag Badge + Status Badge */}
-        <div className="flex items-center justify-between gap-2 mb-3">
-          <span className="inline-flex items-center rounded-full border border-white/30 bg-white/10 px-3 py-0.5 text-[10px] font-mono font-bold uppercase tracking-wider text-white/85 backdrop-blur-sm">
+        <div className="flex items-center justify-between gap-2">
+          <span className="inline-flex items-center rounded-full border border-white/20 bg-white/10 px-3 py-1 text-[10px] font-mono font-bold uppercase tracking-wider text-white/85 backdrop-blur-sm">
             {tagLabel}
           </span>
           <StatusBadge status={event.registrationStatus} />
         </div>
 
         {/* Title */}
-        <h3 className="font-serif text-2xl sm:text-3xl font-bold text-white transition-colors leading-snug mb-3 drop-shadow-[0_2px_10px_rgba(0,0,0,0.6)]">
+        <h3 className="font-serif text-2xl sm:text-3xl font-bold text-white group-hover:text-rose-200 transition-colors leading-snug drop-shadow-[0_2px_12px_rgba(0,0,0,0.7)] line-clamp-2">
           {event.title}
         </h3>
 
-        {/* Metadata */}
-        <div className="flex flex-col gap-2 text-xs text-white/75 font-medium mb-4">
-          <div className="flex items-center gap-2">
-            <Calendar size={14} className="text-rose-300/80 shrink-0" />
+        {/* Micro Description (if available) */}
+        {event.description && (
+          <p className="text-xs text-white/70 line-clamp-2 leading-relaxed">
+            {event.description}
+          </p>
+        )}
+
+        {/* Metadata Grid */}
+        <div className="grid grid-cols-1 gap-2.5 pt-2">
+          <div className="flex items-center gap-2.5 text-xs text-white/80 font-medium bg-white/[0.04] border border-white/10 rounded-xl p-2.5">
+            <Calendar size={14} className="text-rose-300 shrink-0" />
             <span className="truncate">{dateLabel}</span>
           </div>
-          {event.venue && (
-            <div className="flex items-center gap-2">
-              <MapPin size={14} className="text-rose-300/80 shrink-0" />
-              <span className="truncate">{event.venue}</span>
+
+          <div className="flex items-center justify-between gap-2 text-xs text-white/80 font-medium bg-white/[0.04] border border-white/10 rounded-xl p-2.5">
+            <div className="flex items-center gap-2 truncate">
+              <MapPin size={14} className="text-rose-300 shrink-0" />
+              <span className="truncate">{event.venue || "Heritage Campus"}</span>
             </div>
-          )}
-          <div className="flex items-center gap-2">
-            <Users size={14} className="text-rose-300/80 shrink-0" />
-            <span>{minReq}–{maxReq} Members</span>
+            <div className="flex items-center gap-1.5 shrink-0 text-white/60 text-[11px] font-mono">
+              <Users size={12} className="text-rose-300 shrink-0" />
+              <span>{minReq}–{maxReq} Members</span>
+            </div>
           </div>
         </div>
       </div>
 
-      {/* CTA Button */}
-      <div className="mt-auto pt-2" onClick={(e) => e.stopPropagation()}>
+      {/* CTA Button Row */}
+      <div className="mt-6 pt-3 border-t border-white/10" onClick={(e) => e.stopPropagation()}>
         {event.registrationStatus === "closed" ? (
           <button
             type="button"
-            className="w-full flex items-center justify-between rounded-full bg-white/5 border border-white/10 px-4 py-2.5 text-xs font-bold uppercase tracking-wider text-white/40 cursor-not-allowed"
+            className="w-full flex items-center justify-between rounded-full bg-white/5 border border-white/10 px-5 py-3 text-xs font-bold uppercase tracking-wider text-white/40 cursor-not-allowed font-mono"
             onClick={onRegisterClick}
           >
             <span>Registrations Closed</span>
@@ -152,11 +175,11 @@ function EventCard({ event, onClick, onRegisterClick }: EventCardProps) {
         ) : (
           <button
             type="button"
-            className="w-full flex items-center justify-between rounded-full bg-white hover:bg-neutral-100 px-4 py-2.5 text-xs font-bold text-neutral-950 uppercase tracking-wider shadow-[0_4px_20px_rgba(0,0,0,0.35)] transition-all hover:scale-105 cursor-pointer"
+            className="w-full flex items-center justify-between rounded-full bg-white hover:bg-neutral-100 px-5 py-3 text-xs font-bold text-neutral-950 uppercase tracking-wider shadow-[0_4px_20px_rgba(0,0,0,0.35)] transition-all hover:scale-[1.02] cursor-pointer"
             onClick={onRegisterClick}
           >
             <span>View Event &amp; Register</span>
-            <ArrowRight size={14} />
+            <ArrowRight size={14} className="text-neutral-950" />
           </button>
         )}
       </div>
@@ -177,170 +200,94 @@ export default function EventsHero({
   loading,
   onSelectEvent,
 }: EventsHeroProps) {
-  const [activeTab, setActiveTab] = useState<Tab>("ALL");
-  const [scrolled, setScrolled] = useState(false);
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
+  const [canScrollLeft, setCanScrollLeft] = useState(false);
+  const [canScrollRight, setCanScrollRight] = useState(false);
 
-  // Filtered events based on tab
-  const filtered =
-    activeTab === "ALL"
-      ? events
-      : events.filter((e) => e.tag?.toUpperCase() === activeTab);
+  const checkScroll = () => {
+    const el = scrollContainerRef.current;
+    if (!el) return;
+    setCanScrollLeft(el.scrollLeft > 10);
+    setCanScrollRight(el.scrollLeft + el.clientWidth < el.scrollWidth - 10);
+  };
 
-  // Timeline entries
-  const timelineEvents = filtered.length > 0 ? filtered : events;
-
-  // ── Scroll detection for scroll cue only ─────────────────────────────────
   useEffect(() => {
-    function onScroll() {
-      if (window.scrollY > 80) {
-        setScrolled(true);
-      } else {
-        setScrolled(false);
-      }
-    }
+    checkScroll();
+    window.addEventListener("resize", checkScroll);
+    return () => window.removeEventListener("resize", checkScroll);
+  }, [events]);
 
-    window.addEventListener("scroll", onScroll, { passive: true });
-    return () => window.removeEventListener("scroll", onScroll);
-  }, []);
+  const scroll = (direction: "left" | "right") => {
+    if (!scrollContainerRef.current) return;
+    const distance = 420;
+    scrollContainerRef.current.scrollBy({
+      left: direction === "left" ? -distance : distance,
+      behavior: "smooth",
+    });
+    setTimeout(checkScroll, 350);
+  };
 
   return (
-    <div className="relative w-full h-[100svh] overflow-hidden bg-transparent font-sans text-white z-10 pt-20">
+    <div className="relative w-full h-full flex flex-col justify-between overflow-hidden bg-transparent font-sans text-white z-10 pt-20 pb-8 sm:pb-12">
       {/* ── Main Interactive Content Container ───────────────────────── */}
-      <div className="relative z-10 w-full max-w-[1440px] h-full mx-auto px-4 sm:px-8 pt-10 pb-5 flex flex-col">
+      <div className="relative z-10 w-full max-w-[1440px] mx-auto px-4 sm:px-8 flex flex-col flex-1 min-h-0 justify-center">
         {/* Header / Hero Title Section */}
         <header className="flex flex-col items-center text-center py-2 shrink-0">
-          {/* Subtitle taglines */}
-          <div className="inline-flex items-center gap-2 text-[10px] font-semibold tracking-[0.28em] uppercase text-white/75 drop-shadow">
-            <span>IDEAS MEET PEOPLE</span>
-            <span className="w-1 h-1 rounded-full bg-white/50" />
-            <span>CHANGE FOLLOWS</span>
-          </div>
-
-          <div className="flex items-center justify-center gap-2 w-32 mt-1.5 opacity-65">
-            <span className="flex-1 h-[1px] bg-white/40" />
-            <span className="w-1 h-1 rotate-45 bg-white/50" />
-            <span className="flex-1 h-[1px] bg-white/40" />
-          </div>
-
-          {/* EVENTS Title — Home page platinum gradient language */}
-          <h1
-            className="font-serif text-6xl sm:text-7xl md:text-8xl font-bold tracking-wider uppercase mt-1"
-            style={{
-              background:
-                "linear-gradient(180deg, #FFFFFF 0%, #F8FAFC 45%, #E2E8F0 80%, #94A3B8 100%)",
-              WebkitBackgroundClip: "text",
-              WebkitTextFillColor: "transparent",
-              backgroundClip: "text",
-              filter:
-                "drop-shadow(0 2px 24px rgba(255,255,255,0.22)) drop-shadow(0 10px 36px rgba(0,0,0,0.85))",
-            }}
-          >
+          {/* EVENTS Title - Solid white text */}
+          <h1 className="font-serif text-5xl sm:text-6xl md:text-7xl font-bold tracking-wider uppercase text-white drop-shadow-[0_4px_24px_rgba(0,0,0,0.85)]">
             EVENTS
           </h1>
-
-          {/* Subtitle */}
-          <p className="font-serif italic text-sm sm:text-base text-white/85 mt-1 tracking-wide">
-            Be a part of the journey.
-          </p>
-
-          {/* Category Filter Tabs */}
-          <nav className="relative flex flex-col items-center mt-4 w-full max-w-[540px]" aria-label="Event category filter">
-            <div className="flex items-center justify-center gap-6 sm:gap-10 pb-2">
-              {TABS.map((tab) => (
-                <button
-                  key={tab}
-                  type="button"
-                  className={`relative bg-transparent border-0 cursor-pointer font-sans text-xs font-semibold tracking-widest uppercase transition-colors py-1 px-1 ${
-                    activeTab === tab ? "text-white font-bold" : "text-white/70 hover:text-white"
-                  }`}
-                  onClick={() => setActiveTab(tab)}
-                  aria-pressed={activeTab === tab}
-                >
-                  {tab}
-                  {activeTab === tab && (
-                    <span className="absolute -bottom-2 left-1/2 -translate-x-1/2 w-1.5 h-1.5 rounded-full bg-white shadow-[0_0_8px_rgba(255,255,255,0.7)]" />
-                  )}
-                </button>
-              ))}
-            </div>
-            <div className="w-full h-[1px] bg-gradient-to-r from-transparent via-white/45 to-transparent" />
-          </nav>
         </header>
 
-        {/* ── Events Middle Layout: Timeline + Cards + Right Typography ─ */}
-        <section className="grid grid-cols-1 md:grid-cols-[170px_minmax(0,760px)_130px] justify-center gap-8 mt-5 flex-1 min-h-0 overflow-hidden">
-          {/* Left Column: Timeline */}
-          <aside className="hidden md:flex relative flex-col pt-1 select-none" aria-label="Event timeline">
-            <div className="font-serif text-3xl font-medium text-white tracking-tight mb-4">2026</div>
-
-            <div className="relative flex flex-col gap-10 pl-1">
-              <div className="absolute top-2.5 bottom-2.5 right-3 w-[1px] bg-gradient-to-b from-white/50 via-white/15 to-transparent" />
-              {timelineEvents.map((ev, idx) => {
-                const d = parseEventDate(ev);
-                const month = d
-                  ? d.toLocaleString("en-US", { month: "short" }).toUpperCase()
-                  : "SEP";
-                const day = d ? d.getDate() : 11 + idx * 5;
-                const isFirst = idx === 0;
-
-                return (
-                  <div
-                    key={ev._id || idx}
-                    className="flex items-center justify-between w-full"
-                  >
-                    <div className="flex flex-col items-start">
-                      <span className="text-[10px] font-semibold tracking-widest uppercase text-white/70">{month}</span>
-                      <span className={`font-serif text-2xl font-bold leading-none ${isFirst ? "text-white" : "text-white/45"}`}>
-                        {day}
-                      </span>
-                    </div>
-                    <div
-                      className={`relative z-[2] w-3 h-3 rounded-full ${
-                        isFirst
-                          ? "bg-white shadow-[0_0_10px_rgba(255,255,255,0.7)] border-2 border-[#0b0b10]"
-                          : "bg-white/10 border border-white/30"
-                      }`}
-                    />
-                  </div>
-                );
-              })}
-            </div>
-
-            {/* Scroll indicator cue */}
-            <div
-              className={`relative flex items-center gap-2.5 mt-auto pb-3 opacity-85 transition-opacity duration-300 ${
-                scrolled ? "opacity-0 pointer-events-none" : ""
-              }`}
-              aria-hidden="true"
+        {/* ── Horizontal Row of Event Boxes ───────────────────────────── */}
+        <section className="relative w-full mt-6 sm:mt-8 flex items-center justify-center" aria-label="Event showcases">
+          {/* Left Arrow Button */}
+          {canScrollLeft && (
+            <button
+              type="button"
+              onClick={() => scroll("left")}
+              aria-label="Scroll events left"
+              className="absolute -left-2 sm:left-2 z-20 h-10 w-10 sm:h-12 sm:w-12 rounded-full bg-black/60 hover:bg-black/90 border border-white/25 backdrop-blur-xl text-white flex items-center justify-center shadow-2xl transition-all hover:scale-110 cursor-pointer"
             >
-              <div className="w-4 h-6 rounded-xl border border-white/40 flex justify-center pt-1">
-                <div className="w-0.5 h-1 rounded-sm bg-white animate-[mouseWheel_1.5s_ease-in-out_infinite]" />
-              </div>
-              <span className="text-[8px] font-bold tracking-widest uppercase leading-tight text-white/65">
-                SCROLL<br />FOR MORE
-              </span>
-            </div>
-          </aside>
+              <ChevronLeft size={20} />
+            </button>
+          )}
 
-          {/* Middle Column: Event Cards */}
+          {/* Horizontal scroll container */}
           <div
-            className="flex flex-col gap-4.5 h-full overflow-y-auto overflow-x-hidden pr-2 pb-8 no-scrollbar md:scrollbar-thin"
-            role="feed"
-            aria-label="Events list"
-            aria-busy={loading}
+            ref={scrollContainerRef}
+            onScroll={checkScroll}
+            className={`w-full flex items-stretch gap-6 sm:gap-8 overflow-x-auto py-4 px-2 sm:px-6 snap-x no-scrollbar ${
+              events.length <= 2 ? "justify-center" : "justify-start"
+            }`}
+            role="region"
+            aria-label="Horizontal events list"
           >
             {loading ? (
-              <div className="bg-white/5 backdrop-blur-md border border-white/15 rounded-2xl p-10 text-center text-white/70 text-sm flex flex-col items-center gap-3.5">
-                <div className="w-6 h-6 border-2 border-white/20 border-t-white rounded-full animate-spin" />
-                <span>Syncing live events...</span>
+              <div className="flex gap-6 justify-center w-full py-12">
+                {[1, 2].map((i) => (
+                  <div
+                    key={i}
+                    className="w-[340px] sm:w-[380px] h-[360px] rounded-3xl bg-white/[0.04] border border-white/10 backdrop-blur-xl p-7 flex flex-col justify-between animate-pulse"
+                  >
+                    <div className="space-y-4">
+                      <div className="h-6 w-24 rounded-full bg-white/10" />
+                      <div className="h-8 w-3/4 rounded-xl bg-white/15" />
+                      <div className="h-4 w-full rounded-md bg-white/10" />
+                      <div className="h-14 rounded-2xl bg-white/5" />
+                    </div>
+                    <div className="h-11 rounded-full bg-white/10" />
+                  </div>
+                ))}
               </div>
-            ) : filtered.length === 0 ? (
-              <div className="bg-white/5 backdrop-blur-md border border-white/15 rounded-2xl p-10 text-center text-white/70 text-sm flex flex-col items-center gap-3.5">
-                <p>No {activeTab !== "ALL" ? activeTab : ""} events currently scheduled.</p>
+            ) : events.length === 0 ? (
+              <div className="bg-[#0c0a12]/85 backdrop-blur-2xl border border-white/15 rounded-3xl p-10 text-center text-white/70 text-sm flex flex-col items-center gap-3.5 max-w-md mx-auto shadow-2xl">
+                <Sparkles size={20} className="text-white/40" />
+                <p>No events currently scheduled.</p>
               </div>
             ) : (
-              filtered.map((event) => (
-                <EventCard
+              events.map((event) => (
+                <EventBox
                   key={event._id}
                   event={event}
                   onClick={() => onSelectEvent(event)}
@@ -353,21 +300,17 @@ export default function EventsHero({
             )}
           </div>
 
-          {/* Right Column: Decorative Typography */}
-          <aside className="hidden lg:flex relative gap-3.5 select-none" aria-hidden="true">
-            <div className="w-[1px] h-[75px] bg-white/30 mt-2" />
-            <div className="flex flex-col gap-10 pt-1.5">
-              {RIGHT_SIDEBAR.map((block, bi) => (
-                <div key={bi} className="flex flex-col gap-0.5">
-                  {block.map((w) => (
-                    <span key={w} className="text-[9px] font-semibold tracking-[0.26em] uppercase text-white/50 leading-relaxed">
-                      {w}
-                    </span>
-                  ))}
-                </div>
-              ))}
-            </div>
-          </aside>
+          {/* Right Arrow Button */}
+          {canScrollRight && (
+            <button
+              type="button"
+              onClick={() => scroll("right")}
+              aria-label="Scroll events right"
+              className="absolute -right-2 sm:right-2 z-20 h-10 w-10 sm:h-12 sm:w-12 rounded-full bg-black/60 hover:bg-black/90 border border-white/25 backdrop-blur-xl text-white flex items-center justify-center shadow-2xl transition-all hover:scale-110 cursor-pointer"
+            >
+              <ChevronRight size={20} />
+            </button>
+          )}
         </section>
       </div>
     </div>

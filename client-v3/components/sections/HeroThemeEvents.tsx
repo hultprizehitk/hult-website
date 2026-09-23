@@ -1,61 +1,74 @@
 "use client";
 
-import React, { useEffect, useState, useRef } from "react";
+import React, { useEffect, useState } from "react";
 import Link from "next/link";
 import ScrollReveal from "@/components/ui/ScrollReveal";
 import { Calendar, MapPin, Users, ArrowRight, ExternalLink } from "lucide-react";
 import type { PublicEvent } from "@/types";
-import { useThemeTuner } from "@/context/ThemeTunerContext";
 
-// ─── Word wrap helper for SVG text ───────────────────────────────────────────
-function wrapText(text: string, cardWidth: number, approxCharWidth: number): string[] {
-  const availableWidth = Math.max(200, cardWidth - 96);
-  const maxChars = Math.max(8, Math.floor(availableWidth / approxCharWidth));
-  const words = text.split(" ");
-  const lines: string[] = [];
-  let currentLine = "";
-
-  for (const word of words) {
-    if (!currentLine) {
-      currentLine = word;
-    } else if ((currentLine + " " + word).length <= maxChars) {
-      currentLine += " " + word;
-    } else {
-      lines.push(currentLine);
-      currentLine = word;
-    }
+function formatDate(dateStr?: string) {
+  if (!dateStr) return "TBD";
+  try {
+    const d = new Date(dateStr);
+    if (isNaN(d.getTime())) return dateStr;
+    return d.toLocaleDateString("en-US", {
+      weekday: "short",
+      month: "short",
+      day: "numeric",
+      year: "numeric",
+      hour: "numeric",
+      minute: "2-digit",
+      hour12: true,
+    });
+  } catch {
+    return dateStr;
   }
-  if (currentLine) lines.push(currentLine);
-  return lines;
+}
+
+function formatDateRange(start?: string, end?: string, fallback?: string) {
+  if (start && end) {
+    try {
+      const s = new Date(start);
+      const e = new Date(end);
+      if (!isNaN(s.getTime()) && !isNaN(e.getTime())) {
+        const isSameDay =
+          s.getFullYear() === e.getFullYear() &&
+          s.getMonth() === e.getMonth() &&
+          s.getDate() === e.getDate();
+        if (isSameDay) {
+          const datePart = s.toLocaleDateString("en-US", {
+            weekday: "short",
+            month: "short",
+            day: "numeric",
+            year: "numeric",
+          });
+          const startTime = s.toLocaleTimeString("en-US", {
+            hour: "numeric",
+            minute: "2-digit",
+            hour12: true,
+          });
+          const endTime = e.toLocaleTimeString("en-US", {
+            hour: "numeric",
+            minute: "2-digit",
+            hour12: true,
+          });
+          return `${datePart} · ${startTime} – ${endTime}`;
+        }
+      }
+    } catch {
+      // fallback
+    }
+    const s = formatDate(start);
+    const e = formatDate(end);
+    return `${s} – ${e}`;
+  }
+  return fallback ? formatDate(fallback) : "Wed, Sep 30, 2026 · 12:00 PM – 6:00 PM";
 }
 
 export default function HeroThemeEvents() {
-  const { config, getHeaderShadow } = useThemeTuner();
   const [events, setEvents] = useState<PublicEvent[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedIndex, setSelectedIndex] = useState(0);
-
-  const cardRef = useRef<HTMLDivElement>(null);
-  const titleRef = useRef<HTMLHeadingElement>(null);
-  const [cardSize, setCardSize] = useState({ width: 1200, height: 400 });
-  const [titlePos, setTitlePos] = useState({ x: 48, y: 120, fontSize: "40px" });
-  const [transform, setTransform] = useState("perspective(1000px) rotateX(0deg) rotateY(0deg) scale3d(1, 1, 1)");
-
-  const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
-    if (!cardRef.current) return;
-    const rect = cardRef.current.getBoundingClientRect();
-    const x = e.clientX - rect.left;
-    const y = e.clientY - rect.top;
-    const centerX = rect.width / 2;
-    const centerY = rect.height / 2;
-    const rotateX = ((y - centerY) / centerY) * -5;
-    const rotateY = ((x - centerX) / centerX) * 5;
-    setTransform(`perspective(1000px) rotateX(${rotateX.toFixed(2)}deg) rotateY(${rotateY.toFixed(2)}deg) scale3d(1.01, 1.01, 1.01)`);
-  };
-
-  const handleMouseLeave = () => {
-    setTransform("perspective(1000px) rotateX(0deg) rotateY(0deg) scale3d(1, 1, 1)");
-  };
 
   useEffect(() => {
     let isMounted = true;
@@ -81,37 +94,10 @@ export default function HeroThemeEvents() {
     };
   }, []);
 
-  useEffect(() => {
-    const update = () => {
-      if (!cardRef.current || !titleRef.current) return;
-      const cardRect = cardRef.current.getBoundingClientRect();
-      const textRect = titleRef.current.getBoundingClientRect();
-      const style = window.getComputedStyle(titleRef.current);
-      setCardSize({
-        width: Math.round(cardRect.width),
-        height: Math.round(cardRect.height),
-      });
-      setTitlePos({
-        x: Math.round(textRect.left - cardRect.left),
-        y: Math.round(textRect.top - cardRect.top),
-        fontSize: style.fontSize,
-      });
-    };
-    update();
-    const t1 = setTimeout(update, 50);
-    const t2 = setTimeout(update, 200);
-    window.addEventListener("resize", update);
-    return () => {
-      clearTimeout(t1);
-      clearTimeout(t2);
-      window.removeEventListener("resize", update);
-    };
-  }, [events, selectedIndex, config.cardBgOpacity]);
-
   if (loading) {
     return (
       <section id="events" className="w-full py-20 px-6 text-center bg-transparent">
-        <div className="inline-block h-6 w-6 animate-spin rounded-full border-2 border-neutral-900 border-t-transparent" />
+        <div className="inline-block h-6 w-6 animate-spin rounded-full border-2 border-white border-t-transparent" />
       </section>
     );
   }
@@ -119,56 +105,46 @@ export default function HeroThemeEvents() {
   if (events.length === 0) return null;
 
   const featuredEvent = events[selectedIndex] || events[0];
-  const parsedFontSize = parseFloat(titlePos.fontSize) || 36;
-  const titleLines = wrapText(featuredEvent.title, cardSize.width, parsedFontSize * 0.55);
+  const minMembers = featuredEvent.minTeamMembers || 2;
+  const maxMembers = featuredEvent.maxTeamMembers || 4;
 
   return (
     <section
       id="events"
-      className="relative w-full py-24 sm:py-32 px-6 sm:px-12 lg:px-20 overflow-hidden font-[family-name:var(--font-google-sans)] bg-transparent text-neutral-900"
+      className="relative w-full py-24 sm:py-32 px-6 sm:px-12 lg:px-20 overflow-hidden font-[family-name:var(--font-google-sans)] bg-transparent text-white"
     >
-      {/* ========================================================= */}
-      {/* ATMOSPHERIC BACKGROUND ACCENTS                            */}
-      {/* ========================================================= */}
-      <div className="absolute inset-0 z-0 pointer-events-none overflow-hidden select-none">
-        {/* Subtle grid */}
-        <div
-          className="absolute inset-0 opacity-[0.02]"
-          style={{
-            backgroundImage:
-              "linear-gradient(to right, #000 1px, transparent 1px), linear-gradient(to bottom, #000 1px, transparent 1px)",
-            backgroundSize: "64px 64px",
-          }}
-        />
-      </div>
-
-      <div className="relative z-10 max-w-7xl mx-auto space-y-12">
+      <div className="relative z-10 max-w-7xl mx-auto space-y-10">
         {/* Editorial Section Header */}
         <ScrollReveal direction="up">
-          <div className="flex flex-col sm:flex-row items-start sm:items-end justify-between gap-6 pb-6 border-b border-neutral-200">
-            <div className="space-y-3">
+          <div className="flex flex-col sm:flex-row items-start sm:items-end justify-between gap-6 pb-6 border-b border-white/15">
+            <div className="space-y-2">
+              <div className="font-mono text-[10px] font-bold uppercase tracking-[0.25em] text-[#E8396E]">
+                COMPETITION PIPELINE
+              </div>
               <h2
-                className="font-jomolhari text-4xl sm:text-5xl md:text-6xl font-normal tracking-tight text-neutral-900 leading-[1.05]"
+                className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-normal tracking-wide uppercase drop-shadow-[0_2px_12px_rgba(0,0,0,0.5)]"
                 style={{
-                  textShadow: getHeaderShadow(),
+                  fontFamily: "'IM Fell Double Pica', Georgia, serif",
+                  background: "linear-gradient(180deg, #2D052A 0%, #931289 100%)",
+                  WebkitBackgroundClip: "text",
+                  WebkitTextFillColor: "transparent",
                 }}
               >
-                Featured Venture Challenges
+                FEATURED VENTURE CHALLENGES
               </h2>
             </div>
 
-            {/* Clean outline button — no solid background */}
             <Link
               href="/events"
-              className="rounded-full border border-neutral-900/60 hover:bg-neutral-900/5 px-5 py-2.5 text-xs font-semibold text-neutral-900 transition-all hover:scale-105 flex items-center gap-2 font-mono"
+              className="rounded-full border border-white/30 bg-white/10 hover:bg-white/20 backdrop-blur-md px-5 py-2.5 text-xs font-mono font-bold text-white transition-all hover:scale-105 flex items-center gap-2 shadow-sm shrink-0"
             >
               <span>View All Events ({events.length})</span>
-              <ArrowRight className="h-3.5 w-3.5 text-neutral-900" />
+              <ArrowRight className="h-3.5 w-3.5 text-white" />
             </Link>
           </div>
         </ScrollReveal>
 
-        {/* Multi-event tab selector */}
+        {/* Multi-event Selector Tabs */}
         {events.length > 1 && (
           <div className="flex items-center gap-2 overflow-x-auto pb-2 scrollbar-none">
             {events.map((ev, idx) => (
@@ -176,10 +152,10 @@ export default function HeroThemeEvents() {
                 key={ev._id}
                 type="button"
                 onClick={() => setSelectedIndex(idx)}
-                className={`rounded-full px-4 py-1.5 text-xs font-mono font-semibold transition-all cursor-pointer whitespace-nowrap ${
+                className={`rounded-full px-4 py-1.5 text-xs font-mono font-semibold transition-all cursor-pointer whitespace-nowrap border ${
                   selectedIndex === idx
-                    ? "bg-neutral-900 text-white shadow-sm"
-                    : "bg-transparent text-neutral-800 hover:bg-black/5 border border-neutral-300"
+                    ? "border-pink-500/60 bg-[#E8396E] text-white shadow-md shadow-pink-900/30"
+                    : "border-white/20 bg-black/40 text-white/70 hover:bg-white/10 hover:text-white"
                 }`}
               >
                 {ev.title}
@@ -188,205 +164,116 @@ export default function HeroThemeEvents() {
           </div>
         )}
 
-        {/* 3D Tilt Featured Card — NO background, NO shadows */}
+        {/* Featured Card — Matching EventInsideView Design Scheme */}
         <ScrollReveal direction="up" delay={140}>
-          <div
-            ref={cardRef}
-            onMouseMove={handleMouseMove}
-            onMouseLeave={handleMouseLeave}
-            style={{
-              background: "transparent",
-              backdropFilter: "none",
-              WebkitBackdropFilter: "none",
-              transform,
-              transition: "transform 0.15s cubic-bezier(0.16, 1, 0.3, 1)",
-              transformStyle: "preserve-3d",
-            }}
-            className="group relative overflow-hidden rounded-3xl p-8 sm:p-12 transition-all duration-300 space-y-8"
-          >
-            {/* Stencil Paper Cutout Surface — covers the ENTIRE card, punches hole for title */}
-            <svg
-              className="absolute inset-0 w-full h-full pointer-events-none z-0"
-              viewBox={`0 0 ${cardSize.width} ${cardSize.height}`}
-              width="100%"
-              height="100%"
-              preserveAspectRatio="none"
-              style={{ borderRadius: "1.5rem" }}
-            >
-              <defs>
-                <mask
-                  id="stencil-paper-cutout"
-                  maskUnits="userSpaceOnUse"
-                  x="0"
-                  y="0"
-                  width={cardSize.width}
-                  height={cardSize.height}
-                >
-                  {/* White covers 100% of card with matching rounded corners */}
-                  <rect x="0" y="0" width={cardSize.width} height={cardSize.height} fill="white" rx="24" ry="24" />
-                  {/* Black text = cut hole directly through the card to the live background! */}
-                  <text
-                    x={titlePos.x}
-                    y={titlePos.y}
-                    fill="black"
-                    fontFamily="var(--font-jomolhari)"
-                    fontWeight="700"
-                    fontSize={titlePos.fontSize}
-                    dominantBaseline="hanging"
-                  >
-                    {titleLines.map((line, i) => (
-                      <tspan key={i} x={titlePos.x} dy={i === 0 ? 0 : "1.15em"}>
-                        {line}
-                      </tspan>
-                    ))}
-                  </text>
-                </mask>
-              </defs>
-              <rect
-                x="0"
-                y="0"
-                width={cardSize.width}
-                height={cardSize.height}
-                rx="24"
-                ry="24"
-                fill={`rgba(255, 255, 255, ${config.cardBgOpacity > 0 ? config.cardBgOpacity : 0.24})`}
-                mask="url(#stencil-paper-cutout)"
-              />
-              {/* SVG border — perfectly aligned with fill */}
-              <rect
-                x="0.5" y="0.5"
-                width={cardSize.width - 1} height={cardSize.height - 1}
-                rx="23.5" ry="23.5"
-                fill="none"
-                stroke={`rgba(255,255,255,${config.cardBorderOpacity > 0 ? config.cardBorderOpacity : 0.45})`}
-                strokeWidth="1"
-              />
-              {/* 1px crisp black rim around the cutout hole */}
-              <text
-                x={titlePos.x}
-                y={titlePos.y}
-                fill="none"
-                stroke="rgba(0, 0, 0, 0.8)"
-                strokeWidth="1.5"
-                strokeLinejoin="round"
-                mask="url(#stencil-paper-cutout)"
-                fontFamily="var(--font-jomolhari)"
-                fontWeight="700"
-                fontSize={titlePos.fontSize}
-                dominantBaseline="hanging"
-              >
-                {titleLines.map((line, i) => (
-                  <tspan key={i} x={titlePos.x} dy={i === 0 ? 0 : "1.15em"}>
-                    {line}
-                  </tspan>
-                ))}
-              </text>
-            </svg>
+          <article className="relative rounded-3xl bg-[#0c0a12]/85 backdrop-blur-2xl border border-white/15 p-6 md:p-8 sm:p-10 shadow-2xl overflow-hidden flex flex-col gap-6">
+            {/* Top Light Accent Glow */}
+            <div className="pointer-events-none absolute top-0 inset-x-0 h-[35%] bg-gradient-to-b from-white/10 to-transparent z-[1]" aria-hidden="true" />
 
-            {/* Card top meta */}
-            <div className="relative z-10 flex flex-wrap items-center justify-between gap-4">
-              <div className="flex items-center gap-2">
-                <span className="rounded-full bg-neutral-900 px-3.5 py-1 text-[10px] font-mono font-bold uppercase tracking-wider text-white shadow-sm">
-                  {featuredEvent.tag || "Venture Challenge"}
+            <div className="relative z-[2] flex flex-col gap-6">
+              {/* Status Badges Row */}
+              <div className="flex items-center gap-2.5 flex-wrap">
+                <span className="inline-flex items-center px-3.5 py-1 rounded-full text-[10px] font-bold tracking-widest uppercase bg-white/10 border border-white/20 text-white/90 font-mono">
+                  {featuredEvent.tag || "FLAGSHIP"}
                 </span>
-                {featuredEvent.registrationStatus && (
-                  <span className="rounded-full border border-neutral-300 bg-black/10 px-3 py-1 text-[10px] font-mono uppercase tracking-wider text-neutral-900 font-bold">
-                    {featuredEvent.registrationStatus}
+
+                {featuredEvent.registrationStatus === "closed" ? (
+                  <span className="inline-flex items-center gap-1.5 px-3.5 py-1 rounded-full text-[10px] font-bold tracking-wider uppercase bg-rose-950/40 border border-rose-400/50 text-rose-300 font-mono">
+                    REGISTRATIONS CLOSED
+                  </span>
+                ) : featuredEvent.registrationStatus === "extended" ? (
+                  <span className="inline-flex items-center gap-1.5 px-3.5 py-1 rounded-full text-[10px] font-bold tracking-wider uppercase bg-amber-950/40 border border-amber-400/50 text-amber-300 font-mono">
+                    <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse" />
+                    EXTENDED DEADLINE
+                  </span>
+                ) : (
+                  <span className="inline-flex items-center gap-1.5 px-3.5 py-1 rounded-full text-[10px] font-bold tracking-wider uppercase bg-emerald-950/40 border border-emerald-400/50 text-emerald-300 font-mono">
+                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                    REGISTRATIONS OPEN
                   </span>
                 )}
+
+                <span className="inline-flex items-center px-3.5 py-1 rounded-full text-[10px] font-bold bg-white/10 border border-white/20 text-white/75 font-mono">
+                  Team: {minMembers} to {maxMembers} Members
+                </span>
               </div>
 
-              {featuredEvent.registrationDeadline && (
-                <div
-                  className="text-[11px] font-mono font-bold text-neutral-950 flex items-center gap-1.5"
-                  style={{ textShadow: "0 0 1px rgba(255,255,255,0.95)" }}
-                >
-                  <Calendar className="h-3.5 w-3.5 text-neutral-900" />
-                  <span>Deadline: {new Date(featuredEvent.registrationDeadline).toLocaleDateString()}</span>
+              {/* Event Title */}
+              <h3
+                className="font-serif text-3xl sm:text-4xl md:text-5xl font-bold tracking-tight text-white drop-shadow-[0_2px_24px_rgba(255,255,255,0.18)]"
+                style={{ fontFamily: "'IM Fell Double Pica', Georgia, serif" }}
+              >
+                {featuredEvent.title}
+              </h3>
+
+              {/* Meta Grid (SCHEDULE, VENUE, ROSTER SIZE) */}
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                <div className="bg-white/5 border border-white/10 rounded-2xl p-4 flex flex-col gap-1.5 shadow-md">
+                  <span className="flex items-center gap-2 text-[10px] font-bold tracking-widest uppercase text-white/60 font-mono">
+                    <Calendar size={13} className="text-rose-300/90 shrink-0" />
+                    <span>SCHEDULE</span>
+                  </span>
+                  <span className="text-xs sm:text-sm font-semibold text-white">
+                    {formatDateRange(featuredEvent.startDate, featuredEvent.endDate, featuredEvent.date)}
+                  </span>
+                </div>
+
+                <div className="bg-white/5 border border-white/10 rounded-2xl p-4 flex flex-col gap-1.5 shadow-md">
+                  <span className="flex items-center gap-2 text-[10px] font-bold tracking-widest uppercase text-white/60 font-mono">
+                    <MapPin size={13} className="text-rose-300/90 shrink-0" />
+                    <span>VENUE</span>
+                  </span>
+                  <span className="text-xs sm:text-sm font-semibold text-white">
+                    {featuredEvent.venue || "SV Auditorium"}
+                  </span>
+                </div>
+
+                <div className="bg-white/5 border border-white/10 rounded-2xl p-4 flex flex-col gap-1.5 shadow-md">
+                  <span className="flex items-center gap-2 text-[10px] font-bold tracking-widest uppercase text-white/60 font-mono">
+                    <Users size={13} className="text-rose-300/90 shrink-0" />
+                    <span>ROSTER SIZE</span>
+                  </span>
+                  <span className="text-xs sm:text-sm font-semibold text-white">
+                    {minMembers}–{maxMembers} Members / Team
+                  </span>
+                </div>
+              </div>
+
+              {/* Executive Brief Section */}
+              {featuredEvent.description && (
+                <div className="flex flex-col gap-2 pt-4 border-t border-white/10">
+                  <span className="text-[10px] font-mono font-bold tracking-widest uppercase text-white/60">
+                    EXECUTIVE BRIEF
+                  </span>
+                  <p className="text-xs sm:text-sm leading-relaxed text-white/80 font-sans">
+                    {featuredEvent.description}
+                  </p>
                 </div>
               )}
-            </div>
 
-            {/* Main content grid */}
-            <div className="relative z-10 grid grid-cols-1 lg:grid-cols-12 gap-8 items-center">
-              <div className="lg:col-span-7 space-y-4">
-                {/* Event title: invisible HTML spacer preserving exact responsive layout */}
-                <h3
-                  ref={titleRef}
-                  className="font-jomolhari text-3xl sm:text-4xl lg:text-5xl font-bold tracking-tight select-none opacity-0 pointer-events-none"
-                >
-                  {featuredEvent.title}
-                </h3>
-                <p
-                  className="text-sm sm:text-base text-neutral-950 font-bold leading-relaxed font-sans line-clamp-3"
-                  style={{
-                    textShadow: "0 0 1px rgba(255,255,255,1)",
-                  }}
-                >
-                  {featuredEvent.description}
-                </p>
-
-                {/* Highlight mini-cards — High-contrast dark glass */}
-                <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 pt-2">
-                  {featuredEvent.venue && (
-                    <div className="rounded-xl border border-white/30 bg-neutral-950/75 backdrop-blur-md p-3 space-y-1 shadow-sm">
-                      <div className="flex items-center gap-1.5 text-rose-300">
-                        <MapPin className="h-3.5 w-3.5" />
-                        <span className="text-[10px] font-mono uppercase font-bold tracking-wider">Venue</span>
-                      </div>
-                      <div className="text-xs font-bold text-white truncate">{featuredEvent.venue}</div>
-                    </div>
-                  )}
-
-                  {(featuredEvent.minTeamMembers || featuredEvent.maxTeamMembers) && (
-                    <div className="rounded-xl border border-white/30 bg-neutral-950/75 backdrop-blur-md p-3 space-y-1 shadow-sm">
-                      <div className="flex items-center gap-1.5 text-rose-300">
-                        <Users className="h-3.5 w-3.5" />
-                        <span className="text-[10px] font-mono uppercase font-bold tracking-wider">Team</span>
-                      </div>
-                      <div className="text-xs font-bold text-white">
-                        {featuredEvent.minTeamMembers && featuredEvent.maxTeamMembers
-                          ? `${featuredEvent.minTeamMembers}-${featuredEvent.maxTeamMembers} Members`
-                          : `${featuredEvent.maxTeamMembers || featuredEvent.minTeamMembers} Members`}
-                      </div>
-                    </div>
-                  )}
-
-                  {featuredEvent.date && (
-                    <div className="rounded-xl border border-white/30 bg-neutral-950/75 backdrop-blur-md p-3 space-y-1 shadow-sm">
-                      <div className="flex items-center gap-1.5 text-rose-300">
-                        <Calendar className="h-3.5 w-3.5" />
-                        <span className="text-[10px] font-mono uppercase font-bold tracking-wider">Date</span>
-                      </div>
-                      <div className="text-xs font-bold text-white truncate">{featuredEvent.date}</div>
-                    </div>
-                  )}
-                </div>
-              </div>
-
-              {/* Action buttons — plain neutral */}
-              <div className="lg:col-span-5 flex flex-col justify-center space-y-4 lg:pl-6 lg:border-l lg:border-neutral-200/60">
+              {/* Action Buttons Row */}
+              <div className="pt-3 flex flex-col sm:flex-row items-center justify-between gap-4 border-t border-white/10">
                 <Link
                   href="/register"
-                  className="group/btn relative w-full overflow-hidden rounded-full bg-neutral-900 hover:bg-black px-7 py-4 text-center font-bold text-white shadow-md border border-neutral-800 transition-all hover:scale-[1.02] active:scale-[0.98] flex items-center justify-center gap-2 text-sm tracking-wide"
+                  className="w-full sm:w-auto rounded-full bg-white hover:bg-neutral-100 px-7 py-3 text-xs font-bold text-neutral-950 shadow-md transition-all hover:scale-105 active:scale-95 flex items-center justify-center gap-2 cursor-pointer"
                 >
-                  <span>Register Your Venture Team</span>
-                  <ArrowRight className="h-4 w-4 group-hover/btn:translate-x-1 transition-transform" />
+                  <span>Register Your Team</span>
+                  <ArrowRight className="h-3.5 w-3.5 text-neutral-950" />
                 </Link>
 
                 <Link
-                  href={`/events/${featuredEvent._id}`}
-                  className="w-full rounded-full border border-neutral-900 bg-white/40 hover:bg-neutral-900 hover:text-white px-7 py-3 text-center text-xs font-bold text-neutral-950 transition-all flex items-center justify-center gap-2 font-mono shadow-sm"
-                  style={{ textShadow: "0 0 1px rgba(255,255,255,0.8)" }}
+                  href={`/events?event=${featuredEvent._id}`}
+                  className="w-full sm:w-auto rounded-full border border-white/20 bg-white/10 hover:bg-white/20 px-6 py-3 text-xs font-mono font-bold text-white transition-all flex items-center justify-center gap-2 backdrop-blur-md cursor-pointer"
                 >
-                  <span>View Complete Event Details</span>
-                  <ExternalLink className="h-3.5 w-3.5" />
+                  <span>View Full Event Details</span>
+                  <ExternalLink className="h-3.5 w-3.5 text-white" />
                 </Link>
               </div>
             </div>
-          </div>
+          </article>
         </ScrollReveal>
       </div>
     </section>
   );
 }
+

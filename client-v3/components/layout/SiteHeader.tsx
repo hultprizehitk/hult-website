@@ -26,6 +26,14 @@ export default function SiteHeader({
 
   return (
     <>
+      {/* Top Viewport Scrim Gradient — Black at top fading to transparent at bottom */}
+      <div
+        className="pointer-events-none fixed top-0 inset-x-0 h-32 sm:h-36 md:h-40 z-40"
+        style={{
+          background: "linear-gradient(to bottom, rgba(0, 0, 0, 0.85) 0%, rgba(0, 0, 0, 0.45) 55%, transparent 100%)",
+        }}
+      />
+
       <header
         style={{ top: "var(--banner-height, 0px)" }}
         className={`fixed inset-x-0 z-50 flex w-full items-center justify-between px-6 sm:px-10 md:px-14 py-4 sm:py-5 bg-transparent border-none text-white select-none font-[family-name:var(--font-google-sans)] pointer-events-auto ${className}`}
@@ -39,7 +47,7 @@ export default function SiteHeader({
                 alt="EF Hult Prize Logo"
                 fill
                 sizes="(max-width: 640px) 48px, 60px"
-                className="object-contain drop-shadow-[0_2px_8px_rgba(0,0,0,0.6)]"
+                className="object-contain"
                 priority
               />
             </div>
@@ -56,7 +64,7 @@ export default function SiteHeader({
                 alt="Heritage Institute of Technology 25 Years Logo"
                 fill
                 sizes="(max-width: 640px) 42px, 52px"
-                className="object-contain drop-shadow-[0_2px_8px_rgba(0,0,0,0.6)]"
+                className="object-contain"
                 priority
               />
             </div>
@@ -91,8 +99,6 @@ export default function SiteHeader({
 
         {/* Right CTA Group */}
         <div className="flex items-center gap-3 sm:gap-4 select-none">
-
-
           {status === "authenticated" && session?.user ? (
             <div className="flex items-center gap-2 sm:gap-3">
               <Link

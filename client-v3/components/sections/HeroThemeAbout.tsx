@@ -166,36 +166,8 @@ export default function HeroThemeAbout() {
       className="relative w-full py-20 sm:py-28 px-6 sm:px-12 lg:px-20 overflow-hidden font-[family-name:var(--font-google-sans)] bg-transparent text-white"
     >
       <div className="relative z-10 max-w-7xl mx-auto space-y-16">
-        {/* Section Header with anchor for transitioned heading */}
-        <ScrollReveal direction="up">
-          <div className="flex flex-col md:flex-row md:items-end justify-between gap-8 pb-8 border-b border-white/15">
-            <div className="max-w-2xl space-y-4">
-              <div className="space-y-1">
-                <div
-                  className="font-extrabold uppercase text-[#EB1774] text-xl sm:text-2xl md:text-3xl tracking-[0.22em] select-none drop-shadow-[0_2px_12px_rgba(235,23,116,0.35)]"
-                  style={{ fontFamily: "'Plus Jakarta Sans', system-ui, -apple-system, sans-serif" }}
-                >
-                  HULT PRIZE
-                </div>
-                <div className="h-0.5 w-12 bg-[#EB1774]/70 rounded-full" />
-              </div>
-              <h2
-                className="font-monumental text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-black tracking-tight text-white leading-[1.08] drop-shadow-[0_2px_16px_rgba(0,0,0,0.85)]"
-                style={{
-                  textShadow: getHeaderShadow(),
-                }}
-              >
-                Catalyzing Student Founders For A Brighter World
-              </h2>
-            </div>
 
-            <div className="max-w-md space-y-2">
-              <p className="text-xs sm:text-sm font-medium text-white/85 leading-relaxed drop-shadow-[0_1px_4px_rgba(0,0,0,0.7)]">
-                The world&apos;s premier student social entrepreneurship incubator at Heritage Institute of Technology, turning bold ideas into scalable, investment-ready enterprises.
-              </p>
-            </div>
-          </div>
-        </ScrollReveal>
+
 
         {/* 4 Metric Cards — Simple, High Visibility */}
         <ScrollReveal direction="up" delay={120}>

@@ -4,8 +4,7 @@ import React, { useState, useEffect } from "react";
 import SiteHeader from "@/components/layout/SiteHeader";
 import EventsHero from "@/components/events/EventsHero";
 import EventInsideView from "@/components/events/EventInsideView";
-import GrainOverlay from "@/components/hero/GrainOverlay";
-import KolkataHero from "@/components/hero/KolkataHero";
+import EventHeroBackground from "@/components/events/EventHeroBackground";
 import type { PublicEvent } from "@/types";
 
 export type { PublicEvent };
@@ -82,39 +81,45 @@ export default function EventsPage() {
 
     if (loading) {
       return (
-        <div className="min-h-screen bg-black flex items-center justify-center">
-          <div className="h-10 w-10 animate-spin rounded-full border-2 border-white/20 border-t-white" />
+        <div className="relative min-h-screen w-full bg-[#0a0c14] overflow-x-hidden text-white flex flex-col">
+          <EventHeroBackground />
+          <SiteHeader />
+          <div className="flex-1 flex items-center justify-center relative z-10">
+            <div className="h-10 w-10 animate-spin rounded-full border-2 border-white/20 border-t-[#f20089]" />
+          </div>
         </div>
       );
     }
 
     if (!currentEvent) {
       return (
-        <div className="min-h-screen bg-black flex flex-col items-center justify-center gap-4 text-white/70">
-          <span className="text-xs font-mono tracking-widest uppercase opacity-60">Event not found</span>
-          <button
-            type="button"
-            onClick={handleBackToEvents}
-            className="rounded-full bg-white hover:bg-neutral-100 px-6 py-2.5 text-xs font-bold text-neutral-950 shadow-lg shadow-black/40 transition-all cursor-pointer hover:scale-105"
-          >
-            Back to Events
-          </button>
+        <div className="relative min-h-screen w-full bg-[#0a0c14] overflow-x-hidden text-white flex flex-col">
+          <EventHeroBackground />
+          <SiteHeader />
+          <div className="flex-1 flex flex-col items-center justify-center gap-4 text-white/70 relative z-10 px-4">
+            <span className="text-xs font-mono tracking-widest uppercase opacity-60">Event not found</span>
+            <button
+              type="button"
+              onClick={handleBackToEvents}
+              className="rounded-full bg-white hover:bg-neutral-100 px-6 py-2.5 text-xs font-bold text-neutral-950 shadow-lg shadow-black/40 transition-all cursor-pointer hover:scale-105"
+            >
+              Back to Events
+            </button>
+          </div>
         </div>
       );
     }
 
     return (
-      <div className="relative min-h-screen w-full bg-black overflow-x-hidden text-white">
-        <div className="fixed inset-0 z-0 pointer-events-none">
-          <KolkataHero mouseOffset={{ x: 0, y: 0 }} isRevealed={true} hideText={true} hideForeground={true} />
-        </div>
-        <GrainOverlay opacity={0.65} />
+      <div className="relative min-h-screen w-full bg-[#0a0c14] overflow-x-hidden text-white flex flex-col">
+        {/* Full-bleed homepage background: base layer + tree layer */}
+        <EventHeroBackground />
 
         {/* Unified fixed site header */}
         <SiteHeader />
 
-        {/* Main detail content */}
-        <main className="relative z-10 w-full px-4 sm:px-6 pt-24 pb-16">
+        {/* Main detail content with comfortable top clearance */}
+        <main className="relative z-10 w-full max-w-7xl xl:max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8 pt-28 sm:pt-32 pb-20">
           <EventInsideView
             event={currentEvent}
             onBack={handleBackToEvents}
@@ -126,11 +131,9 @@ export default function EventsPage() {
 
   // ── Main events listing ──────────────────────────────────────────────────
   return (
-    <div className="relative h-screen max-h-screen w-full overflow-hidden bg-black text-white">
-      <div className="absolute inset-0 z-0 pointer-events-none">
-        <KolkataHero mouseOffset={{ x: 0, y: 0 }} isRevealed={true} hideText={true} hideForeground={true} />
-      </div>
-      <GrainOverlay opacity={0.65} />
+    <div className="relative h-screen max-h-screen w-full overflow-hidden bg-[#0a0c14] text-white">
+      {/* Full-bleed homepage background: base layer + tree layer */}
+      <EventHeroBackground />
 
       {/* Unified fixed site header */}
       <SiteHeader />
