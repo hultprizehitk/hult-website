@@ -3,6 +3,7 @@ import mongoose from "mongoose";
 import { connectDB } from "@/lib/mongodb";
 import Event, { IRegisteredTeam } from "@/models/Event";
 import Team from "@/models/Team";
+import User from "@/models/User";
 import { isAuthorizedAdmin } from "@/lib/admin-check";
 import { logAdminAction } from "@/lib/audit-logger";
 import { auth } from "@/auth";
@@ -133,6 +134,32 @@ export async function GET(req: Request) {
       .populate("eventId", "title date tag")
       .sort({ createdAt: -1 })
       .lean();
+
+    // Enrich missing lead phone/roll/department/year from User records
+    const leadEmails = (allNormalized as Array<{ leadEmail?: string; lead?: { email?: string } }>)
+      .map((t) => (t.leadEmail || t.lead?.email || "").toLowerCase().trim())
+      .filter(Boolean);
+
+    if (leadEmails.length > 0) {
+      const users = await User.find({ email: { $in: leadEmails } })
+        .select("email phone roll department year")
+        .lean();
+      const userMap = new Map(users.map((u) => [u.email.toLowerCase(), u]));
+
+      for (const t of allNormalized as Array<{
+        leadEmail?: string;
+        lead?: { phone?: string; roll?: string; department?: string; year?: string; email?: string };
+      }>) {
+        const u = userMap.get((t.leadEmail || t.lead?.email || "").toLowerCase());
+        if (u) {
+          if (!t.lead) t.lead = {};
+          if (!t.lead.phone && u.phone) t.lead.phone = u.phone;
+          if (!t.lead.roll && u.roll) t.lead.roll = u.roll;
+          if (!t.lead.department && u.department) t.lead.department = u.department;
+          if (u.year) t.lead.year = u.year;
+        }
+      }
+    }
 
     return NextResponse.json({ success: true, teams: allNormalized }, { status: 200 });
   } catch (error: unknown) {

@@ -8,11 +8,14 @@ import {
   Calendar,
 } from "lucide-react";
 
+import { parseHeritageEmail } from "@/lib/heritage-parser";
+
 interface TeamMember {
   name: string;
   email: string;
   department?: string;
   roll?: string;
+  phone?: string;
 }
 
 interface EventRecord {
@@ -36,6 +39,8 @@ interface TeamRecord {
     email: string;
     department?: string;
     phone?: string;
+    roll?: string;
+    year?: string;
   };
   membersCount: number;
   members: TeamMember[];
@@ -109,11 +114,16 @@ export default function AdminTeamsPage() {
       (!t.eventId && selectedEventId === "unassigned");
 
     const q = search.toLowerCase();
+    const parsed = parseHeritageEmail(t.lead.email, t.lead.name);
     const matchesSearch =
       t.teamName.toLowerCase().includes(q) ||
       t.lead.name.toLowerCase().includes(q) ||
       t.lead.email.toLowerCase().includes(q) ||
       t.teamCode.toLowerCase().includes(q) ||
+      (t.lead.roll ? t.lead.roll.toLowerCase().includes(q) : false) ||
+      (t.lead.phone ? t.lead.phone.toLowerCase().includes(q) : false) ||
+      (t.lead.department ? t.lead.department.toLowerCase().includes(q) : false) ||
+      parsed.branchName.toLowerCase().includes(q) ||
       (t.eventId?.title ? t.eventId.title.toLowerCase().includes(q) : false);
 
     return matchesEvent && matchesSearch;
@@ -153,7 +163,7 @@ export default function AdminTeamsPage() {
           <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-neutral-400" />
           <input
             type="text"
-            placeholder="Search team name, code, leader, or event..."
+            placeholder="Search team name, code, leader, roll no, or event..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             className="w-full pl-10 pr-4 py-2.5 text-xs bg-[#16161d] border border-white/15 rounded-xl text-white placeholder-neutral-500 focus:outline-none focus:border-rose-500/50"
@@ -216,44 +226,85 @@ export default function AdminTeamsPage() {
                 <tr className="border-b border-white/10 text-neutral-300 bg-[#16161d]">
                   <th className="py-3.5 px-4 font-semibold">Team & Code</th>
                   <th className="py-3.5 px-4 font-semibold">Team Leader</th>
+                  <th className="py-3.5 px-4 font-semibold">Roll No</th>
+                  <th className="py-3.5 px-4 font-semibold">Contact</th>
+                  <th className="py-3.5 px-4 font-semibold">Department</th>
+                  <th className="py-3.5 px-4 font-semibold">Academic Year</th>
                   <th className="py-3.5 px-4 font-semibold">Roster</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-white/5">
-                {filteredTeams.map((team) => (
-                  <tr key={team._id} className="hover:bg-[#16161d]/60 transition-colors">
-                    <td className="py-3.5 px-4">
-                      <div className="font-semibold text-white">{team.teamName}</div>
-                      <div className="flex items-center gap-1.5 mt-0.5 flex-wrap">
-                        <span className="font-mono text-[10px] text-rose-400 font-bold">
-                          {team.teamCode}
-                        </span>
-                        {team.eventId && (
-                          <span className="text-[10px] text-neutral-400 truncate">
-                            • {team.eventId.title}
+                {filteredTeams.map((team) => {
+                  const parsed = parseHeritageEmail(team.lead?.email || "", team.lead?.name);
+                  return (
+                    <tr key={team._id} className="hover:bg-[#16161d]/60 transition-colors">
+                      <td className="py-3.5 px-4">
+                        <div className="font-semibold text-white">{team.teamName}</div>
+                        <div className="flex items-center gap-1.5 mt-0.5 flex-wrap">
+                          <span className="font-mono text-[10px] text-rose-400 font-bold">
+                            {team.teamCode}
                           </span>
+                          {team.eventId && (
+                            <span className="text-[10px] text-neutral-400 truncate">
+                              • {team.eventId.title}
+                            </span>
+                          )}
+                        </div>
+                      </td>
+
+                      <td className="py-3.5 px-4">
+                        <div className="font-medium text-white">{team.lead.name}</div>
+                        <div className="font-mono text-[10px] text-neutral-400 truncate max-w-[160px]">
+                          {team.lead.email}
+                        </div>
+                      </td>
+
+                      <td className="py-3.5 px-4 font-mono text-[11px]">
+                        {team.lead?.roll ? (
+                          <span className="text-rose-400 font-semibold">{team.lead.roll}</span>
+                        ) : (
+                          <span className="text-white/30 font-normal">N/A</span>
                         )}
-                      </div>
-                    </td>
+                      </td>
 
-                    <td className="py-3.5 px-4">
-                      <div className="font-medium text-white">{team.lead.name}</div>
-                      <div className="font-mono text-[10px] text-neutral-400 truncate max-w-[160px]">
-                        {team.lead.email}
-                      </div>
-                    </td>
+                      <td className="py-3.5 px-4 font-mono text-[11px]">
+                        {team.lead?.phone ? (
+                          <span className="text-emerald-400 font-medium">+91 {team.lead.phone}</span>
+                        ) : (
+                          <span className="text-white/30 font-normal">N/A</span>
+                        )}
+                      </td>
 
-                    <td className="py-3.5 px-4 font-mono text-neutral-300">
-                      <button
-                        onClick={() => setSelectedTeam(team)}
-                        className="inline-flex items-center gap-1 text-xs text-neutral-300 hover:text-white hover:underline cursor-pointer"
-                      >
-                        <Users className="h-3.5 w-3.5 text-neutral-400" />
-                        <span>{1 + (team.members?.length || 0)} members</span>
-                      </button>
-                    </td>
-                  </tr>
-                ))}
+                      <td className="py-3.5 px-4">
+                        <span className="block text-xs font-semibold text-white">
+                          {team.lead?.department || parsed.branchName}
+                        </span>
+                        <span className="inline-block mt-0.5 rounded bg-emerald-500/15 border border-emerald-500/30 px-1.5 py-0.5 text-[9px] font-bold text-emerald-300 uppercase">
+                          {parsed.branchCode}
+                        </span>
+                      </td>
+
+                      <td className="py-3.5 px-4">
+                        <span className="block text-xs font-bold text-white">
+                          {team.lead?.year || parsed.academicYear}
+                        </span>
+                        <span className="text-[10px] text-purple-300 font-mono font-medium">
+                          Class of {parsed.passingYear}
+                        </span>
+                      </td>
+
+                      <td className="py-3.5 px-4 font-mono text-neutral-300">
+                        <button
+                          onClick={() => setSelectedTeam(team)}
+                          className="inline-flex items-center gap-1 text-xs text-neutral-300 hover:text-white hover:underline cursor-pointer"
+                        >
+                          <Users className="h-3.5 w-3.5 text-neutral-400" />
+                          <span>{1 + (team.members?.length || 0)} members</span>
+                        </button>
+                      </td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
           </div>
@@ -305,10 +356,26 @@ export default function AdminTeamsPage() {
 
               <div>
                 <div className="font-semibold text-white mb-2">Team Leader:</div>
-                <div className="p-3 rounded-xl bg-[#16161d] border border-white/10 space-y-1">
+                <div className="p-3 rounded-xl bg-[#16161d] border border-white/10 space-y-1.5">
                   <div className="text-white font-medium">{selectedTeam.lead.name}</div>
-                  <div className="text-neutral-400 font-mono">{selectedTeam.lead.email}</div>
-                  <div className="text-neutral-400">{selectedTeam.lead.department}</div>
+                  <div className="text-neutral-400 font-mono text-[11px]">{selectedTeam.lead.email}</div>
+                  <div className="flex flex-wrap gap-1.5 pt-0.5 font-mono text-[10px]">
+                    {selectedTeam.lead.roll && (
+                      <span className="px-2 py-0.5 rounded bg-rose-500/15 border border-rose-500/30 text-rose-300 font-semibold">
+                        Roll: {selectedTeam.lead.roll}
+                      </span>
+                    )}
+                    {selectedTeam.lead.phone && (
+                      <span className="px-2 py-0.5 rounded bg-emerald-500/15 border border-emerald-500/30 text-emerald-300 font-semibold">
+                        Phone: +91 {selectedTeam.lead.phone}
+                      </span>
+                    )}
+                    {selectedTeam.lead.department && (
+                      <span className="px-2 py-0.5 rounded bg-white/10 border border-white/10 text-neutral-300">
+                        {selectedTeam.lead.department}
+                      </span>
+                    )}
+                  </div>
                 </div>
               </div>
 
@@ -319,11 +386,27 @@ export default function AdminTeamsPage() {
                     {selectedTeam.members.map((m, idx) => (
                       <div
                         key={idx}
-                        className="p-3 rounded-xl bg-[#16161d] border border-white/10 space-y-0.5"
+                        className="p-3 rounded-xl bg-[#16161d] border border-white/10 space-y-1"
                       >
                         <div className="text-white font-medium">{m.name}</div>
-                        <div className="text-neutral-400 font-mono">{m.email}</div>
-                        {m.department && <div className="text-neutral-400">{m.department}</div>}
+                        <div className="text-neutral-400 font-mono text-[11px]">{m.email}</div>
+                        <div className="flex flex-wrap gap-1.5 pt-0.5 font-mono text-[10px]">
+                          {m.roll && (
+                            <span className="px-2 py-0.5 rounded bg-rose-500/15 border border-rose-500/30 text-rose-300 font-semibold">
+                              Roll: {m.roll}
+                            </span>
+                          )}
+                          {m.phone && (
+                            <span className="px-2 py-0.5 rounded bg-emerald-500/15 border border-emerald-500/30 text-emerald-300 font-semibold">
+                              Phone: +91 {m.phone}
+                            </span>
+                          )}
+                          {m.department && (
+                            <span className="px-2 py-0.5 rounded bg-white/10 border border-white/10 text-neutral-300">
+                              {m.department}
+                            </span>
+                          )}
+                        </div>
                       </div>
                     ))}
                   </div>
