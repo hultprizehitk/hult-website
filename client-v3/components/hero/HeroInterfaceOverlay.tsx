@@ -108,19 +108,38 @@ export default function HeroInterfaceOverlay({ scrollProgress = 0 }: HeroInterfa
 
 export function HeroCenterpiece({ scrollProgress = 0 }: HeroInterfaceOverlayProps) {
   const [mounted, setMounted] = useState(false);
+  const [windowWidth, setWindowWidth] = useState(1200);
 
   useEffect(() => {
     const timer = setTimeout(() => setMounted(true), 60);
-    return () => clearTimeout(timer);
+    const handleResize = () => setWindowWidth(window.innerWidth);
+    handleResize();
+    window.addEventListener("resize", handleResize);
+    return () => {
+      clearTimeout(timer);
+      window.removeEventListener("resize", handleResize);
+    };
   }, []);
 
-  // ── Scroll Phase Calculations ──
+  // ── Scroll Phase & Responsive Calculations ──
   const p1 = Math.min(1, scrollProgress / 0.32);
   const ease1 = Math.sin((p1 * Math.PI) / 2);
 
-  const currentLeft = 126 - ease1 * 38; // 126px -> 88px (left aligned)
-  const currentTop = 215 - ease1 * 55; // 215px -> 160px (shifted downwards into hero section space)
-  const currentScale = 1.0 - ease1 * 0.18; // Overall container scale adjustment
+  const isMobile = windowWidth < 640;
+  const isTablet = windowWidth >= 640 && windowWidth < 1024;
+
+  const baseLeft = isMobile ? 16 : isTablet ? 48 : 126;
+  const currentLeft = baseLeft - ease1 * (isMobile ? 8 : 38);
+  const currentTop = isMobile ? 120 - ease1 * 30 : 215 - ease1 * 55;
+  const currentScale = 1.0 - ease1 * 0.18;
+
+  const mobileScaleMultiplier = isMobile
+    ? Math.max(0.36, (windowWidth - 32) / 970)
+    : isTablet
+    ? Math.max(0.65, (windowWidth - 96) / 970)
+    : 1;
+
+  const finalScale = currentScale * mobileScaleMultiplier;
 
   // 1. "HERITAGE INSTITUTE OF TECHNOLOGY" & "presents" fade out completely on scroll
   const heritageFadeProgress = Math.min(1, Math.max(0, (scrollProgress - 0.02) / 0.14));
@@ -142,7 +161,7 @@ export function HeroCenterpiece({ scrollProgress = 0 }: HeroInterfaceOverlayProp
   const aboutBlur = (1 - easeMorph) * 4;
 
   // 3. "HULT PRIZE" scale down (FIXED baseline, zero independent upward motion!)
-  const hultPrizeTop = 138; 
+  const hultPrizeTop = 120; 
   const hultPrizeScale = 1.0 - ease1 * 0.26; // Scales down ("thoda small") smoothly with diagonal scroll
 
   // 4. Paragraph & Frosted Pills fade in under HULT PRIZE
@@ -162,7 +181,7 @@ export function HeroCenterpiece({ scrollProgress = 0 }: HeroInterfaceOverlayProp
         width: "970px",
         height: "480px",
         transformOrigin: "left top",
-        transform: `scale(${currentScale})`,
+        transform: `scale(${finalScale})`,
         opacity: mounted ? overallOpacity : 0,
         visibility: overallOpacity > 0.005 ? "visible" : "hidden",
         transition: "opacity 0.15s ease-out",
@@ -229,7 +248,7 @@ export function HeroCenterpiece({ scrollProgress = 0 }: HeroInterfaceOverlayProp
         style={{
           position: "absolute",
           left: "0px",
-          top: "92px",
+          top: "104px",
           width: "200px",
           height: "43px",
           pointerEvents: "none",

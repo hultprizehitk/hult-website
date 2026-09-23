@@ -3,7 +3,7 @@
 import React, { useEffect, useState } from "react";
 import Link from "next/link";
 import ScrollReveal from "@/components/ui/ScrollReveal";
-import { Calendar, MapPin, Users, ArrowRight, ExternalLink } from "lucide-react";
+import { Calendar, MapPin, Users, ArrowRight } from "lucide-react";
 import type { PublicEvent } from "@/types";
 
 function formatDate(dateStr?: string) {
@@ -65,7 +65,11 @@ function formatDateRange(start?: string, end?: string, fallback?: string) {
   return fallback ? formatDate(fallback) : "Wed, Sep 30, 2026 · 12:00 PM – 6:00 PM";
 }
 
-export default function HeroThemeEvents() {
+interface HeroThemeEventsProps {
+  scrollProgress?: number;
+}
+
+export default function HeroThemeEvents({ scrollProgress }: HeroThemeEventsProps) {
   const [events, setEvents] = useState<PublicEvent[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedIndex, setSelectedIndex] = useState(0);
@@ -108,21 +112,33 @@ export default function HeroThemeEvents() {
   const minMembers = featuredEvent.minTeamMembers || 2;
   const maxMembers = featuredEvent.maxTeamMembers || 4;
 
+  // Scroll-driven pure opacity fade-in (ZERO vertical slide-in!) right after About Hult Prize section clears off
+  const isScrollDriven = typeof scrollProgress === "number";
+  const fadeStart = 0.54;
+  const fadeEnd = 0.72;
+  const rawProgress = isScrollDriven
+    ? Math.min(1, Math.max(0, (scrollProgress - fadeStart) / (fadeEnd - fadeStart)))
+    : 1;
+  const easeProgress = Math.sin((rawProgress * Math.PI) / 2);
+  const eventsOpacity = isScrollDriven ? easeProgress : 1;
+
   return (
     <section
       id="events"
-      className="relative w-full py-24 sm:py-32 px-6 sm:px-12 lg:px-20 overflow-hidden font-[family-name:var(--font-google-sans)] bg-transparent text-white"
+      className="relative w-full py-16 sm:py-24 px-6 sm:px-12 lg:px-20 overflow-hidden font-[family-name:var(--font-google-sans)] bg-transparent text-white transition-opacity duration-300"
+      style={{
+        opacity: eventsOpacity,
+        pointerEvents: eventsOpacity > 0.3 ? "auto" : "none",
+        willChange: "opacity",
+      }}
     >
-      <div className="relative z-10 max-w-7xl mx-auto space-y-10">
+      <div className="relative z-10 max-w-7xl mx-auto space-y-8">
         {/* Editorial Section Header */}
-        <ScrollReveal direction="up">
+        <ScrollReveal direction="none">
           <div className="flex flex-col sm:flex-row items-start sm:items-end justify-between gap-6 pb-6 border-b border-white/15">
             <div className="space-y-2">
-              <div className="font-mono text-[10px] font-bold uppercase tracking-[0.25em] text-[#E8396E]">
-                COMPETITION PIPELINE
-              </div>
               <h2
-                className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-normal tracking-wide uppercase drop-shadow-[0_2px_12px_rgba(0,0,0,0.5)]"
+                className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-normal tracking-wide uppercase"
                 style={{
                   fontFamily: "'IM Fell Double Pica', Georgia, serif",
                   background: "linear-gradient(180deg, #2D052A 0%, #931289 100%)",
@@ -136,10 +152,10 @@ export default function HeroThemeEvents() {
 
             <Link
               href="/events"
-              className="rounded-full border border-white/30 bg-white/10 hover:bg-white/20 backdrop-blur-md px-5 py-2.5 text-xs font-mono font-bold text-white transition-all hover:scale-105 flex items-center gap-2 shadow-sm shrink-0"
+              className="rounded-full border border-black/20 bg-white/20 hover:bg-white/30 backdrop-blur-md px-5 py-2.5 text-xs font-mono font-bold text-black transition-all hover:scale-105 flex items-center gap-2 shadow-sm shrink-0"
             >
               <span>View All Events ({events.length})</span>
-              <ArrowRight className="h-3.5 w-3.5 text-white" />
+              <ArrowRight className="h-3.5 w-3.5 text-black" />
             </Link>
           </div>
         </ScrollReveal>
@@ -164,47 +180,36 @@ export default function HeroThemeEvents() {
           </div>
         )}
 
-        {/* Featured Card — Matching EventInsideView Design Scheme */}
-        <ScrollReveal direction="up" delay={140}>
-          <article className="relative rounded-3xl bg-[#0c0a12]/85 backdrop-blur-2xl border border-white/15 p-6 md:p-8 sm:p-10 shadow-2xl overflow-hidden flex flex-col gap-6">
-            {/* Top Light Accent Glow */}
+        {/* Featured Card — Glassmorphic Translucent Black Card */}
+        <ScrollReveal direction="none" delay={100}>
+          <article className="relative rounded-3xl bg-black/55 backdrop-blur-2xl border border-white/15 p-7 sm:p-10 shadow-2xl overflow-hidden flex flex-col gap-6">
             <div className="pointer-events-none absolute top-0 inset-x-0 h-[35%] bg-gradient-to-b from-white/10 to-transparent z-[1]" aria-hidden="true" />
 
             <div className="relative z-[2] flex flex-col gap-6">
               {/* Status Badges Row */}
               <div className="flex items-center gap-2.5 flex-wrap">
-                {featuredEvent.tag && featuredEvent.tag.trim().toLowerCase() !== "flagship" && (
-                  <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-white/[0.06] border border-white/15 text-white/85 backdrop-blur-md shadow-sm">
-                    {featuredEvent.tag}
-                  </span>
-                )}
+                <span className="inline-flex items-center px-3.5 py-1 rounded-full text-[10px] font-bold tracking-widest uppercase bg-white/10 border border-white/30 text-white/90 font-mono">
+                  {featuredEvent.tag || "FLAGSHIP"}
+                </span>
 
                 {featuredEvent.registrationStatus === "closed" ? (
-                  <span className="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-medium bg-rose-500/[0.08] border border-rose-500/20 text-rose-300/90 backdrop-blur-md">
-                    <span className="inline-flex rounded-full h-2 w-2 bg-rose-400/80 shrink-0" />
-                    <span>Registrations Closed</span>
+                  <span className="inline-flex items-center gap-1.5 px-3.5 py-1 rounded-full text-[10px] font-bold tracking-wider uppercase bg-rose-950/40 border border-rose-400/50 text-rose-300 font-mono">
+                    REGISTRATIONS CLOSED
                   </span>
                 ) : featuredEvent.registrationStatus === "extended" ? (
-                  <span className="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-medium bg-amber-500/[0.08] border border-amber-500/25 text-amber-300 shadow-[0_0_15px_rgba(245,158,11,0.12)] backdrop-blur-md">
-                    <span className="relative flex h-2 w-2 shrink-0">
-                      <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-60" />
-                      <span className="relative inline-flex rounded-full h-2 w-2 bg-amber-400 shadow-[0_0_8px_rgba(251,191,36,0.8)]" />
-                    </span>
-                    <span>Extended Deadline</span>
+                  <span className="inline-flex items-center gap-1.5 px-3.5 py-1 rounded-full text-[10px] font-bold tracking-wider uppercase bg-amber-950/40 border border-amber-400/50 text-amber-300 font-mono">
+                    <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse" />
+                    EXTENDED DEADLINE
                   </span>
                 ) : (
-                  <span className="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-medium bg-emerald-500/[0.08] border border-emerald-500/25 text-emerald-400 shadow-[0_0_15px_rgba(16,185,129,0.12)] backdrop-blur-md">
-                    <span className="relative flex h-2 w-2 shrink-0">
-                      <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-60" />
-                      <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-400 shadow-[0_0_8px_rgba(52,211,153,0.8)]" />
-                    </span>
-                    <span>Registrations Open</span>
+                  <span className="inline-flex items-center gap-1.5 px-3.5 py-1 rounded-full text-[10px] font-bold tracking-wider uppercase bg-emerald-950/40 border border-emerald-400/50 text-emerald-300 font-mono">
+                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                    REGISTRATIONS OPEN
                   </span>
                 )}
 
-                <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium bg-white/[0.05] border border-white/12 text-white/80 backdrop-blur-md shadow-sm">
-                  <Users size={12} className="text-rose-300/80 shrink-0" />
-                  <span>Team: {minMembers}–{maxMembers} Members</span>
+                <span className="inline-flex items-center px-3.5 py-1 rounded-full text-[10px] font-bold bg-white/10 border border-white/20 text-white/75 font-mono">
+                  Team: {minMembers} to {maxMembers} Members
                 </span>
               </div>
 
@@ -217,8 +222,8 @@ export default function HeroThemeEvents() {
               </h3>
 
               {/* Meta Grid (SCHEDULE, VENUE, ROSTER SIZE) */}
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                <div className="bg-white/5 border border-white/10 rounded-2xl p-4 flex flex-col gap-1.5 shadow-md">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3.5">
+                <div className="bg-white/[0.06] border border-white/10 rounded-2xl p-4 flex flex-col gap-1.5 shadow-md backdrop-blur-md hover:border-white/20 transition-all">
                   <span className="flex items-center gap-2 text-[10px] font-bold tracking-widest uppercase text-white/60 font-mono">
                     <Calendar size={13} className="text-rose-300/90 shrink-0" />
                     <span>SCHEDULE</span>
@@ -228,7 +233,7 @@ export default function HeroThemeEvents() {
                   </span>
                 </div>
 
-                <div className="bg-white/5 border border-white/10 rounded-2xl p-4 flex flex-col gap-1.5 shadow-md">
+                <div className="bg-white/[0.06] border border-white/10 rounded-2xl p-4 flex flex-col gap-1.5 shadow-md backdrop-blur-md hover:border-white/20 transition-all">
                   <span className="flex items-center gap-2 text-[10px] font-bold tracking-widest uppercase text-white/60 font-mono">
                     <MapPin size={13} className="text-rose-300/90 shrink-0" />
                     <span>VENUE</span>
@@ -238,7 +243,7 @@ export default function HeroThemeEvents() {
                   </span>
                 </div>
 
-                <div className="bg-white/5 border border-white/10 rounded-2xl p-4 flex flex-col gap-1.5 shadow-md">
+                <div className="bg-white/[0.06] border border-white/10 rounded-2xl p-4 flex flex-col gap-1.5 shadow-md backdrop-blur-md hover:border-white/20 transition-all">
                   <span className="flex items-center gap-2 text-[10px] font-bold tracking-widest uppercase text-white/60 font-mono">
                     <Users size={13} className="text-rose-300/90 shrink-0" />
                     <span>ROSTER SIZE</span>
@@ -251,32 +256,24 @@ export default function HeroThemeEvents() {
 
               {/* Executive Brief Section */}
               {featuredEvent.description && (
-                <div className="flex flex-col gap-2 pt-4 border-t border-white/10">
-                  <span className="text-[10px] font-mono font-bold tracking-widest uppercase text-white/60">
+                <div className="flex flex-col gap-2 pt-3 border-t border-white/10">
+                  <span className="text-[11px] font-bold tracking-widest uppercase text-white/60 font-mono">
                     EXECUTIVE BRIEF
                   </span>
-                  <p className="text-xs sm:text-sm leading-relaxed text-white/80 font-sans">
+                  <p className="text-xs sm:text-sm leading-relaxed text-white/80 font-sans font-medium">
                     {featuredEvent.description}
                   </p>
                 </div>
               )}
 
               {/* Action Buttons Row */}
-              <div className="pt-3 flex flex-col sm:flex-row items-center justify-between gap-4 border-t border-white/10">
+              <div className="pt-3 flex flex-col sm:flex-row items-center justify-start gap-4 border-t border-white/10">
                 <Link
-                  href="/register"
+                  href={`/events?event=${featuredEvent._id}`}
                   className="w-full sm:w-auto rounded-full bg-white hover:bg-neutral-100 px-7 py-3 text-xs font-bold text-neutral-950 shadow-md transition-all hover:scale-105 active:scale-95 flex items-center justify-center gap-2 cursor-pointer"
                 >
                   <span>Register Your Team</span>
                   <ArrowRight className="h-3.5 w-3.5 text-neutral-950" />
-                </Link>
-
-                <Link
-                  href={`/events?event=${featuredEvent._id}`}
-                  className="w-full sm:w-auto rounded-full border border-white/20 bg-white/10 hover:bg-white/20 px-6 py-3 text-xs font-mono font-bold text-white transition-all flex items-center justify-center gap-2 backdrop-blur-md cursor-pointer"
-                >
-                  <span>View Full Event Details</span>
-                  <ExternalLink className="h-3.5 w-3.5 text-white" />
                 </Link>
               </div>
             </div>
@@ -286,4 +283,3 @@ export default function HeroThemeEvents() {
     </section>
   );
 }
-

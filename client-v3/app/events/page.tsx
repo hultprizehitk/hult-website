@@ -131,7 +131,7 @@ export default function EventsPage() {
 
   // ── Main events listing ──────────────────────────────────────────────────
   return (
-    <div className="relative h-screen max-h-screen w-full overflow-hidden bg-[#0a0c14] text-white">
+    <div className="relative min-h-screen w-full bg-[#0a0c14] text-white flex flex-col justify-between overflow-x-hidden">
       {/* Full-bleed homepage background: base layer + tree layer */}
       <EventHeroBackground />
 
@@ -139,7 +139,7 @@ export default function EventsPage() {
       <SiteHeader />
 
       {/* Hero scene + event cards */}
-      <main className="h-full w-full overflow-hidden relative z-10">
+      <main className="flex-1 w-full relative z-10 flex flex-col justify-center py-6 sm:py-10">
         <EventsHero
           events={events}
           loading={loading}

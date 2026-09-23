@@ -3,8 +3,8 @@
 import React, { useState, useEffect } from "react";
 import GrainOverlay from "@/components/hero/GrainOverlay";
 import HeroInterfaceOverlay, { HeroCenterpiece, HeroNavbar } from "@/components/hero/HeroInterfaceOverlay";
-import HeroThemeAbout from "@/components/sections/HeroThemeAbout";
 import HeroThemeEvents from "@/components/sections/HeroThemeEvents";
+import PhotoGallerySection from "@/components/sections/PhotoGallerySection";
 import HeroThemeFooter from "@/components/sections/HeroThemeFooter";
 import CardThemeDevTool from "@/components/dev/CardThemeDevTool";
 import FallingLeaves from "@/components/hero/FallingLeaves";
@@ -360,9 +360,9 @@ function HomeContent() {
         <div className="h-[170vh] pointer-events-none" />
 
         {/* Sections — transparent, scroll over the fixed hero */}
-        <div className="relative z-20 bg-transparent">
-          <HeroThemeAbout />
-          <HeroThemeEvents />
+        <div className="relative z-20 bg-transparent space-y-12">
+          <HeroThemeEvents scrollProgress={scrollProgress} />
+          <PhotoGallerySection scrollProgress={scrollProgress} />
           <HeroThemeFooter />
         </div>
       </div>

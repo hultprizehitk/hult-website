@@ -6,7 +6,7 @@ interface ScrollRevealProps {
   children: React.ReactNode;
   className?: string;
   delay?: number; // In ms
-  direction?: "up" | "down" | "left" | "right" | "scale";
+  direction?: "up" | "down" | "left" | "right" | "scale" | "none";
 }
 
 export default function ScrollReveal({
@@ -41,6 +41,8 @@ export default function ScrollReveal({
 
   const getInitialStyle = () => {
     switch (direction) {
+      case "none":
+        return "opacity-0";
       case "up":
         return "translate-y-12 opacity-0";
       case "down":

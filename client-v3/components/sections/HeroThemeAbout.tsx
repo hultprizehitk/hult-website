@@ -163,7 +163,7 @@ export default function HeroThemeAbout() {
   return (
     <section
       id="about"
-      className="relative w-full py-20 sm:py-28 px-6 sm:px-12 lg:px-20 overflow-hidden font-[family-name:var(--font-google-sans)] bg-transparent text-white"
+      className="relative w-full pt-20 sm:pt-28 pb-4 sm:pb-6 px-6 sm:px-12 lg:px-20 overflow-hidden font-[family-name:var(--font-google-sans)] bg-transparent text-white"
     >
       <div className="relative z-10 max-w-7xl mx-auto space-y-16">
 

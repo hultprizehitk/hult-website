@@ -28,9 +28,9 @@ export default function SiteHeader({
     <>
       {/* Top Viewport Scrim Gradient — Black at top fading to transparent at bottom */}
       <div
-        className="pointer-events-none fixed top-0 inset-x-0 h-32 sm:h-36 md:h-40 z-40"
+        className="pointer-events-none fixed top-0 inset-x-0 h-20 sm:h-24 md:h-28 z-40"
         style={{
-          background: "linear-gradient(to bottom, rgba(0, 0, 0, 0.85) 0%, rgba(0, 0, 0, 0.45) 55%, transparent 100%)",
+          background: "linear-gradient(to bottom, rgba(0, 0, 0, 0.6) 0%, rgba(0, 0, 0, 0.2) 65%, transparent 100%)",
         }}
       />
 

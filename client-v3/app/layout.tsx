@@ -141,6 +141,13 @@ export const metadata: Metadata = {
   alternates: {
     canonical: "https://www.hultprizehitk.live",
   },
+  icons: {
+    icon: [
+      { url: "/ef-hult-prize-logo.png", type: "image/png" },
+    ],
+    shortcut: "/ef-hult-prize-logo.png",
+    apple: "/ef-hult-prize-logo.png",
+  },
 };
 
 export default function RootLayout({
