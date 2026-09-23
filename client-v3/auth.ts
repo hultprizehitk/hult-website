@@ -5,6 +5,7 @@ import User from "@/models/User";
 import { parseHeritageEmail } from "@/lib/heritage-parser";
 import { isSuperAdminEmail, isAdminRole } from "@/lib/admin-check";
 import type { UserRole } from "@/types/user";
+import { sendWelcomeEmail } from "@/lib/email-templates";
 
 // When deployed to production, ensure NEXTAUTH_URL and AUTH_URL point to the live domain
 if (process.env.NODE_ENV === "production") {
@@ -67,6 +68,18 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
               department: parsed.branchName,
               year: parsed.academicYear,
               role: assignedRole,
+              welcomeEmailSent: true,
+            });
+
+            // Asynchronously dispatch official welcome email (non-blocking)
+            sendWelcomeEmail({
+              name: dbUser.name,
+              email: dbUser.email,
+              department: dbUser.department,
+              year: dbUser.year,
+              role: dbUser.role,
+            }).catch((emailErr) => {
+              console.error("[Google Workspace SMTP] Failed to send welcome email on account creation:", emailErr);
             });
           } else {
             const updates: Record<string, unknown> = {
@@ -76,6 +89,20 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
             };
             if (user.image) updates.image = user.image;
             if (parsed.fullName) updates.name = parsed.fullName;
+
+            if (!dbUser.welcomeEmailSent) {
+              updates.welcomeEmailSent = true;
+              const welcomeName = dbUser.name || parsed.fullName || user.name || "HITK Innovator";
+              sendWelcomeEmail({
+                name: welcomeName,
+                email: dbUser.email,
+                department: dbUser.department || parsed.branchName,
+                year: dbUser.year || parsed.academicYear,
+                role: dbUser.role,
+              }).catch((emailErr) => {
+                console.error("[Google Workspace SMTP] Failed to send welcome email on first login:", emailErr);
+              });
+            }
 
             await User.updateOne({ _id: dbUser._id }, updates);
             Object.assign(dbUser, updates);

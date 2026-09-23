@@ -11,6 +11,7 @@ export interface IUser extends Document {
   phone?: string;
   roll?: string;
   role: UserRole;
+  welcomeEmailSent?: boolean;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -58,6 +59,10 @@ const UserSchema = new Schema<IUser>(
       type: String,
       enum: ["user", "junior_admin", "lead_admin", "master_admin"],
       default: "user",
+    },
+    welcomeEmailSent: {
+      type: Boolean,
+      default: false,
     },
   },
   {
