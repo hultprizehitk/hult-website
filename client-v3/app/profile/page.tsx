@@ -779,19 +779,26 @@ export default function StudentProfilePage() {
 
                                 <div className="flex items-center gap-1.5 flex-wrap">
                                   {t.submissionStatus === "submitted" ? (
-                                    <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-mono font-semibold uppercase tracking-wider bg-white/5 border border-white/15 text-white/90">
-                                      <span className="w-1.5 h-1.5 rounded-full bg-purple-400" />
+                                    <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-purple-500/[0.1] border border-purple-500/25 text-purple-300 shadow-[0_0_10px_rgba(168,85,247,0.12)] backdrop-blur-md">
+                                      <span className="relative flex h-1.5 w-1.5 shrink-0">
+                                        <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-purple-400 shadow-[0_0_6px_rgba(192,132,252,0.8)]" />
+                                      </span>
                                       <span>Submitted</span>
                                     </span>
                                   ) : (1 + (t.members?.length || 0)) >=
                                     (t.eventId?.minTeamMembers || 3) ? (
-                                    <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-mono font-semibold uppercase tracking-wider bg-white/5 border border-white/15 text-white/90">
-                                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                                    <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-emerald-500/[0.1] border border-emerald-500/25 text-emerald-400 shadow-[0_0_10px_rgba(16,185,129,0.12)] backdrop-blur-md">
+                                      <span className="relative flex h-1.5 w-1.5 shrink-0">
+                                        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-60" />
+                                        <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-emerald-400 shadow-[0_0_6px_rgba(52,211,153,0.8)]" />
+                                      </span>
                                       <span>Criteria Met</span>
                                     </span>
                                   ) : (
-                                    <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-mono font-semibold uppercase tracking-wider bg-white/5 border border-white/15 text-white/80">
-                                      <span className="w-1.5 h-1.5 rounded-full bg-amber-400/80" />
+                                    <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-amber-500/[0.1] border border-amber-500/25 text-amber-300 shadow-[0_0_10px_rgba(245,158,11,0.12)] backdrop-blur-md">
+                                      <span className="relative flex h-1.5 w-1.5 shrink-0">
+                                        <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-amber-400 shadow-[0_0_6px_rgba(251,191,36,0.8)]" />
+                                      </span>
                                       <span>
                                         Forming ({1 + (t.members?.length || 0)}/
                                         {t.eventId?.minTeamMembers || 3} Min)
@@ -799,15 +806,15 @@ export default function StudentProfilePage() {
                                     </span>
                                   )}
 
-                                  <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-mono font-semibold uppercase tracking-wider bg-white/5 border border-white/15 text-white/90">
+                                  <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-white/[0.06] border border-white/12 text-white/90 backdrop-blur-md">
                                     {isLead ? (
                                       <>
-                                        <ShieldCheck size={11} className="text-[#f20089]" />
+                                        <ShieldCheck size={12} className="text-[#f20089]" />
                                         <span>Leader</span>
                                       </>
                                     ) : (
                                       <>
-                                        <Users size={11} className="text-white/60" />
+                                        <Users size={12} className="text-white/60" />
                                         <span>Member</span>
                                       </>
                                     )}
@@ -846,8 +853,8 @@ export default function StudentProfilePage() {
                                       {t.teamCode}
                                     </span>
                                     {t.submissionStatus === "submitted" && (
-                                      <span className="inline-flex items-center gap-1 rounded-full bg-emerald-500/15 border border-emerald-500/30 px-2 py-0.5 text-[9px] font-mono font-bold text-emerald-400 uppercase tracking-wider">
-                                        <Lock size={9} />
+                                      <span className="inline-flex items-center gap-1 rounded-full bg-emerald-500/10 border border-emerald-500/25 px-2.5 py-0.5 text-xs font-medium text-emerald-400 shadow-[0_0_8px_rgba(16,185,129,0.12)]">
+                                        <Lock size={10} />
                                         <span>Roster Locked</span>
                                       </span>
                                     )}

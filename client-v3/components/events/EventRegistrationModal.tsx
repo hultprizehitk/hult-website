@@ -655,15 +655,15 @@ export default function EventRegistrationModal({
 
                   <div className="flex items-center gap-2 flex-wrap">
                     {/* Role Badge */}
-                    <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-mono font-semibold uppercase tracking-wider bg-white/5 border border-white/15 text-white/90">
+                    <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium bg-white/[0.06] border border-white/12 text-white/90 backdrop-blur-md">
                       {userRole === "lead" ? (
                         <>
-                          <ShieldCheck size={11} className="text-[#f20089]" />
+                          <ShieldCheck size={12} className="text-[#f20089]" />
                           <span>Team Leader</span>
                         </>
                       ) : (
                         <>
-                          <Users size={11} className="text-white/60" />
+                          <Users size={12} className="text-white/60" />
                           <span>Team Member</span>
                         </>
                       )}
@@ -671,13 +671,17 @@ export default function EventRegistrationModal({
 
                     {/* Status Pill with refined indicator dot */}
                     {isSubmitted ? (
-                      <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-mono font-semibold uppercase tracking-wider bg-white/5 border border-white/15 text-white/90">
-                        <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
+                      <span className="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-medium bg-emerald-500/[0.08] border border-emerald-500/25 text-emerald-400 shadow-[0_0_12px_rgba(16,185,129,0.12)] backdrop-blur-md">
+                        <span className="relative flex h-2 w-2 shrink-0">
+                          <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-400 shadow-[0_0_8px_rgba(52,211,153,0.8)]" />
+                        </span>
                         <span>Registered &amp; Confirmed</span>
                       </span>
                     ) : (
-                      <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-mono font-semibold uppercase tracking-wider bg-white/5 border border-white/15 text-white/80">
-                        <span className="w-1.5 h-1.5 rounded-full bg-amber-400/80" />
+                      <span className="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-medium bg-amber-500/[0.08] border border-amber-500/25 text-amber-300 shadow-[0_0_12px_rgba(245,158,11,0.12)] backdrop-blur-md">
+                        <span className="relative flex h-2 w-2 shrink-0">
+                          <span className="relative inline-flex rounded-full h-2 w-2 bg-amber-400 shadow-[0_0_8px_rgba(251,191,36,0.8)]" />
+                        </span>
                         <span>Pending Submission ({currentMembersCount} Joined)</span>
                       </span>
                     )}
@@ -1343,11 +1347,14 @@ export default function EventRegistrationModal({
               </div>
 
               <div className="flex items-center gap-2 flex-wrap">
-                <span className="rounded-full bg-white/10 border border-white/20 text-white text-[10px] font-bold uppercase tracking-wider px-3 py-1 font-mono">
-                  {event.tag || "Flagship"}
-                </span>
-                <span className="text-[11px] text-white/60 font-mono">
-                  Team: {minMembers}–{maxMembers} Members
+                {event.tag && event.tag.trim().toLowerCase() !== "flagship" && (
+                  <span className="rounded-full bg-white/[0.06] border border-white/15 text-white/85 text-xs font-medium px-3 py-1 backdrop-blur-md">
+                    {event.tag}
+                  </span>
+                )}
+                <span className="inline-flex items-center gap-1.5 text-xs text-white/60 font-medium bg-white/[0.04] border border-white/10 px-3 py-1 rounded-full">
+                  <Users size={12} className="text-rose-300/80 shrink-0" />
+                  <span>Team: {minMembers}–{maxMembers} Members</span>
                 </span>
               </div>
             </div>
@@ -1373,11 +1380,14 @@ export default function EventRegistrationModal({
           <div className="p-5 sm:p-6 pb-4 border-b border-white/10 shrink-0 bg-[#0c0a12] flex items-center justify-between gap-4">
             <div className="space-y-1 pr-4 min-w-0">
               <div className="flex items-center gap-2 flex-wrap">
-                <span className="rounded-full bg-white/10 border border-white/20 text-white text-[10px] font-bold uppercase tracking-wider px-2.5 py-0.5 font-mono">
-                  {event.tag || "Flagship"}
-                </span>
-                <span className="text-[11px] text-white/50 font-mono">
-                  Team: {minMembers}–{maxMembers} Members
+                {event.tag && event.tag.trim().toLowerCase() !== "flagship" && (
+                  <span className="rounded-full bg-white/[0.06] border border-white/15 text-white/85 text-xs font-medium px-2.5 py-0.5 backdrop-blur-md">
+                    {event.tag}
+                  </span>
+                )}
+                <span className="inline-flex items-center gap-1.5 text-xs text-white/60 font-medium bg-white/[0.04] border border-white/10 px-2.5 py-0.5 rounded-full">
+                  <Users size={11} className="text-rose-300/80 shrink-0" />
+                  <span>Team: {minMembers}–{maxMembers} Members</span>
                 </span>
               </div>
               <h2 className="font-serif text-xl sm:text-2xl font-bold text-white tracking-tight truncate">

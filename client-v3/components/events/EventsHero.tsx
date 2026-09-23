@@ -66,27 +66,42 @@ function formatDateRange(start?: string, end?: string, fallback?: string) {
 // ── StatusBadge ─────────────────────────────────────────────────────────────
 function StatusBadge({ status }: { status?: string }) {
   const s = status ?? "open";
-  const isLive = s === "open" || s === "extended";
   return (
     <span
-      className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wider font-mono ${
+      className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-medium backdrop-blur-md transition-all ${
         s === "open"
-          ? "bg-emerald-500/15 border border-emerald-400/30 text-emerald-200"
+          ? "bg-emerald-500/[0.1] border border-emerald-500/25 text-emerald-400 shadow-[0_0_12px_rgba(16,185,129,0.12)]"
           : s === "extended"
-          ? "bg-amber-500/15 border border-amber-400/30 text-amber-200"
+          ? "bg-amber-500/[0.1] border border-amber-500/25 text-amber-300 shadow-[0_0_12px_rgba(245,158,11,0.12)]"
           : s === "closed"
-          ? "bg-rose-500/15 border border-rose-400/30 text-rose-200"
-          : "bg-white/10 border border-white/25 text-white/70"
+          ? "bg-rose-500/[0.08] border border-rose-500/20 text-rose-300/80"
+          : "bg-sky-500/[0.1] border border-sky-500/25 text-sky-300 shadow-[0_0_12px_rgba(56,189,248,0.12)]"
       }`}
     >
-      {isLive && <span className="h-1.5 w-1.5 rounded-full bg-current animate-pulse" />}
-      {s === "open"
-        ? "REGISTERING"
-        : s === "extended"
-        ? "EXTENDED"
-        : s === "closed"
-        ? "CLOSED"
-        : "UPCOMING"}
+      {s === "open" ? (
+        <span className="relative flex h-1.5 w-1.5 shrink-0">
+          <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-60" />
+          <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-emerald-400 shadow-[0_0_6px_rgba(52,211,153,0.8)]" />
+        </span>
+      ) : s === "extended" ? (
+        <span className="relative flex h-1.5 w-1.5 shrink-0">
+          <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-60" />
+          <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-amber-400 shadow-[0_0_6px_rgba(251,191,36,0.8)]" />
+        </span>
+      ) : s === "closed" ? (
+        <span className="inline-flex rounded-full h-1.5 w-1.5 bg-rose-400/70 shrink-0" />
+      ) : (
+        <span className="inline-flex rounded-full h-1.5 w-1.5 bg-sky-400 shrink-0" />
+      )}
+      <span>
+        {s === "open"
+          ? "Registrations Open"
+          : s === "extended"
+          ? "Extended"
+          : s === "closed"
+          ? "Closed"
+          : "Upcoming"}
+      </span>
     </span>
   );
 }
@@ -102,7 +117,6 @@ function EventBox({ event, onClick, onRegisterClick }: EventBoxProps) {
   const dateLabel = formatDateRange(event.startDate, event.endDate, event.date);
   const minReq = event.minTeamMembers || 3;
   const maxReq = event.maxTeamMembers || 5;
-  const tagLabel = event.tag ? event.tag.toUpperCase() : "FLAGSHIP";
 
   return (
     <article
@@ -121,11 +135,18 @@ function EventBox({ event, onClick, onRegisterClick }: EventBoxProps) {
       <div className="pointer-events-none absolute -top-12 -right-12 h-36 w-36 rounded-full bg-white/5 blur-2xl group-hover:bg-[#f20089]/10 transition-all" />
 
       <div className="flex flex-col gap-4">
-        {/* Top header row: Category / Tag Badge + Status Badge */}
+        {/* Top header row: Category Tag (if not Flagship) + Status Badge */}
         <div className="flex items-center justify-between gap-2">
-          <span className="inline-flex items-center rounded-full border border-white/20 bg-white/10 px-3 py-1 text-[10px] font-mono font-bold uppercase tracking-wider text-white/85 backdrop-blur-sm">
-            {tagLabel}
-          </span>
+          {event.tag && event.tag.trim().toLowerCase() !== "flagship" ? (
+            <span className="inline-flex items-center rounded-full border border-white/15 bg-white/[0.06] px-2.5 py-0.5 text-xs font-medium text-white/80 backdrop-blur-sm">
+              {event.tag}
+            </span>
+          ) : (
+            <span className="inline-flex items-center gap-1.5 text-xs text-white/50 font-medium">
+              <Sparkles size={11} className="text-rose-300/70" />
+              <span>OnCampus Series</span>
+            </span>
+          )}
           <StatusBadge status={event.registrationStatus} />
         </div>
 

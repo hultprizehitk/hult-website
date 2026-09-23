@@ -173,28 +173,38 @@ export default function HeroThemeEvents() {
             <div className="relative z-[2] flex flex-col gap-6">
               {/* Status Badges Row */}
               <div className="flex items-center gap-2.5 flex-wrap">
-                <span className="inline-flex items-center px-3.5 py-1 rounded-full text-[10px] font-bold tracking-widest uppercase bg-white/10 border border-white/20 text-white/90 font-mono">
-                  {featuredEvent.tag || "FLAGSHIP"}
-                </span>
-
-                {featuredEvent.registrationStatus === "closed" ? (
-                  <span className="inline-flex items-center gap-1.5 px-3.5 py-1 rounded-full text-[10px] font-bold tracking-wider uppercase bg-rose-950/40 border border-rose-400/50 text-rose-300 font-mono">
-                    REGISTRATIONS CLOSED
-                  </span>
-                ) : featuredEvent.registrationStatus === "extended" ? (
-                  <span className="inline-flex items-center gap-1.5 px-3.5 py-1 rounded-full text-[10px] font-bold tracking-wider uppercase bg-amber-950/40 border border-amber-400/50 text-amber-300 font-mono">
-                    <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse" />
-                    EXTENDED DEADLINE
-                  </span>
-                ) : (
-                  <span className="inline-flex items-center gap-1.5 px-3.5 py-1 rounded-full text-[10px] font-bold tracking-wider uppercase bg-emerald-950/40 border border-emerald-400/50 text-emerald-300 font-mono">
-                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-                    REGISTRATIONS OPEN
+                {featuredEvent.tag && featuredEvent.tag.trim().toLowerCase() !== "flagship" && (
+                  <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-white/[0.06] border border-white/15 text-white/85 backdrop-blur-md shadow-sm">
+                    {featuredEvent.tag}
                   </span>
                 )}
 
-                <span className="inline-flex items-center px-3.5 py-1 rounded-full text-[10px] font-bold bg-white/10 border border-white/20 text-white/75 font-mono">
-                  Team: {minMembers} to {maxMembers} Members
+                {featuredEvent.registrationStatus === "closed" ? (
+                  <span className="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-medium bg-rose-500/[0.08] border border-rose-500/20 text-rose-300/90 backdrop-blur-md">
+                    <span className="inline-flex rounded-full h-2 w-2 bg-rose-400/80 shrink-0" />
+                    <span>Registrations Closed</span>
+                  </span>
+                ) : featuredEvent.registrationStatus === "extended" ? (
+                  <span className="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-medium bg-amber-500/[0.08] border border-amber-500/25 text-amber-300 shadow-[0_0_15px_rgba(245,158,11,0.12)] backdrop-blur-md">
+                    <span className="relative flex h-2 w-2 shrink-0">
+                      <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-60" />
+                      <span className="relative inline-flex rounded-full h-2 w-2 bg-amber-400 shadow-[0_0_8px_rgba(251,191,36,0.8)]" />
+                    </span>
+                    <span>Extended Deadline</span>
+                  </span>
+                ) : (
+                  <span className="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-medium bg-emerald-500/[0.08] border border-emerald-500/25 text-emerald-400 shadow-[0_0_15px_rgba(16,185,129,0.12)] backdrop-blur-md">
+                    <span className="relative flex h-2 w-2 shrink-0">
+                      <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-60" />
+                      <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-400 shadow-[0_0_8px_rgba(52,211,153,0.8)]" />
+                    </span>
+                    <span>Registrations Open</span>
+                  </span>
+                )}
+
+                <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium bg-white/[0.05] border border-white/12 text-white/80 backdrop-blur-md shadow-sm">
+                  <Users size={12} className="text-rose-300/80 shrink-0" />
+                  <span>Team: {minMembers}–{maxMembers} Members</span>
                 </span>
               </div>
 
