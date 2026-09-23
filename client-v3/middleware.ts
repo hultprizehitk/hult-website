@@ -10,7 +10,7 @@ export function middleware(request: NextRequest) {
     host.startsWith("admin.hultprizehitk.live") ||
     host.startsWith("admin.");
 
-  // When hitting admin.localhost:3000 or admin.hultprizehitk.live
+  // 1. When hitting admin.localhost:3000 or admin.hultprizehitk.live
   if (isAdminSubdomain) {
     const isSpecialPath =
       url.pathname.startsWith("/_next") ||
@@ -19,13 +19,36 @@ export function middleware(request: NextRequest) {
       url.pathname === "/favicon.ico";
 
     if (!isSpecialPath) {
-      const isAlreadyAdminPath =
-        url.pathname === "/admin" || url.pathname.startsWith("/admin/");
-
-      if (!isAlreadyAdminPath) {
-        url.pathname = `/admin${url.pathname === "/" ? "" : url.pathname}`;
-        return NextResponse.rewrite(url);
+      // Clean URLs: normalize /admin or /admin/xyz to / or /xyz on the admin subdomain
+      if (url.pathname === "/admin") {
+        url.pathname = "/";
+        return NextResponse.redirect(url);
       }
+      if (url.pathname.startsWith("/admin/")) {
+        url.pathname = url.pathname.replace(/^\/admin/, "");
+        return NextResponse.redirect(url);
+      }
+
+      // Internally rewrite / or /teams to /admin or /admin/teams
+      url.pathname = `/admin${url.pathname === "/" ? "" : url.pathname}`;
+      return NextResponse.rewrite(url);
+    }
+  } else {
+    // 2. When hitting the main domain (e.g. hultprizehitk.live or www.hultprizehitk.live)
+    // In production, enforce that all /admin traffic is redirected to admin.hultprizehitk.live
+    const isMainDomainAdmin =
+      (url.pathname === "/admin" || url.pathname.startsWith("/admin/")) &&
+      !host.includes("localhost") &&
+      !host.includes("127.0.0.1");
+
+    if (isMainDomainAdmin) {
+      const subPath = url.pathname.replace(/^\/admin/, "");
+      const adminSubdomainUrl = new URL(
+        subPath === "" ? "/" : subPath,
+        "https://admin.hultprizehitk.live"
+      );
+      adminSubdomainUrl.search = url.search;
+      return NextResponse.redirect(adminSubdomainUrl);
     }
   }
 
