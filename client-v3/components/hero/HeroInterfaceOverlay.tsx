@@ -115,18 +115,42 @@ export function HeroCenterpiece({ scrollProgress = 0 }: HeroInterfaceOverlayProp
   }, []);
 
   // ── Scroll Phase Calculations ──
-  // Phase 1 (0.0 -> 0.28): Screen 1 (Figma initial) transitions into Screen 2 (Figma compact)
-  // Screen 1: left 126px, top 156px, scale 1.0 (Hult Prize 142.49px, Heritage 45.185px)
-  // Screen 2: left 88px, top 128px, scale 0.7161 (Hult Prize 102.041px, Heritage 32.358px)
-  const p1 = Math.min(1, scrollProgress / 0.28);
+  const p1 = Math.min(1, scrollProgress / 0.32);
   const ease1 = Math.sin((p1 * Math.PI) / 2);
 
-  const currentLeft = 126 - ease1 * 38; // 126px -> 88px
-  const currentTop = 156 - ease1 * 28; // 156px -> 128px
-  const currentScale = 1.0 - ease1 * 0.2839; // 1.0 -> 0.7161
+  const currentLeft = 126 - ease1 * 38; // 126px -> 88px (left aligned)
+  const currentTop = 215 - ease1 * 55; // 215px -> 160px (shifted downwards into hero section space)
+  const currentScale = 1.0 - ease1 * 0.18; // Overall container scale adjustment
 
-  // Exit Phase (0.35+): Entire group disappears together as trees and human layer exit
-  const exitProgress = Math.min(1, Math.max(0, (scrollProgress - 0.35) / 0.22));
+  // 1. "HERITAGE INSTITUTE OF TECHNOLOGY" & "presents" fade out completely on scroll
+  const heritageFadeProgress = Math.min(1, Math.max(0, (scrollProgress - 0.02) / 0.14));
+  const heritageOpacity = Math.max(0, 1 - heritageFadeProgress);
+  const heritageY = -heritageFadeProgress * 18;
+
+  // 2. Direct Text Morphing Progress: "7TH Edition of" -> "ABOUT"
+  const morphProgress = Math.min(1, Math.max(0, (scrollProgress - 0.02) / 0.20));
+  const easeMorph = Math.sin((morphProgress * Math.PI) / 2);
+
+  const editionOpacity = Math.max(0, 1 - easeMorph * 1.2);
+  const editionY = -easeMorph * 14;
+  const editionScale = 1.0 - easeMorph * 0.12;
+  const editionBlur = easeMorph * 4;
+
+  const aboutOpacity = Math.min(1, easeMorph * 1.2);
+  const aboutY = (1 - easeMorph) * 14;
+  const aboutScale = 0.88 + easeMorph * 0.12;
+  const aboutBlur = (1 - easeMorph) * 4;
+
+  // 3. "HULT PRIZE" scale down (FIXED baseline, zero independent upward motion!)
+  const hultPrizeTop = 138; 
+  const hultPrizeScale = 1.0 - ease1 * 0.26; // Scales down ("thoda small") smoothly with diagonal scroll
+
+  // 4. Paragraph & Frosted Pills fade in under HULT PRIZE
+  const paragraphOpacity = Math.min(1, Math.max(0, (scrollProgress - 0.10) / 0.18));
+  const paragraphY = (1 - paragraphOpacity) * 20;
+
+  // Exit Phase (0.48+): Disappears smoothly as trees/human layer exit
+  const exitProgress = Math.min(1, Math.max(0, (scrollProgress - 0.48) / 0.22));
   const overallOpacity = Math.max(0, 1 - exitProgress * 1.4);
 
   return (
@@ -136,7 +160,7 @@ export function HeroCenterpiece({ scrollProgress = 0 }: HeroInterfaceOverlayProp
         left: `${currentLeft}px`,
         top: `${currentTop}px`,
         width: "970px",
-        height: "312px",
+        height: "480px",
         transformOrigin: "left top",
         transform: `scale(${currentScale})`,
         opacity: mounted ? overallOpacity : 0,
@@ -145,7 +169,7 @@ export function HeroCenterpiece({ scrollProgress = 0 }: HeroInterfaceOverlayProp
         willChange: "transform, opacity",
       }}
     >
-      {/* HERITAGE INSTITUTE OF TECHNOLOGY */}
+      {/* HERITAGE INSTITUTE OF TECHNOLOGY — Fades out and completely removed in ABOUT phase */}
       <div
         style={{
           position: "absolute",
@@ -160,101 +184,163 @@ export function HeroCenterpiece({ scrollProgress = 0 }: HeroInterfaceOverlayProp
           lineHeight: "57px",
           color: "#2D052A",
           whiteSpace: "nowrap",
+          opacity: heritageOpacity,
+          transform: `translate3d(0, ${heritageY}px, 0)`,
+          visibility: heritageOpacity > 0.005 ? "visible" : "hidden",
+          transition: "opacity 0.15s ease-out, transform 0.15s ease-out",
+          pointerEvents: "none",
         }}
       >
         HERITAGE INSTITUTE OF TECHNOLOGY
       </div>
 
-      {/* presents */}
+      {/* presents — Fades out and completely removed in ABOUT phase */}
       <div
         style={{
           position: "absolute",
-          width: "117px",
-          height: "53px",
-          left: "425.9px",
-          top: "50.27px",
+          width: "180px",
+          height: "70px",
+          left: "394.5px",
+          top: "48px",
           fontFamily: "'Arizonia', cursive",
           fontStyle: "normal",
           fontWeight: 400,
           fontSize: "42.6698px",
-          lineHeight: "53px",
+          lineHeight: "60px",
+          paddingTop: "4px",
+          overflow: "visible",
           background: "linear-gradient(180deg, #501F00 0%, #B64700 100%)",
           WebkitBackgroundClip: "text",
           WebkitTextFillColor: "transparent",
           textAlign: "center",
           whiteSpace: "nowrap",
+          opacity: heritageOpacity,
+          transform: `translate3d(0, ${heritageY}px, 0)`,
+          visibility: heritageOpacity > 0.005 ? "visible" : "hidden",
+          transition: "opacity 0.15s ease-out, transform 0.15s ease-out",
+          pointerEvents: "none",
         }}
       >
         presents
       </div>
 
-      {/* Group 2087324526 (7th Edition of) */}
-      {/* 7 */}
+      {/* 7th Edition -> ABOUT Morphing Container */}
       <div
         style={{
           position: "absolute",
-          width: "16px",
+          left: "0px",
+          top: "92px",
+          width: "200px",
           height: "43px",
-          left: "4.19px",
-          top: "103.33px",
-          fontFamily: "'IM Fell Double Pica', Georgia, serif",
-          fontStyle: "normal",
-          fontWeight: 400,
-          fontSize: "34.1052px",
-          lineHeight: "43px",
-          color: "#000000",
+          pointerEvents: "none",
         }}
       >
-        7
+        {/* 7TH Edition of (Morph Out) */}
+        <div
+          style={{
+            position: "absolute",
+            left: "0px",
+            top: "10.68px",
+            opacity: editionOpacity,
+            transform: `translate3d(0, ${editionY}px, 0) scale(${editionScale})`,
+            filter: `blur(${editionBlur}px)`,
+            transformOrigin: "left center",
+            willChange: "transform, opacity, filter",
+          }}
+        >
+          {/* 7 */}
+          <div
+            style={{
+              position: "absolute",
+              width: "16px",
+              height: "43px",
+              left: "4.19px",
+              top: "-10.68px",
+              fontFamily: "'IM Fell Double Pica', Georgia, serif",
+              fontStyle: "normal",
+              fontWeight: 400,
+              fontSize: "34.1052px",
+              lineHeight: "43px",
+              color: "#000000",
+            }}
+          >
+            7
+          </div>
+
+          {/* TH */}
+          <div
+            style={{
+              position: "absolute",
+              width: "9px",
+              height: "7px",
+              left: "20.03px",
+              top: "4.73px",
+              fontFamily: "'IM Fell Double Pica', Georgia, serif",
+              fontStyle: "normal",
+              fontWeight: 400,
+              fontSize: "5.274px",
+              lineHeight: "7px",
+              color: "#000000",
+            }}
+          >
+            TH
+          </div>
+
+          {/* Edition of */}
+          <div
+            style={{
+              position: "absolute",
+              width: "114px",
+              height: "35px",
+              left: "31.95px",
+              top: "0px",
+              fontFamily: "'IM Fell Double Pica', Georgia, serif",
+              fontStyle: "normal",
+              fontWeight: 400,
+              fontSize: "27.772px",
+              lineHeight: "35px",
+              color: "#000000",
+              whiteSpace: "nowrap",
+            }}
+          >
+            Edition of
+          </div>
+        </div>
+
+        {/* ABOUT (Morph In) — Sit cleanly at top: 0px without overlapping HULT PRIZE */}
+        <div
+          style={{
+            position: "absolute",
+            left: "4.19px",
+            top: "0px",
+            opacity: aboutOpacity,
+            transform: `translate3d(0, ${aboutY}px, 0) scale(${aboutScale})`,
+            filter: `blur(${aboutBlur}px)`,
+            transformOrigin: "left center",
+            fontFamily: "'IM Fell Double Pica', Georgia, serif",
+            fontWeight: 400,
+            fontSize: "27.772px",
+            lineHeight: "35px",
+            color: "#000000",
+            letterSpacing: "0.04em",
+            whiteSpace: "nowrap",
+            willChange: "transform, opacity, filter",
+          }}
+        >
+          ABOUT
+        </div>
       </div>
 
-      {/* TH */}
-      <div
-        style={{
-          position: "absolute",
-          width: "9px",
-          height: "7px",
-          left: "20.03px",
-          top: "118.74px",
-          fontFamily: "'IM Fell Double Pica', Georgia, serif",
-          fontStyle: "normal",
-          fontWeight: 400,
-          fontSize: "5.274px",
-          lineHeight: "7px",
-          color: "#000000",
-        }}
-      >
-        TH
-      </div>
-
-      {/* Edition of */}
-      <div
-        style={{
-          position: "absolute",
-          width: "114px",
-          height: "35px",
-          left: "31.95px",
-          top: "114.01px",
-          fontFamily: "'IM Fell Double Pica', Georgia, serif",
-          fontStyle: "normal",
-          fontWeight: 400,
-          fontSize: "27.772px",
-          lineHeight: "35px",
-          color: "#000000",
-          whiteSpace: "nowrap",
-        }}
-      >
-        Edition of
-      </div>
-
-      {/* HULT PRIZE */}
+      {/* HULT PRIZE — FIXED baseline (no independent upward motion!), smooth scale down */}
       <div
         style={{
           position: "absolute",
           width: "941.17px",
           height: "179px",
           left: "0px",
-          top: "131.26px",
+          top: `${hultPrizeTop}px`,
+          transformOrigin: "left top",
+          transform: `scale(${hultPrizeScale})`,
           fontFamily: "'IM Fell Double Pica', Georgia, serif",
           fontStyle: "normal",
           fontWeight: 400,
@@ -264,9 +350,50 @@ export function HeroCenterpiece({ scrollProgress = 0 }: HeroInterfaceOverlayProp
           WebkitBackgroundClip: "text",
           WebkitTextFillColor: "transparent",
           whiteSpace: "nowrap",
+          transition: "transform 0.1s linear",
         }}
       >
         HULT PRIZE
+      </div>
+
+      {/* Soothing Paragraph & 3 Frost Movement Pills — Fades in under HULT PRIZE on scroll */}
+      <div
+        style={{
+          position: "absolute",
+          left: "4px",
+          top: `${hultPrizeTop + 142 * hultPrizeScale + 16}px`,
+          width: "600px",
+          opacity: paragraphOpacity,
+          transform: `translate3d(0, ${paragraphY}px, 0)`,
+          transition: "opacity 0.2s ease-out, transform 0.2s ease-out",
+          pointerEvents: "none",
+        }}
+        className="space-y-4"
+      >
+        <p
+          className="font-lora text-[#2D052A] text-base sm:text-lg leading-[1.75] font-medium tracking-wide"
+          style={{
+            fontFamily: "'Lora', 'IM Fell Double Pica', Georgia, serif",
+          }}
+        >
+          The Hult Prize Foundation transforms how young people envision their own possibilities as leaders of change in the world around them. With a US$1,000,000 global startup prize as its anchor activity, the Hult Prize has brought impact-focused programs, events and trainings to over a million students globally, creating a pathway for youth everywhere to take action to build a better world.
+        </p>
+
+        {/* 3 Movement Taglines — Frosted Glass with Dark Violet Text */}
+        <div className="flex flex-wrap items-center gap-2.5 pt-1 max-w-[580px]">
+          <div className="flex items-center gap-2 px-3.5 py-1.5 rounded-full border border-white/80 bg-white/70 backdrop-blur-md text-xs font-bold tracking-wider text-[#2D052A] shadow-sm">
+            <span className="h-2 w-2 rounded-full bg-[#E8396E] animate-pulse" />
+            <span>Join The Movement</span>
+          </div>
+          <div className="flex items-center gap-2 px-3.5 py-1.5 rounded-full border border-white/80 bg-white/70 backdrop-blur-md text-xs font-bold tracking-wider text-[#2D052A] shadow-sm">
+            <span className="h-2 w-2 rounded-full bg-[#D97706]" />
+            <span>Bring The Change</span>
+          </div>
+          <div className="flex items-center gap-2 px-3.5 py-1.5 rounded-full border border-white/80 bg-white/70 backdrop-blur-md text-xs font-bold tracking-wider text-[#2D052A] shadow-sm">
+            <span className="h-2 w-2 rounded-full bg-[#059669]" />
+            <span>Be The Changemaker</span>
+          </div>
+        </div>
       </div>
     </div>
   );
