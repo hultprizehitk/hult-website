@@ -30,8 +30,6 @@ interface TeamRecord {
   _id: string;
   teamCode: string;
   teamName: string;
-  ventureName: string;
-  ventureDescription?: string;
   submissionStatus?: "forming" | "ready" | "submitted";
   submittedAt?: string;
   lead: {
@@ -44,7 +42,7 @@ interface TeamRecord {
   };
   membersCount: number;
   members: TeamMember[];
-  status: "confirmed" | "pending" | "waitlist" | "disqualified";
+  status: "confirmed" | "disqualified";
   checkedIn: boolean;
   pitchDeckUrl?: string;
   eventId?: {
@@ -60,6 +58,7 @@ export default function AdminTeamsPage() {
   const [teams, setTeams] = useState<TeamRecord[]>([]);
   const [events, setEvents] = useState<EventRecord[]>([]);
   const [selectedEventId, setSelectedEventId] = useState("all");
+  const [statusFilter, setStatusFilter] = useState<"submitted" | "forming" | "all">("submitted");
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [selectedTeam, setSelectedTeam] = useState<TeamRecord | null>(null);
@@ -92,6 +91,11 @@ export default function AdminTeamsPage() {
     fetchTeamsAndEvents();
   }, []);
 
+  // Helper to determine if team is fully registered and submitted
+  const isTeamSubmitted = (t: TeamRecord) => {
+    return t.submissionStatus === "submitted" || Boolean(t.submittedAt);
+  };
+
   // Merge events from API and any unique event populated on teams
   const allEventsMap = new Map<string, { _id: string; title: string; maxTeams?: number }>();
   for (const ev of events) {
@@ -107,15 +111,35 @@ export default function AdminTeamsPage() {
   }
   const availableEvents = Array.from(allEventsMap.values());
 
+  const teamsInSelectedEvent = teams.filter((t) =>
+    selectedEventId === "all"
+      ? true
+      : t.eventId?._id === selectedEventId || (!t.eventId && selectedEventId === "unassigned")
+  );
+
+  const submittedCount = teamsInSelectedEvent.filter((t) => isTeamSubmitted(t)).length;
+  const formingCount = teamsInSelectedEvent.filter((t) => !isTeamSubmitted(t)).length;
+  const totalInSelectedEvent = teamsInSelectedEvent.length;
+
   const filteredTeams = teams.filter((t) => {
     const matchesEvent =
       selectedEventId === "all" ||
       t.eventId?._id === selectedEventId ||
       (!t.eventId && selectedEventId === "unassigned");
+    if (!matchesEvent) return false;
 
-    const q = search.toLowerCase();
+    const isSubmitted = isTeamSubmitted(t);
+    const matchesStatus =
+      statusFilter === "all" ||
+      (statusFilter === "submitted" && isSubmitted) ||
+      (statusFilter === "forming" && !isSubmitted);
+    if (!matchesStatus) return false;
+
+    if (!search.trim()) return true;
+
+    const q = search.toLowerCase().trim();
     const parsed = parseHeritageEmail(t.lead.email, t.lead.name);
-    const matchesSearch =
+    return (
       t.teamName.toLowerCase().includes(q) ||
       t.lead.name.toLowerCase().includes(q) ||
       t.lead.email.toLowerCase().includes(q) ||
@@ -124,9 +148,8 @@ export default function AdminTeamsPage() {
       (t.lead.phone ? t.lead.phone.toLowerCase().includes(q) : false) ||
       (t.lead.department ? t.lead.department.toLowerCase().includes(q) : false) ||
       parsed.branchName.toLowerCase().includes(q) ||
-      (t.eventId?.title ? t.eventId.title.toLowerCase().includes(q) : false);
-
-    return matchesEvent && matchesSearch;
+      (t.eventId?.title ? t.eventId.title.toLowerCase().includes(q) : false)
+    );
   });
 
   const selectedEvent = availableEvents.find((e) => e._id === selectedEventId);
@@ -192,24 +215,86 @@ export default function AdminTeamsPage() {
         </div>
       </div>
 
-      {/* Registration Stats Bar */}
-      <div className="flex flex-wrap items-center justify-between gap-3 px-4 py-2.5 rounded-xl bg-[#16161d] border border-white/10 text-xs">
-        <div className="flex items-center gap-2 flex-wrap font-mono text-[11px]">
-          <span className="text-neutral-400">Event:</span>
-          <span className="font-semibold text-white px-2 py-0.5 rounded bg-white/10 border border-white/10 font-sans">
-            {selectedEventId === "all" ? "All Events" : selectedEvent?.title || "Selected Event"}
-          </span>
-          <span className="text-rose-400 font-bold">
-            {filteredTeams.length} {filteredTeams.length === 1 ? "team registered" : "teams registered"}
-          </span>
-          {selectedEvent?.maxTeams && (
-            <span className="text-neutral-400">
-              • Capacity: {filteredTeams.length}/{selectedEvent.maxTeams} slots
+      {/* View Tabs & Live Counts Bar */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-0.5">
+        {/* Sleek Segmented Control */}
+        <div className="inline-flex items-center p-1 rounded-xl bg-white/[0.04] border border-white/10 w-fit">
+          <button
+            type="button"
+            onClick={() => setStatusFilter("submitted")}
+            className={`px-3.5 py-1.5 rounded-lg text-xs font-medium transition-all cursor-pointer inline-flex items-center gap-2 ${
+              statusFilter === "submitted"
+                ? "bg-white text-black font-semibold shadow-sm"
+                : "text-white/60 hover:text-white hover:bg-white/[0.04]"
+            }`}
+          >
+            <span>Fully Registered</span>
+            <span
+              className={`px-1.5 py-0.5 rounded text-[10px] font-mono leading-none ${
+                statusFilter === "submitted"
+                  ? "bg-black/10 text-black font-bold"
+                  : "bg-white/10 text-white/70"
+              }`}
+            >
+              {submittedCount}
             </span>
-          )}
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setStatusFilter("forming")}
+            className={`px-3.5 py-1.5 rounded-lg text-xs font-medium transition-all cursor-pointer inline-flex items-center gap-2 ${
+              statusFilter === "forming"
+                ? "bg-white text-black font-semibold shadow-sm"
+                : "text-white/60 hover:text-white hover:bg-white/[0.04]"
+            }`}
+          >
+            <span>Forming</span>
+            <span
+              className={`px-1.5 py-0.5 rounded text-[10px] font-mono leading-none ${
+                statusFilter === "forming"
+                  ? "bg-black/10 text-black font-bold"
+                  : "bg-white/10 text-white/70"
+              }`}
+            >
+              {formingCount}
+            </span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setStatusFilter("all")}
+            className={`px-3.5 py-1.5 rounded-lg text-xs font-medium transition-all cursor-pointer inline-flex items-center gap-2 ${
+              statusFilter === "all"
+                ? "bg-white text-black font-semibold shadow-sm"
+                : "text-white/60 hover:text-white hover:bg-white/[0.04]"
+            }`}
+          >
+            <span>All Teams</span>
+            <span
+              className={`px-1.5 py-0.5 rounded text-[10px] font-mono leading-none ${
+                statusFilter === "all"
+                  ? "bg-black/10 text-black font-bold"
+                  : "bg-white/10 text-white/70"
+              }`}
+            >
+              {totalInSelectedEvent}
+            </span>
+          </button>
         </div>
-        <div className="text-neutral-400 font-mono text-[11px]">
-          <span className="text-emerald-400 font-bold">{totalStudentsInFiltered}</span> student participants
+
+        {/* Minimalist Stats Summary */}
+        <div className="flex items-center gap-2 text-xs text-white/50 font-mono">
+          <span>
+            {selectedEventId === "all" ? "All Events" : selectedEvent?.title || "Selected Event"}:
+          </span>
+          <span className="text-white font-sans font-semibold">
+            {filteredTeams.length} {filteredTeams.length === 1 ? "team" : "teams"}
+          </span>
+          <span className="text-white/20">•</span>
+          <span className="text-emerald-400 font-sans font-semibold">
+            {totalStudentsInFiltered} student participants
+          </span>
         </div>
       </div>
 
@@ -223,29 +308,31 @@ export default function AdminTeamsPage() {
           <div className="overflow-x-auto">
             <table className="w-full text-left text-xs">
               <thead>
-                <tr className="border-b border-white/10 text-neutral-300 bg-[#16161d]">
-                  <th className="py-3.5 px-4 font-semibold">Team & Code</th>
-                  <th className="py-3.5 px-4 font-semibold">Team Leader</th>
-                  <th className="py-3.5 px-4 font-semibold">Roll No</th>
-                  <th className="py-3.5 px-4 font-semibold">Contact</th>
-                  <th className="py-3.5 px-4 font-semibold">Department</th>
-                  <th className="py-3.5 px-4 font-semibold">Academic Year</th>
-                  <th className="py-3.5 px-4 font-semibold">Roster</th>
+                <tr className="border-b border-white/10 text-neutral-400 bg-white/[0.02] text-[11px] font-mono uppercase tracking-wider">
+                  <th className="py-3.5 px-4 font-medium">Team & Code</th>
+                  <th className="py-3.5 px-4 font-medium">Status</th>
+                  <th className="py-3.5 px-4 font-medium">Team Leader</th>
+                  <th className="py-3.5 px-4 font-medium">Roll No</th>
+                  <th className="py-3.5 px-4 font-medium">Contact</th>
+                  <th className="py-3.5 px-4 font-medium">Department</th>
+                  <th className="py-3.5 px-4 font-medium">Academic Year</th>
+                  <th className="py-3.5 px-4 font-medium text-right">Roster</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-white/5">
                 {filteredTeams.map((team) => {
                   const parsed = parseHeritageEmail(team.lead?.email || "", team.lead?.name);
+                  const isSubmitted = isTeamSubmitted(team);
                   return (
-                    <tr key={team._id} className="hover:bg-[#16161d]/60 transition-colors">
+                    <tr key={team._id} className="hover:bg-white/[0.02] transition-colors">
                       <td className="py-3.5 px-4">
-                        <div className="font-semibold text-white">{team.teamName}</div>
+                        <div className="font-semibold text-white text-sm tracking-tight">{team.teamName}</div>
                         <div className="flex items-center gap-1.5 mt-0.5 flex-wrap">
-                          <span className="font-mono text-[10px] text-rose-400 font-bold">
+                          <span className="font-mono text-[11px] text-rose-400 font-bold">
                             {team.teamCode}
                           </span>
                           {team.eventId && (
-                            <span className="text-[10px] text-neutral-400 truncate">
+                            <span className="text-[11px] text-white/40 truncate">
                               • {team.eventId.title}
                             </span>
                           )}
@@ -253,15 +340,29 @@ export default function AdminTeamsPage() {
                       </td>
 
                       <td className="py-3.5 px-4">
+                        {isSubmitted ? (
+                          <div className="inline-flex items-center gap-1.5 text-xs text-emerald-400 font-medium">
+                            <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 shadow-[0_0_8px_rgba(52,211,153,0.6)]" />
+                            <span>Submitted</span>
+                          </div>
+                        ) : (
+                          <div className="inline-flex items-center gap-1.5 text-xs text-amber-300/90 font-medium">
+                            <span className="w-1.5 h-1.5 rounded-full bg-amber-400" />
+                            <span>Forming</span>
+                          </div>
+                        )}
+                      </td>
+
+                      <td className="py-3.5 px-4">
                         <div className="font-medium text-white">{team.lead.name}</div>
-                        <div className="font-mono text-[10px] text-neutral-400 truncate max-w-[160px]">
+                        <div className="font-mono text-[10px] text-neutral-400 truncate max-w-[160px] mt-0.5">
                           {team.lead.email}
                         </div>
                       </td>
 
                       <td className="py-3.5 px-4 font-mono text-[11px]">
                         {team.lead?.roll ? (
-                          <span className="text-rose-400 font-semibold">{team.lead.roll}</span>
+                          <span className="text-white/90 font-semibold">{team.lead.roll}</span>
                         ) : (
                           <span className="text-white/30 font-normal">N/A</span>
                         )}
@@ -279,7 +380,7 @@ export default function AdminTeamsPage() {
                         <span className="block text-xs font-semibold text-white">
                           {team.lead?.department || parsed.branchName}
                         </span>
-                        <span className="inline-block mt-0.5 rounded bg-emerald-500/15 border border-emerald-500/30 px-1.5 py-0.5 text-[9px] font-bold text-emerald-300 uppercase">
+                        <span className="inline-block mt-0.5 rounded bg-white/5 border border-white/10 px-1.5 py-0.5 text-[9px] font-bold text-white/70 uppercase font-mono">
                           {parsed.branchCode}
                         </span>
                       </td>
@@ -293,13 +394,14 @@ export default function AdminTeamsPage() {
                         </span>
                       </td>
 
-                      <td className="py-3.5 px-4 font-mono text-neutral-300">
+                      <td className="py-3.5 px-4 font-mono text-neutral-300 text-right">
                         <button
+                          type="button"
                           onClick={() => setSelectedTeam(team)}
-                          className="inline-flex items-center gap-1 text-xs text-neutral-300 hover:text-white hover:underline cursor-pointer"
+                          className="inline-flex items-center gap-1.5 text-xs text-neutral-300 hover:text-white px-2.5 py-1 rounded-lg bg-white/[0.04] hover:bg-white/10 border border-white/10 transition-colors cursor-pointer"
                         >
                           <Users className="h-3.5 w-3.5 text-neutral-400" />
-                          <span>{1 + (team.members?.length || 0)} members</span>
+                          <span>{1 + (team.members?.length || 0)}</span>
                         </button>
                       </td>
                     </tr>
@@ -309,8 +411,23 @@ export default function AdminTeamsPage() {
             </table>
           </div>
         ) : (
-          <div className="py-16 text-center text-xs text-neutral-500 font-mono">
-            No teams found matching current filters.
+          <div className="py-16 text-center text-xs text-neutral-400 font-mono space-y-3">
+            <p>
+              {statusFilter === "submitted"
+                ? "No fully registered teams submitted yet for current filters."
+                : statusFilter === "forming"
+                ? "No forming teams found."
+                : "No teams found matching current filters."}
+            </p>
+            {statusFilter === "submitted" && formingCount > 0 && (
+              <button
+                type="button"
+                onClick={() => setStatusFilter("forming")}
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-white/10 bg-white/5 hover:bg-white/10 text-white font-sans text-xs transition-colors cursor-pointer"
+              >
+                <span>View Forming Teams ({formingCount})</span>
+              </button>
+            )}
           </div>
         )}
       </div>
@@ -322,15 +439,17 @@ export default function AdminTeamsPage() {
             <div className="flex items-center justify-between pb-3 border-b border-white/10">
               <div>
                 <h3 className="text-base font-bold text-white">{selectedTeam.teamName}</h3>
-                <div className="flex items-center gap-2 mt-0.5">
+                <div className="flex items-center gap-2.5 mt-1">
                   <span className="font-mono text-xs text-rose-400">{selectedTeam.teamCode}</span>
                   {selectedTeam.submissionStatus === "submitted" ? (
-                    <span className="px-2 py-0.5 rounded text-[9px] font-mono font-bold bg-purple-500/20 text-purple-300 border border-purple-500/30">
-                      Application Submitted
+                    <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-mono font-medium bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
+                      <span>Application Submitted</span>
                     </span>
                   ) : (
-                    <span className="px-2 py-0.5 rounded text-[9px] font-mono font-bold bg-amber-500/20 text-amber-300 border border-amber-500/30">
-                      Forming ({1 + (selectedTeam.members?.length || 0)} members)
+                    <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-mono font-medium bg-amber-500/10 text-amber-300 border border-amber-500/20">
+                      <span className="w-1.5 h-1.5 rounded-full bg-amber-400" />
+                      <span>Forming ({1 + (selectedTeam.members?.length || 0)} members)</span>
                     </span>
                   )}
                 </div>
@@ -344,16 +463,6 @@ export default function AdminTeamsPage() {
             </div>
 
             <div className="space-y-3 text-xs max-h-[70vh] overflow-y-auto pr-1">
-              <div className="p-3 rounded-xl bg-[#16161d] border border-white/10 space-y-1">
-                <div className="font-semibold text-white">Venture Track / Idea:</div>
-                <div className="text-neutral-300">{selectedTeam.ventureName || "None provided"}</div>
-                {selectedTeam.ventureDescription && (
-                  <p className="text-neutral-400 text-[11px] pt-1 leading-relaxed whitespace-pre-line border-t border-white/5 mt-1">
-                    {selectedTeam.ventureDescription}
-                  </p>
-                )}
-              </div>
-
               <div>
                 <div className="font-semibold text-white mb-2">Team Leader:</div>
                 <div className="p-3 rounded-xl bg-[#16161d] border border-white/10 space-y-1.5">

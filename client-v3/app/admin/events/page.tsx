@@ -183,7 +183,7 @@ export default function AdminEventsPage() {
             Events Management
           </h1>
           <p className="text-xs text-neutral-400 mt-0.5">
-            Configure competitions, workshops, deadlines, and capacity for Hult Prize HITK.
+            Configure competitions, workshops, deadlines, and teams for Hult Prize HITK.
           </p>
         </div>
 
@@ -236,9 +236,8 @@ export default function AdminEventsPage() {
               <thead>
                 <tr className="border-b border-white/10 text-neutral-300 bg-[#16161d]">
                   <th className="py-3.5 px-4 font-semibold">Event Title</th>
-                  <th className="py-3.5 px-4 font-semibold">Category</th>
                   <th className="py-3.5 px-4 font-semibold">Date & Venue</th>
-                  <th className="py-3.5 px-4 font-semibold">Capacity</th>
+                  <th className="py-3.5 px-4 font-semibold">Teams Registered</th>
                   <th className="py-3.5 px-4 font-semibold">Reg Status</th>
                   <th className="py-3.5 px-4 font-semibold">Visibility</th>
                   <th className="py-3.5 px-4 font-semibold text-right">Actions</th>
@@ -250,11 +249,6 @@ export default function AdminEventsPage() {
                     <td className="py-3.5 px-4 font-medium text-white max-w-xs truncate">
                       {ev.title}
                     </td>
-                    <td className="py-3.5 px-4">
-                      <span className="inline-block rounded-md border border-white/15 bg-[#16161d] px-2 py-0.5 text-[10px] font-mono text-neutral-300">
-                        {ev.tag}
-                      </span>
-                    </td>
                     <td className="py-3.5 px-4 text-neutral-300">
                       <div className="font-medium text-white">{ev.date}</div>
                       <div className="text-[11px] text-neutral-400">{ev.venue}</div>
@@ -263,7 +257,7 @@ export default function AdminEventsPage() {
                       <div className="flex items-center gap-1.5">
                         <Users className="h-3.5 w-3.5 text-neutral-400" />
                         <span>
-                          {ev.registeredTeamsCount || 0} / {ev.maxTeams || 40} teams
+                          {ev.registeredTeamsCount || 0} teams
                         </span>
                       </div>
                     </td>
@@ -363,33 +357,18 @@ export default function AdminEventsPage() {
                 />
               </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-neutral-300 font-medium mb-1">
-                    Category Tag
-                  </label>
-                  <input
-                    type="text"
-                    placeholder="e.g. Flagship, Workshop, Pitch"
-                    value={formData.tag}
-                    onChange={(e) => setFormData({ ...formData, tag: e.target.value })}
-                    className="w-full px-3.5 py-2.5 bg-[#16161d] border border-white/15 rounded-xl text-white placeholder-neutral-500 focus:outline-none focus:border-rose-500"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-neutral-300 font-medium mb-1">
-                    Date & Time *
-                  </label>
-                  <input
-                    type="text"
-                    required
-                    placeholder="e.g. Oct 24, 2026 • 10:00 AM"
-                    value={formData.date}
-                    onChange={(e) => setFormData({ ...formData, date: e.target.value })}
-                    className="w-full px-3.5 py-2.5 bg-[#16161d] border border-white/15 rounded-xl text-white placeholder-neutral-500 focus:outline-none focus:border-rose-500"
-                  />
-                </div>
+              <div>
+                <label className="block text-neutral-300 font-medium mb-1">
+                  Date & Time *
+                </label>
+                <input
+                  type="text"
+                  required
+                  placeholder="e.g. Oct 24, 2026 • 10:00 AM"
+                  value={formData.date}
+                  onChange={(e) => setFormData({ ...formData, date: e.target.value })}
+                  className="w-full px-3.5 py-2.5 bg-[#16161d] border border-white/15 rounded-xl text-white placeholder-neutral-500 focus:outline-none focus:border-rose-500"
+                />
               </div>
 
               <div>

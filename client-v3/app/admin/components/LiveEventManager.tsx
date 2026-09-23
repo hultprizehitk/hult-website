@@ -12,37 +12,13 @@ import {
   Clipboard,
   Mail,
   Phone,
-  Shield,
-  Trash2,
   Check,
   Camera,
-  Lightbulb,
   AlertTriangle,
   ArrowRight,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import LiveCameraScannerModal from "./LiveCameraScannerModal";
-
-// Helper to style event tag badges tastefully
-function getTagBadgeStyle(tag?: string): string {
-  const t = (tag || "").toLowerCase();
-  if (t.includes("flagship")) {
-    return "bg-rose-500/10 text-rose-300 border-rose-500/25";
-  }
-  if (t.includes("workshop")) {
-    return "bg-purple-500/10 text-purple-300 border-purple-500/25";
-  }
-  if (t.includes("orientation")) {
-    return "bg-blue-500/10 text-blue-300 border-blue-500/25";
-  }
-  if (t.includes("hackathon") || t.includes("competition")) {
-    return "bg-amber-500/10 text-amber-300 border-amber-500/25";
-  }
-  if (t.includes("speaker") || t.includes("keynote")) {
-    return "bg-sky-500/10 text-sky-300 border-sky-500/25";
-  }
-  return "bg-white/5 text-neutral-300 border-white/15";
-}
 
 interface TeamMember {
   name: string;
@@ -71,7 +47,9 @@ interface RegisteredTeam {
   membersCount: number;
   department: string;
   members: TeamMember[];
-  status: "confirmed" | "pending" | "waitlist" | "disqualified";
+  status: "confirmed" | "disqualified";
+  submissionStatus?: "forming" | "ready" | "submitted";
+  submittedAt?: string | Date | null;
   checkedIn: boolean;
   checkedInAt?: string | Date | null;
   registeredAt: string | Date;
@@ -105,8 +83,9 @@ export default function LiveEventManager() {
 
   // Filter & Search
   const [searchQuery, setSearchQuery] = useState("");
+  const [statusFilter, setStatusFilter] = useState<"submitted" | "forming" | "all">("submitted");
   const [activeFilter, setActiveFilter] = useState<
-    "all" | "confirmed" | "checked_in" | "not_checked_in" | "pending" | "waitlist"
+    "all" | "checked_in" | "not_checked_in"
   >("all");
   const [eventSearch, setEventSearch] = useState("");
 
@@ -114,17 +93,12 @@ export default function LiveEventManager() {
   const [inspectingTeam, setInspectingTeam] = useState<RegisteredTeam | null>(null);
   const [showAddTeamModal, setShowAddTeamModal] = useState(false);
   const [showCameraScanner, setShowCameraScanner] = useState(false);
-  const [showGraceModal, setShowGraceModal] = useState(false);
-  const [graceTeam, setGraceTeam] = useState<RegisteredTeam | null>(null);
-  const [graceNote, setGraceNote] = useState("");
-  const [graceLoading, setGraceLoading] = useState(false);
   const [actionLoadingId, setActionLoadingId] = useState<string | null>(null);
   const [toast, setToast] = useState<{ message: string; type: "success" | "error" } | null>(null);
 
   // New Team Form State
   const [newTeam, setNewTeam] = useState({
     teamName: "",
-    ventureName: "",
     leadName: "",
     leadEmail: "",
     leadPhone: "",
@@ -284,73 +258,7 @@ export default function LiveEventManager() {
     }
   };
 
-  const handleUpdateStatus = async (team: RegisteredTeam, newStatus: RegisteredTeam["status"]) => {
-    if (!selectedEventId || team.status === newStatus) return;
-    setActionLoadingId(team.id);
 
-    setTeams((prev) =>
-      prev.map((t) => (t.id === team.id ? { ...t, status: newStatus } : t))
-    );
-    if (inspectingTeam && inspectingTeam.id === team.id) {
-      setInspectingTeam({ ...inspectingTeam, status: newStatus });
-    }
-
-    try {
-      const res = await fetch("/api/admin/teams", {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          action: "update_status",
-          teamId: team.id,
-          eventId: selectedEventId,
-          teamCode: team.teamCode,
-          status: newStatus,
-        }),
-      });
-
-      if (res.ok) {
-        showToast(`Team "${team.teamName}" status set to ${newStatus.toUpperCase()}`);
-      } else {
-        fetchTeamsForEvent(selectedEventId);
-        showToast("Failed to update team status.", "error");
-      }
-    } catch (err) {
-      console.error(err);
-      fetchTeamsForEvent(selectedEventId);
-      showToast("Error updating status.", "error");
-    } finally {
-      setActionLoadingId(null);
-    }
-  };
-
-  const handleDeleteTeam = async (team: RegisteredTeam) => {
-    if (!selectedEventId) return;
-    const confirmDelete = window.confirm(
-      `Are you sure you want to remove team "${team.teamName}" (${team.teamCode}) from this event?`
-    );
-    if (!confirmDelete) return;
-
-    setActionLoadingId(team.id);
-    try {
-      const res = await fetch(
-        `/api/admin/teams?teamId=${team.id}&eventId=${selectedEventId}&teamCode=${team.teamCode}`,
-        { method: "DELETE" }
-      );
-
-      if (res.ok) {
-        setTeams((prev) => prev.filter((t) => t.id !== team.id));
-        if (inspectingTeam?.id === team.id) setInspectingTeam(null);
-        showToast(`Team "${team.teamName}" was removed.`);
-      } else {
-        showToast("Failed to delete team.", "error");
-      }
-    } catch (err) {
-      console.error(err);
-      showToast("Error deleting team.", "error");
-    } finally {
-      setActionLoadingId(null);
-    }
-  };
 
   const handleCreateWalkInTeam = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -370,7 +278,6 @@ export default function LiveEventManager() {
         body: JSON.stringify({
           eventId: selectedEventId,
           teamName: newTeam.teamName,
-          ventureName: newTeam.ventureName,
           leadName: newTeam.leadName,
           leadEmail: newTeam.leadEmail,
           leadPhone: newTeam.leadPhone,
@@ -388,7 +295,6 @@ export default function LiveEventManager() {
         setShowAddTeamModal(false);
         setNewTeam({
           teamName: "",
-          ventureName: "",
           leadName: "",
           leadEmail: "",
           leadPhone: "",
@@ -424,7 +330,6 @@ export default function LiveEventManager() {
     const headers = [
       "Team Code",
       "Team Name",
-      "Venture / Idea Name",
       "Status",
       "Checked In",
       "Checked In Time",
@@ -434,7 +339,7 @@ export default function LiveEventManager() {
       "Leader Department",
       "Leader Roll",
       "Total Members",
-      "Co-Founders Roster",
+      "Team Members Roster",
       "Registered At",
     ];
 
@@ -452,7 +357,6 @@ export default function LiveEventManager() {
       return [
         `"${t.teamCode}"`,
         `"${t.teamName.replace(/"/g, '""')}"`,
-        `"${(t.ventureName || "").replace(/"/g, '""')}"`,
         `"${t.status.toUpperCase()}"`,
         `"${t.checkedIn ? "CHECKED_IN" : "ABSENT"}"`,
         `"${checkInFormatted}"`,
@@ -479,58 +383,38 @@ export default function LiveEventManager() {
     showToast(`Exported ${teams.length} teams to ${filename}`);
   };
 
-  // -------------------------------------------------------------
-  // Admin Grace Clearance Handler (/lgic)
-  // -------------------------------------------------------------
-  const handleGraceClearance = async (action: "approve" | "revoke") => {
-    if (!selectedEventId || !graceTeam) return;
-    setGraceLoading(true);
-
-    try {
-      const res = await fetch("/api/lgic", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          eventId: selectedEventId,
-          teamCode: graceTeam.teamCode,
-          action,
-          note: graceNote.trim(),
-        }),
-      });
-
-      const data = await res.json();
-      if (res.ok && data.success) {
-        showToast(data.message || `Grace clearance ${action}d successfully!`);
-        setShowGraceModal(false);
-        setGraceNote("");
-        setGraceTeam(null);
-        fetchTeamsForEvent(selectedEventId);
-      } else {
-        showToast(data.error || `Failed to ${action} grace clearance.`, "error");
-      }
-    } catch (err) {
-      console.error("Grace clearance error:", err);
-      showToast("Network error executing grace clearance.", "error");
-    } finally {
-      setGraceLoading(false);
-    }
+  // Helper to determine if team is fully registered and submitted
+  const isTeamSubmitted = (t: RegisteredTeam) => {
+    return t.submissionStatus === "submitted" || Boolean(t.submittedAt);
   };
+
+  const submittedCount = useMemo(
+    () => teams.filter((t) => isTeamSubmitted(t)).length,
+    [teams]
+  );
+  const formingCount = useMemo(
+    () => teams.filter((t) => !isTeamSubmitted(t)).length,
+    [teams]
+  );
 
   // -------------------------------------------------------------
   // Filtered Teams Computation
   // -------------------------------------------------------------
   const filteredTeams = useMemo(() => {
     return teams.filter((t) => {
-      if (activeFilter === "confirmed" && t.status !== "confirmed") return false;
+      // 1. Registration Status Filter
+      const isSubmitted = isTeamSubmitted(t);
+      if (statusFilter === "submitted" && !isSubmitted) return false;
+      if (statusFilter === "forming" && isSubmitted) return false;
+
+      // 2. Attendance Check-In Filter
       if (activeFilter === "checked_in" && !t.checkedIn) return false;
       if (activeFilter === "not_checked_in" && t.checkedIn) return false;
-      if (activeFilter === "pending" && t.status !== "pending") return false;
-      if (activeFilter === "waitlist" && t.status !== "waitlist") return false;
 
+      // 3. Search Query
       if (!searchQuery.trim()) return true;
       const q = searchQuery.toLowerCase().trim();
       const matchName = t.teamName.toLowerCase().includes(q);
-      const matchVenture = (t.ventureName || "").toLowerCase().includes(q);
       const matchCode = t.teamCode.toLowerCase().includes(q);
       const matchLead = t.lead.name.toLowerCase().includes(q) || t.lead.email.toLowerCase().includes(q);
       const matchDept = (t.department || "").toLowerCase().includes(q);
@@ -541,18 +425,16 @@ export default function LiveEventManager() {
           (m.phone || "").includes(q)
       );
 
-      return matchName || matchVenture || matchCode || matchLead || matchDept || matchMembers;
+      return matchName || matchCode || matchLead || matchDept || matchMembers;
     });
-  }, [teams, activeFilter, searchQuery]);
+  }, [teams, statusFilter, activeFilter, searchQuery]);
 
   const stats = useMemo(() => {
     const total = teams.length;
-    const confirmed = teams.filter((t) => t.status === "confirmed").length;
     const checkedIn = teams.filter((t) => t.checkedIn).length;
-    const pending = teams.filter((t) => t.status === "pending").length;
-    const waitlist = teams.filter((t) => t.status === "waitlist").length;
+    const remaining = total - checkedIn;
     const checkInRate = total > 0 ? Math.round((checkedIn / total) * 100) : 0;
-    return { total, confirmed, checkedIn, pending, waitlist, checkInRate };
+    return { total, checkedIn, remaining, checkInRate };
   }, [teams]);
 
   const selectedEvent = useMemo(() => {
@@ -672,9 +554,6 @@ export default function LiveEventManager() {
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
               {filteredEventsList.map((ev) => {
-                const registeredCount = ev.registeredTeamsCount || 0;
-                const maxTeams = ev.maxTeams || 40;
-                const capacityPct = Math.min(100, Math.round((registeredCount / maxTeams) * 100));
                 const isRegOpen = ev.registrationStatus === "open";
                 const isExtended = ev.registrationStatus === "extended";
 
@@ -688,16 +567,8 @@ export default function LiveEventManager() {
                     <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-white/10 to-transparent group-hover:via-rose-500/40 transition-all duration-500" />
 
                     <div>
-                      {/* Tags & Status Ribbon */}
+                      {/* Status Ribbon */}
                       <div className="flex items-center justify-between gap-2 mb-3.5 flex-wrap">
-                        <span
-                          className={`rounded-md border px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wider ${getTagBadgeStyle(
-                            ev.tag
-                          )}`}
-                        >
-                          {ev.tag || "Event"}
-                        </span>
-
                         {isRegOpen ? (
                           <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-500/10 border border-emerald-500/20 px-2.5 py-1 text-[11px] font-medium text-emerald-300">
                             <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse" />
@@ -738,39 +609,11 @@ export default function LiveEventManager() {
                       </div>
 
                       {/* Description with fixed height for equal grid alignment */}
-                      <p className="text-xs text-neutral-400 line-clamp-2 leading-relaxed mb-4 min-h-[2.5rem]">
+                      <p className="text-xs text-neutral-400 line-clamp-2 leading-relaxed mb-5 min-h-[2.5rem]">
                         {ev.description || (
                           <span className="italic text-neutral-600">No event description provided.</span>
                         )}
                       </p>
-
-                      {/* Roster & Capacity Metrics Card */}
-                      <div className="rounded-xl bg-white/[0.03] border border-white/10 p-3 mb-5 space-y-2">
-                        <div className="flex items-center justify-between text-xs">
-                          <div className="flex items-center gap-2">
-                            <Users className="w-3.5 h-3.5 text-neutral-400 shrink-0" />
-                            <span className="font-semibold text-white">
-                              {registeredCount}{" "}
-                              <span className="text-neutral-400 font-normal">
-                                / {maxTeams} {registeredCount === 1 ? "team" : "teams"}
-                              </span>
-                            </span>
-                          </div>
-                          <span className="text-[11px] font-mono text-neutral-400">
-                            {capacityPct}% capacity
-                          </span>
-                        </div>
-
-                        {/* Capacity Progress Bar */}
-                        <div className="w-full bg-white/5 h-1.5 rounded-full overflow-hidden">
-                          <div
-                            className="bg-gradient-to-r from-rose-500 to-pink-500 h-full rounded-full transition-all duration-500"
-                            style={{
-                              width: `${Math.min(100, Math.max(registeredCount > 0 ? 5 : 0, capacityPct))}%`,
-                            }}
-                          />
-                        </div>
-                      </div>
                     </div>
 
                     {/* Bottom Card Action */}
@@ -911,7 +754,7 @@ export default function LiveEventManager() {
 
               <div className="flex items-center gap-3">
                 <span className="rounded-2xl border border-white/15 bg-[#16161d] px-4 py-2 text-xs font-mono text-white shadow-sm">
-                  Capacity: <strong className="text-emerald-300">{stats.total}</strong> / {eventMeta?.maxTeams || 40} Teams
+                  Total Teams: <strong className="text-emerald-300">{stats.total}</strong>
                 </span>
               </div>
             </div>
@@ -929,32 +772,46 @@ export default function LiveEventManager() {
                 {stats.total}
               </div>
               <p className="text-[11px] text-white/50">
-                {eventMeta?.maxTeams ? `${eventMeta.maxTeams - stats.total} slots remaining` : "Total teams signed up"}
+                Total teams registered
               </p>
             </div>
 
-            {/* Stat 2: Confirmed */}
+            {/* Stat 2: Venue Checked-In */}
             <div className="rounded-3xl border border-emerald-500/30 bg-[#0a1f18] p-5 shadow-2xl shadow-emerald-950/20 hover:border-emerald-400/50 transition-all">
               <div className="flex items-center justify-between text-xs text-emerald-400 uppercase tracking-wider mb-2 font-mono">
-                <span>Confirmed Teams</span>
-                <span className="font-mono text-[10px] font-bold">READY</span>
-              </div>
-              <div className="text-2xl sm:text-3xl font-black text-emerald-300 font-[family-name:var(--font-google-sans)] mb-1">
-                {stats.confirmed}
-              </div>
-              <p className="text-[11px] text-emerald-300/70">
-                {stats.total > 0 ? `${Math.round((stats.confirmed / stats.total) * 100)}% approved for pitch` : "Ready for stage"}
-              </p>
-            </div>
-
-            {/* Stat 3: Venue Checked-In */}
-            <div className="rounded-3xl border border-sky-500/30 bg-[#081a2e] p-5 shadow-2xl shadow-sky-950/20 hover:border-sky-400/50 transition-all">
-              <div className="flex items-center justify-between text-xs text-sky-400 uppercase tracking-wider mb-2 font-mono">
                 <span>Venue Checked-In</span>
                 <span className="font-mono text-[10px] font-bold">PASS</span>
               </div>
+              <div className="text-2xl sm:text-3xl font-black text-emerald-300 font-[family-name:var(--font-google-sans)] mb-1">
+                {stats.checkedIn}
+              </div>
+              <p className="text-[11px] text-emerald-300/70">
+                Arrived and verified on-site
+              </p>
+            </div>
+
+            {/* Stat 3: Awaiting Arrival */}
+            <div className="rounded-3xl border border-amber-500/30 bg-[#241a08] p-5 shadow-2xl shadow-amber-950/20 hover:border-amber-400/50 transition-all">
+              <div className="flex items-center justify-between text-xs text-amber-400 uppercase tracking-wider mb-2 font-mono">
+                <span>Awaiting Arrival</span>
+                <span className="font-mono text-[10px] font-bold">PENDING</span>
+              </div>
+              <div className="text-2xl sm:text-3xl font-black text-amber-300 font-[family-name:var(--font-google-sans)] mb-1">
+                {stats.remaining}
+              </div>
+              <p className="text-[11px] text-amber-300/70">
+                Teams yet to check in
+              </p>
+            </div>
+
+            {/* Stat 4: Check-in Attendance Rate */}
+            <div className="rounded-3xl border border-sky-500/30 bg-[#081a2e] p-5 shadow-2xl shadow-sky-950/20 hover:border-sky-400/50 transition-all">
+              <div className="flex items-center justify-between text-xs text-sky-400 uppercase tracking-wider mb-2 font-mono">
+                <span>Attendance Rate</span>
+                <span className="font-mono text-[10px] font-bold">% RATE</span>
+              </div>
               <div className="text-2xl sm:text-3xl font-black text-sky-300 font-[family-name:var(--font-google-sans)] mb-1">
-                {stats.checkedIn} / {stats.total}
+                {stats.checkInRate}%
               </div>
               <div className="w-full bg-white/10 rounded-full h-1.5 mt-2 overflow-hidden">
                 <div
@@ -963,21 +820,7 @@ export default function LiveEventManager() {
                 />
               </div>
               <p className="text-[11px] text-sky-300/70 mt-1">
-                {stats.checkInRate}% arrived on-site
-              </p>
-            </div>
-
-            {/* Stat 4: Pending / Waitlist */}
-            <div className="rounded-3xl border border-amber-500/30 bg-[#241a08] p-5 shadow-2xl shadow-amber-950/20 hover:border-amber-400/50 transition-all">
-              <div className="flex items-center justify-between text-xs text-amber-400 uppercase tracking-wider mb-2 font-mono">
-                <span>Pending / Waitlist</span>
-                <span className="font-mono text-[10px] font-bold">QUEUE</span>
-              </div>
-              <div className="text-2xl sm:text-3xl font-black text-amber-300 font-[family-name:var(--font-google-sans)] mb-1">
-                {stats.pending + stats.waitlist}
-              </div>
-              <p className="text-[11px] text-amber-300/70">
-                {stats.pending} pending, {stats.waitlist} waitlisted
+                {stats.checkedIn} of {stats.total} present
               </p>
             </div>
           </div>
@@ -991,7 +834,7 @@ export default function LiveEventManager() {
                   type="text"
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  placeholder="Search by Team, Venture, Code, Leader, Member email..."
+                  placeholder="Search by Team, Code, Leader, Member email..."
                   className="w-full rounded-2xl border border-white/15 bg-[#16161d] pl-9 pr-8 py-2.5 text-xs text-white placeholder:text-white/40 focus:border-white/50 focus:outline-none focus:ring-1 focus:ring-white/20 shadow-inner transition-all"
                 />
                 {searchQuery && (
@@ -1011,79 +854,112 @@ export default function LiveEventManager() {
               </div>
             </div>
 
-            {/* Filter Pills */}
-            <div className="flex items-center gap-2 overflow-x-auto no-scrollbar pb-1">
-              <button
-                type="button"
-                onClick={() => setActiveFilter("all")}
-                className={`rounded-xl px-4 py-2 text-xs font-bold uppercase tracking-wider transition-all whitespace-nowrap cursor-pointer font-[family-name:var(--font-google-sans)] ${
-                  activeFilter === "all"
-                    ? "bg-white text-black font-bold shadow-md shadow-white/10 scale-105"
-                    : "bg-white/[0.06] text-white/70 hover:text-white hover:bg-white/15 border border-white/10"
-                }`}
-              >
-                All Teams ({stats.total})
-              </button>
+            {/* View Tabs & Live Counts Bar */}
+            <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 pt-1">
+              {/* Sleek Segmented Control for Registration Status (Matching Teams & Rosters) */}
+              <div className="inline-flex items-center p-1 rounded-full bg-black/70 border border-white/10 w-fit backdrop-blur-md shadow-inner">
+                <button
+                  type="button"
+                  onClick={() => setStatusFilter("submitted")}
+                  className={`px-4 py-1.5 rounded-full text-xs font-medium transition-all cursor-pointer inline-flex items-center gap-2 ${
+                    statusFilter === "submitted"
+                      ? "bg-white text-black font-semibold shadow-sm"
+                      : "text-white/60 hover:text-white hover:bg-white/[0.04]"
+                  }`}
+                >
+                  <span>Fully Registered</span>
+                  <span
+                    className={`px-2 py-0.5 rounded-full text-[10px] font-mono leading-none ${
+                      statusFilter === "submitted"
+                        ? "bg-neutral-200 text-black font-bold"
+                        : "bg-white/10 text-white/70"
+                    }`}
+                  >
+                    {submittedCount}
+                  </span>
+                </button>
 
-              <button
-                type="button"
-                onClick={() => setActiveFilter("checked_in")}
-                className={`rounded-xl px-4 py-2 text-xs font-bold uppercase tracking-wider transition-all whitespace-nowrap cursor-pointer font-[family-name:var(--font-google-sans)] ${
-                  activeFilter === "checked_in"
-                    ? "bg-sky-500 text-white shadow-lg shadow-sky-500/30 scale-105"
-                    : "bg-white/[0.06] text-white/70 hover:text-white hover:bg-white/15 border border-white/10"
-                }`}
-              >
-                Checked In ({stats.checkedIn})
-              </button>
+                <button
+                  type="button"
+                  onClick={() => setStatusFilter("forming")}
+                  className={`px-4 py-1.5 rounded-full text-xs font-medium transition-all cursor-pointer inline-flex items-center gap-2 ${
+                    statusFilter === "forming"
+                      ? "bg-white text-black font-semibold shadow-sm"
+                      : "text-white/60 hover:text-white hover:bg-white/[0.04]"
+                  }`}
+                >
+                  <span>Forming</span>
+                  <span
+                    className={`px-2 py-0.5 rounded-full text-[10px] font-mono leading-none ${
+                      statusFilter === "forming"
+                        ? "bg-neutral-200 text-black font-bold"
+                        : "bg-white/10 text-white/70"
+                    }`}
+                  >
+                    {formingCount}
+                  </span>
+                </button>
 
-              <button
-                type="button"
-                onClick={() => setActiveFilter("not_checked_in")}
-                className={`rounded-xl px-4 py-2 text-xs font-bold uppercase tracking-wider transition-all whitespace-nowrap cursor-pointer font-[family-name:var(--font-google-sans)] ${
-                  activeFilter === "not_checked_in"
-                    ? "bg-amber-500 text-black shadow-lg shadow-amber-500/30 scale-105"
-                    : "bg-white/[0.06] text-white/70 hover:text-white hover:bg-white/15 border border-white/10"
-                }`}
-              >
-                Not Checked In ({stats.total - stats.checkedIn})
-              </button>
+                <button
+                  type="button"
+                  onClick={() => setStatusFilter("all")}
+                  className={`px-4 py-1.5 rounded-full text-xs font-medium transition-all cursor-pointer inline-flex items-center gap-2 ${
+                    statusFilter === "all"
+                      ? "bg-white text-black font-semibold shadow-sm"
+                      : "text-white/60 hover:text-white hover:bg-white/[0.04]"
+                  }`}
+                >
+                  <span>All Teams</span>
+                  <span
+                    className={`px-2 py-0.5 rounded-full text-[10px] font-mono leading-none ${
+                      statusFilter === "all"
+                        ? "bg-neutral-200 text-black font-bold"
+                        : "bg-white/10 text-white/70"
+                    }`}
+                  >
+                    {teams.length}
+                  </span>
+                </button>
+              </div>
 
-              <button
-                type="button"
-                onClick={() => setActiveFilter("confirmed")}
-                className={`rounded-xl px-4 py-2 text-xs font-bold uppercase tracking-wider transition-all whitespace-nowrap cursor-pointer font-[family-name:var(--font-google-sans)] ${
-                  activeFilter === "confirmed"
-                    ? "bg-emerald-500 text-black shadow-lg shadow-emerald-500/30 scale-105"
-                    : "bg-white/[0.06] text-white/70 hover:text-white hover:bg-white/15 border border-white/10"
-                }`}
-              >
-                Confirmed ({stats.confirmed})
-              </button>
+              {/* Attendance Check-In Filter Pills */}
+              <div className="flex items-center gap-2 overflow-x-auto no-scrollbar pb-1">
+                <button
+                  type="button"
+                  onClick={() => setActiveFilter("all")}
+                  className={`rounded-xl px-4 py-2 text-xs font-bold uppercase tracking-wider transition-all whitespace-nowrap cursor-pointer font-[family-name:var(--font-google-sans)] ${
+                    activeFilter === "all"
+                      ? "bg-white text-black font-bold shadow-md shadow-white/10 scale-105"
+                      : "bg-white/[0.06] text-white/70 hover:text-white hover:bg-white/15 border border-white/10"
+                  }`}
+                >
+                  All Teams ({stats.total})
+                </button>
 
-              <button
-                type="button"
-                onClick={() => setActiveFilter("pending")}
-                className={`rounded-xl px-4 py-2 text-xs font-bold uppercase tracking-wider transition-all whitespace-nowrap cursor-pointer font-[family-name:var(--font-google-sans)] ${
-                  activeFilter === "pending"
-                    ? "bg-amber-500 text-black shadow-lg shadow-amber-500/30 scale-105"
-                    : "bg-white/[0.06] text-white/70 hover:text-white hover:bg-white/15 border border-white/10"
-                }`}
-              >
-                Pending ({stats.pending})
-              </button>
+                <button
+                  type="button"
+                  onClick={() => setActiveFilter("checked_in")}
+                  className={`rounded-xl px-4 py-2 text-xs font-bold uppercase tracking-wider transition-all whitespace-nowrap cursor-pointer font-[family-name:var(--font-google-sans)] ${
+                    activeFilter === "checked_in"
+                      ? "bg-sky-500 text-white shadow-lg shadow-sky-500/30 scale-105"
+                      : "bg-white/[0.06] text-white/70 hover:text-white hover:bg-white/15 border border-white/10"
+                  }`}
+                >
+                  Checked In ({stats.checkedIn})
+                </button>
 
-              <button
-                type="button"
-                onClick={() => setActiveFilter("waitlist")}
-                className={`rounded-xl px-4 py-2 text-xs font-bold uppercase tracking-wider transition-all whitespace-nowrap cursor-pointer font-[family-name:var(--font-google-sans)] ${
-                  activeFilter === "waitlist"
-                    ? "bg-purple-600 text-white shadow-lg shadow-purple-600/30 scale-105"
-                    : "bg-white/[0.06] text-white/70 hover:text-white hover:bg-white/15 border border-white/10"
-                }`}
-              >
-                Waitlist ({stats.waitlist})
-              </button>
+                <button
+                  type="button"
+                  onClick={() => setActiveFilter("not_checked_in")}
+                  className={`rounded-xl px-4 py-2 text-xs font-bold uppercase tracking-wider transition-all whitespace-nowrap cursor-pointer font-[family-name:var(--font-google-sans)] ${
+                    activeFilter === "not_checked_in"
+                      ? "bg-amber-500 text-black shadow-lg shadow-amber-500/30 scale-105"
+                      : "bg-white/[0.06] text-white/70 hover:text-white hover:bg-white/15 border border-white/10"
+                  }`}
+                >
+                  Not Checked In ({stats.remaining})
+                </button>
+              </div>
             </div>
           </div>
 
@@ -1097,24 +973,39 @@ export default function LiveEventManager() {
             <div className="rounded-3xl border border-white/15 bg-[#0e0e12] p-12 text-center shadow-2xl">
               <Users className="h-10 w-10 text-neutral-400 mx-auto mb-3" />
               <h3 className="text-lg font-bold text-white font-[family-name:var(--font-google-sans)] mb-2">
-                No Teams in this View
+                {statusFilter === "submitted" && submittedCount === 0
+                  ? "No Fully Registered Teams"
+                  : "No Teams in this View"}
               </h3>
               <p className="text-xs text-white/60 max-w-md mx-auto mb-6">
                 {searchQuery
                   ? `No teams match "${searchQuery}".`
                   : teams.length === 0
                   ? "No teams have registered for this event yet. You can add walk-in teams using the 'Register Team' button."
+                  : statusFilter === "submitted" && formingCount > 0
+                  ? `There are currently ${formingCount} team(s) forming rosters. Switch to 'Forming' or 'All Teams' to view them.`
                   : "No teams match the selected filter tab."}
               </p>
-              <Button
-                type="button"
-                variant="default"
-                size="default"
-                className="font-[family-name:var(--font-google-sans)]"
-                onClick={() => setShowAddTeamModal(true)}
-              >
-                + Register First Walk-In Team
-              </Button>
+              <div className="flex flex-wrap items-center justify-center gap-3">
+                {statusFilter === "submitted" && formingCount > 0 && (
+                  <button
+                    type="button"
+                    onClick={() => setStatusFilter("forming")}
+                    className="rounded-xl bg-white/10 hover:bg-white/20 text-white text-xs font-semibold px-4 py-2.5 transition-all cursor-pointer border border-white/15 font-[family-name:var(--font-google-sans)]"
+                  >
+                    View Forming Teams ({formingCount})
+                  </button>
+                )}
+                <Button
+                  type="button"
+                  variant="default"
+                  size="default"
+                  className="font-[family-name:var(--font-google-sans)]"
+                  onClick={() => setShowAddTeamModal(true)}
+                >
+                  + Register First Walk-In Team
+                </Button>
+              </div>
             </div>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -1134,8 +1025,8 @@ export default function LiveEventManager() {
                   <div>
                     {/* Header: Team Code, Status Dropdown, Check-In Pill */}
                     <div className="flex flex-wrap items-center justify-between gap-2 mb-4">
-                      {/* Code Badge */}
-                      <div className="flex items-center gap-1.5">
+                      {/* Code Badge & Submission Status */}
+                      <div className="flex items-center gap-2">
                         <span className="font-mono text-xs font-bold tracking-wider rounded-xl bg-white/10 border border-white/20 text-white px-3 py-1 shadow-sm">
                           {team.teamCode}
                         </span>
@@ -1150,74 +1041,23 @@ export default function LiveEventManager() {
                         >
                           <Clipboard className="h-3.5 w-3.5" />
                         </button>
-                      </div>
-
-                      {/* Status Selector & Check-In Status */}
-                      <div className="flex items-center gap-2">
-                        {/* Check-In Pill */}
-                        <span
-                          className={`rounded-full px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wider border flex items-center gap-1 ${
-                            team.checkedIn
-                              ? "bg-emerald-500/20 border-emerald-500/40 text-emerald-300"
-                              : "bg-white/[0.06] border-white/15 text-white/60"
-                          }`}
-                        >
-                          <span
-                            className={`h-1.5 w-1.5 rounded-full ${
-                              team.checkedIn ? "bg-emerald-400 animate-ping" : "bg-white/40"
-                            }`}
-                          />
-                          {team.checkedIn ? "Checked In" : "Not Checked In"}
-                        </span>
-
-                        {/* Status Select */}
-                        <select
-                          value={team.status}
-                          disabled={actionLoadingId === team.id}
-                          onChange={(e) =>
-                            handleUpdateStatus(team, e.target.value as RegisteredTeam["status"])
-                          }
-                          className={`rounded-full border text-[10px] font-bold uppercase tracking-wider px-2.5 py-0.5 bg-neutral-900 cursor-pointer focus:outline-none ${
-                            team.status === "confirmed"
-                              ? "border-emerald-500/40 text-emerald-300"
-                              : team.status === "pending"
-                              ? "border-amber-500/40 text-amber-300"
-                              : team.status === "waitlist"
-                              ? "border-blue-500/40 text-blue-300"
-                              : "border-rose-500/40 text-rose-300"
-                          }`}
-                        >
-                          <option value="confirmed" className="bg-neutral-900 text-emerald-300">
-                            Confirmed
-                          </option>
-                          <option value="pending" className="bg-neutral-900 text-amber-300">
-                            Pending
-                          </option>
-                          <option value="waitlist" className="bg-neutral-900 text-blue-300">
-                            Waitlist
-                          </option>
-                          <option value="disqualified" className="bg-neutral-900 text-rose-300">
-                            Disqualified
-                          </option>
-                        </select>
+                        {isTeamSubmitted(team) ? (
+                          <span className="px-2.5 py-0.5 rounded-full text-[10px] font-mono bg-emerald-500/15 border border-emerald-500/30 text-emerald-300 font-semibold">
+                            • Submitted
+                          </span>
+                        ) : (
+                          <span className="px-2.5 py-0.5 rounded-full text-[10px] font-mono bg-amber-500/15 border border-amber-500/30 text-amber-300 font-semibold">
+                            • Forming
+                          </span>
+                        )}
                       </div>
                     </div>
 
-                    {/* Team Name & Venture Concept */}
+                    {/* Team Name */}
                     <div className="mb-4">
-                      <h3 className="text-xl sm:text-2xl font-black text-white font-[family-name:var(--font-google-sans)] mb-1">
+                      <h3 className="text-xl sm:text-2xl font-black text-white font-[family-name:var(--font-google-sans)] mb-2">
                         {team.teamName}
                       </h3>
-                      {team.ventureName ? (
-                        <div className="flex items-center gap-1.5 text-xs text-amber-400 font-medium mb-2">
-                          <Lightbulb className="h-3.5 w-3.5 text-amber-400" />
-                          <span className="truncate">{team.ventureName}</span>
-                        </div>
-                      ) : (
-                        <span className="text-[11px] text-white/40 italic mb-2 block">
-                          No venture title specified
-                        </span>
-                      )}
 
                       <span className="inline-block rounded-lg bg-white/[0.05] border border-white/10 px-2.5 py-0.5 text-[10px] text-white/80 font-mono">
                         {team.department || team.lead.department || "Heritage Institute of Technology"}
@@ -1261,10 +1101,10 @@ export default function LiveEventManager() {
                       </div>
                     </div>
 
-                    {/* Co-Founders / Members Roster */}
+                    {/* Team Members Roster */}
                     <div className="mb-4">
                       <div className="flex items-center justify-between text-xs font-mono text-white/60 mb-2">
-                        <span>Co-Founders / Members ({team.members.length}):</span>
+                        <span>Team Members:</span>
                         <span>Total Roster: {team.members.length + 1}</span>
                       </div>
 
@@ -1276,7 +1116,7 @@ export default function LiveEventManager() {
                               className="rounded-xl border border-white/10 bg-[#16161d] p-2.5 text-xs flex flex-col justify-between shadow-inner"
                             >
                               <div className="font-semibold text-white truncate font-[family-name:var(--font-google-sans)]">
-                                {member.name || "Co-Founder"}
+                                {member.name || "Team Member"}
                               </div>
                               <div className="text-[11px] text-white/60 truncate font-mono">
                                 {member.email || "No email"}
@@ -1311,47 +1151,11 @@ export default function LiveEventManager() {
                     <div className="flex items-center gap-2">
                       <button
                         type="button"
-                        onClick={() => {
-                          setGraceTeam(team);
-                          setShowGraceModal(true);
-                        }}
-                        className="rounded-xl bg-purple-500/20 hover:bg-purple-500/30 text-purple-200 border border-purple-500/40 px-3 py-1.5 text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5"
-                        title="Issue or revoke admin grace clearance for Hult Ascend"
-                      >
-                        <Shield className="h-3.5 w-3.5 text-purple-400" />
-                        <span>Grace</span>
-                      </button>
-
-                      <button
-                        type="button"
-                        disabled={actionLoadingId === team.id}
-                        onClick={() => handleToggleCheckIn(team)}
-                        className={`rounded-xl px-3.5 py-1.5 text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 ${
-                          team.checkedIn
-                            ? "bg-white/[0.08] hover:bg-rose-500/20 text-white/80 hover:text-rose-300 border border-white/20"
-                            : "bg-emerald-500 hover:bg-emerald-400 text-black shadow-md shadow-emerald-500/30 hover:scale-105"
-                        }`}
-                      >
-                        {team.checkedIn ? "Undo Check-In" : "✓ Mark Checked In"}
-                      </button>
-
-                      <button
-                        type="button"
                         onClick={() => setInspectingTeam(team)}
                         className="rounded-xl bg-white/[0.08] hover:bg-white/15 border border-white/20 px-3 py-1.5 text-xs font-semibold text-white transition-all cursor-pointer"
                         title="View complete dossier"
                       >
                         Details
-                      </button>
-
-                      <button
-                        type="button"
-                        disabled={actionLoadingId === team.id}
-                        onClick={() => handleDeleteTeam(team)}
-                        className="h-8 w-8 rounded-xl bg-white/[0.05] hover:bg-rose-500/20 border border-white/15 hover:border-rose-500/40 text-white/50 hover:text-rose-300 transition-all flex items-center justify-center text-xs cursor-pointer"
-                        title="Remove team"
-                      >
-                        <Trash2 className="h-3.5 w-3.5" />
                       </button>
                     </div>
                   </div>
@@ -1391,12 +1195,6 @@ export default function LiveEventManager() {
                   <h2 className="text-2xl sm:text-3xl font-black text-white font-[family-name:var(--font-google-sans)]">
                     {inspectingTeam.teamName}
                   </h2>
-                  {inspectingTeam.ventureName && (
-                    <p className="text-sm text-amber-400 font-medium mt-1 inline-flex items-center gap-1.5">
-                      <Lightbulb className="h-3.5 w-3.5 text-amber-400" />
-                      <span>Project: {inspectingTeam.ventureName}</span>
-                    </p>
-                  )}
                   <p className="text-xs text-white/50 font-mono mt-1">
                     Event: {eventMeta?.title || "OnCampus"} • Department: {inspectingTeam.department}
                   </p>
@@ -1438,7 +1236,7 @@ export default function LiveEventManager() {
 
                 <div className="mb-6">
                   <h4 className="text-xs font-mono font-bold uppercase tracking-wider text-white/60 mb-3">
-                    Co-Founders & Team Members ({inspectingTeam.members.length})
+                    Team Members ({inspectingTeam.members.length})
                   </h4>
 
                   {inspectingTeam.members.length > 0 ? (
@@ -1471,7 +1269,7 @@ export default function LiveEventManager() {
                     </div>
                   ) : (
                     <p className="text-xs text-white/40 italic">
-                      No additional co-founders registered under this team code.
+                      No additional team members registered under this team code.
                     </p>
                   )}
                 </div>
@@ -1479,27 +1277,24 @@ export default function LiveEventManager() {
                 <div className="pt-6 border-t border-white/10 flex flex-wrap items-center justify-between gap-3">
                   <button
                     type="button"
+                    disabled={actionLoadingId === inspectingTeam.id}
                     onClick={() => handleToggleCheckIn(inspectingTeam)}
                     className={`rounded-xl px-5 py-2.5 text-xs font-bold transition-all cursor-pointer ${
-                      inspectingTeam.checkedIn
+                      actionLoadingId === inspectingTeam.id
+                        ? "opacity-50 cursor-not-allowed bg-white/10 text-white/50"
+                        : inspectingTeam.checkedIn
                         ? "bg-white/10 hover:bg-rose-500/20 text-white/80 hover:text-rose-300"
                         : "bg-emerald-500 hover:bg-emerald-400 text-black shadow-lg shadow-emerald-500/30"
                     }`}
                   >
-                    {inspectingTeam.checkedIn ? "Undo Check-In" : "✓ Mark Verified Check-In"}
+                    {actionLoadingId === inspectingTeam.id
+                      ? "Updating..."
+                      : inspectingTeam.checkedIn
+                      ? "Undo Check-In"
+                      : "✓ Mark Verified Check-In"}
                   </button>
 
                   <div className="flex items-center gap-2">
-                    <button
-                      type="button"
-                      onClick={() => {
-                        handleDeleteTeam(inspectingTeam);
-                        setInspectingTeam(null);
-                      }}
-                      className="rounded-xl bg-rose-500/10 hover:bg-rose-500/25 border border-rose-500/30 px-4 py-2.5 text-xs font-bold text-rose-300 cursor-pointer"
-                    >
-                      Delete Team
-                    </button>
                     <button
                       type="button"
                       onClick={() => setInspectingTeam(null)}
@@ -1538,32 +1333,18 @@ export default function LiveEventManager() {
                 </div>
 
                 <form onSubmit={handleCreateWalkInTeam} className="space-y-4">
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <div>
-                      <label className="block text-xs font-mono text-white/70 mb-1">
-                        Team Name <span className="text-red-400">*</span>
-                      </label>
-                      <input
-                        type="text"
-                        required
-                        value={newTeam.teamName}
-                        onChange={(e) => setNewTeam({ ...newTeam, teamName: e.target.value })}
-                        placeholder="e.g. SolarBloom"
-                        className="w-full rounded-xl border border-white/15 bg-[#16161d] px-3.5 py-2 text-xs text-white placeholder:text-white/30 focus:border-white/50 focus:outline-none shadow-inner"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-xs font-mono text-white/70 mb-1">
-                        Venture / Startup Idea Name
-                      </label>
-                      <input
-                        type="text"
-                        value={newTeam.ventureName}
-                        onChange={(e) => setNewTeam({ ...newTeam, ventureName: e.target.value })}
-                        placeholder="e.g. Decentralized Clean Water"
-                        className="w-full rounded-xl border border-white/15 bg-[#16161d] px-3.5 py-2 text-xs text-white placeholder:text-white/30 focus:border-white/50 focus:outline-none shadow-inner"
-                      />
-                    </div>
+                  <div>
+                    <label className="block text-xs font-mono text-white/70 mb-1">
+                      Team Name <span className="text-red-400">*</span>
+                    </label>
+                    <input
+                      type="text"
+                      required
+                      value={newTeam.teamName}
+                      onChange={(e) => setNewTeam({ ...newTeam, teamName: e.target.value })}
+                      placeholder="e.g. SolarBloom"
+                      className="w-full rounded-xl border border-white/15 bg-[#16161d] px-3.5 py-2 text-xs text-white placeholder:text-white/30 focus:border-white/50 focus:outline-none shadow-inner"
+                    />
                   </div>
 
                   <div className="rounded-2xl border border-white/15 bg-[#16161d] p-4 space-y-3 shadow-inner">
@@ -1633,7 +1414,7 @@ export default function LiveEventManager() {
 
                   <div className="rounded-2xl border border-white/15 bg-[#16161d] p-4 space-y-3 shadow-inner">
                     <span className="text-xs font-bold text-white uppercase tracking-wider font-mono">
-                      Co-Founders / Members (Optional)
+                      Team Members (Optional)
                     </span>
 
                     {newTeam.members.map((member, idx) => (
@@ -1748,71 +1529,6 @@ export default function LiveEventManager() {
                 }
               }}
             />
-          )}
-
-          {/* ========================================================================= */}
-          {/* MODAL 3: ADMIN GRACE CLEARANCE MODAL (/lgic)                              */}
-          {/* ========================================================================= */}
-          {showGraceModal && graceTeam && (
-            <div className="fixed inset-0 z-50 bg-black/90 flex items-center justify-center p-4 animate-fadeIn">
-              <div className="relative overflow-hidden rounded-[2rem] border border-purple-500/40 bg-[#0e0e12] p-6 sm:p-8 max-w-md w-full space-y-5 shadow-2xl">
-                <button
-                  type="button"
-                  onClick={() => {
-                    setShowGraceModal(false);
-                    setGraceTeam(null);
-                  }}
-                  className="absolute top-5 right-5 text-white/50 hover:text-white text-lg cursor-pointer"
-                >
-                  ✕
-                </button>
-
-                <div className="space-y-1">
-                  <span className="inline-flex items-center gap-1 rounded-full bg-purple-500/20 border border-purple-500/40 px-3 py-0.5 text-[10px] font-bold text-purple-300 uppercase font-mono">
-                    <Shield className="h-3 w-3 text-purple-400" />
-                    <span>Admin Grace Clearance (/lgic)</span>
-                  </span>
-                  <h3 className="text-xl font-bold text-white">
-                    Team {graceTeam.teamName} ({graceTeam.teamCode})
-                  </h3>
-                  <p className="text-xs text-white/60 font-sans leading-relaxed">
-                    Approve team attendance manually for real-world edge cases (illness, phone failure, last-minute swap).
-                  </p>
-                </div>
-
-                <div className="space-y-2">
-                  <label className="block text-xs font-mono text-white/70">
-                    Reason / Note (Optional):
-                  </label>
-                  <input
-                    type="text"
-                    value={graceNote}
-                    onChange={(e) => setGraceNote(e.target.value)}
-                    placeholder="e.g. Member absent due to illness, approved by lead admin"
-                    className="w-full rounded-xl border border-white/15 bg-[#16161d] px-3.5 py-2.5 text-xs text-white placeholder-white/30 focus:border-white/50 focus:outline-none shadow-inner"
-                  />
-                </div>
-
-                <div className="flex items-center justify-end gap-2 pt-3 border-t border-white/10">
-                  <button
-                    type="button"
-                    disabled={graceLoading}
-                    onClick={() => handleGraceClearance("revoke")}
-                    className="rounded-xl bg-rose-500/20 hover:bg-rose-500/30 text-rose-300 border border-rose-500/40 px-4 py-2 text-xs font-bold transition-all cursor-pointer"
-                  >
-                    Revoke Grace
-                  </button>
-                  <button
-                    type="button"
-                    disabled={graceLoading}
-                    onClick={() => handleGraceClearance("approve")}
-                    className="rounded-xl bg-purple-600 hover:bg-purple-500 px-5 py-2 text-xs font-bold text-white shadow-lg transition-all cursor-pointer"
-                  >
-                    {graceLoading ? "Processing..." : "Approve Grace Clearance →"}
-                  </button>
-                </div>
-              </div>
-            </div>
           )}
         </div>
       )}

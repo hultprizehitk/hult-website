@@ -44,7 +44,7 @@ interface RegisteredTeam {
   membersCount: number;
   department?: string;
   members: TeamMember[];
-  status: "confirmed" | "pending" | "waitlist" | "disqualified";
+  status: "confirmed" | "disqualified";
   checkedIn: boolean;
   checkedInAt?: string | null;
   registeredAt: string | Date;
@@ -112,7 +112,7 @@ export default function ScannerConsole() {
   const [manualCode, setManualCode] = useState<string>("");
   const [sessionLogs, setSessionLogs] = useState<SessionScanLog[]>([]);
   const [rosterSearch, setRosterSearch] = useState<string>("");
-  const [rosterFilter, setRosterFilter] = useState<"all" | "checked_in" | "pending">("all");
+  const [rosterFilter, setRosterFilter] = useState<"all" | "checked_in" | "not_checked_in">("all");
   const [toastMessage, setToastMessage] = useState<string | null>(null);
 
   const triggerToast = (msg: string) => {
@@ -641,12 +641,12 @@ export default function ScannerConsole() {
   // -------------------------------------------------------------
   const totalRegistered = teams.length;
   const checkedInCount = teams.filter((t) => t.checkedIn).length;
-  const pendingCount = totalRegistered - checkedInCount;
+  const remainingCount = totalRegistered - checkedInCount;
   const attendanceRate = totalRegistered > 0 ? Math.round((checkedInCount / totalRegistered) * 100) : 0;
 
   const filteredTeams = teams.filter((t) => {
     if (rosterFilter === "checked_in" && !t.checkedIn) return false;
-    if (rosterFilter === "pending" && t.checkedIn) return false;
+    if (rosterFilter === "not_checked_in" && t.checkedIn) return false;
     if (!rosterSearch.trim()) return true;
     const q = rosterSearch.toLowerCase();
     return (
@@ -745,10 +745,10 @@ export default function ScannerConsole() {
 
         <div className="rounded-2xl border border-white/10 bg-[#0e0e12] p-4 sm:p-5 shadow-lg space-y-1">
           <div className="flex items-center justify-between text-neutral-400 text-xs">
-            <span>Pending Arrival</span>
+            <span>Awaiting Arrival</span>
             <ScanLine className="h-4 w-4 text-amber-400" />
           </div>
-          <div className="text-2xl sm:text-3xl font-black text-amber-300">{pendingCount}</div>
+          <div className="text-2xl sm:text-3xl font-black text-amber-300">{remainingCount}</div>
           <p className="text-[10px] text-neutral-400 font-mono">{attendanceRate}% arrived</p>
         </div>
 
@@ -1071,17 +1071,17 @@ export default function ScannerConsole() {
 
           {/* Roster Filter Buttons */}
           <div className="flex items-center gap-2">
-            {(["all", "checked_in", "pending"] as const).map((filter) => (
+            {(["all", "checked_in", "not_checked_in"] as const).map((filter) => (
               <button
                 key={filter}
                 onClick={() => setRosterFilter(filter)}
-                className={`rounded-xl px-3 py-1.5 text-xs font-semibold capitalize transition-all cursor-pointer border ${
+                className={`rounded-xl px-3 py-1.5 text-xs font-semibold transition-all cursor-pointer border ${
                   rosterFilter === filter
                     ? "bg-white text-black border-white shadow-md shadow-white/10"
                     : "bg-[#16161d] text-neutral-400 border-white/10 hover:text-white hover:bg-[#202028]"
                 }`}
               >
-                {filter === "checked_in" ? "Checked In" : filter}
+                {filter === "checked_in" ? "Checked In" : filter === "not_checked_in" ? "Not Checked In" : "All Teams"}
               </button>
             ))}
           </div>

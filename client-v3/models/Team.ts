@@ -32,7 +32,7 @@ export interface ITeam extends Document {
   membersCount: number;
   department: string;
   members: ITeamMember[];
-  status: "confirmed" | "pending" | "waitlist" | "disqualified";
+  status: "confirmed" | "disqualified";
   checkedIn: boolean;
   checkedInAt?: Date;
   registeredAt: Date;
@@ -135,7 +135,7 @@ const TeamSchema = new Schema<ITeam>(
     status: {
       type: String,
       enum: ["confirmed", "pending", "waitlist", "disqualified"],
-      default: "pending",
+      default: "confirmed",
       index: true,
     },
     checkedIn: {

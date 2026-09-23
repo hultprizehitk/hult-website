@@ -810,11 +810,6 @@ export default function StudentProfilePage() {
                                 <h4 className="text-base font-bold text-white font-serif tracking-tight">
                                   {t.teamName}
                                 </h4>
-                                {t.ventureDescription && (
-                                  <p className="text-[11px] text-white/60 mt-1 line-clamp-2 leading-relaxed bg-black/30 border border-white/10 p-2.5 rounded-xl">
-                                    {t.ventureDescription}
-                                  </p>
-                                )}
                                 {t.pitchDeckUrl && (
                                   <div className="mt-1.5">
                                     <a

@@ -23,7 +23,7 @@ export interface RegisteredTeamItem {
   department: string;
   members?: TeamMemberItem[];
   registeredAt: string;
-  status: "confirmed" | "pending" | "waitlist";
+  status: "confirmed" | "disqualified";
   submissionStatus?: "forming" | "ready" | "submitted";
   submittedAt?: string;
 }
