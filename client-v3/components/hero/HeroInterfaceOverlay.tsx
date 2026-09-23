@@ -346,16 +346,19 @@ export function HeroNavbar() {
         {/* Thin Hairline Divider */}
         <div className="h-6 w-px bg-white/25" />
 
-        {/* 25 Heritage Institute of Technology Badge */}
-        <div className="flex items-center gap-2">
-          <span className="font-hult-serif text-2xl font-bold leading-none text-white drop-shadow-[0_2px_8px_rgba(0,0,0,0.6)]">
-            25
-          </span>
-          <div className="flex flex-col text-[8.5px] font-semibold uppercase tracking-[0.14em] leading-tight max-w-[125px] text-white/80 drop-shadow-[0_1px_4px_rgba(0,0,0,0.6)]">
-            <span>Heritage</span>
-            <span>Institute of Technology</span>
+        {/* Heritage Institute of Technology 25 Years Logo */}
+        <Link href="/" className="flex items-center group">
+          <div className="relative aspect-[1024/895] h-8 sm:h-9 md:h-10 transition-transform duration-300 group-hover:scale-105">
+            <Image
+              src="/hitk-25-logo.png"
+              alt="Heritage Institute of Technology 25 Years Logo"
+              fill
+              sizes="(max-width: 640px) 42px, 52px"
+              className="object-contain drop-shadow-[0_2px_8px_rgba(0,0,0,0.6)]"
+              priority
+            />
           </div>
-        </div>
+        </Link>
       </div>
 
       {/* Navigation Links Center */}

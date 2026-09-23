@@ -1557,9 +1557,12 @@ export default function LiveEventManager() {
                         </label>
                         <input
                           type="tel"
+                          inputMode="numeric"
+                          pattern="[0-9]*"
+                          maxLength={10}
                           value={newTeam.leadPhone}
-                          onChange={(e) => setNewTeam({ ...newTeam, leadPhone: e.target.value })}
-                          placeholder="+91 98765 43210"
+                          onChange={(e) => setNewTeam({ ...newTeam, leadPhone: e.target.value.replace(/\D/g, "").slice(0, 10) })}
+                          placeholder="10-digit phone"
                           className="w-full rounded-xl border border-white/15 bg-[#121217] px-3 py-2 text-xs text-white focus:border-white/50 focus:outline-none shadow-inner"
                         />
                       </div>

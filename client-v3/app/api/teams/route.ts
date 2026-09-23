@@ -118,12 +118,29 @@ export async function POST(req: Request) {
     await connectDB();
 
     const userInDb = await User.findOne({ email: userEmail });
-    const effectivePhone = phone?.trim() || userInDb?.phone?.trim() || "";
-    const effectiveRoll = roll?.trim() || userInDb?.roll?.trim() || "";
+    const rawPhone = phone?.trim() || userInDb?.phone?.trim() || "";
+    const rawRoll = roll?.trim() || userInDb?.roll?.trim() || "";
+
+    const effectivePhone = rawPhone.replace(/\D/g, "").slice(0, 10);
+    const effectiveRoll = rawRoll.replace(/\D/g, "");
 
     if (!eventId || !teamName?.trim() || !effectivePhone || !effectiveRoll) {
       return NextResponse.json(
         { error: "Event ID, Team Name, Contact Phone, and College Roll No. are required." },
+        { status: 400 }
+      );
+    }
+
+    if (!/^\d{10}$/.test(effectivePhone)) {
+      return NextResponse.json(
+        { error: "Contact Phone must be a valid 10-digit number." },
+        { status: 400 }
+      );
+    }
+
+    if (!/^\d+$/.test(effectiveRoll)) {
+      return NextResponse.json(
+        { error: "College Roll No. must contain numbers only." },
         { status: 400 }
       );
     }

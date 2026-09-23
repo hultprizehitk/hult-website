@@ -103,21 +103,39 @@ export async function PATCH(req: Request) {
 
     const email = session.user.email.toLowerCase().trim();
     const body = await req.json();
-    const { phone, roll } = body;
+    const { name, phone, roll } = body;
 
-    const cleanPhone = typeof phone === "string" ? phone.trim() : "";
-    const cleanRoll = typeof roll === "string" ? roll.trim() : "";
+    const cleanName = typeof name === "string" ? name.trim() : "";
+    const cleanPhone = typeof phone === "string" ? phone.replace(/\D/g, "").trim() : "";
+    const cleanRoll = typeof roll === "string" ? roll.replace(/\D/g, "").trim() : "";
+
+    if (phone && (!cleanPhone || cleanPhone.length !== 10 || !/^\d{10}$/.test(cleanPhone))) {
+      return NextResponse.json(
+        { error: "Contact Phone must be a valid 10-digit number." },
+        { status: 400 }
+      );
+    }
+
+    if (roll && (!cleanRoll || !/^\d+$/.test(cleanRoll))) {
+      return NextResponse.json(
+        { error: "College Roll Number must contain numbers only." },
+        { status: 400 }
+      );
+    }
 
     await connectDB();
 
+    const updateSet: Record<string, string> = {
+      phone: cleanPhone,
+      roll: cleanRoll,
+    };
+    if (cleanName) {
+      updateSet.name = cleanName;
+    }
+
     const user = await User.findOneAndUpdate(
       { email },
-      {
-        $set: {
-          phone: cleanPhone,
-          roll: cleanRoll,
-        },
-      },
+      { $set: updateSet },
       { new: true }
     );
 
@@ -125,39 +143,57 @@ export async function PATCH(req: Request) {
       return NextResponse.json({ error: "User not found" }, { status: 404 });
     }
 
-    // Propagate phone and roll to all teams where user is lead
-    await Team.updateMany(
-      { leadEmail: email },
-      {
-        $set: {
-          "lead.phone": cleanPhone,
-          "lead.roll": cleanRoll,
-        },
-      }
-    );
+    // Propagate name, phone and roll to all teams where user is lead
+    const leadSet: Record<string, string> = {
+      "lead.phone": cleanPhone,
+      "lead.roll": cleanRoll,
+    };
+    if (cleanName) {
+      leadSet["lead.name"] = cleanName;
+    }
+    await Team.updateMany({ leadEmail: email }, { $set: leadSet });
 
-    // Propagate phone and roll to all teams where user is a member
+    // Propagate name, phone and roll to all teams where user is a member
+    const memberSet: Record<string, string> = {
+      "members.$[elem].phone": cleanPhone,
+      "members.$[elem].roll": cleanRoll,
+    };
+    if (cleanName) {
+      memberSet["members.$[elem].name"] = cleanName;
+    }
     await Team.updateMany(
       { "members.email": email },
-      {
-        $set: {
-          "members.$[elem].phone": cleanPhone,
-          "members.$[elem].roll": cleanRoll,
-        },
-      },
+      { $set: memberSet },
       { arrayFilters: [{ "elem.email": email }] }
     );
 
     // Propagate to Event.registeredTeams if user is lead
+    const regLeadSet: Record<string, string> = {
+      "registeredTeams.$[t].leadPhone": cleanPhone,
+    };
+    if (cleanName) {
+      regLeadSet["registeredTeams.$[t].leadName"] = cleanName;
+    }
     await Event.updateMany(
       { "registeredTeams.leadEmail": email },
-      {
-        $set: {
-          "registeredTeams.$[t].leadPhone": cleanPhone,
-        },
-      },
+      { $set: regLeadSet },
       { arrayFilters: [{ "t.leadEmail": email }] }
     );
+
+    // Propagate to Event.registeredTeams members if user is member
+    if (cleanName) {
+      await Event.updateMany(
+        { "registeredTeams.members.email": email },
+        {
+          $set: {
+            "registeredTeams.$[].members.$[m].name": cleanName,
+            "registeredTeams.$[].members.$[m].phone": cleanPhone,
+            "registeredTeams.$[].members.$[m].roll": cleanRoll,
+          },
+        },
+        { arrayFilters: [{ "m.email": email }] }
+      );
+    }
 
     return NextResponse.json({
       success: true,

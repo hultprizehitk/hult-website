@@ -91,6 +91,7 @@ export default function StudentProfilePage() {
 
   // Profile Edit State
   const [isEditing, setIsEditing] = useState(false);
+  const [editName, setEditName] = useState("");
   const [editPhone, setEditPhone] = useState("");
   const [editRoll, setEditRoll] = useState("");
   const [savingProfile, setSavingProfile] = useState(false);
@@ -109,7 +110,7 @@ export default function StudentProfilePage() {
 
   const userEmail = user?.email?.toLowerCase().trim();
 
-  // 1. Fetch Profile (Phone, Roll, Department, Year)
+  // 1. Fetch Profile (Name, Phone, Roll, Department, Year)
   const fetchProfile = useCallback(async () => {
     if (!session?.user?.email) return;
     try {
@@ -119,8 +120,9 @@ export default function StudentProfilePage() {
         const data = await res.json();
         if (data.success && data.user) {
           setProfile(data.user);
-          setEditPhone(data.user.phone || "");
-          setEditRoll(data.user.roll || "");
+          setEditName(data.user.name || user?.name || "");
+          setEditPhone(data.user.phone ? data.user.phone.replace(/\D/g, "").slice(0, 10) : "");
+          setEditRoll(data.user.roll ? data.user.roll.replace(/\D/g, "") : "");
         }
       }
     } catch (err) {
@@ -128,7 +130,7 @@ export default function StudentProfilePage() {
     } finally {
       setLoadingProfile(false);
     }
-  }, [session?.user?.email]);
+  }, [session?.user?.email, user?.name]);
 
   // 2. Fetch User Teams
   const fetchTeams = useCallback(async () => {
@@ -156,22 +158,28 @@ export default function StudentProfilePage() {
     }
   }, [status, fetchProfile, fetchTeams]);
 
-  // 3. Save Profile Details (Phone & Roll)
+  // 3. Save Profile Details (Name, Phone & Roll)
   const handleSaveProfile = async (e: React.FormEvent) => {
     e.preventDefault();
     setSaveError(null);
     setSaveSuccess(null);
 
-    const cleanPhone = editPhone.trim();
-    const cleanRoll = editRoll.trim();
+    const cleanName = editName.trim();
+    const cleanPhone = editPhone.replace(/\D/g, "").trim();
+    const cleanRoll = editRoll.replace(/\D/g, "").trim();
 
-    if (!cleanPhone) {
-      setSaveError("Please enter your Contact Phone number.");
+    if (!cleanName) {
+      setSaveError("Please enter your Full Name.");
+      return;
+    }
+
+    if (!cleanPhone || cleanPhone.length !== 10) {
+      setSaveError("Contact Phone must be a valid 10-digit number.");
       return;
     }
 
     if (!cleanRoll) {
-      setSaveError("Please enter your College Roll Number.");
+      setSaveError("College Roll Number must contain numbers only.");
       return;
     }
 
@@ -181,6 +189,7 @@ export default function StudentProfilePage() {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
+          name: cleanName,
           phone: cleanPhone,
           roll: cleanRoll,
         }),
@@ -193,7 +202,7 @@ export default function StudentProfilePage() {
 
       setProfile(data.user);
       setIsEditing(false);
-      setSaveSuccess("Contact details & Roll No. saved successfully!");
+      setSaveSuccess("Profile details saved successfully!");
       fetchTeams();
       setTimeout(() => setSaveSuccess(null), 4500);
     } catch (err: unknown) {
@@ -420,10 +429,24 @@ export default function StudentProfilePage() {
                 </div>
               ) : status === "authenticated" && user ? (
                 <div className="py-1 animate-fadeIn">
-                  {/* Student Name */}
-                  <h1 className="font-serif text-3xl sm:text-4xl font-bold tracking-tight text-white drop-shadow-[0_2px_24px_rgba(255,255,255,0.18)] mb-1">
-                    {user.name}
-                  </h1>
+                  {/* Student Name with Edit Affordance */}
+                  <div className="inline-flex items-center justify-center gap-2.5 mb-1 group">
+                    <h1 className="font-serif text-3xl sm:text-4xl font-bold tracking-tight text-white drop-shadow-[0_2px_24px_rgba(255,255,255,0.18)]">
+                      {profile?.name || user.name}
+                    </h1>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setIsEditing(!isEditing);
+                        setSaveError(null);
+                      }}
+                      className="p-1.5 rounded-full text-white/40 hover:text-white hover:bg-white/10 transition-all cursor-pointer"
+                      title="Edit Name and Details"
+                      aria-label="Edit Name and Details"
+                    >
+                      <Edit3 size={16} />
+                    </button>
+                  </div>
                   <p className="text-xs sm:text-sm text-white/60 mb-6 font-mono font-medium">
                     {user.email}
                   </p>
@@ -466,7 +489,7 @@ export default function StudentProfilePage() {
                       <div className="flex items-center justify-between pb-2 border-b border-white/10">
                         <span className="text-xs font-bold text-white flex items-center gap-1.5 font-mono uppercase tracking-wider">
                           <Edit3 size={13} className="text-rose-300" />
-                          <span>Update Contact Phone &amp; College Roll No.</span>
+                          <span>Update Scholar Profile &amp; Contact Info</span>
                         </span>
                         <span className="text-[10px] font-mono uppercase tracking-wider text-rose-300">
                           Auto-locks in events
@@ -480,38 +503,59 @@ export default function StudentProfilePage() {
                         </div>
                       )}
 
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+                      <div className="space-y-3.5">
                         <div>
                           <label className="block text-xs font-mono uppercase tracking-wider text-white/70 font-bold mb-1.5">
-                            Contact Phone *
-                          </label>
-                          <input
-                            type="tel"
-                            required
-                            placeholder="10-digit mobile"
-                            value={editPhone}
-                            onChange={(e) => setEditPhone(e.target.value)}
-                            className="w-full rounded-xl border border-white/15 bg-white/5 hover:bg-white/10 focus:bg-white/10 px-3.5 py-2.5 text-white placeholder-white/30 outline-none focus:border-white/40 text-xs sm:text-sm font-mono transition-all"
-                          />
-                        </div>
-
-                        <div>
-                          <label className="block text-xs font-mono uppercase tracking-wider text-white/70 font-bold mb-1.5">
-                            College Roll No. *
+                            Full Name *
                           </label>
                           <input
                             type="text"
                             required
-                            placeholder="e.g. 2152001"
-                            value={editRoll}
-                            onChange={(e) => setEditRoll(e.target.value)}
-                            className="w-full rounded-xl border border-white/15 bg-white/5 hover:bg-white/10 focus:bg-white/10 px-3.5 py-2.5 text-white placeholder-white/30 outline-none focus:border-white/40 text-xs sm:text-sm font-mono transition-all"
+                            placeholder="Your full name"
+                            value={editName}
+                            onChange={(e) => setEditName(e.target.value)}
+                            className="w-full rounded-xl border border-white/15 bg-white/5 hover:bg-white/10 focus:bg-white/10 px-3.5 py-2.5 text-white placeholder-white/30 outline-none focus:border-white/40 text-xs sm:text-sm font-sans transition-all"
                           />
+                        </div>
+
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+                          <div>
+                            <label className="block text-xs font-mono uppercase tracking-wider text-white/70 font-bold mb-1.5">
+                              Contact Phone (10 Digits) *
+                            </label>
+                            <input
+                              type="tel"
+                              inputMode="numeric"
+                              pattern="[0-9]*"
+                              maxLength={10}
+                              required
+                              placeholder="10-digit mobile number"
+                              value={editPhone}
+                              onChange={(e) => setEditPhone(e.target.value.replace(/\D/g, "").slice(0, 10))}
+                              className="w-full rounded-xl border border-white/15 bg-white/5 hover:bg-white/10 focus:bg-white/10 px-3.5 py-2.5 text-white placeholder-white/30 outline-none focus:border-white/40 text-xs sm:text-sm font-mono transition-all"
+                            />
+                          </div>
+
+                          <div>
+                            <label className="block text-xs font-mono uppercase tracking-wider text-white/70 font-bold mb-1.5">
+                              College Roll No. (Numbers Only) *
+                            </label>
+                            <input
+                              type="text"
+                              inputMode="numeric"
+                              pattern="[0-9]*"
+                              required
+                              placeholder="e.g. 2152001"
+                              value={editRoll}
+                              onChange={(e) => setEditRoll(e.target.value.replace(/\D/g, ""))}
+                              className="w-full rounded-xl border border-white/15 bg-white/5 hover:bg-white/10 focus:bg-white/10 px-3.5 py-2.5 text-white placeholder-white/30 outline-none focus:border-white/40 text-xs sm:text-sm font-mono transition-all"
+                            />
+                          </div>
                         </div>
                       </div>
 
-                      <p className="text-[11px] text-white/60 leading-relaxed font-sans">
-                        Your contact phone and college roll number are used directly in all event registrations. Once saved, they are locked inside event forms and can only be updated from this profile.
+                      <p className="text-[11px] text-white/50 font-mono">
+                        Profile details sync automatically across all registered event teams.
                       </p>
 
                       <div className="flex items-center justify-end gap-2.5 pt-1">
@@ -574,10 +618,14 @@ export default function StudentProfilePage() {
                           <Phone size={13} className="text-rose-300/90 shrink-0" />
                           <span>Contact Phone</span>
                         </span>
-                        {profile?.phone ? (
+                        {profile?.phone && /^\d{10}$/.test(profile.phone) ? (
                           <span className="inline-flex items-center gap-1 text-[9px] font-mono font-bold text-emerald-300 bg-emerald-950/40 border border-emerald-400/40 px-2 py-0.5 rounded-full">
                             <Check size={9} />
                             <span>Saved</span>
+                          </span>
+                        ) : profile?.phone && !/^\d+$/.test(profile.phone) ? (
+                          <span className="inline-flex items-center gap-1 text-[9px] font-mono font-bold text-rose-300 bg-rose-950/40 border border-rose-400/40 px-2 py-0.5 rounded-full">
+                            <span>Numbers Only</span>
                           </span>
                         ) : (
                           <span className="inline-flex items-center gap-1 text-[9px] font-mono font-bold text-amber-300 bg-amber-950/40 border border-amber-400/40 px-2 py-0.5 rounded-full">
@@ -586,7 +634,15 @@ export default function StudentProfilePage() {
                         )}
                       </div>
                       <span className="text-xs sm:text-sm font-semibold text-white font-mono">
-                        {profile?.phone || (
+                        {profile?.phone ? (
+                          /^\d+$/.test(profile.phone) ? (
+                            profile.phone
+                          ) : (
+                            <span className="text-rose-300/90 italic font-mono text-xs">
+                              {profile.phone} (Please update to digits only)
+                            </span>
+                          )
+                        ) : (
                           <span className="text-white/40 italic font-sans">Not configured</span>
                         )}
                       </span>
@@ -599,10 +655,14 @@ export default function StudentProfilePage() {
                           <GraduationCap size={13} className="text-rose-300/90 shrink-0" />
                           <span>College Roll No.</span>
                         </span>
-                        {profile?.roll ? (
+                        {profile?.roll && /^\d+$/.test(profile.roll) ? (
                           <span className="inline-flex items-center gap-1 text-[9px] font-mono font-bold text-emerald-300 bg-emerald-950/40 border border-emerald-400/40 px-2 py-0.5 rounded-full">
                             <Check size={9} />
                             <span>Saved</span>
+                          </span>
+                        ) : profile?.roll && !/^\d+$/.test(profile.roll) ? (
+                          <span className="inline-flex items-center gap-1 text-[9px] font-mono font-bold text-rose-300 bg-rose-950/40 border border-rose-400/40 px-2 py-0.5 rounded-full">
+                            <span>Numbers Only</span>
                           </span>
                         ) : (
                           <span className="inline-flex items-center gap-1 text-[9px] font-mono font-bold text-amber-300 bg-amber-950/40 border border-amber-400/40 px-2 py-0.5 rounded-full">
@@ -611,7 +671,15 @@ export default function StudentProfilePage() {
                         )}
                       </div>
                       <span className="text-xs sm:text-sm font-semibold text-white font-mono">
-                        {profile?.roll || (
+                        {profile?.roll ? (
+                          /^\d+$/.test(profile.roll) ? (
+                            profile.roll
+                          ) : (
+                            <span className="text-rose-300/90 italic font-mono text-xs">
+                              {profile.roll} (Please update to digits only)
+                            </span>
+                          )
+                        ) : (
                           <span className="text-white/40 italic font-sans">Not configured</span>
                         )}
                       </span>
@@ -635,7 +703,7 @@ export default function StudentProfilePage() {
                   </div>
 
                   {/* My Event Teams Section */}
-                  <div className="w-full text-left mb-6 pt-3 border-t border-white/10">
+                  <div className="w-full text-left mb-6 pt-4 border-t border-white/10">
                     <div className="flex items-center justify-between gap-2 mb-3">
                       <span className="flex items-center gap-2 text-[10px] font-bold tracking-widest uppercase text-white/60 font-mono">
                         <Users size={13} className="text-rose-300" />
@@ -663,14 +731,14 @@ export default function StudentProfilePage() {
                     )}
 
                     {loadingTeams ? (
-                      <div className="bg-white/5 border border-white/10 rounded-2xl p-6 text-center shadow-md">
+                      <div className="bg-white/[0.04] border border-white/15 rounded-2xl p-6 text-center shadow-md backdrop-blur-md">
                         <div className="w-5 h-5 border-2 border-white/20 border-t-white rounded-full animate-spin mx-auto mb-2" />
                         <span className="text-[11px] font-mono text-white/50 uppercase tracking-wider">
                           Syncing your teams...
                         </span>
                       </div>
                     ) : teams.length === 0 ? (
-                      <div className="bg-white/5 border border-white/10 rounded-2xl p-5 text-center flex flex-col items-center gap-3 shadow-md">
+                      <div className="bg-white/[0.04] border border-white/15 rounded-2xl p-6 text-center flex flex-col items-center gap-3 shadow-md backdrop-blur-md">
                         <p className="text-xs text-white/70 font-sans">
                           You have not registered or joined any teams for active events yet.
                         </p>
@@ -684,7 +752,7 @@ export default function StudentProfilePage() {
                         </Link>
                       </div>
                     ) : (
-                      <div className="flex flex-col gap-3">
+                      <div className="flex flex-col gap-3.5">
                         {teams.map((t) => {
                           const isLead =
                             t.leadEmail?.toLowerCase() === userEmail ||
@@ -694,7 +762,7 @@ export default function StudentProfilePage() {
                           return (
                             <div
                               key={t._id}
-                              className="bg-white/5 border border-white/10 rounded-2xl p-4 sm:p-5 flex flex-col gap-3.5 shadow-md hover:bg-white/[0.07] transition-all text-left"
+                              className="bg-white/[0.04] border border-white/15 rounded-2xl p-5 sm:p-6 flex flex-col gap-4 shadow-lg hover:bg-white/[0.06] hover:border-white/25 backdrop-blur-md transition-all text-left"
                             >
                               {/* Card Top Row */}
                               <div className="flex items-center justify-between gap-2 flex-wrap">
@@ -752,7 +820,7 @@ export default function StudentProfilePage() {
                                   </p>
                                 )}
                                 {t.ventureDescription && (
-                                  <p className="text-[11px] text-white/60 mt-1 line-clamp-2 leading-relaxed bg-white/5 border border-white/10 p-2 rounded-xl">
+                                  <p className="text-[11px] text-white/60 mt-1 line-clamp-2 leading-relaxed bg-black/30 border border-white/10 p-2.5 rounded-xl">
                                     {t.ventureDescription}
                                   </p>
                                 )}
@@ -772,12 +840,12 @@ export default function StudentProfilePage() {
                               </div>
 
                               {/* Team Code Bar */}
-                              <div className="bg-white/5 border border-white/10 rounded-xl p-3 flex items-center justify-between gap-2 flex-wrap">
+                              <div className="bg-black/40 border border-white/15 rounded-xl p-3 flex items-center justify-between gap-3 flex-wrap">
                                 <div>
                                   <span className="block text-[9px] font-mono uppercase font-bold tracking-widest text-white/50">
                                     Team Invite Code
                                   </span>
-                                  <span className="font-mono text-base font-extrabold text-[#f20089] tracking-wider">
+                                  <span className="font-mono text-base font-extrabold text-[#f20089] tracking-widest">
                                     {t.teamCode}
                                   </span>
                                 </div>
@@ -811,7 +879,7 @@ export default function StudentProfilePage() {
                                     <Share2 size={12} />
                                     <span>Share</span>
                                   </button>
-                                  </div>
+                                </div>
                               </div>
 
                               {/* Team Management Action Row */}
@@ -876,7 +944,7 @@ export default function StudentProfilePage() {
                               {editingTeamId === t._id && (
                                 <form
                                   onSubmit={(e) => handleSaveTeamEdit(t._id, e)}
-                                  className="bg-white/5 border border-white/15 rounded-xl p-3.5 space-y-3 animate-fadeIn text-left"
+                                  className="bg-black/40 border border-white/15 rounded-xl p-3.5 space-y-3 animate-fadeIn text-left backdrop-blur-md"
                                 >
                                   <div className="flex items-center justify-between pb-1.5 border-b border-white/10">
                                     <span className="text-[11px] font-mono font-bold uppercase tracking-wider text-white flex items-center gap-1.5">
@@ -939,15 +1007,21 @@ export default function StudentProfilePage() {
                               )}
 
                               {/* Members Roster Summary */}
-                              <div className="pt-2 border-t border-white/10 text-xs">
-                                <span className="block text-[10px] font-mono uppercase font-bold tracking-widest text-white/50 mb-1.5">
+                              <div className="pt-3 border-t border-white/10 text-xs space-y-2">
+                                <span className="block text-[10px] font-mono uppercase font-bold tracking-widest text-white/50">
                                   Full Roster ({1 + (t.members?.length || 0)} Students)
                                 </span>
-                                <div className="space-y-1">
-                                  <div className="flex items-center justify-between text-white/80 text-[11px]">
-                                    <span className="font-medium text-white">
-                                      {t.lead?.name || t.leadEmail} (Lead)
-                                    </span>
+                                <div className="space-y-1.5">
+                                  <div className="flex items-center justify-between text-white/80 text-[11px] p-2.5 rounded-xl bg-white/[0.03] border border-white/10 flex-wrap gap-2">
+                                    <div className="flex items-center gap-2">
+                                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
+                                      <span className="font-medium text-white">
+                                        {t.lead?.name || t.leadEmail}
+                                      </span>
+                                      <span className="px-2 py-0.5 rounded-full text-[9px] font-mono font-bold bg-[#f20089]/20 text-[#f20089] border border-[#f20089]/30 uppercase">
+                                        Lead
+                                      </span>
+                                    </div>
                                     <span className="text-white/50 font-mono text-[10px]">
                                       {t.lead?.department || "General"}{" "}
                                       {t.lead?.roll ? `• Roll: ${t.lead.roll}` : ""}
@@ -958,12 +1032,16 @@ export default function StudentProfilePage() {
                                     t.members.map((m, idx) => (
                                       <div
                                         key={idx}
-                                        className="flex items-center justify-between text-white/60 text-[11px] gap-2 py-0.5"
+                                        className="flex items-center justify-between text-white/70 text-[11px] gap-2 p-2.5 rounded-xl bg-white/[0.02] border border-white/10 flex-wrap"
                                       >
-                                        <div className="truncate min-w-0">
-                                          <span>{m.name || m.email}</span>
-                                          <span className="text-white/50 font-mono text-[10px] ml-1.5">
-                                            {m.department || "Member"}{" "}
+                                        <div className="flex items-center gap-2 truncate min-w-0">
+                                          <span className="w-1.5 h-1.5 rounded-full bg-white/40" />
+                                          <span className="text-white/90 truncate">{m.name || m.email}</span>
+                                          <span className="px-2 py-0.5 rounded-full text-[9px] font-mono font-bold bg-white/10 text-white/70 border border-white/15 uppercase">
+                                            Member
+                                          </span>
+                                          <span className="text-white/50 font-mono text-[10px] ml-1 truncate hidden sm:inline">
+                                            {m.department || "General"}{" "}
                                             {m.roll ? `• Roll: ${m.roll}` : ""}
                                             {m.phone ? ` • Tel: ${m.phone}` : ""}
                                           </span>
@@ -980,7 +1058,7 @@ export default function StudentProfilePage() {
                                               )
                                             }
                                             disabled={teamActionLoading === `${t._id}_${m.email}`}
-                                            className="inline-flex items-center gap-1 text-[10px] font-mono text-white/60 hover:text-rose-300 bg-white/[0.04] hover:bg-rose-500/10 border border-white/10 hover:border-rose-500/30 px-2 py-0.5 rounded transition-all cursor-pointer shrink-0 disabled:opacity-50"
+                                            className="inline-flex items-center gap-1 text-[10px] font-mono text-white/60 hover:text-rose-300 bg-white/[0.04] hover:bg-rose-500/10 border border-white/10 hover:border-rose-500/30 px-2.5 py-1 rounded-lg transition-all cursor-pointer shrink-0 disabled:opacity-50"
                                             title={`Remove ${m.name || m.email} from team`}
                                           >
                                             {teamActionLoading === `${t._id}_${m.email}` ? (

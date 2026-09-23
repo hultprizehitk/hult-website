@@ -119,16 +119,19 @@ export default function EventRegistrationModal({
         .then((res) => res.json())
         .then((data) => {
           if (data.success && data.user) {
-            const userPhone = (data.user.phone || "").trim();
-            const userRoll = (data.user.roll || "").trim();
-            setProfileData({ phone: userPhone, roll: userRoll });
-            if (userPhone) {
-              setCreateForm((prev) => ({ ...prev, phone: userPhone }));
-              setJoinForm((prev) => ({ ...prev, phone: userPhone }));
+            const rawPhone = (data.user.phone || "").trim();
+            const rawRoll = (data.user.roll || "").trim();
+            const cleanPhone = rawPhone.replace(/\D/g, "").slice(0, 10);
+            const cleanRoll = rawRoll.replace(/\D/g, "");
+
+            setProfileData({ phone: cleanPhone, roll: cleanRoll });
+            if (cleanPhone) {
+              setCreateForm((prev) => ({ ...prev, phone: cleanPhone }));
+              setJoinForm((prev) => ({ ...prev, phone: cleanPhone }));
             }
-            if (userRoll) {
-              setCreateForm((prev) => ({ ...prev, roll: userRoll }));
-              setJoinForm((prev) => ({ ...prev, roll: userRoll }));
+            if (cleanRoll) {
+              setCreateForm((prev) => ({ ...prev, roll: cleanRoll }));
+              setJoinForm((prev) => ({ ...prev, roll: cleanRoll }));
             }
           }
         })
@@ -136,8 +139,8 @@ export default function EventRegistrationModal({
     }
   }, [session?.user?.email]);
 
-  const isPhoneSaved = Boolean(profileData?.phone?.trim());
-  const isRollSaved = Boolean(profileData?.roll?.trim());
+  const isPhoneSaved = Boolean(profileData?.phone && /^\d{10}$/.test(profileData.phone));
+  const isRollSaved = Boolean(profileData?.roll && /^\d+$/.test(profileData.roll));
 
   // Action status
   const [submitting, setSubmitting] = useState(false);
@@ -471,21 +474,23 @@ export default function EventRegistrationModal({
     e.preventDefault();
     setErrorMessage(null);
 
-    const effectivePhone = createForm.phone.trim() || profileData?.phone?.trim() || "";
-    const effectiveRoll = createForm.roll.trim() || profileData?.roll?.trim() || "";
+    const rawPhone = createForm.phone.trim() || profileData?.phone?.trim() || "";
+    const rawRoll = createForm.roll.trim() || profileData?.roll?.trim() || "";
+    const cleanPhone = rawPhone.replace(/\D/g, "").slice(0, 10);
+    const cleanRoll = rawRoll.replace(/\D/g, "");
 
     if (!createForm.teamName.trim()) {
       setErrorMessage("Please enter a valid Team Name.");
       return;
     }
 
-    if (!effectivePhone) {
-      setErrorMessage("Please enter your Contact Phone number.");
+    if (!cleanPhone || !/^\d{10}$/.test(cleanPhone)) {
+      setErrorMessage("Contact Phone must be a valid 10-digit number.");
       return;
     }
 
-    if (!effectiveRoll) {
-      setErrorMessage("Please enter your College Roll Number.");
+    if (!cleanRoll || !/^\d+$/.test(cleanRoll)) {
+      setErrorMessage("College Roll No. must contain numbers only.");
       return;
     }
 
@@ -498,8 +503,8 @@ export default function EventRegistrationModal({
           eventId: event._id,
           teamName: createForm.teamName.trim(),
           ventureName: createForm.ventureName.trim(),
-          phone: effectivePhone,
-          roll: effectiveRoll,
+          phone: cleanPhone,
+          roll: cleanRoll,
         }),
       });
 
@@ -513,7 +518,7 @@ export default function EventRegistrationModal({
       setExistingTeam(data.team);
       setUserRole("lead");
       // Update profileData locally
-      setProfileData({ phone: effectivePhone, roll: effectiveRoll });
+      setProfileData({ phone: cleanPhone, roll: cleanRoll });
       if (onRegistrationComplete) onRegistrationComplete();
     } catch (err: unknown) {
       setErrorMessage((err as Error).message || "An unexpected error occurred.");
@@ -526,21 +531,23 @@ export default function EventRegistrationModal({
     e.preventDefault();
     setErrorMessage(null);
 
-    const effectivePhone = joinForm.phone.trim() || profileData?.phone?.trim() || "";
-    const effectiveRoll = joinForm.roll.trim() || profileData?.roll?.trim() || "";
+    const rawPhone = joinForm.phone.trim() || profileData?.phone?.trim() || "";
+    const rawRoll = joinForm.roll.trim() || profileData?.roll?.trim() || "";
+    const cleanPhone = rawPhone.replace(/\D/g, "").slice(0, 10);
+    const cleanRoll = rawRoll.replace(/\D/g, "");
 
     if (!joinForm.teamCode.trim()) {
       setErrorMessage("Please enter a valid Team Code.");
       return;
     }
 
-    if (!effectivePhone) {
-      setErrorMessage("Please enter your Contact Phone number.");
+    if (!cleanPhone || !/^\d{10}$/.test(cleanPhone)) {
+      setErrorMessage("Contact Phone must be a valid 10-digit number.");
       return;
     }
 
-    if (!effectiveRoll) {
-      setErrorMessage("Please enter your College Roll Number.");
+    if (!cleanRoll || !/^\d+$/.test(cleanRoll)) {
+      setErrorMessage("College Roll No. must contain numbers only.");
       return;
     }
 
@@ -551,8 +558,8 @@ export default function EventRegistrationModal({
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           teamCode: joinForm.teamCode.trim().toUpperCase(),
-          phone: effectivePhone,
-          roll: effectiveRoll,
+          phone: cleanPhone,
+          roll: cleanRoll,
         }),
       });
 
@@ -566,7 +573,7 @@ export default function EventRegistrationModal({
       setExistingTeam(data.team);
       setUserRole("member");
       // Update profileData locally
-      setProfileData({ phone: effectivePhone, roll: effectiveRoll });
+      setProfileData({ phone: cleanPhone, roll: cleanRoll });
       if (onRegistrationComplete) onRegistrationComplete();
     } catch (err: unknown) {
       setErrorMessage((err as Error).message || "An unexpected error occurred.");
@@ -960,111 +967,76 @@ export default function EventRegistrationModal({
                 </div>
 
                 {isSubmitted ? (
-                  <div className="space-y-4">
-                    <div className="rounded-2xl border border-emerald-500/20 bg-emerald-950/15 p-4 sm:p-5 text-xs font-mono text-emerald-200/90 space-y-2">
-                      <div className="text-white font-semibold flex items-center gap-2 text-sm">
-                        <CheckCircle2 size={16} className="text-emerald-400" />
-                        <span>Team Officially Registered</span>
-                      </div>
-                      <p className="text-white/60 text-xs leading-relaxed">
-                        Team &quot;{existingTeam.teamName}&quot; is confirmed for {event.title}. Share team code <span className="text-white font-bold">{existingTeam.teamCode}</span> with classmates to invite them to your roster.
-                      </p>
-                    </div>
-
-                    <div className="flex items-center gap-3 flex-wrap">
-                      {userRole === "lead" ? (
-                        <button
-                          type="button"
-                          onClick={handleDeleteTeam}
-                          disabled={actionLoading}
-                          className="rounded-full bg-white/5 hover:bg-rose-500/10 border border-white/15 hover:border-rose-500/30 px-4 py-2.5 text-xs font-semibold text-rose-300 hover:text-rose-200 transition-all cursor-pointer inline-flex items-center gap-1.5 font-mono disabled:opacity-50"
-                        >
-                          {actionLoading ? <Loader2 size={12} className="animate-spin" /> : <Trash2 size={12} />}
-                          <span>Disband Team</span>
-                        </button>
-                      ) : (
-                        <button
-                          type="button"
-                          onClick={handleLeaveTeam}
-                          disabled={actionLoading}
-                          className="rounded-full bg-white/5 hover:bg-rose-500/10 border border-white/15 hover:border-rose-500/30 px-4 py-2.5 text-xs font-semibold text-white/75 hover:text-rose-200 transition-all cursor-pointer inline-flex items-center gap-1.5 font-mono disabled:opacity-50"
-                        >
-                          {actionLoading ? <Loader2 size={12} className="animate-spin" /> : <LogOut size={12} />}
-                          <span>Leave Team</span>
-                        </button>
-                      )}
-
+                  <div className="flex items-center gap-3 flex-wrap">
+                    {userRole === "lead" ? (
                       <button
                         type="button"
-                        onClick={openSubmissionModal}
-                        className="rounded-full bg-white/10 hover:bg-white/15 border border-white/20 text-white font-semibold px-5 py-2.5 text-xs transition-all cursor-pointer font-mono inline-flex items-center gap-2"
+                        onClick={handleDeleteTeam}
+                        disabled={actionLoading}
+                        className="rounded-full bg-white/5 hover:bg-rose-500/10 border border-white/15 hover:border-rose-500/30 px-4 py-2.5 text-xs font-semibold text-rose-300 hover:text-rose-200 transition-all cursor-pointer inline-flex items-center gap-1.5 font-mono disabled:opacity-50"
                       >
-                        <FileText size={13} />
-                        <span>View Registration Status</span>
+                        {actionLoading ? <Loader2 size={12} className="animate-spin" /> : <Trash2 size={12} />}
+                        <span>Disband Team</span>
                       </button>
-                    </div>
+                    ) : (
+                      <button
+                        type="button"
+                        onClick={handleLeaveTeam}
+                        disabled={actionLoading}
+                        className="rounded-full bg-white/5 hover:bg-rose-500/10 border border-white/15 hover:border-rose-500/30 px-4 py-2.5 text-xs font-semibold text-white/75 hover:text-rose-200 transition-all cursor-pointer inline-flex items-center gap-1.5 font-mono disabled:opacity-50"
+                      >
+                        {actionLoading ? <Loader2 size={12} className="animate-spin" /> : <LogOut size={12} />}
+                        <span>Leave Team</span>
+                      </button>
+                    )}
+
+                    <button
+                      type="button"
+                      onClick={openSubmissionModal}
+                      className="rounded-full bg-white/10 hover:bg-white/15 border border-white/20 text-white font-semibold px-5 py-2.5 text-xs transition-all cursor-pointer font-mono inline-flex items-center gap-2"
+                    >
+                      <FileText size={13} />
+                      <span>View Registration Status</span>
+                    </button>
                   </div>
                 ) : (
-                  <div className="space-y-4">
-                    <div className="rounded-2xl border border-white/10 bg-white/[0.02] p-4 text-xs font-mono text-white/70 space-y-1">
-                      <div className="text-white/90 font-semibold flex items-center gap-2">
-                        {meetsMinCriteria ? (
-                          <>
-                            <Sparkles size={14} className="text-[#f20089]" />
-                            <span>Team Ready for Event Registration</span>
-                          </>
-                        ) : (
-                          <>
-                            <AlertCircle size={14} className="text-amber-400" />
-                            <span>Minimum {minMembers} Members Required</span>
-                          </>
-                        )}
-                      </div>
-                      <p className="text-white/50 text-[11px] leading-relaxed">
-                        {meetsMinCriteria
-                          ? `All member requirements met (${currentMembersCount} enrolled). Submit below to finalize registration for "${existingTeam.teamName}".`
-                          : `This event requires at least ${minMembers} members per team (currently ${currentMembersCount}/${minMembers}). Share invite code "${existingTeam.teamCode}" with classmates.`}
-                      </p>
-                    </div>
-
-                    <div className="flex items-center gap-3 flex-wrap">
-                      {userRole === "lead" ? (
-                        <button
-                          type="button"
-                          onClick={handleDeleteTeam}
-                          disabled={actionLoading}
-                          className="rounded-full bg-white/5 hover:bg-rose-500/10 border border-white/15 hover:border-rose-500/30 px-4 py-2.5 text-xs font-semibold text-rose-300 hover:text-rose-200 transition-all cursor-pointer inline-flex items-center gap-1.5 font-mono disabled:opacity-50"
-                        >
-                          {actionLoading ? <Loader2 size={12} className="animate-spin" /> : <Trash2 size={12} />}
-                          <span>Disband Team</span>
-                        </button>
-                      ) : (
-                        <button
-                          type="button"
-                          onClick={handleLeaveTeam}
-                          disabled={actionLoading}
-                          className="rounded-full bg-white/5 hover:bg-rose-500/10 border border-white/15 hover:border-rose-500/30 px-4 py-2.5 text-xs font-semibold text-white/75 hover:text-rose-200 transition-all cursor-pointer inline-flex items-center gap-1.5 font-mono disabled:opacity-50"
-                        >
-                          {actionLoading ? <Loader2 size={12} className="animate-spin" /> : <LogOut size={12} />}
-                          <span>Leave Team</span>
-                        </button>
-                      )}
-
+                  <div className="flex items-center gap-3 flex-wrap">
+                    {userRole === "lead" ? (
                       <button
                         type="button"
-                        onClick={openSubmissionModal}
-                        className="rounded-full bg-white hover:bg-neutral-200 text-black font-bold px-6 py-2.5 text-xs transition-all cursor-pointer shadow-lg inline-flex items-center gap-2 font-mono"
+                        onClick={handleDeleteTeam}
+                        disabled={actionLoading}
+                        className="rounded-full bg-white/5 hover:bg-rose-500/10 border border-white/15 hover:border-rose-500/30 px-4 py-2.5 text-xs font-semibold text-rose-300 hover:text-rose-200 transition-all cursor-pointer inline-flex items-center gap-1.5 font-mono disabled:opacity-50"
                       >
-                        <Send size={13} />
-                        <span>
-                          {userRole === "lead"
-                            ? meetsMinCriteria
-                              ? "Submit Application"
-                              : `Submit Application (${currentMembersCount}/${minMembers})`
-                            : "View Registration Status"}
-                        </span>
+                        {actionLoading ? <Loader2 size={12} className="animate-spin" /> : <Trash2 size={12} />}
+                        <span>Disband Team</span>
                       </button>
-                    </div>
+                    ) : (
+                      <button
+                        type="button"
+                        onClick={handleLeaveTeam}
+                        disabled={actionLoading}
+                        className="rounded-full bg-white/5 hover:bg-rose-500/10 border border-white/15 hover:border-rose-500/30 px-4 py-2.5 text-xs font-semibold text-white/75 hover:text-rose-200 transition-all cursor-pointer inline-flex items-center gap-1.5 font-mono disabled:opacity-50"
+                      >
+                        {actionLoading ? <Loader2 size={12} className="animate-spin" /> : <LogOut size={12} />}
+                        <span>Leave Team</span>
+                      </button>
+                    )}
+
+                    <button
+                      type="button"
+                      onClick={openSubmissionModal}
+                      className="rounded-full bg-white hover:bg-neutral-200 text-black font-bold px-6 py-2.5 text-xs transition-all cursor-pointer shadow-lg inline-flex items-center gap-2 font-mono"
+                    >
+                      <Send size={13} />
+                      <span>
+                        {userRole === "lead"
+                          ? meetsMinCriteria
+                            ? "Submit Application"
+                            : `Submit Application (${currentMembersCount}/${minMembers})`
+                          : "View Registration Status"}
+                      </span>
+                    </button>
                   </div>
                 )}
               </div>
@@ -1189,11 +1161,19 @@ export default function EventRegistrationModal({
               </div>
               <input
                 type="tel"
+                inputMode="numeric"
+                pattern="[0-9]*"
+                maxLength={10}
                 required={!isPhoneSaved}
                 readOnly={isPhoneSaved}
                 placeholder="10-digit mobile"
                 value={createForm.phone}
-                onChange={(e) => setCreateForm({ ...createForm, phone: e.target.value })}
+                onChange={(e) =>
+                  setCreateForm({
+                    ...createForm,
+                    phone: e.target.value.replace(/\D/g, "").slice(0, 10),
+                  })
+                }
                 className={`w-full rounded-2xl border px-4 py-3 text-xs sm:text-sm font-mono transition-all outline-none ${
                   isPhoneSaved
                     ? "border-white/15 bg-white/[0.04] text-white/90 cursor-not-allowed select-none"
@@ -1225,11 +1205,18 @@ export default function EventRegistrationModal({
               </div>
               <input
                 type="text"
+                inputMode="numeric"
+                pattern="[0-9]*"
                 required={!isRollSaved}
                 readOnly={isRollSaved}
-                placeholder="e.g. 2152001"
+                placeholder="Numbers only (e.g. 2152001)"
                 value={createForm.roll}
-                onChange={(e) => setCreateForm({ ...createForm, roll: e.target.value })}
+                onChange={(e) =>
+                  setCreateForm({
+                    ...createForm,
+                    roll: e.target.value.replace(/\D/g, ""),
+                  })
+                }
                 className={`w-full rounded-2xl border px-4 py-3 text-xs sm:text-sm font-mono transition-all outline-none ${
                   isRollSaved
                     ? "border-white/15 bg-white/[0.04] text-white/90 cursor-not-allowed select-none"
@@ -1335,11 +1322,19 @@ export default function EventRegistrationModal({
               </div>
               <input
                 type="tel"
+                inputMode="numeric"
+                pattern="[0-9]*"
+                maxLength={10}
                 required={!isPhoneSaved}
                 readOnly={isPhoneSaved}
                 placeholder="10-digit mobile"
                 value={joinForm.phone}
-                onChange={(e) => setJoinForm({ ...joinForm, phone: e.target.value })}
+                onChange={(e) =>
+                  setJoinForm({
+                    ...joinForm,
+                    phone: e.target.value.replace(/\D/g, "").slice(0, 10),
+                  })
+                }
                 className={`w-full rounded-2xl border px-4 py-3 text-xs sm:text-sm font-mono transition-all outline-none ${
                   isPhoneSaved
                     ? "border-white/15 bg-white/[0.04] text-white/90 cursor-not-allowed select-none"
@@ -1371,11 +1366,18 @@ export default function EventRegistrationModal({
               </div>
               <input
                 type="text"
+                inputMode="numeric"
+                pattern="[0-9]*"
                 required={!isRollSaved}
                 readOnly={isRollSaved}
-                placeholder="e.g. 2152002"
+                placeholder="Numbers only (e.g. 2152002)"
                 value={joinForm.roll}
-                onChange={(e) => setJoinForm({ ...joinForm, roll: e.target.value })}
+                onChange={(e) =>
+                  setJoinForm({
+                    ...joinForm,
+                    roll: e.target.value.replace(/\D/g, ""),
+                  })
+                }
                 className={`w-full rounded-2xl border px-4 py-3 text-xs sm:text-sm font-mono transition-all outline-none ${
                   isRollSaved
                     ? "border-white/15 bg-white/[0.04] text-white/90 cursor-not-allowed select-none"
