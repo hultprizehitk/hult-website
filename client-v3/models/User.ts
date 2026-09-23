@@ -8,6 +8,8 @@ export interface IUser extends Document {
   image?: string;
   department: string;
   year: string;
+  phone?: string;
+  roll?: string;
   role: UserRole;
   createdAt: Date;
   updatedAt: Date;
@@ -40,6 +42,16 @@ const UserSchema = new Schema<IUser>(
     year: {
       type: String,
       default: "1st Year",
+      trim: true,
+    },
+    phone: {
+      type: String,
+      default: "",
+      trim: true,
+    },
+    roll: {
+      type: String,
+      default: "",
       trim: true,
     },
     role: {

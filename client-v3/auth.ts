@@ -85,6 +85,8 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
           (user as { department?: string }).department = dbUser.department;
           (user as { year?: string }).year = dbUser.year;
           (user as { role?: string }).role = assignedRole;
+          (user as { phone?: string }).phone = dbUser.phone || "";
+          (user as { roll?: string }).roll = dbUser.roll || "";
         } catch (dbErr) {
           console.error("Error creating/syncing Google student in MongoDB:", dbErr);
           return false;
@@ -98,6 +100,8 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
         token.department = (user as { department?: string }).department;
         token.year = (user as { year?: string }).year;
         token.role = (user as { role?: string }).role || "user";
+        token.phone = (user as { phone?: string }).phone || "";
+        token.roll = (user as { roll?: string }).roll || "";
       }
       return token;
     },
@@ -108,6 +112,8 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
           department: token.department,
           year: token.year,
           role: token.role || "user",
+          phone: token.phone || "",
+          roll: token.roll || "",
         });
       }
       return session;

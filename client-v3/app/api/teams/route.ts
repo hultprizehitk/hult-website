@@ -3,6 +3,7 @@ import mongoose from "mongoose";
 import { connectDB } from "@/lib/mongodb";
 import Event from "@/models/Event";
 import Team from "@/models/Team";
+import User from "@/models/User";
 import { auth } from "@/auth";
 import { parseHeritageEmail } from "@/lib/heritage-parser";
 
@@ -97,7 +98,13 @@ export async function POST(req: Request) {
     const body = await req.json();
     const { eventId, teamName, ventureName, phone, roll, department } = body;
 
-    if (!eventId || !teamName?.trim() || !phone?.trim() || !roll?.trim()) {
+    await connectDB();
+
+    const userInDb = await User.findOne({ email: userEmail });
+    const effectivePhone = phone?.trim() || userInDb?.phone?.trim() || "";
+    const effectiveRoll = roll?.trim() || userInDb?.roll?.trim() || "";
+
+    if (!eventId || !teamName?.trim() || !effectivePhone || !effectiveRoll) {
       return NextResponse.json(
         { error: "Event ID, Team Name, Contact Phone, and College Roll No. are required." },
         { status: 400 }
@@ -107,8 +114,6 @@ export async function POST(req: Request) {
     if (!mongoose.Types.ObjectId.isValid(eventId)) {
       return NextResponse.json({ error: "Invalid event ID." }, { status: 400 });
     }
-
-    await connectDB();
 
     // 1. Fetch Event
     const event = await Event.findById(eventId);
@@ -175,8 +180,8 @@ export async function POST(req: Request) {
 
     const cleanTeamName = teamName.trim();
     const cleanVenture = ventureName?.trim() || "";
-    const cleanPhone = phone?.trim() || "";
-    const cleanRoll = roll?.trim() || "";
+    const cleanPhone = effectivePhone;
+    const cleanRoll = effectiveRoll;
     const minMembers = event.minTeamMembers || 3;
     const maxMembers = event.maxTeamMembers || 5;
     const initialSubmissionStatus = 1 >= minMembers ? "ready" : "forming";
@@ -227,6 +232,14 @@ export async function POST(req: Request) {
     });
     event.registeredTeamsCount = event.registeredTeams.length;
     await event.save();
+
+    // 9. Synchronize phone and roll to User profile
+    if (userInDb && (userInDb.phone !== cleanPhone || userInDb.roll !== cleanRoll)) {
+      await User.updateOne(
+        { email: userEmail },
+        { $set: { phone: cleanPhone, roll: cleanRoll } }
+      );
+    }
 
     return NextResponse.json(
       {

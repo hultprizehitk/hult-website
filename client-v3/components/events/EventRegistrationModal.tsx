@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useCallback } from "react";
+import Link from "next/link";
 import { useSession, signIn } from "next-auth/react";
 import {
   X,
@@ -100,6 +101,39 @@ export default function EventRegistrationModal({
     phone: "",
     roll: "",
   });
+
+  // Saved user profile (phone & roll from DB)
+  const [profileData, setProfileData] = useState<{
+    phone: string;
+    roll: string;
+  } | null>(null);
+
+  // Fetch saved student profile (phone & roll)
+  useEffect(() => {
+    if (session?.user?.email) {
+      fetch("/api/profile")
+        .then((res) => res.json())
+        .then((data) => {
+          if (data.success && data.user) {
+            const userPhone = (data.user.phone || "").trim();
+            const userRoll = (data.user.roll || "").trim();
+            setProfileData({ phone: userPhone, roll: userRoll });
+            if (userPhone) {
+              setCreateForm((prev) => ({ ...prev, phone: userPhone }));
+              setJoinForm((prev) => ({ ...prev, phone: userPhone }));
+            }
+            if (userRoll) {
+              setCreateForm((prev) => ({ ...prev, roll: userRoll }));
+              setJoinForm((prev) => ({ ...prev, roll: userRoll }));
+            }
+          }
+        })
+        .catch((err) => console.error("Error fetching user profile:", err));
+    }
+  }, [session?.user?.email]);
+
+  const isPhoneSaved = Boolean(profileData?.phone?.trim());
+  const isRollSaved = Boolean(profileData?.roll?.trim());
 
   // Action status
   const [submitting, setSubmitting] = useState(false);
@@ -236,17 +270,20 @@ export default function EventRegistrationModal({
     e.preventDefault();
     setErrorMessage(null);
 
+    const effectivePhone = createForm.phone.trim() || profileData?.phone?.trim() || "";
+    const effectiveRoll = createForm.roll.trim() || profileData?.roll?.trim() || "";
+
     if (!createForm.teamName.trim()) {
       setErrorMessage("Please enter a valid Team Name.");
       return;
     }
 
-    if (!createForm.phone.trim()) {
+    if (!effectivePhone) {
       setErrorMessage("Please enter your Contact Phone number.");
       return;
     }
 
-    if (!createForm.roll.trim()) {
+    if (!effectiveRoll) {
       setErrorMessage("Please enter your College Roll Number.");
       return;
     }
@@ -260,8 +297,8 @@ export default function EventRegistrationModal({
           eventId: event._id,
           teamName: createForm.teamName.trim(),
           ventureName: createForm.ventureName.trim(),
-          phone: createForm.phone.trim(),
-          roll: createForm.roll.trim(),
+          phone: effectivePhone,
+          roll: effectiveRoll,
         }),
       });
 
@@ -274,6 +311,8 @@ export default function EventRegistrationModal({
 
       setExistingTeam(data.team);
       setUserRole("lead");
+      // Update profileData locally
+      setProfileData({ phone: effectivePhone, roll: effectiveRoll });
       if (onRegistrationComplete) onRegistrationComplete();
     } catch (err: unknown) {
       setErrorMessage((err as Error).message || "An unexpected error occurred.");
@@ -286,17 +325,20 @@ export default function EventRegistrationModal({
     e.preventDefault();
     setErrorMessage(null);
 
+    const effectivePhone = joinForm.phone.trim() || profileData?.phone?.trim() || "";
+    const effectiveRoll = joinForm.roll.trim() || profileData?.roll?.trim() || "";
+
     if (!joinForm.teamCode.trim()) {
       setErrorMessage("Please enter a valid Team Code.");
       return;
     }
 
-    if (!joinForm.phone.trim()) {
+    if (!effectivePhone) {
       setErrorMessage("Please enter your Contact Phone number.");
       return;
     }
 
-    if (!joinForm.roll.trim()) {
+    if (!effectiveRoll) {
       setErrorMessage("Please enter your College Roll Number.");
       return;
     }
@@ -308,8 +350,8 @@ export default function EventRegistrationModal({
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           teamCode: joinForm.teamCode.trim().toUpperCase(),
-          phone: joinForm.phone.trim(),
-          roll: joinForm.roll.trim(),
+          phone: effectivePhone,
+          roll: effectiveRoll,
         }),
       });
 
@@ -322,6 +364,8 @@ export default function EventRegistrationModal({
 
       setExistingTeam(data.team);
       setUserRole("member");
+      // Update profileData locally
+      setProfileData({ phone: effectivePhone, roll: effectiveRoll });
       if (onRegistrationComplete) onRegistrationComplete();
     } catch (err: unknown) {
       setErrorMessage((err as Error).message || "An unexpected error occurred.");
@@ -889,31 +933,75 @@ export default function EventRegistrationModal({
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
-              <label className="block text-xs font-mono uppercase tracking-wider text-white/70 font-bold mb-1.5">
-                Contact Phone *
-              </label>
+              <div className="flex items-center justify-between mb-1.5">
+                <label className="text-xs font-mono uppercase tracking-wider text-white/70 font-bold flex items-center gap-1.5">
+                  <Phone className="h-3 w-3 text-white/50" />
+                  <span>Contact Phone {isPhoneSaved ? "" : "*"}</span>
+                </label>
+                {isPhoneSaved && (
+                  <span className="inline-flex items-center gap-1 text-[10px] font-mono font-bold text-emerald-400 bg-emerald-500/10 border border-emerald-500/25 px-2 py-0.5 rounded-full">
+                    <Lock className="h-2.5 w-2.5" />
+                    <span>Saved in Profile</span>
+                  </span>
+                )}
+              </div>
               <input
                 type="tel"
-                required
+                required={!isPhoneSaved}
+                readOnly={isPhoneSaved}
                 placeholder="10-digit mobile"
                 value={createForm.phone}
                 onChange={(e) => setCreateForm({ ...createForm, phone: e.target.value })}
-                className="w-full rounded-2xl border border-white/15 bg-white/[0.04] hover:bg-white/[0.07] focus:bg-white/[0.1] px-4 py-3 text-white placeholder-white/30 outline-none focus:border-[#f20089] text-xs sm:text-sm font-mono transition-all"
+                className={`w-full rounded-2xl border px-4 py-3 text-xs sm:text-sm font-mono transition-all outline-none ${
+                  isPhoneSaved
+                    ? "border-emerald-500/30 bg-emerald-500/[0.05] text-emerald-200 cursor-not-allowed select-none"
+                    : "border-white/15 bg-white/[0.04] hover:bg-white/[0.07] focus:bg-white/[0.1] text-white placeholder-white/30 focus:border-[#f20089]"
+                }`}
               />
+              {isPhoneSaved && (
+                <span className="text-[10px] text-white/40 mt-1 block">
+                  Can only be edited in your{" "}
+                  <Link href="/profile" className="text-[#f20089] hover:underline font-mono">
+                    Profile →
+                  </Link>
+                </span>
+              )}
             </div>
 
             <div>
-              <label className="block text-xs font-mono uppercase tracking-wider text-white/70 font-bold mb-1.5">
-                College Roll No. *
-              </label>
+              <div className="flex items-center justify-between mb-1.5">
+                <label className="text-xs font-mono uppercase tracking-wider text-white/70 font-bold flex items-center gap-1.5">
+                  <GraduationCap className="h-3 w-3 text-white/50" />
+                  <span>College Roll No. {isRollSaved ? "" : "*"}</span>
+                </label>
+                {isRollSaved && (
+                  <span className="inline-flex items-center gap-1 text-[10px] font-mono font-bold text-emerald-400 bg-emerald-500/10 border border-emerald-500/25 px-2 py-0.5 rounded-full">
+                    <Lock className="h-2.5 w-2.5" />
+                    <span>Saved in Profile</span>
+                  </span>
+                )}
+              </div>
               <input
                 type="text"
-                required
+                required={!isRollSaved}
+                readOnly={isRollSaved}
                 placeholder="e.g. 2152001"
                 value={createForm.roll}
                 onChange={(e) => setCreateForm({ ...createForm, roll: e.target.value })}
-                className="w-full rounded-2xl border border-white/15 bg-white/[0.04] hover:bg-white/[0.07] focus:bg-white/[0.1] px-4 py-3 text-white placeholder-white/30 outline-none focus:border-[#f20089] text-xs sm:text-sm font-mono transition-all"
+                className={`w-full rounded-2xl border px-4 py-3 text-xs sm:text-sm font-mono transition-all outline-none ${
+                  isRollSaved
+                    ? "border-emerald-500/30 bg-emerald-500/[0.05] text-emerald-200 cursor-not-allowed select-none"
+                    : "border-white/15 bg-white/[0.04] hover:bg-white/[0.07] focus:bg-white/[0.1] text-white placeholder-white/30 focus:border-[#f20089]"
+                }`}
               />
+              {isRollSaved && (
+                <span className="text-[10px] text-white/40 mt-1 block">
+                  Can only be edited in your{" "}
+                  <Link href="/profile" className="text-[#f20089] hover:underline font-mono">
+                    Profile →
+                  </Link>
+                </span>
+              )}
             </div>
           </div>
 
@@ -991,31 +1079,75 @@ export default function EventRegistrationModal({
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
-              <label className="block text-xs font-mono uppercase tracking-wider text-white/70 font-bold mb-1.5">
-                Contact Phone *
-              </label>
+              <div className="flex items-center justify-between mb-1.5">
+                <label className="text-xs font-mono uppercase tracking-wider text-white/70 font-bold flex items-center gap-1.5">
+                  <Phone className="h-3 w-3 text-white/50" />
+                  <span>Contact Phone {isPhoneSaved ? "" : "*"}</span>
+                </label>
+                {isPhoneSaved && (
+                  <span className="inline-flex items-center gap-1 text-[10px] font-mono font-bold text-emerald-400 bg-emerald-500/10 border border-emerald-500/25 px-2 py-0.5 rounded-full">
+                    <Lock className="h-2.5 w-2.5" />
+                    <span>Saved in Profile</span>
+                  </span>
+                )}
+              </div>
               <input
                 type="tel"
-                required
+                required={!isPhoneSaved}
+                readOnly={isPhoneSaved}
                 placeholder="10-digit mobile"
                 value={joinForm.phone}
                 onChange={(e) => setJoinForm({ ...joinForm, phone: e.target.value })}
-                className="w-full rounded-2xl border border-white/15 bg-white/[0.04] hover:bg-white/[0.07] focus:bg-white/[0.1] px-4 py-3 text-white placeholder-white/30 outline-none focus:border-[#f20089] text-xs sm:text-sm font-mono transition-all"
+                className={`w-full rounded-2xl border px-4 py-3 text-xs sm:text-sm font-mono transition-all outline-none ${
+                  isPhoneSaved
+                    ? "border-emerald-500/30 bg-emerald-500/[0.05] text-emerald-200 cursor-not-allowed select-none"
+                    : "border-white/15 bg-white/[0.04] hover:bg-white/[0.07] focus:bg-white/[0.1] text-white placeholder-white/30 focus:border-[#f20089]"
+                }`}
               />
+              {isPhoneSaved && (
+                <span className="text-[10px] text-white/40 mt-1 block">
+                  Can only be edited in your{" "}
+                  <Link href="/profile" className="text-[#f20089] hover:underline font-mono">
+                    Profile →
+                  </Link>
+                </span>
+              )}
             </div>
 
             <div>
-              <label className="block text-xs font-mono uppercase tracking-wider text-white/70 font-bold mb-1.5">
-                College Roll No. *
-              </label>
+              <div className="flex items-center justify-between mb-1.5">
+                <label className="text-xs font-mono uppercase tracking-wider text-white/70 font-bold flex items-center gap-1.5">
+                  <GraduationCap className="h-3 w-3 text-white/50" />
+                  <span>College Roll No. {isRollSaved ? "" : "*"}</span>
+                </label>
+                {isRollSaved && (
+                  <span className="inline-flex items-center gap-1 text-[10px] font-mono font-bold text-emerald-400 bg-emerald-500/10 border border-emerald-500/25 px-2 py-0.5 rounded-full">
+                    <Lock className="h-2.5 w-2.5" />
+                    <span>Saved in Profile</span>
+                  </span>
+                )}
+              </div>
               <input
                 type="text"
-                required
+                required={!isRollSaved}
+                readOnly={isRollSaved}
                 placeholder="e.g. 2152002"
                 value={joinForm.roll}
                 onChange={(e) => setJoinForm({ ...joinForm, roll: e.target.value })}
-                className="w-full rounded-2xl border border-white/15 bg-white/[0.04] hover:bg-white/[0.07] focus:bg-white/[0.1] px-4 py-3 text-white placeholder-white/30 outline-none focus:border-[#f20089] text-xs sm:text-sm font-mono transition-all"
+                className={`w-full rounded-2xl border px-4 py-3 text-xs sm:text-sm font-mono transition-all outline-none ${
+                  isRollSaved
+                    ? "border-emerald-500/30 bg-emerald-500/[0.05] text-emerald-200 cursor-not-allowed select-none"
+                    : "border-white/15 bg-white/[0.04] hover:bg-white/[0.07] focus:bg-white/[0.1] text-white placeholder-white/30 focus:border-[#f20089]"
+                }`}
               />
+              {isRollSaved && (
+                <span className="text-[10px] text-white/40 mt-1 block">
+                  Can only be edited in your{" "}
+                  <Link href="/profile" className="text-[#f20089] hover:underline font-mono">
+                    Profile →
+                  </Link>
+                </span>
+              )}
             </div>
           </div>
 
