@@ -28,6 +28,7 @@ import {
   Trash2,
   UserMinus,
   LogOut,
+  Save,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import type { PublicEvent } from "@/types";
@@ -143,22 +144,16 @@ export default function EventRegistrationModal({
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [copiedCode, setCopiedCode] = useState(false);
 
-  // Final Team Submission State (for Team Leader)
-  const [submissionForm, setSubmissionForm] = useState({
-    ventureName: "",
-    ventureDescription: "",
-    pitchDeckUrl: "",
-  });
+  // Final Team Registration State
   const [submittingFinal, setSubmittingFinal] = useState(false);
   const [finalSubmitError, setFinalSubmitError] = useState<string | null>(null);
   const [finalSubmitSuccess, setFinalSubmitSuccess] = useState<string | null>(null);
-  const [isEditingSubmission, setIsEditingSubmission] = useState(false);
+  const [isSubmissionModalOpen, setIsSubmissionModalOpen] = useState(false);
 
   // Team Management State (Edit info, Remove Member, Leave Team, Delete Team)
   const [isEditingTeam, setIsEditingTeam] = useState(false);
   const [editTeamForm, setEditTeamForm] = useState({
     teamName: "",
-    ventureName: "",
   });
   const [actionLoading, setActionLoading] = useState(false);
   const [actionError, setActionError] = useState<string | null>(null);
@@ -167,24 +162,44 @@ export default function EventRegistrationModal({
   const minMembers = event.minTeamMembers || 3;
   const maxMembers = event.maxTeamMembers || 5;
 
-  // Sync submission form & edit team form with existing team data
+  // Sync edit team form with existing team data
   useEffect(() => {
     if (existingTeam) {
-      setSubmissionForm({
-        ventureName: existingTeam.ventureName || "",
-        ventureDescription: existingTeam.ventureDescription || "",
-        pitchDeckUrl: existingTeam.pitchDeckUrl || "",
-      });
       setEditTeamForm({
         teamName: existingTeam.teamName || "",
-        ventureName: existingTeam.ventureName || "",
       });
     }
   }, [existingTeam]);
 
-  const handleFinalSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  // Open submission popup modal
+  const openSubmissionModal = () => {
+    setFinalSubmitError(null);
+    setFinalSubmitSuccess(null);
+    setIsSubmissionModalOpen(true);
+  };
+
+  // Close submission modal on ESC key
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape" && isSubmissionModalOpen) {
+        setIsSubmissionModalOpen(false);
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [isSubmissionModalOpen]);
+
+  const handleFinalSubmit = async (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
     if (!existingTeam) return;
+
+    const currentMembersCount = 1 + (existingTeam.members?.length || 0);
+    if (currentMembersCount < minMembers) {
+      setFinalSubmitError(
+        `Minimum ${minMembers} members required to submit registration. Your team currently has ${currentMembersCount} member(s).`
+      );
+      return;
+    }
 
     setSubmittingFinal(true);
     setFinalSubmitError(null);
@@ -197,31 +212,25 @@ export default function EventRegistrationModal({
         body: JSON.stringify({
           teamId: existingTeam._id,
           teamCode: existingTeam.teamCode,
-          ventureName: submissionForm.ventureName,
-          ventureDescription: submissionForm.ventureDescription,
-          pitchDeckUrl: submissionForm.pitchDeckUrl,
         }),
       });
 
       const data = await res.json();
       if (!res.ok || !data.success) {
-        throw new Error(data.error || "Failed to submit final team details.");
+        throw new Error(data.error || "Failed to submit team registration.");
       }
 
-      setFinalSubmitSuccess("Team information submitted successfully!");
+      setFinalSubmitSuccess("Team registration submitted successfully! Team is registered for this event.");
       setExistingTeam((prev) =>
         prev
           ? {
               ...prev,
-              ventureName: submissionForm.ventureName,
-              ventureDescription: submissionForm.ventureDescription,
-              pitchDeckUrl: submissionForm.pitchDeckUrl,
               submissionStatus: "submitted",
+              status: "confirmed",
               submittedAt: new Date().toISOString(),
             }
           : null
       );
-      setIsEditingSubmission(false);
       if (onRegistrationComplete) {
         onRegistrationComplete();
       }
@@ -285,7 +294,6 @@ export default function EventRegistrationModal({
           teamId: existingTeam._id,
           action: "edit_team",
           teamName: editTeamForm.teamName.trim(),
-          ventureName: editTeamForm.ventureName.trim(),
         }),
       });
 
@@ -299,7 +307,6 @@ export default function EventRegistrationModal({
           ? {
               ...prev,
               teamName: editTeamForm.teamName.trim(),
-              ventureName: editTeamForm.ventureName.trim(),
             }
           : null
       );
@@ -656,24 +663,13 @@ export default function EventRegistrationModal({
                     {/* Status Pill with refined indicator dot */}
                     {isSubmitted ? (
                       <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-mono font-semibold uppercase tracking-wider bg-white/5 border border-white/15 text-white/90">
-                        <span className="w-1.5 h-1.5 rounded-full bg-purple-400" />
-                        <span>Submitted</span>
-                      </span>
-                    ) : meetsMinCriteria ? (
-                      <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-mono font-semibold uppercase tracking-wider bg-white/5 border border-white/15 text-white/90">
-                        <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-                        <span>Ready ({currentMembersCount}/{maxMembers})</span>
+                        <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
+                        <span>Registered &amp; Confirmed</span>
                       </span>
                     ) : (
                       <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-mono font-semibold uppercase tracking-wider bg-white/5 border border-white/15 text-white/80">
                         <span className="w-1.5 h-1.5 rounded-full bg-amber-400/80" />
-                        <span>Forming ({currentMembersCount}/{minMembers} Min)</span>
-                      </span>
-                    )}
-
-                    {existingTeam.ventureName && (
-                      <span className="inline-flex items-center px-3 py-1 rounded-full text-[10px] font-mono uppercase tracking-wider text-white/65 bg-white/[0.04] border border-white/10">
-                        Track: {existingTeam.ventureName}
+                        <span>Pending Submission ({currentMembersCount} Joined)</span>
                       </span>
                     )}
                   </div>
@@ -762,7 +758,7 @@ export default function EventRegistrationModal({
                       <span className="text-[10px] font-mono text-rose-300">Leader Privilege</span>
                     </div>
 
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+                    <div className="grid grid-cols-1 gap-3.5">
                       <div>
                         <label className="block text-[11px] font-mono uppercase tracking-wider text-white/70 mb-1 font-bold">
                           Team Name *
@@ -773,21 +769,6 @@ export default function EventRegistrationModal({
                           value={editTeamForm.teamName}
                           onChange={(e) =>
                             setEditTeamForm((p) => ({ ...p, teamName: e.target.value }))
-                          }
-                          className="w-full rounded-xl border border-white/15 bg-white/[0.04] hover:bg-white/[0.07] focus:bg-white/[0.1] px-3.5 py-2.5 text-xs text-white placeholder-white/30 focus:border-[#f20089] focus:outline-none transition-all font-sans"
-                        />
-                      </div>
-
-                      <div>
-                        <label className="block text-[11px] font-mono uppercase tracking-wider text-white/70 mb-1 font-bold">
-                          Track / Venture Name
-                        </label>
-                        <input
-                          type="text"
-                          placeholder="e.g. EcoPack Innovations"
-                          value={editTeamForm.ventureName}
-                          onChange={(e) =>
-                            setEditTeamForm((p) => ({ ...p, ventureName: e.target.value }))
                           }
                           className="w-full rounded-xl border border-white/15 bg-white/[0.04] hover:bg-white/[0.07] focus:bg-white/[0.1] px-3.5 py-2.5 text-xs text-white placeholder-white/30 focus:border-[#f20089] focus:outline-none transition-all font-sans"
                         />
@@ -982,171 +963,101 @@ export default function EventRegistrationModal({
                 )}
               </div>
 
-              {/* Venture Proposal & Submission Dossier (Unlocks once minimum criteria is reached) */}
-              {meetsMinCriteria && (
-                <div className="rounded-2xl border border-white/15 bg-white/[0.04] backdrop-blur-xl p-5 sm:p-7 space-y-5 shadow-xl">
-                  <div className="flex items-center justify-between gap-3 pb-2 border-b border-white/10">
-                    <span className="font-mono uppercase font-bold tracking-wider text-white/70 text-xs flex items-center gap-2">
-                      <FileText size={15} className="text-[#f20089]" />
-                      <span>Venture Proposal &amp; Pitch Deck</span>
+              {/* ── OFFICIAL TEAM REGISTRATION CARD (DOWN BELOW) ── */}
+              <div className="rounded-2xl border border-white/15 bg-white/[0.04] backdrop-blur-xl p-5 sm:p-7 space-y-5 shadow-xl">
+                <div className="flex items-center justify-between gap-3 pb-3 border-b border-white/10 flex-wrap">
+                  <div className="flex items-center gap-2">
+                    <FileText size={16} className="text-[#f20089]" />
+                    <span className="font-mono uppercase font-bold tracking-wider text-white/80 text-xs">
+                      Official Team Registration
                     </span>
-
-                    {userRole === "lead" && isSubmitted && !isEditingSubmission && (
-                      <button
-                        type="button"
-                        onClick={() => setIsEditingSubmission(true)}
-                        className="inline-flex items-center gap-1.5 text-xs text-[#f20089] hover:underline font-semibold cursor-pointer"
-                      >
-                        <Edit3 size={13} />
-                        <span>Edit Details</span>
-                      </button>
-                    )}
                   </div>
 
-                  {userRole === "lead" && (!isSubmitted || isEditingSubmission) ? (
-                    /* Team Leader Submit / Edit Form */
-                    <form onSubmit={handleFinalSubmit} className="space-y-4 pt-1">
-                      {finalSubmitError && (
-                        <div className="rounded-xl border border-rose-500/40 bg-rose-950/30 p-3.5 text-xs text-rose-200">
-                          {finalSubmitError}
-                        </div>
-                      )}
-                      {finalSubmitSuccess && (
-                        <div className="rounded-xl border border-emerald-500/40 bg-emerald-950/30 p-3.5 text-xs text-emerald-200">
-                          {finalSubmitSuccess}
-                        </div>
-                      )}
-
-                      <div>
-                        <label className="block text-xs font-mono uppercase tracking-wider text-white/60 mb-1.5 font-bold">
-                          Venture Track / Project Name *
-                        </label>
-                        <input
-                          type="text"
-                          required
-                          placeholder="e.g. EcoPack Innovations"
-                          value={submissionForm.ventureName}
-                          onChange={(e) =>
-                            setSubmissionForm((p) => ({ ...p, ventureName: e.target.value }))
-                          }
-                          className="w-full rounded-2xl border border-white/15 bg-white/[0.04] hover:bg-white/[0.07] focus:bg-white/[0.1] px-4 py-3 text-xs sm:text-sm text-white placeholder-white/30 focus:border-[#f20089] focus:outline-none transition-all"
-                        />
-                      </div>
-
-                      <div>
-                        <label className="block text-xs font-mono uppercase tracking-wider text-white/60 mb-1.5 font-bold">
-                          Executive Problem &amp; Solution Summary
-                        </label>
-                        <textarea
-                          rows={3}
-                          placeholder="Briefly describe your venture's social impact, target problem, and proposed innovation..."
-                          value={submissionForm.ventureDescription}
-                          onChange={(e) =>
-                            setSubmissionForm((p) => ({
-                              ...p,
-                              ventureDescription: e.target.value,
-                            }))
-                          }
-                          className="w-full rounded-2xl border border-white/15 bg-white/[0.04] hover:bg-white/[0.07] focus:bg-white/[0.1] px-4 py-3 text-xs sm:text-sm text-white placeholder-white/30 focus:border-[#f20089] focus:outline-none resize-none transition-all"
-                        />
-                      </div>
-
-                      <div>
-                        <label className="block text-xs font-mono uppercase tracking-wider text-white/60 mb-1.5 font-bold">
-                          Pitch Deck Link (Google Drive / Canva / Notion)
-                        </label>
-                        <input
-                          type="url"
-                          placeholder="https://drive.google.com/... or Canva presentation link"
-                          value={submissionForm.pitchDeckUrl}
-                          onChange={(e) =>
-                            setSubmissionForm((p) => ({ ...p, pitchDeckUrl: e.target.value }))
-                          }
-                          className="w-full rounded-2xl border border-white/15 bg-white/[0.04] hover:bg-white/[0.07] focus:bg-white/[0.1] px-4 py-3 text-xs sm:text-sm text-white placeholder-white/30 focus:border-[#f20089] focus:outline-none font-mono transition-all"
-                        />
-                      </div>
-
-                      <div className="flex items-center gap-3 pt-3 flex-wrap">
-                        <button
-                          type="submit"
-                          disabled={submittingFinal}
-                          className="rounded-full bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-400 hover:to-teal-500 text-white font-bold text-xs sm:text-sm py-3 px-7 cursor-pointer shadow-lg shadow-emerald-600/30 transition-all hover:scale-105 font-[family-name:var(--font-google-sans)] inline-flex items-center gap-2"
-                        >
-                          {submittingFinal ? (
-                            <>
-                              <Loader2 className="h-4 w-4 animate-spin" />
-                              <span>Submitting Application...</span>
-                            </>
-                          ) : (
-                            <>
-                              <Send size={14} />
-                              <span>Submit Official Team Application</span>
-                            </>
-                          )}
-                        </button>
-
-                        {isEditingSubmission && (
-                          <button
-                            type="button"
-                            onClick={() => setIsEditingSubmission(false)}
-                            className="rounded-full border border-white/15 bg-white/5 hover:bg-white/15 px-5 py-2.5 text-xs font-semibold text-white/70 hover:text-white transition-colors cursor-pointer"
-                          >
-                            Cancel
-                          </button>
-                        )}
-                      </div>
-                    </form>
-                  ) : (
-                    /* Read-Only Proposal Dossier */
-                    <div className="space-y-4 pt-1 text-xs">
-                      <div>
-                        <span className="text-[10px] font-mono uppercase text-white/40 block">
-                          Track / Project Title
-                        </span>
-                        <span className="font-[family-name:var(--font-google-sans)] font-bold text-white text-base block mt-0.5">
-                          {existingTeam.ventureName || "General Track"}
-                        </span>
-                      </div>
-
-                      <div>
-                        <span className="text-[10px] font-mono uppercase text-white/40 block">
-                          Description &amp; Problem Statement
-                        </span>
-                        <p className="text-white/80 whitespace-pre-line text-xs sm:text-sm mt-1 leading-relaxed bg-white/[0.03] border border-white/10 p-4 rounded-2xl">
-                          {existingTeam.ventureDescription || "No description provided."}
-                        </p>
-                      </div>
-
-                      <div>
-                        <span className="text-[10px] font-mono uppercase text-white/40 block mb-1.5">
-                          Pitch Deck Presentation
-                        </span>
-                        {existingTeam.pitchDeckUrl ? (
-                          <a
-                            href={existingTeam.pitchDeckUrl}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/10 hover:bg-white/20 px-4 py-2 text-xs font-semibold text-white transition-all hover:scale-105"
-                          >
-                            <ExternalLink size={13} className="text-[#f20089]" />
-                            <span className="truncate max-w-sm">{existingTeam.pitchDeckUrl}</span>
-                          </a>
-                        ) : (
-                          <span className="text-white/40 font-mono text-xs">
-                            Pitch deck not yet attached.
-                          </span>
-                        )}
-                      </div>
-
-                      {userRole === "member" && (
-                        <p className="text-[11px] text-white/40 font-mono pt-1">
-                          Read-only: Only your Team Leader ({existingTeam.lead.name}) is authorized to update submission details.
-                        </p>
-                      )}
-                    </div>
-                  )}
+                  <div className="flex items-center gap-2">
+                    {isSubmitted ? (
+                      <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-mono font-semibold uppercase tracking-wider bg-white/5 border border-white/15 text-white/90">
+                        <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
+                        <span>Registered &amp; Confirmed</span>
+                      </span>
+                    ) : meetsMinCriteria ? (
+                      <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-mono font-semibold uppercase tracking-wider bg-white/5 border border-white/15 text-white/80">
+                        <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
+                        <span>Criteria Met ({currentMembersCount}/{minMembers})</span>
+                      </span>
+                    ) : (
+                      <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-mono font-semibold uppercase tracking-wider bg-white/5 border border-white/15 text-white/80">
+                        <span className="w-1.5 h-1.5 rounded-full bg-amber-400/80" />
+                        <span>Need {minMembers - currentMembersCount} More ({currentMembersCount}/{minMembers})</span>
+                      </span>
+                    )}
+                  </div>
                 </div>
-              )}
+
+                {isSubmitted ? (
+                  <div className="space-y-4">
+                    <div className="rounded-2xl border border-emerald-500/20 bg-emerald-950/15 p-4 sm:p-5 text-xs font-mono text-emerald-200/90 space-y-2">
+                      <div className="text-white font-semibold flex items-center gap-2 text-sm">
+                        <CheckCircle2 size={16} className="text-emerald-400" />
+                        <span>Team Officially Registered</span>
+                      </div>
+                      <p className="text-white/60 text-xs leading-relaxed">
+                        Team &quot;{existingTeam.teamName}&quot; is confirmed for {event.title}. Share team code <span className="text-white font-bold">{existingTeam.teamCode}</span> with classmates to invite them to your roster.
+                      </p>
+                    </div>
+
+                    <div>
+                      <button
+                        type="button"
+                        onClick={openSubmissionModal}
+                        className="rounded-full bg-white/10 hover:bg-white/15 border border-white/20 text-white font-semibold px-5 py-2 text-xs transition-all cursor-pointer font-mono inline-flex items-center gap-2"
+                      >
+                        <FileText size={13} />
+                        <span>View Registration Status</span>
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="space-y-4">
+                    <div className="rounded-2xl border border-white/10 bg-white/[0.02] p-4 text-xs font-mono text-white/70 space-y-1">
+                      <div className="text-white/90 font-semibold flex items-center gap-2">
+                        {meetsMinCriteria ? (
+                          <>
+                            <Sparkles size={14} className="text-[#f20089]" />
+                            <span>Team Ready for Event Registration</span>
+                          </>
+                        ) : (
+                          <>
+                            <AlertCircle size={14} className="text-amber-400" />
+                            <span>Minimum {minMembers} Members Required</span>
+                          </>
+                        )}
+                      </div>
+                      <p className="text-white/50 text-[11px] leading-relaxed">
+                        {meetsMinCriteria
+                          ? `All member requirements met (${currentMembersCount} enrolled). Submit below to finalize registration for "${existingTeam.teamName}".`
+                          : `This event requires at least ${minMembers} members per team (currently ${currentMembersCount}/${minMembers}). Share invite code "${existingTeam.teamCode}" with classmates.`}
+                      </p>
+                    </div>
+
+                    <div className="flex items-center gap-3 flex-wrap">
+                      <button
+                        type="button"
+                        onClick={openSubmissionModal}
+                        className="rounded-full bg-white hover:bg-neutral-200 text-black font-bold px-6 py-2.5 text-xs transition-all cursor-pointer shadow-lg inline-flex items-center gap-2 font-mono"
+                      >
+                        <Send size={13} />
+                        <span>
+                          {userRole === "lead"
+                            ? meetsMinCriteria
+                              ? "Submit Application"
+                              : `Submit Application (${currentMembersCount}/${minMembers})`
+                            : "View Registration Status"}
+                        </span>
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </div>
             </div>
           );
         })()
@@ -1511,89 +1422,270 @@ export default function EventRegistrationModal({
     </div>
   );
 
-  // ── INLINE MODE (PAGE SECTION) ─────────────────────────────────────────────
-  if (isInline) {
-    return (
-      <section
-        id="team-registration"
-        className="relative w-full rounded-3xl bg-[#0c0a12]/85 backdrop-blur-2xl border border-white/15 p-6 md:p-9 shadow-2xl overflow-hidden text-white font-sans animate-fadeIn scroll-mt-28"
-      >
-        {/* Top Iridescent Edge */}
-        <div
-          className="pointer-events-none absolute top-0 inset-x-0 h-[35%] bg-gradient-to-b from-white/10 to-transparent z-[1]"
-          aria-hidden="true"
-        />
+  // ── REGISTRATION CONFIRMATION POPUP MODAL COMPONENT ────────────────────────
+  const renderSubmissionModal = () => {
+    if (!isSubmissionModalOpen || !existingTeam) return null;
 
-        <div className="relative z-[2] flex flex-col gap-6">
-          {/* Section Header */}
-          <div className="flex items-start justify-between gap-4 flex-wrap pb-4 border-b border-white/10">
-            <div>
-              <span className="inline-flex items-center gap-1.5 text-[10px] font-mono font-bold uppercase tracking-widest text-[#f20089] mb-1">
-                <Sparkles size={12} />
-                <span>Competition Workspace</span>
-              </span>
-              <h2 className="font-serif text-2xl sm:text-3xl md:text-4xl font-bold tracking-tight text-white drop-shadow-[0_2px_24px_rgba(255,255,255,0.18)]">
-                Team Registration &amp; Roster
+    const currentMembersCount = 1 + (existingTeam.members?.length || 0);
+    const meetsMinCriteria = currentMembersCount >= minMembers;
+    const isSubmitted = existingTeam.submissionStatus === "submitted";
+
+    return (
+      <div
+        className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 bg-black/85 backdrop-blur-xl animate-fadeIn"
+        onClick={() => setIsSubmissionModalOpen(false)}
+      >
+        <div
+          className="relative w-full max-w-lg flex flex-col rounded-[2.5rem] border border-white/20 bg-[#0c0a12]/95 backdrop-blur-2xl shadow-2xl text-white font-sans overflow-hidden my-auto"
+          onClick={(e) => e.stopPropagation()}
+        >
+          {/* Top Iridescent Edge */}
+          <div className="pointer-events-none absolute inset-x-0 top-0 h-[1.5px] bg-gradient-to-r from-transparent via-[#f20089]/60 to-transparent" />
+
+          {/* Modal Header */}
+          <div className="p-6 pb-4 border-b border-white/10 shrink-0 bg-[#0c0a12] flex items-center justify-between gap-4">
+            <div className="space-y-1 pr-4 min-w-0">
+              <div className="flex items-center gap-2 flex-wrap">
+                <span className="rounded-full bg-white/10 border border-white/20 text-white text-[10px] font-bold uppercase tracking-wider px-2.5 py-0.5 font-mono">
+                  Official Registration
+                </span>
+                <span className="text-[11px] text-white/50 font-mono truncate max-w-xs">
+                  Team: {existingTeam.teamName}
+                </span>
+              </div>
+              <h2 className="font-serif text-xl sm:text-2xl font-bold text-white tracking-tight truncate">
+                {isSubmitted ? "Registration Confirmed" : "Confirm Team Registration"}
               </h2>
             </div>
 
-            <div className="flex items-center gap-2 flex-wrap">
-              <span className="rounded-full bg-white/10 border border-white/20 text-white text-[10px] font-bold uppercase tracking-wider px-3 py-1 font-mono">
-                {event.tag || "Flagship"}
-              </span>
-              <span className="text-[11px] text-white/60 font-mono">
-                Team: {minMembers}–{maxMembers} Members
-              </span>
-            </div>
-          </div>
-
-          {/* Render Core Content Inline */}
-          {renderWorkspaceContent()}
-        </div>
-      </section>
-    );
-  }
-
-  // ── MODAL MODE (FALLBACK DIALOG) ───────────────────────────────────────────
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 md:p-6 bg-black/85 backdrop-blur-xl animate-fadeIn">
-      <div className="relative w-full max-w-2xl max-h-[90vh] flex flex-col rounded-[2.5rem] border border-white/15 bg-[#0c0a12]/95 backdrop-blur-2xl shadow-2xl text-white font-sans overflow-hidden">
-        {/* Top Iridescent Edge */}
-        <div className="pointer-events-none absolute inset-x-0 top-0 h-[1.5px] bg-gradient-to-r from-transparent via-white/30 to-transparent" />
-
-        {/* Fixed Pinned Header */}
-        <div className="p-5 sm:p-6 pb-4 border-b border-white/10 shrink-0 bg-[#0c0a12] flex items-center justify-between gap-4">
-          <div className="space-y-1 pr-4 min-w-0">
-            <div className="flex items-center gap-2 flex-wrap">
-              <span className="rounded-full bg-white/10 border border-white/20 text-white text-[10px] font-bold uppercase tracking-wider px-2.5 py-0.5 font-mono">
-                {event.tag || "Flagship"}
-              </span>
-              <span className="text-[11px] text-white/50 font-mono">
-                Team: {minMembers}–{maxMembers} Members
-              </span>
-            </div>
-            <h2 className="font-serif text-xl sm:text-2xl font-bold text-white tracking-tight truncate">
-              {event.title}
-            </h2>
-          </div>
-
-          {onClose && (
             <button
               type="button"
-              onClick={onClose}
+              onClick={() => setIsSubmissionModalOpen(false)}
               aria-label="Close Modal"
               className="h-9 w-9 rounded-full bg-white/10 hover:bg-white/20 text-white/70 hover:text-white flex items-center justify-center transition-colors cursor-pointer border border-white/10 shrink-0"
             >
               <X className="h-4 w-4" />
             </button>
-          )}
-        </div>
+          </div>
 
-        {/* Scrollable Body */}
-        <div className="flex-1 overflow-y-auto p-5 sm:p-6">
-          {renderWorkspaceContent()}
+          {/* Modal Body */}
+          <div className="p-6 sm:p-7 space-y-5">
+            {/* Status Feedback */}
+            {isSubmitted ? (
+              <div className="flex items-center gap-3 rounded-2xl border border-emerald-500/30 bg-emerald-950/30 p-4 text-xs text-emerald-200 font-mono">
+                <CheckCircle2 size={18} className="text-emerald-400 shrink-0" />
+                <div className="space-y-0.5">
+                  <div className="font-bold text-emerald-300">Team Registered Successfully</div>
+                  <div className="text-[11px] text-emerald-200/80">
+                    Your team is officially registered for this event.
+                  </div>
+                </div>
+              </div>
+            ) : !meetsMinCriteria ? (
+              <div className="rounded-2xl border border-amber-500/30 bg-amber-950/25 p-4 text-xs font-mono space-y-1.5 text-amber-200">
+                <div className="font-bold flex items-center gap-2 text-amber-300">
+                  <AlertCircle size={15} className="text-amber-400 shrink-0" />
+                  <span>Team Criteria Not Met ({currentMembersCount}/{minMembers} Members)</span>
+                </div>
+                <p className="text-[11px] text-amber-200/80 leading-relaxed">
+                  This competition requires at least {minMembers} members per team before registration can be officially submitted. Your team currently has {currentMembersCount} of {minMembers} required members.
+                </p>
+                <div className="text-[11px] text-white/70 pt-2 border-t border-amber-500/20 flex items-center justify-between gap-2 flex-wrap">
+                  <span>Invite Code: <strong className="text-[#f20089] tracking-wider">{existingTeam.teamCode}</strong></span>
+                  <span className="text-amber-300 font-bold">Need {minMembers - currentMembersCount} more member{minMembers - currentMembersCount === 1 ? "" : "s"}</span>
+                </div>
+              </div>
+            ) : (
+              <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-4 text-xs font-mono space-y-1 text-white/80">
+                <div className="font-bold text-white flex items-center gap-2 text-sm">
+                  <Sparkles size={14} className="text-[#f20089]" />
+                  <span>Ready to Register</span>
+                </div>
+                <p className="text-[11px] text-white/60">
+                  {userRole === "lead"
+                    ? `All member requirements met (${currentMembersCount} enrolled). Clicking below will officially finalize registration for "${existingTeam.teamName}".`
+                    : `Team "${existingTeam.teamName}" is awaiting final registration submission by Team Leader (${existingTeam.lead.name}).`}
+                </p>
+              </div>
+            )}
+
+            {/* Error Banner */}
+            {finalSubmitError && (
+              <div className="flex items-start gap-2.5 rounded-2xl border border-rose-500/40 bg-rose-950/40 p-3.5 text-xs text-rose-200 font-mono animate-fadeIn">
+                <AlertCircle size={15} className="text-rose-400 shrink-0 mt-0.5" />
+                <span>{finalSubmitError}</span>
+              </div>
+            )}
+
+            {/* Team Details Summary Card */}
+            <div className="rounded-2xl border border-white/10 bg-white/[0.02] p-4 space-y-3 font-mono text-xs">
+              <div className="flex items-center justify-between py-1 border-b border-white/5">
+                <span className="text-white/40 uppercase text-[10px]">Event</span>
+                <span className="text-white font-semibold text-right truncate max-w-[240px]">
+                  {event.title}
+                </span>
+              </div>
+              <div className="flex items-center justify-between py-1 border-b border-white/5">
+                <span className="text-white/40 uppercase text-[10px]">Team Name</span>
+                <span className="text-white font-semibold">{existingTeam.teamName}</span>
+              </div>
+              <div className="flex items-center justify-between py-1 border-b border-white/5">
+                <span className="text-white/40 uppercase text-[10px]">Invite Code</span>
+                <span className="text-[#f20089] font-bold tracking-wider">{existingTeam.teamCode}</span>
+              </div>
+              <div className="flex items-center justify-between py-1 border-b border-white/5">
+                <span className="text-white/40 uppercase text-[10px]">Team Members</span>
+                <span className={meetsMinCriteria ? "text-white" : "text-amber-300 font-bold"}>
+                  {currentMembersCount} / {minMembers} minimum {!meetsMinCriteria && `(Need ${minMembers - currentMembersCount} more)`}
+                </span>
+              </div>
+              <div className="flex items-center justify-between py-1">
+                <span className="text-white/40 uppercase text-[10px]">Registration</span>
+                <span
+                  className={
+                    isSubmitted ? "text-emerald-400 font-bold" : "text-amber-400 font-bold"
+                  }
+                >
+                  {isSubmitted ? "Registered & Confirmed" : "Pending Submission"}
+                </span>
+              </div>
+            </div>
+
+            {/* Actions */}
+            <div className="flex items-center justify-between gap-3 pt-3 border-t border-white/10 flex-wrap">
+              <button
+                type="button"
+                onClick={() => setIsSubmissionModalOpen(false)}
+                className="rounded-full border border-white/15 bg-white/5 hover:bg-white/15 px-5 py-2.5 text-xs font-semibold text-white/70 hover:text-white transition-colors cursor-pointer font-mono"
+              >
+                {isSubmitted ? "Close" : "Cancel"}
+              </button>
+
+              {!isSubmitted && userRole === "lead" && (
+                <button
+                  type="button"
+                  disabled={submittingFinal || !meetsMinCriteria}
+                  onClick={() => handleFinalSubmit()}
+                  className={`rounded-full font-bold text-xs py-2.5 px-6 transition-all font-mono inline-flex items-center gap-2 shadow-lg ${
+                    meetsMinCriteria
+                      ? "bg-white hover:bg-neutral-200 text-black hover:scale-105 cursor-pointer"
+                      : "bg-white/10 text-white/40 border border-white/10 cursor-not-allowed"
+                  }`}
+                >
+                  {submittingFinal ? (
+                    <>
+                      <Loader2 size={13} className="animate-spin" />
+                      <span>Submitting Registration...</span>
+                    </>
+                  ) : !meetsMinCriteria ? (
+                    <>
+                      <Lock size={13} />
+                      <span>Need {minMembers - currentMembersCount} More Member{minMembers - currentMembersCount === 1 ? "" : "s"}</span>
+                    </>
+                  ) : (
+                    <>
+                      <CheckCircle2 size={13} />
+                      <span>Confirm &amp; Submit Registration</span>
+                    </>
+                  )}
+                </button>
+              )}
+            </div>
+          </div>
         </div>
       </div>
-    </div>
+    );
+  };
+
+  // ── INLINE MODE (PAGE SECTION) ─────────────────────────────────────────────
+  if (isInline) {
+    return (
+      <>
+        <section
+          id="team-registration"
+          className="relative w-full rounded-3xl bg-[#0c0a12]/85 backdrop-blur-2xl border border-white/15 p-6 md:p-9 shadow-2xl overflow-hidden text-white font-sans animate-fadeIn scroll-mt-28"
+        >
+          {/* Top Iridescent Edge */}
+          <div
+            className="pointer-events-none absolute top-0 inset-x-0 h-[35%] bg-gradient-to-b from-white/10 to-transparent z-[1]"
+            aria-hidden="true"
+          />
+
+          <div className="relative z-[2] flex flex-col gap-6">
+            {/* Section Header */}
+            <div className="flex items-start justify-between gap-4 flex-wrap pb-4 border-b border-white/10">
+              <div>
+                <span className="inline-flex items-center gap-1.5 text-[10px] font-mono font-bold uppercase tracking-widest text-[#f20089] mb-1">
+                  <Sparkles size={12} />
+                  <span>Competition Workspace</span>
+                </span>
+                <h2 className="font-serif text-2xl sm:text-3xl md:text-4xl font-bold tracking-tight text-white drop-shadow-[0_2px_24px_rgba(255,255,255,0.18)]">
+                  Team Registration &amp; Roster
+                </h2>
+              </div>
+
+              <div className="flex items-center gap-2 flex-wrap">
+                <span className="rounded-full bg-white/10 border border-white/20 text-white text-[10px] font-bold uppercase tracking-wider px-3 py-1 font-mono">
+                  {event.tag || "Flagship"}
+                </span>
+                <span className="text-[11px] text-white/60 font-mono">
+                  Team: {minMembers}–{maxMembers} Members
+                </span>
+              </div>
+            </div>
+
+            {/* Render Core Content Inline */}
+            {renderWorkspaceContent()}
+          </div>
+        </section>
+        {renderSubmissionModal()}
+      </>
+    );
+  }
+
+  // ── MODAL MODE (FALLBACK DIALOG) ───────────────────────────────────────────
+  return (
+    <>
+      <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 md:p-6 bg-black/85 backdrop-blur-xl animate-fadeIn">
+        <div className="relative w-full max-w-2xl max-h-[90vh] flex flex-col rounded-[2.5rem] border border-white/15 bg-[#0c0a12]/95 backdrop-blur-2xl shadow-2xl text-white font-sans overflow-hidden">
+          {/* Top Iridescent Edge */}
+          <div className="pointer-events-none absolute inset-x-0 top-0 h-[1.5px] bg-gradient-to-r from-transparent via-white/30 to-transparent" />
+
+          {/* Fixed Pinned Header */}
+          <div className="p-5 sm:p-6 pb-4 border-b border-white/10 shrink-0 bg-[#0c0a12] flex items-center justify-between gap-4">
+            <div className="space-y-1 pr-4 min-w-0">
+              <div className="flex items-center gap-2 flex-wrap">
+                <span className="rounded-full bg-white/10 border border-white/20 text-white text-[10px] font-bold uppercase tracking-wider px-2.5 py-0.5 font-mono">
+                  {event.tag || "Flagship"}
+                </span>
+                <span className="text-[11px] text-white/50 font-mono">
+                  Team: {minMembers}–{maxMembers} Members
+                </span>
+              </div>
+              <h2 className="font-serif text-xl sm:text-2xl font-bold text-white tracking-tight truncate">
+                {event.title}
+              </h2>
+            </div>
+
+            {onClose && (
+              <button
+                type="button"
+                onClick={onClose}
+                aria-label="Close Modal"
+                className="h-9 w-9 rounded-full bg-white/10 hover:bg-white/20 text-white/70 hover:text-white flex items-center justify-center transition-colors cursor-pointer border border-white/10 shrink-0"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            )}
+          </div>
+
+          {/* Scrollable Body */}
+          <div className="flex-1 overflow-y-auto p-5 sm:p-6">
+            {renderWorkspaceContent()}
+          </div>
+        </div>
+      </div>
+      {renderSubmissionModal()}
+    </>
   );
 }

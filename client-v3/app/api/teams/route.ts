@@ -420,8 +420,8 @@ export async function PATCH(req: Request) {
       });
     }
 
-    // ── ACTION 3: LEADER EDITS TEAM INFO ────────────────────────────────────
-    if (action === "edit_team" || action === "update_info") {
+    // ── ACTION 3: LEADER EDITS TEAM INFO / DRAFT ────────────────────────────
+    if (action === "edit_team" || action === "update_info" || action === "save_draft") {
       if (!isLead) {
         return NextResponse.json(
           { error: "Unauthorized. Only the Team Leader can edit team details." },
@@ -434,6 +434,12 @@ export async function PATCH(req: Request) {
       }
       if (ventureName !== undefined && typeof ventureName === "string") {
         team.ventureName = ventureName.trim();
+      }
+      if (ventureDescription !== undefined && typeof ventureDescription === "string") {
+        team.ventureDescription = ventureDescription.trim();
+      }
+      if (pitchDeckUrl !== undefined && typeof pitchDeckUrl === "string") {
+        team.pitchDeckUrl = pitchDeckUrl.trim();
       }
 
       await team.save();
@@ -448,13 +454,15 @@ export async function PATCH(req: Request) {
         if (eventTeam) {
           eventTeam.teamName = team.teamName;
           eventTeam.ventureName = team.ventureName;
+          if (team.ventureDescription !== undefined) eventTeam.ventureDescription = team.ventureDescription;
+          if (team.pitchDeckUrl !== undefined) eventTeam.pitchDeckUrl = team.pitchDeckUrl;
           await event.save();
         }
       }
 
       return NextResponse.json({
         success: true,
-        message: "Team information updated successfully.",
+        message: action === "save_draft" ? "Draft saved successfully." : "Team information updated successfully.",
         team,
       });
     }
@@ -476,7 +484,7 @@ export async function PATCH(req: Request) {
     if (currentTotalMembers < minMembers) {
       return NextResponse.json(
         {
-          error: `Team criteria not met. Your team currently has ${currentTotalMembers} member(s). A minimum of ${minMembers} members is required before final submission.`,
+          error: `Minimum ${minMembers} members required to submit registration. Your team currently has ${currentTotalMembers} member(s). Share invite code ${team.teamCode} to invite more members.`,
         },
         { status: 400 }
       );
