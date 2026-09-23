@@ -939,8 +939,8 @@ export default function EventRegistrationModal({
                   <span>Contact Phone {isPhoneSaved ? "" : "*"}</span>
                 </label>
                 {isPhoneSaved && (
-                  <span className="inline-flex items-center gap-1 text-[10px] font-mono font-bold text-emerald-400 bg-emerald-500/10 border border-emerald-500/25 px-2 py-0.5 rounded-full">
-                    <Lock className="h-2.5 w-2.5" />
+                  <span className="inline-flex items-center gap-1 text-[10px] font-mono font-bold text-white/70 bg-white/10 border border-white/20 px-2 py-0.5 rounded-full">
+                    <Lock className="h-2.5 w-2.5 text-white/50" />
                     <span>Saved in Profile</span>
                   </span>
                 )}
@@ -954,14 +954,14 @@ export default function EventRegistrationModal({
                 onChange={(e) => setCreateForm({ ...createForm, phone: e.target.value })}
                 className={`w-full rounded-2xl border px-4 py-3 text-xs sm:text-sm font-mono transition-all outline-none ${
                   isPhoneSaved
-                    ? "border-emerald-500/30 bg-emerald-500/[0.05] text-emerald-200 cursor-not-allowed select-none"
+                    ? "border-white/15 bg-white/[0.04] text-white/90 cursor-not-allowed select-none"
                     : "border-white/15 bg-white/[0.04] hover:bg-white/[0.07] focus:bg-white/[0.1] text-white placeholder-white/30 focus:border-[#f20089]"
                 }`}
               />
               {isPhoneSaved && (
                 <span className="text-[10px] text-white/40 mt-1 block">
                   Can only be edited in your{" "}
-                  <Link href="/profile" className="text-[#f20089] hover:underline font-mono">
+                  <Link href="/profile" className="text-white/70 hover:text-white underline font-mono">
                     Profile →
                   </Link>
                 </span>
@@ -975,8 +975,8 @@ export default function EventRegistrationModal({
                   <span>College Roll No. {isRollSaved ? "" : "*"}</span>
                 </label>
                 {isRollSaved && (
-                  <span className="inline-flex items-center gap-1 text-[10px] font-mono font-bold text-emerald-400 bg-emerald-500/10 border border-emerald-500/25 px-2 py-0.5 rounded-full">
-                    <Lock className="h-2.5 w-2.5" />
+                  <span className="inline-flex items-center gap-1 text-[10px] font-mono font-bold text-white/70 bg-white/10 border border-white/20 px-2 py-0.5 rounded-full">
+                    <Lock className="h-2.5 w-2.5 text-white/50" />
                     <span>Saved in Profile</span>
                   </span>
                 )}
@@ -990,14 +990,14 @@ export default function EventRegistrationModal({
                 onChange={(e) => setCreateForm({ ...createForm, roll: e.target.value })}
                 className={`w-full rounded-2xl border px-4 py-3 text-xs sm:text-sm font-mono transition-all outline-none ${
                   isRollSaved
-                    ? "border-emerald-500/30 bg-emerald-500/[0.05] text-emerald-200 cursor-not-allowed select-none"
+                    ? "border-white/15 bg-white/[0.04] text-white/90 cursor-not-allowed select-none"
                     : "border-white/15 bg-white/[0.04] hover:bg-white/[0.07] focus:bg-white/[0.1] text-white placeholder-white/30 focus:border-[#f20089]"
                 }`}
               />
               {isRollSaved && (
                 <span className="text-[10px] text-white/40 mt-1 block">
                   Can only be edited in your{" "}
-                  <Link href="/profile" className="text-[#f20089] hover:underline font-mono">
+                  <Link href="/profile" className="text-white/70 hover:text-white underline font-mono">
                     Profile →
                   </Link>
                 </span>
@@ -1085,8 +1085,8 @@ export default function EventRegistrationModal({
                   <span>Contact Phone {isPhoneSaved ? "" : "*"}</span>
                 </label>
                 {isPhoneSaved && (
-                  <span className="inline-flex items-center gap-1 text-[10px] font-mono font-bold text-emerald-400 bg-emerald-500/10 border border-emerald-500/25 px-2 py-0.5 rounded-full">
-                    <Lock className="h-2.5 w-2.5" />
+                  <span className="inline-flex items-center gap-1 text-[10px] font-mono font-bold text-white/70 bg-white/10 border border-white/20 px-2 py-0.5 rounded-full">
+                    <Lock className="h-2.5 w-2.5 text-white/50" />
                     <span>Saved in Profile</span>
                   </span>
                 )}
@@ -1100,14 +1100,14 @@ export default function EventRegistrationModal({
                 onChange={(e) => setJoinForm({ ...joinForm, phone: e.target.value })}
                 className={`w-full rounded-2xl border px-4 py-3 text-xs sm:text-sm font-mono transition-all outline-none ${
                   isPhoneSaved
-                    ? "border-emerald-500/30 bg-emerald-500/[0.05] text-emerald-200 cursor-not-allowed select-none"
+                    ? "border-white/15 bg-white/[0.04] text-white/90 cursor-not-allowed select-none"
                     : "border-white/15 bg-white/[0.04] hover:bg-white/[0.07] focus:bg-white/[0.1] text-white placeholder-white/30 focus:border-[#f20089]"
                 }`}
               />
               {isPhoneSaved && (
                 <span className="text-[10px] text-white/40 mt-1 block">
                   Can only be edited in your{" "}
-                  <Link href="/profile" className="text-[#f20089] hover:underline font-mono">
+                  <Link href="/profile" className="text-white/70 hover:text-white underline font-mono">
                     Profile →
                   </Link>
                 </span>
@@ -1121,8 +1121,8 @@ export default function EventRegistrationModal({
                   <span>College Roll No. {isRollSaved ? "" : "*"}</span>
                 </label>
                 {isRollSaved && (
-                  <span className="inline-flex items-center gap-1 text-[10px] font-mono font-bold text-emerald-400 bg-emerald-500/10 border border-emerald-500/25 px-2 py-0.5 rounded-full">
-                    <Lock className="h-2.5 w-2.5" />
+                  <span className="inline-flex items-center gap-1 text-[10px] font-mono font-bold text-white/70 bg-white/10 border border-white/20 px-2 py-0.5 rounded-full">
+                    <Lock className="h-2.5 w-2.5 text-white/50" />
                     <span>Saved in Profile</span>
                   </span>
                 )}
@@ -1136,14 +1136,14 @@ export default function EventRegistrationModal({
                 onChange={(e) => setJoinForm({ ...joinForm, roll: e.target.value })}
                 className={`w-full rounded-2xl border px-4 py-3 text-xs sm:text-sm font-mono transition-all outline-none ${
                   isRollSaved
-                    ? "border-emerald-500/30 bg-emerald-500/[0.05] text-emerald-200 cursor-not-allowed select-none"
+                    ? "border-white/15 bg-white/[0.04] text-white/90 cursor-not-allowed select-none"
                     : "border-white/15 bg-white/[0.04] hover:bg-white/[0.07] focus:bg-white/[0.1] text-white placeholder-white/30 focus:border-[#f20089]"
                 }`}
               />
               {isRollSaved && (
                 <span className="text-[10px] text-white/40 mt-1 block">
                   Can only be edited in your{" "}
-                  <Link href="/profile" className="text-[#f20089] hover:underline font-mono">
+                  <Link href="/profile" className="text-white/70 hover:text-white underline font-mono">
                     Profile →
                   </Link>
                 </span>
