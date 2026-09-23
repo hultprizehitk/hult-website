@@ -97,9 +97,9 @@ export async function POST(req: Request) {
     const body = await req.json();
     const { eventId, teamName, ventureName, phone, roll, department } = body;
 
-    if (!eventId || !teamName?.trim()) {
+    if (!eventId || !teamName?.trim() || !phone?.trim() || !roll?.trim()) {
       return NextResponse.json(
-        { error: "Event ID and Team Name are required." },
+        { error: "Event ID, Team Name, Contact Phone, and College Roll No. are required." },
         { status: 400 }
       );
     }

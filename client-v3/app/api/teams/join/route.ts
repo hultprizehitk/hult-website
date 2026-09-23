@@ -30,8 +30,11 @@ export async function POST(req: Request) {
     const body = await req.json();
     const { teamCode, phone, roll, department } = body;
 
-    if (!teamCode?.trim()) {
-      return NextResponse.json({ error: "Please enter a valid Team Code." }, { status: 400 });
+    if (!teamCode?.trim() || !phone?.trim() || !roll?.trim()) {
+      return NextResponse.json(
+        { error: "Team Code, Contact Phone, and College Roll No. are required." },
+        { status: 400 }
+      );
     }
 
     const cleanCode = teamCode.trim().toUpperCase();

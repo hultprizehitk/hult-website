@@ -241,6 +241,16 @@ export default function EventRegistrationModal({
       return;
     }
 
+    if (!createForm.phone.trim()) {
+      setErrorMessage("Please enter your Contact Phone number.");
+      return;
+    }
+
+    if (!createForm.roll.trim()) {
+      setErrorMessage("Please enter your College Roll Number.");
+      return;
+    }
+
     try {
       setSubmitting(true);
       const res = await fetch("/api/teams", {
@@ -278,6 +288,16 @@ export default function EventRegistrationModal({
 
     if (!joinForm.teamCode.trim()) {
       setErrorMessage("Please enter a valid Team Code.");
+      return;
+    }
+
+    if (!joinForm.phone.trim()) {
+      setErrorMessage("Please enter your Contact Phone number.");
+      return;
+    }
+
+    if (!joinForm.roll.trim()) {
+      setErrorMessage("Please enter your College Roll Number.");
       return;
     }
 
@@ -870,10 +890,11 @@ export default function EventRegistrationModal({
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
               <label className="block text-xs font-mono uppercase tracking-wider text-white/70 font-bold mb-1.5">
-                Contact Phone (Optional)
+                Contact Phone *
               </label>
               <input
                 type="tel"
+                required
                 placeholder="10-digit mobile"
                 value={createForm.phone}
                 onChange={(e) => setCreateForm({ ...createForm, phone: e.target.value })}
@@ -883,10 +904,11 @@ export default function EventRegistrationModal({
 
             <div>
               <label className="block text-xs font-mono uppercase tracking-wider text-white/70 font-bold mb-1.5">
-                College Roll No. (Optional)
+                College Roll No. *
               </label>
               <input
                 type="text"
+                required
                 placeholder="e.g. 2152001"
                 value={createForm.roll}
                 onChange={(e) => setCreateForm({ ...createForm, roll: e.target.value })}
@@ -970,10 +992,11 @@ export default function EventRegistrationModal({
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
               <label className="block text-xs font-mono uppercase tracking-wider text-white/70 font-bold mb-1.5">
-                Contact Phone (Optional)
+                Contact Phone *
               </label>
               <input
                 type="tel"
+                required
                 placeholder="10-digit mobile"
                 value={joinForm.phone}
                 onChange={(e) => setJoinForm({ ...joinForm, phone: e.target.value })}
@@ -983,10 +1006,11 @@ export default function EventRegistrationModal({
 
             <div>
               <label className="block text-xs font-mono uppercase tracking-wider text-white/70 font-bold mb-1.5">
-                College Roll No. (Optional)
+                College Roll No. *
               </label>
               <input
                 type="text"
+                required
                 placeholder="e.g. 2152002"
                 value={joinForm.roll}
                 onChange={(e) => setJoinForm({ ...joinForm, roll: e.target.value })}
