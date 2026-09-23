@@ -49,6 +49,8 @@ export default function StudentsDirectory() {
       parsed.fullName.toLowerCase().includes(q) ||
       p.name.toLowerCase().includes(q) ||
       p.email.toLowerCase().includes(q) ||
+      (p.roll ? p.roll.toLowerCase().includes(q) : false) ||
+      (p.phone ? p.phone.toLowerCase().includes(q) : false) ||
       parsed.branchCode.toLowerCase().includes(q) ||
       parsed.branchName.toLowerCase().includes(q);
 
@@ -74,6 +76,8 @@ export default function StudentsDirectory() {
       "Parsed Full Name",
       "Google Account Name",
       "College Email",
+      "College Roll Number",
+      "Contact Phone",
       "Branch Code",
       "Department / Branch",
       "Academic Year",
@@ -90,6 +94,8 @@ export default function StudentsDirectory() {
         `"${parsed.fullName.replace(/"/g, '""')}"`,
         `"${p.name.replace(/"/g, '""')}"`,
         `"${p.email.replace(/"/g, '""')}"`,
+        `"${(p.roll || "").replace(/"/g, '""')}"`,
+        `"${(p.phone || "").replace(/"/g, '""')}"`,
         `"${parsed.branchCode}"`,
         `"${parsed.branchName.replace(/"/g, '""')}"`,
         `"${parsed.academicYear}"`,
@@ -185,7 +191,7 @@ export default function StudentsDirectory() {
           <div className="sm:col-span-2">
             <input
               type="text"
-              placeholder="Search by student name, email, branch, or department..."
+              placeholder="Search by student name, email, roll no, contact, or branch..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className="w-full rounded-2xl border border-white/15 bg-[#16161c] px-4 py-2.5 text-xs sm:text-sm text-white placeholder-white/40 outline-none focus:border-white/40 focus:ring-1 focus:ring-white/20"
@@ -216,6 +222,8 @@ export default function StudentsDirectory() {
             <tr>
               <th className="px-5 py-4">Student Name</th>
               <th className="px-5 py-4">College Email</th>
+              <th className="px-5 py-4">Roll No</th>
+              <th className="px-5 py-4">Contact</th>
               <th className="px-5 py-4">Department</th>
               <th className="px-5 py-4">Academic Year</th>
               <th className="px-5 py-4">Registered On</th>
@@ -224,13 +232,13 @@ export default function StudentsDirectory() {
           <tbody className="divide-y divide-white/5">
             {loading ? (
               <tr>
-                <td colSpan={5} className="py-12 text-center text-white/60">
+                <td colSpan={7} className="py-12 text-center text-white/60">
                   Loading students from database...
                 </td>
               </tr>
             ) : filteredParticipants.length === 0 ? (
               <tr>
-                <td colSpan={5} className="py-12 text-center text-white/50">
+                <td colSpan={7} className="py-12 text-center text-white/50">
                   No student participants matching criteria.
                 </td>
               </tr>
@@ -250,6 +258,20 @@ export default function StudentsDirectory() {
                     </td>
                     <td className="px-5 py-4 text-white/80 font-mono text-[11px]">
                       {student.email}
+                    </td>
+                    <td className="px-5 py-4 font-mono text-[11px]">
+                      {student.roll ? (
+                        <span className="text-rose-400 font-semibold">{student.roll}</span>
+                      ) : (
+                        <span className="text-white/30 font-normal">N/A</span>
+                      )}
+                    </td>
+                    <td className="px-5 py-4 font-mono text-[11px]">
+                      {student.phone ? (
+                        <span className="text-emerald-400 font-medium">+91 {student.phone}</span>
+                      ) : (
+                        <span className="text-white/30 font-normal">N/A</span>
+                      )}
                     </td>
                     <td className="px-5 py-4">
                       <span className="block text-xs font-semibold text-white">

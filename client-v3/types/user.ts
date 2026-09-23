@@ -17,6 +17,8 @@ export interface Participant {
   email: string;
   department: string;
   year: string;
+  phone?: string;
+  roll?: string;
   role: UserRole | string;
   createdAt: string;
   updatedAt?: string;
