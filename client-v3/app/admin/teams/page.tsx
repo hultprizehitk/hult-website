@@ -4,8 +4,6 @@ import React, { useEffect, useState } from "react";
 import {
   Users,
   Search,
-  ExternalLink,
-  CheckCircle2,
   RefreshCw,
 } from "lucide-react";
 
@@ -48,16 +46,12 @@ export default function AdminTeamsPage() {
   const [teams, setTeams] = useState<TeamRecord[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
-  const [statusFilter, setStatusFilter] = useState("all");
   const [selectedTeam, setSelectedTeam] = useState<TeamRecord | null>(null);
 
   const fetchTeams = async () => {
     try {
       setLoading(true);
-      const params = new URLSearchParams();
-      if (statusFilter !== "all") params.append("status", statusFilter);
-
-      const res = await fetch(`/api/admin/teams?${params.toString()}`);
+      const res = await fetch("/api/admin/teams");
       const data = await res.json();
       if (data.success) {
         setTeams(data.teams);
@@ -71,50 +65,11 @@ export default function AdminTeamsPage() {
 
   useEffect(() => {
     fetchTeams();
-  }, [statusFilter]);
-
-  const updateTeamStatus = async (teamId: string, newStatus: string) => {
-    try {
-      const res = await fetch("/api/admin/teams", {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ teamId, status: newStatus }),
-      });
-      if (res.ok) {
-        setTeams((prev) =>
-          prev.map((t) =>
-            t._id === teamId
-              ? { ...t, status: newStatus as TeamRecord["status"] }
-              : t
-          )
-        );
-      }
-    } catch (err) {
-      console.error("Failed to update team status:", err);
-    }
-  };
-
-  const toggleCheckIn = async (teamId: string, current: boolean) => {
-    try {
-      const res = await fetch("/api/admin/teams", {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ teamId, checkedIn: !current }),
-      });
-      if (res.ok) {
-        setTeams((prev) =>
-          prev.map((t) => (t._id === teamId ? { ...t, checkedIn: !current } : t))
-        );
-      }
-    } catch (err) {
-      console.error("Failed to toggle check-in:", err);
-    }
-  };
+  }, []);
 
   const filteredTeams = teams.filter(
     (t) =>
       t.teamName.toLowerCase().includes(search.toLowerCase()) ||
-      t.ventureName?.toLowerCase().includes(search.toLowerCase()) ||
       t.lead.name.toLowerCase().includes(search.toLowerCase()) ||
       t.lead.email.toLowerCase().includes(search.toLowerCase()) ||
       t.teamCode.toLowerCase().includes(search.toLowerCase())
@@ -126,13 +81,12 @@ export default function AdminTeamsPage() {
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-white/10 pb-6">
         <div>
           <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-white">
-            Teams & Venture Submissions
+            Teams & Rosters
           </h1>
           <p className="text-xs text-neutral-400 mt-0.5">
-            Review venture proposals, track statuses, and verify on-stage attendance.
+            Review team rosters and manage registered teams.
           </p>
         </div>
-
         <button
           onClick={fetchTeams}
           disabled={loading}
@@ -143,34 +97,16 @@ export default function AdminTeamsPage() {
         </button>
       </div>
 
-      {/* Filter and Search Bar */}
-      <div className="flex flex-col sm:flex-row gap-3">
-        <div className="relative flex-1">
-          <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-neutral-400" />
-          <input
-            type="text"
-            placeholder="Search team name, venture idea, code, or leader..."
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            className="w-full pl-10 pr-4 py-2.5 text-xs bg-[#16161d] border border-white/15 rounded-xl text-white placeholder-neutral-500 focus:outline-none focus:border-rose-500/50"
-          />
-        </div>
-
-        <div className="flex gap-2">
-          {["all", "confirmed", "pending", "waitlist", "disqualified"].map((st) => (
-            <button
-              key={st}
-              onClick={() => setStatusFilter(st)}
-              className={`px-3 py-2 text-xs font-medium rounded-xl capitalize transition-colors cursor-pointer border ${
-                statusFilter === st
-                  ? "bg-rose-500/20 text-rose-300 border-rose-500/40"
-                  : "bg-[#16161d] text-neutral-300 border-white/15 hover:bg-[#202028] hover:text-white"
-              }`}
-            >
-              {st}
-            </button>
-          ))}
-        </div>
+      {/* Search Bar */}
+      <div className="relative">
+        <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-neutral-400" />
+        <input
+          type="text"
+          placeholder="Search team name, code, or leader..."
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          className="w-full pl-10 pr-4 py-2.5 text-xs bg-[#16161d] border border-white/15 rounded-xl text-white placeholder-neutral-500 focus:outline-none focus:border-rose-500/50"
+        />
       </div>
 
       {/* Teams Table */}
@@ -185,12 +121,8 @@ export default function AdminTeamsPage() {
               <thead>
                 <tr className="border-b border-white/10 text-neutral-300 bg-[#16161d]">
                   <th className="py-3.5 px-4 font-semibold">Team & Code</th>
-                  <th className="py-3.5 px-4 font-semibold">Venture Idea</th>
                   <th className="py-3.5 px-4 font-semibold">Team Leader</th>
                   <th className="py-3.5 px-4 font-semibold">Roster</th>
-                  <th className="py-3.5 px-4 font-semibold">Pitch Deck</th>
-                  <th className="py-3.5 px-4 font-semibold">Status</th>
-                  <th className="py-3.5 px-4 font-semibold text-right">Check-In</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-white/5">
@@ -198,28 +130,13 @@ export default function AdminTeamsPage() {
                   <tr key={team._id} className="hover:bg-[#16161d]/60 transition-colors">
                     <td className="py-3.5 px-4">
                       <div className="font-semibold text-white">{team.teamName}</div>
-                      <div className="font-mono text-[10px] text-rose-400 font-bold">
-                        {team.teamCode}
-                      </div>
-                    </td>
-
-                    <td className="py-3.5 px-4 max-w-xs">
-                      <div className="text-neutral-200 truncate font-medium">
-                        {team.ventureName || "General Impact Venture"}
-                      </div>
                       <div className="flex items-center gap-1.5 mt-0.5 flex-wrap">
-                        {team.submissionStatus === "submitted" ? (
-                          <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[9px] font-mono font-bold bg-purple-500/20 text-purple-300 border border-purple-500/30">
-                            Submitted
-                          </span>
-                        ) : (
-                          <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[9px] font-mono font-bold bg-amber-500/20 text-amber-300 border border-amber-500/30">
-                            Forming
-                          </span>
-                        )}
+                        <span className="font-mono text-[10px] text-rose-400 font-bold">
+                          {team.teamCode}
+                        </span>
                         {team.eventId && (
                           <span className="text-[10px] text-neutral-400 truncate">
-                            {team.eventId.title}
+                            • {team.eventId.title}
                           </span>
                         )}
                       </div>
@@ -239,57 +156,6 @@ export default function AdminTeamsPage() {
                       >
                         <Users className="h-3.5 w-3.5 text-neutral-400" />
                         <span>{1 + (team.members?.length || 0)} members</span>
-                      </button>
-                    </td>
-
-                    <td className="py-3.5 px-4">
-                      {team.pitchDeckUrl ? (
-                        <a
-                          href={team.pitchDeckUrl}
-                          target="_blank"
-                          rel="noreferrer"
-                          className="inline-flex items-center gap-1 text-rose-400 hover:text-rose-300 font-medium"
-                        >
-                          <span>Deck</span>
-                          <ExternalLink className="h-3 w-3" />
-                        </a>
-                      ) : (
-                        <span className="text-neutral-500 font-mono text-[11px]">Pending</span>
-                      )}
-                    </td>
-
-                    <td className="py-3.5 px-4">
-                      <select
-                        value={team.status}
-                        onChange={(e) => updateTeamStatus(team._id, e.target.value)}
-                        className={`text-[11px] font-mono font-semibold rounded-lg px-2.5 py-1 border bg-[#16161d] focus:outline-none cursor-pointer ${
-                          team.status === "confirmed"
-                            ? "text-emerald-400 border-emerald-500/30"
-                            : team.status === "pending"
-                            ? "text-amber-400 border-amber-500/30"
-                            : team.status === "waitlist"
-                            ? "text-blue-400 border-blue-500/30"
-                            : "text-red-400 border-red-500/30"
-                        }`}
-                      >
-                        <option value="confirmed" className="bg-[#16161d] text-white">Confirmed</option>
-                        <option value="pending" className="bg-[#16161d] text-white">Pending</option>
-                        <option value="waitlist" className="bg-[#16161d] text-white">Waitlist</option>
-                        <option value="disqualified" className="bg-[#16161d] text-white">Disqualified</option>
-                      </select>
-                    </td>
-
-                    <td className="py-3.5 px-4 text-right">
-                      <button
-                        onClick={() => toggleCheckIn(team._id, team.checkedIn)}
-                        className={`inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-[10px] font-mono font-semibold cursor-pointer transition-colors ${
-                          team.checkedIn
-                            ? "bg-emerald-500/20 text-emerald-400 border border-emerald-500/40"
-                            : "bg-[#16161d] text-neutral-300 border border-white/10 hover:bg-[#202028] hover:text-white"
-                        }`}
-                      >
-                        <CheckCircle2 className="h-3 w-3" />
-                        <span>{team.checkedIn ? "Checked In" : "Unchecked"}</span>
                       </button>
                     </td>
                   </tr>

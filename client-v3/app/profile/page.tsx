@@ -234,7 +234,6 @@ export default function StudentProfilePage() {
   // Team Management State on Profile
   const [editingTeamId, setEditingTeamId] = useState<string | null>(null);
   const [editTeamName, setEditTeamName] = useState("");
-  const [editVentureName, setEditVentureName] = useState("");
   const [teamActionLoading, setTeamActionLoading] = useState<string | null>(null);
   const [teamActionError, setTeamActionError] = useState<string | null>(null);
   const [teamActionSuccess, setTeamActionSuccess] = useState<string | null>(null);
@@ -242,7 +241,6 @@ export default function StudentProfilePage() {
   const handleStartEditTeam = (team: UserTeam) => {
     setEditingTeamId(team._id);
     setEditTeamName(team.teamName || "");
-    setEditVentureName(team.ventureName || "");
     setTeamActionError(null);
   };
 
@@ -265,7 +263,6 @@ export default function StudentProfilePage() {
           teamId,
           action: "edit_team",
           teamName: editTeamName.trim(),
-          ventureName: editVentureName.trim(),
         }),
       });
 
@@ -808,17 +805,11 @@ export default function StudentProfilePage() {
                                 </div>
                               </div>
 
-                              {/* Team Name & Venture */}
+                              {/* Team Name */}
                               <div>
                                 <h4 className="text-base font-bold text-white font-serif tracking-tight">
                                   {t.teamName}
                                 </h4>
-                                {t.ventureName && (
-                                  <p className="text-xs text-white/70 mt-0.5">
-                                    Track / Venture:{" "}
-                                    <strong className="text-white">{t.ventureName}</strong>
-                                  </p>
-                                )}
                                 {t.ventureDescription && (
                                   <p className="text-[11px] text-white/60 mt-1 line-clamp-2 leading-relaxed bg-black/30 border border-white/10 p-2.5 rounded-xl">
                                     {t.ventureDescription}
@@ -954,32 +945,17 @@ export default function StudentProfilePage() {
                                     <span className="text-[10px] font-mono text-rose-300">Leader Edit</span>
                                   </div>
 
-                                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                                    <div>
-                                      <label className="block text-[10px] font-mono uppercase tracking-wider text-white/70 mb-1 font-bold">
-                                        Team Name *
-                                      </label>
-                                      <input
-                                        type="text"
-                                        required
-                                        value={editTeamName}
-                                        onChange={(e) => setEditTeamName(e.target.value)}
-                                        className="w-full rounded-lg border border-white/15 bg-white/[0.04] px-3 py-1.5 text-xs text-white placeholder-white/30 focus:border-[#f20089] focus:outline-none transition-all font-sans"
-                                      />
-                                    </div>
-
-                                    <div>
-                                      <label className="block text-[10px] font-mono uppercase tracking-wider text-white/70 mb-1 font-bold">
-                                        Track / Venture Name
-                                      </label>
-                                      <input
-                                        type="text"
-                                        placeholder="e.g. EcoPack Innovations"
-                                        value={editVentureName}
-                                        onChange={(e) => setEditVentureName(e.target.value)}
-                                        className="w-full rounded-lg border border-white/15 bg-white/[0.04] px-3 py-1.5 text-xs text-white placeholder-white/30 focus:border-[#f20089] focus:outline-none transition-all font-sans"
-                                      />
-                                    </div>
+                                  <div>
+                                    <label className="block text-[10px] font-mono uppercase tracking-wider text-white/70 mb-1 font-bold">
+                                      Team Name *
+                                    </label>
+                                    <input
+                                      type="text"
+                                      required
+                                      value={editTeamName}
+                                      onChange={(e) => setEditTeamName(e.target.value)}
+                                      className="w-full rounded-lg border border-white/15 bg-white/[0.04] px-3 py-1.5 text-xs text-white placeholder-white/30 focus:border-[#f20089] focus:outline-none transition-all font-sans"
+                                    />
                                   </div>
 
                                   <div className="flex items-center gap-2 pt-1 justify-end">

@@ -418,26 +418,13 @@ export default function AdminUserManager({ currentUserEmail }: AdminUserManagerP
                       key={admin._id}
                       className="hover:bg-white/[0.03] transition-colors"
                     >
-                      <td className="px-5 py-4 font-bold text-white flex items-center gap-3">
-                        <div
-                          className={`h-8 w-8 rounded-full flex items-center justify-center text-xs font-extrabold text-white shrink-0 ${
-                            admin.role === "master_admin"
-                              ? "bg-amber-500/20 text-amber-300 border border-amber-500/30"
-                              : admin.role === "lead_admin"
-                              ? "bg-sky-500/20 text-sky-300 border border-sky-500/30"
-                              : "bg-purple-500/20 text-purple-300 border border-purple-500/30"
-                          }`}
-                        >
-                          {parsed.firstName.charAt(0).toUpperCase()}
-                        </div>
-                        <div>
-                          <span className="block font-bold">
-                            {parsed.fullName || admin.name || "Administrator"}
-                          </span>
-                          <span className="text-[10px] text-white/50 font-normal">
-                            Added {new Date(admin.createdAt).toLocaleDateString()}
-                          </span>
-                        </div>
+                      <td className="px-5 py-4 text-white">
+                        <span className="block font-bold">
+                          {parsed.fullName || admin.name || "Administrator"}
+                        </span>
+                        <span className="text-[10px] text-white/50 font-normal">
+                          Added {new Date(admin.createdAt).toLocaleDateString()}
+                        </span>
                       </td>
 
                       <td className="px-5 py-4 font-mono text-white/80">

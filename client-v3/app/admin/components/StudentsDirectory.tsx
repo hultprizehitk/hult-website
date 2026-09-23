@@ -242,16 +242,11 @@ export default function StudentsDirectory() {
                     key={student._id}
                     className="hover:bg-white/[0.03] transition-colors"
                   >
-                    <td className="px-5 py-4 font-bold text-white flex items-center gap-2.5">
-                      <div className="h-7 w-7 rounded-full bg-neutral-800 border border-white/20 flex items-center justify-center text-[10px] font-extrabold text-white shrink-0">
-                        {parsed.firstName.charAt(0).toUpperCase()}
-                      </div>
-                      <div>
-                        <span className="block font-bold">{parsed.fullName}</span>
-                        <span className="text-[10px] text-white/50 font-normal">
-                          {parsed.firstName} • {parsed.lastName}
-                        </span>
-                      </div>
+                    <td className="px-5 py-4 text-white">
+                      <span className="block font-bold">{parsed.fullName}</span>
+                      <span className="text-[10px] text-white/50 font-normal">
+                        {parsed.firstName} • {parsed.lastName}
+                      </span>
                     </td>
                     <td className="px-5 py-4 text-white/80 font-mono text-[11px]">
                       {student.email}
