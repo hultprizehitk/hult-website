@@ -125,7 +125,7 @@ export default function HeroThemeEvents() {
                 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-normal tracking-wide uppercase drop-shadow-[0_2px_12px_rgba(0,0,0,0.5)]"
                 style={{
                   fontFamily: "'IM Fell Double Pica', Georgia, serif",
-                  background: "linear-gradient(180deg, #F5D0FE 0%, #931289 55%, #2D052A 100%)",
+                  background: "linear-gradient(180deg, #2D052A 0%, #931289 100%)",
                   WebkitBackgroundClip: "text",
                   WebkitTextFillColor: "transparent",
                 }}
