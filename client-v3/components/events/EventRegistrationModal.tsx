@@ -676,59 +676,25 @@ export default function EventRegistrationModal({
                 </div>
 
                 {/* Team Management Action Buttons Row */}
-                <div className="flex items-center justify-between gap-2 pt-2 border-t border-white/10 flex-wrap">
-                  <div className="flex items-center gap-2 flex-wrap">
-                    {userRole === "lead" ? (
-                      <>
-                        <button
-                          type="button"
-                          onClick={() => {
-                            setIsEditingTeam(!isEditingTeam);
-                            setActionError(null);
-                          }}
-                          className="rounded-full bg-white/5 hover:bg-white/15 border border-white/15 px-3.5 py-1.5 text-xs font-semibold text-white/90 hover:text-white transition-all cursor-pointer inline-flex items-center gap-1.5 font-mono"
-                        >
-                          <Edit3 size={11} className="text-white/70" />
-                          <span>{isEditingTeam ? "Cancel Edit" : "Edit Team"}</span>
-                        </button>
+                {userRole === "lead" && (
+                  <div className="flex items-center justify-between gap-2 pt-2 border-t border-white/10 flex-wrap">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setIsEditingTeam(!isEditingTeam);
+                        setActionError(null);
+                      }}
+                      className="rounded-full bg-white/5 hover:bg-white/15 border border-white/15 px-3.5 py-1.5 text-xs font-semibold text-white/90 hover:text-white transition-all cursor-pointer inline-flex items-center gap-1.5 font-mono"
+                    >
+                      <Edit3 size={11} className="text-white/70" />
+                      <span>{isEditingTeam ? "Cancel Edit" : "Edit Team Name"}</span>
+                    </button>
 
-                        <button
-                          type="button"
-                          onClick={handleDeleteTeam}
-                          disabled={actionLoading}
-                          className="rounded-full bg-white/5 hover:bg-rose-500/10 border border-white/15 hover:border-rose-500/30 px-3.5 py-1.5 text-xs font-semibold text-white/75 hover:text-rose-200 transition-all cursor-pointer inline-flex items-center gap-1.5 font-mono disabled:opacity-50"
-                        >
-                          {actionLoading ? (
-                            <Loader2 size={11} className="animate-spin" />
-                          ) : (
-                            <Trash2 size={11} />
-                          )}
-                          <span>Disband Team</span>
-                        </button>
-                      </>
-                    ) : (
-                      <button
-                        type="button"
-                        onClick={handleLeaveTeam}
-                        disabled={actionLoading}
-                        className="rounded-full bg-white/5 hover:bg-rose-500/10 border border-white/15 hover:border-rose-500/30 px-3.5 py-1.5 text-xs font-semibold text-white/75 hover:text-rose-200 transition-all cursor-pointer inline-flex items-center gap-1.5 font-mono disabled:opacity-50"
-                      >
-                        {actionLoading ? (
-                          <Loader2 size={11} className="animate-spin" />
-                        ) : (
-                          <LogOut size={11} />
-                        )}
-                        <span>Leave Team</span>
-                      </button>
-                    )}
+                    <span className="text-[10px] font-mono text-white/40">
+                      Leader control: rename team
+                    </span>
                   </div>
-
-                  <span className="text-[10px] font-mono text-white/40">
-                    {userRole === "lead"
-                      ? "Leader controls: rename, remove members, or disband"
-                      : "Member control: leave team to join another"}
-                  </span>
-                </div>
+                )}
 
                 {/* Action Alerts */}
                 {actionError && (
@@ -1005,11 +971,33 @@ export default function EventRegistrationModal({
                       </p>
                     </div>
 
-                    <div>
+                    <div className="flex items-center gap-3 flex-wrap">
+                      {userRole === "lead" ? (
+                        <button
+                          type="button"
+                          onClick={handleDeleteTeam}
+                          disabled={actionLoading}
+                          className="rounded-full bg-white/5 hover:bg-rose-500/10 border border-white/15 hover:border-rose-500/30 px-4 py-2.5 text-xs font-semibold text-rose-300 hover:text-rose-200 transition-all cursor-pointer inline-flex items-center gap-1.5 font-mono disabled:opacity-50"
+                        >
+                          {actionLoading ? <Loader2 size={12} className="animate-spin" /> : <Trash2 size={12} />}
+                          <span>Disband Team</span>
+                        </button>
+                      ) : (
+                        <button
+                          type="button"
+                          onClick={handleLeaveTeam}
+                          disabled={actionLoading}
+                          className="rounded-full bg-white/5 hover:bg-rose-500/10 border border-white/15 hover:border-rose-500/30 px-4 py-2.5 text-xs font-semibold text-white/75 hover:text-rose-200 transition-all cursor-pointer inline-flex items-center gap-1.5 font-mono disabled:opacity-50"
+                        >
+                          {actionLoading ? <Loader2 size={12} className="animate-spin" /> : <LogOut size={12} />}
+                          <span>Leave Team</span>
+                        </button>
+                      )}
+
                       <button
                         type="button"
                         onClick={openSubmissionModal}
-                        className="rounded-full bg-white/10 hover:bg-white/15 border border-white/20 text-white font-semibold px-5 py-2 text-xs transition-all cursor-pointer font-mono inline-flex items-center gap-2"
+                        className="rounded-full bg-white/10 hover:bg-white/15 border border-white/20 text-white font-semibold px-5 py-2.5 text-xs transition-all cursor-pointer font-mono inline-flex items-center gap-2"
                       >
                         <FileText size={13} />
                         <span>View Registration Status</span>
@@ -1040,6 +1028,28 @@ export default function EventRegistrationModal({
                     </div>
 
                     <div className="flex items-center gap-3 flex-wrap">
+                      {userRole === "lead" ? (
+                        <button
+                          type="button"
+                          onClick={handleDeleteTeam}
+                          disabled={actionLoading}
+                          className="rounded-full bg-white/5 hover:bg-rose-500/10 border border-white/15 hover:border-rose-500/30 px-4 py-2.5 text-xs font-semibold text-rose-300 hover:text-rose-200 transition-all cursor-pointer inline-flex items-center gap-1.5 font-mono disabled:opacity-50"
+                        >
+                          {actionLoading ? <Loader2 size={12} className="animate-spin" /> : <Trash2 size={12} />}
+                          <span>Disband Team</span>
+                        </button>
+                      ) : (
+                        <button
+                          type="button"
+                          onClick={handleLeaveTeam}
+                          disabled={actionLoading}
+                          className="rounded-full bg-white/5 hover:bg-rose-500/10 border border-white/15 hover:border-rose-500/30 px-4 py-2.5 text-xs font-semibold text-white/75 hover:text-rose-200 transition-all cursor-pointer inline-flex items-center gap-1.5 font-mono disabled:opacity-50"
+                        >
+                          {actionLoading ? <Loader2 size={12} className="animate-spin" /> : <LogOut size={12} />}
+                          <span>Leave Team</span>
+                        </button>
+                      )}
+
                       <button
                         type="button"
                         onClick={openSubmissionModal}
