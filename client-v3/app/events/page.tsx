@@ -139,7 +139,7 @@ export default function EventsPage() {
       <SiteHeader />
 
       {/* Hero scene + event cards */}
-      <main className="flex-1 w-full relative z-10 flex flex-col justify-center py-6 sm:py-10">
+      <main className="flex-1 w-full relative z-10 flex flex-col justify-center py-0">
         <EventsHero
           events={events}
           loading={loading}

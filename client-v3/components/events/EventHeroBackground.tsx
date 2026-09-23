@@ -12,9 +12,20 @@ import React from "react";
 export default function EventHeroBackground() {
   return (
     <div className="fixed inset-0 z-0 overflow-hidden bg-[#0a0c14] pointer-events-none select-none">
-      {/* Full-bleed aspect-ratio preserved canvas */}
+      {/* Mobile Portrait Background Illustration (sm:hidden) */}
+      <div className="absolute inset-0 z-[1] block sm:hidden pointer-events-none overflow-hidden bg-[#ECE1CF]">
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img
+          src="/assets/responsive.png"
+          alt="Mobile Hero Background"
+          className="w-full h-full object-cover object-bottom select-none pointer-events-none"
+          draggable={false}
+        />
+      </div>
+
+      {/* Full-bleed aspect-ratio preserved canvas for Desktop */}
       <div
-        className="absolute inset-0 flex items-center justify-center pointer-events-none"
+        className="absolute inset-0 hidden sm:flex items-center justify-center pointer-events-none"
         style={{ overflow: "hidden" }}
       >
         <div

@@ -120,7 +120,7 @@ export default function SiteHeader({
           ) : (
             <Link
               href="/register"
-              className="flex items-center gap-2 rounded-full bg-white hover:bg-neutral-100 px-5 py-2 text-xs font-semibold text-neutral-950 shadow-md shadow-black/30 border border-white/80 transition-all duration-300 hover:scale-105 active:scale-95"
+              className="hidden sm:flex items-center gap-2 rounded-full bg-white hover:bg-neutral-100 px-5 py-2 text-xs font-semibold text-neutral-950 shadow-md shadow-black/30 border border-white/80 transition-all duration-300 hover:scale-105 active:scale-95"
             >
               <span>Register Now</span>
               <ArrowRight className="h-3.5 w-3.5" />

@@ -45,7 +45,7 @@ export default function PhotoGallerySection({ scrollProgress }: PhotoGallerySect
   const easeProgress = Math.sin((rawProgress * Math.PI) / 2);
   const galleryOpacity = isScrollDriven ? easeProgress : 1;
 
-  // Duplicate rows 3 times to ensure infinite smooth seamless marquee
+  // Duplicate rows 3 times for seamless infinite looping
   const row1Triple = [...ROW1_IMAGES, ...ROW1_IMAGES, ...ROW1_IMAGES];
   const row2Triple = [...ROW2_IMAGES, ...ROW2_IMAGES, ...ROW2_IMAGES];
   const row3Triple = [...ROW3_IMAGES, ...ROW3_IMAGES, ...ROW3_IMAGES];
@@ -85,17 +85,17 @@ export default function PhotoGallerySection({ scrollProgress }: PhotoGallerySect
 
       <section
         id="gallery"
-        className="relative w-full py-16 sm:py-24 px-4 sm:px-8 lg:px-12 overflow-hidden font-[family-name:var(--font-google-sans)] bg-transparent text-white transition-opacity duration-300"
+        className="relative w-full py-16 sm:py-24 font-[family-name:var(--font-google-sans)] bg-transparent text-white transition-opacity duration-300 overflow-hidden"
         style={{
           opacity: galleryOpacity,
           pointerEvents: galleryOpacity > 0.3 ? "auto" : "none",
           willChange: "opacity",
         }}
       >
-        <div className="relative z-10 max-w-full mx-auto space-y-8 sm:space-y-10">
-          {/* Editorial Section Header (Replicated exact title style) */}
+        <div className="relative z-10 w-full space-y-8 sm:space-y-10">
+          {/* Editorial Section Header */}
           <ScrollReveal direction="none">
-            <div className="max-w-7xl mx-auto flex flex-col sm:flex-row items-start sm:items-end justify-between gap-6 pb-6 border-b border-white/15 px-2">
+            <div className="max-w-7xl mx-auto px-6 sm:px-12 lg:px-20 flex flex-col sm:flex-row items-start sm:items-end justify-between gap-6 pb-6 border-b border-white/15">
               <div className="space-y-2">
                 <h2
                   className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-normal tracking-wide uppercase"
@@ -120,11 +120,17 @@ export default function PhotoGallerySection({ scrollProgress }: PhotoGallerySect
             </div>
           </ScrollReveal>
 
-          {/* ── 3-Row Exhibition Photo Gallery Marquee ──────────────────── */}
-          <div className="relative w-full overflow-hidden space-y-4 sm:space-y-6 py-2">
-            {/* Side Fading Scrim Gradients */}
-            <div className="pointer-events-none absolute inset-y-0 left-0 w-16 sm:w-32 bg-gradient-to-r from-[#0a0c14] to-transparent z-20" />
-            <div className="pointer-events-none absolute inset-y-0 right-0 w-16 sm:w-32 bg-gradient-to-l from-[#0a0c14] to-transparent z-20" />
+          {/* ── Full-Bleed 3-Row Exhibition Photo Marquee (Clean photos, zero border strokes) ── */}
+          <div
+            className="relative w-screen left-1/2 right-1/2 -ml-[50vw] -mr-[50vw] overflow-hidden space-y-4 sm:space-y-6 py-2"
+            style={{
+              WebkitMaskImage: "linear-gradient(to right, transparent 0%, rgba(0,0,0,0.35) 4%, rgba(0,0,0,1) 12%, rgba(0,0,0,1) 88%, rgba(0,0,0,0.35) 96%, transparent 100%)",
+              maskImage: "linear-gradient(to right, transparent 0%, rgba(0,0,0,0.35) 4%, rgba(0,0,0,1) 12%, rgba(0,0,0,1) 88%, rgba(0,0,0,0.35) 96%, transparent 100%)",
+            }}
+          >
+            {/* Extreme Edge Vignette Overlay */}
+            <div className="pointer-events-none absolute inset-y-0 left-0 w-20 sm:w-40 bg-gradient-to-r from-black/80 via-black/40 to-transparent z-20" />
+            <div className="pointer-events-none absolute inset-y-0 right-0 w-20 sm:w-40 bg-gradient-to-l from-black/80 via-black/40 to-transparent z-20" />
 
             {/* ── Row 1: Left to Right Marquee ── */}
             <div className="overflow-hidden w-full flex">
@@ -132,10 +138,8 @@ export default function PhotoGallerySection({ scrollProgress }: PhotoGallerySect
                 {row1Triple.map((src, idx) => (
                   <div
                     key={`gal-row1-${idx}`}
-                    className="relative shrink-0 w-64 sm:w-80 md:w-96 h-40 sm:h-48 md:h-52 rounded-2xl sm:rounded-3xl overflow-hidden border border-white/20 bg-black/40 backdrop-blur-xl shadow-xl transition-all duration-300 hover:scale-[1.04] hover:border-white/50 hover:shadow-[0_14px_40px_rgba(147,18,137,0.35)] group cursor-pointer"
+                    className="relative shrink-0 w-64 sm:w-80 md:w-96 h-40 sm:h-48 md:h-52 rounded-2xl sm:rounded-3xl overflow-hidden bg-black/30 shadow-2xl transition-all duration-300 hover:scale-[1.04] group cursor-pointer"
                   >
-                    {/* Top Glow Accent */}
-                    <div className="pointer-events-none absolute inset-x-0 top-0 h-[1.5px] bg-gradient-to-r from-transparent via-white/40 to-transparent z-10" />
                     {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img
                       src={src}
@@ -154,10 +158,8 @@ export default function PhotoGallerySection({ scrollProgress }: PhotoGallerySect
                 {row2Triple.map((src, idx) => (
                   <div
                     key={`gal-row2-${idx}`}
-                    className="relative shrink-0 w-64 sm:w-80 md:w-96 h-40 sm:h-48 md:h-52 rounded-2xl sm:rounded-3xl overflow-hidden border border-white/20 bg-black/40 backdrop-blur-xl shadow-xl transition-all duration-300 hover:scale-[1.04] hover:border-white/50 hover:shadow-[0_14px_40px_rgba(242,0,137,0.35)] group cursor-pointer"
+                    className="relative shrink-0 w-64 sm:w-80 md:w-96 h-40 sm:h-48 md:h-52 rounded-2xl sm:rounded-3xl overflow-hidden bg-black/30 shadow-2xl transition-all duration-300 hover:scale-[1.04] group cursor-pointer"
                   >
-                    {/* Top Glow Accent */}
-                    <div className="pointer-events-none absolute inset-x-0 top-0 h-[1.5px] bg-gradient-to-r from-transparent via-white/40 to-transparent z-10" />
                     {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img
                       src={src}
@@ -176,10 +178,8 @@ export default function PhotoGallerySection({ scrollProgress }: PhotoGallerySect
                 {row3Triple.map((src, idx) => (
                   <div
                     key={`gal-row3-${idx}`}
-                    className="relative shrink-0 w-64 sm:w-80 md:w-96 h-40 sm:h-48 md:h-52 rounded-2xl sm:rounded-3xl overflow-hidden border border-white/20 bg-black/40 backdrop-blur-xl shadow-xl transition-all duration-300 hover:scale-[1.04] hover:border-white/50 hover:shadow-[0_14px_40px_rgba(147,18,137,0.35)] group cursor-pointer"
+                    className="relative shrink-0 w-64 sm:w-80 md:w-96 h-40 sm:h-48 md:h-52 rounded-2xl sm:rounded-3xl overflow-hidden bg-black/30 shadow-2xl transition-all duration-300 hover:scale-[1.04] group cursor-pointer"
                   >
-                    {/* Top Glow Accent */}
-                    <div className="pointer-events-none absolute inset-x-0 top-0 h-[1.5px] bg-gradient-to-r from-transparent via-white/40 to-transparent z-10" />
                     {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img
                       src={src}

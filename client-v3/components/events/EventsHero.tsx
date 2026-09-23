@@ -17,7 +17,7 @@ export default function EventsHero({
   onSelectEvent,
 }: EventsHeroProps) {
   return (
-    <div className="relative w-full min-h-full flex flex-col justify-between overflow-x-hidden bg-transparent font-sans text-white z-10 pt-10 sm:pt-12 pb-2">
+    <div className="relative w-full min-h-full flex flex-col justify-between overflow-x-hidden bg-transparent font-sans text-white z-10 pt-16 sm:pt-18 md:pt-20 pb-2">
       {/* ── Main Interactive Content Container ───────────────────────── */}
       <div className="relative z-10 w-full max-w-[1440px] mx-auto px-4 sm:px-8 flex flex-col flex-1 min-h-0 justify-center">
         {/* Header / Hero Title Section */}

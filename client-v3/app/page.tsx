@@ -183,6 +183,16 @@ function HomeContent() {
         └─────────────────────────────────────────────────────────┘
       */}
       <div className="fixed inset-0 z-10 overflow-hidden bg-[#0a0c14]">
+        {/* Full-bleed Mobile Background for portrait screens (sm:hidden) */}
+        <div className="absolute inset-0 z-[1] block sm:hidden pointer-events-none overflow-hidden bg-[#ECE1CF]">
+          <img
+            src="/assets/responsive.png"
+            alt="Mobile Hero Background"
+            className="w-full h-full object-cover object-bottom select-none pointer-events-none hero-smooth-layer"
+            draggable={false}
+          />
+        </div>
+
         {/* Full-bleed aspect-ratio preserved canvas */}
         <div
           className="absolute inset-0 flex items-center justify-center pointer-events-none"
@@ -286,6 +296,33 @@ function HomeContent() {
               }
 
               // Base layer — stays permanently, no scroll transform
+              if (layer.id === "main-base-layer") {
+                return (
+                  <div
+                    key={layer.id}
+                    className="absolute pointer-events-none inset-0"
+                    style={{
+                      zIndex: layer.zIndex,
+                      opacity: hasEntered ? undefined : 0,
+                      transform: hasEntered ? undefined : getEntranceFromTransform(layer.entrance),
+                      animation: hasEntered && !allLayersEntered
+                        ? entranceAnimationMap[layer.entrance]
+                        : undefined,
+                      willChange: "transform, opacity",
+                    }}
+                  >
+                    {/* Desktop Background Illustration */}
+                    <img
+                      src="/hero-layers/main-base-layer.png"
+                      alt={layer.id}
+                      className="w-full h-full hidden sm:block select-none pointer-events-none hero-smooth-layer"
+                      draggable={false}
+                      style={{ objectFit: layer.objectFit, objectPosition: layer.objectPosition }}
+                    />
+                  </div>
+                );
+              }
+
               return (
                 <div
                   key={layer.id}
@@ -320,9 +357,6 @@ function HomeContent() {
             <div style={{ opacity: leavesOpacity, transition: "opacity 0.15s ease-out" }}>
               <FallingLeaves active={leavesActive} count={14} />
             </div>
-
-            {/* Monumental Hero Headline — exact Figma coordinates within 1672x941 canvas */}
-            <HeroCenterpiece scrollProgress={scrollProgress} />
           </div>
         </div>
 
@@ -340,7 +374,8 @@ function HomeContent() {
           }}
         />
 
-        {/* Hero scroll cue */}
+        {/* Monumental Hero Headline & scroll cue */}
+        <HeroCenterpiece scrollProgress={scrollProgress} />
         <HeroInterfaceOverlay scrollProgress={scrollProgress} />
       </div>
 
