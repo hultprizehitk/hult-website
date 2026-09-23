@@ -7,6 +7,7 @@ import User from "@/models/User";
 import { auth } from "@/auth";
 import { parseHeritageEmail } from "@/lib/heritage-parser";
 import { generateTeamCode, sanitizeNumeric, isValidPhone, isValidRoll } from "@/lib/teams/team-utils";
+import { checkRateLimit, getClientIp } from "@/lib/rate-limit";
 
 /**
  * GET /api/teams?eventId=<id>
@@ -101,6 +102,15 @@ export async function POST(req: Request) {
       return NextResponse.json(
         { error: "Access Restricted: Only @heritageit.edu.in college accounts can register." },
         { status: 403 }
+      );
+    }
+
+    const ip = getClientIp(req);
+    const rateLimit = checkRateLimit(`${ip}:${userEmail}`, { limit: 10, windowMs: 60 * 1000 });
+    if (!rateLimit.success) {
+      return NextResponse.json(
+        { error: "Too many team creation attempts. Please wait a minute before trying again." },
+        { status: 429 }
       );
     }
 

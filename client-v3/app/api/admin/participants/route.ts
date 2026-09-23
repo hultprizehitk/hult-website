@@ -13,7 +13,7 @@ export async function GET(req: Request) {
 
   try {
     const url = new URL(req.url);
-    const search = url.searchParams.get("search")?.trim();
+    const rawSearch = url.searchParams.get("search")?.trim();
     const page = Math.max(1, parseInt(url.searchParams.get("page") || "1", 10));
     const limitParam = url.searchParams.get("limit");
 
@@ -21,11 +21,12 @@ export async function GET(req: Request) {
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const filter: Record<string, any> = {};
-    if (search) {
+    if (rawSearch) {
+      const safeSearch = rawSearch.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
       filter.$or = [
-        { name: { $regex: search, $options: "i" } },
-        { email: { $regex: search, $options: "i" } },
-        { department: { $regex: search, $options: "i" } },
+        { name: { $regex: safeSearch, $options: "i" } },
+        { email: { $regex: safeSearch, $options: "i" } },
+        { department: { $regex: safeSearch, $options: "i" } },
       ];
     }
 

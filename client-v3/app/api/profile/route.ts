@@ -4,6 +4,7 @@ import User from "@/models/User";
 import Team from "@/models/Team";
 import Event from "@/models/Event";
 import { auth } from "@/auth";
+import { checkRateLimit, getClientIp } from "@/lib/rate-limit";
 
 /**
  * GET /api/profile
@@ -96,6 +97,14 @@ export async function GET() {
  */
 export async function PATCH(req: Request) {
   try {
+    const rateLimit = checkRateLimit(getClientIp(req), { limit: 20, windowMs: 60 * 1000 });
+    if (!rateLimit.success) {
+      return NextResponse.json(
+        { error: "Too many requests. Please wait a moment before trying again." },
+        { status: 429 }
+      );
+    }
+
     const session = await auth();
     if (!session?.user?.email) {
       return NextResponse.json({ error: "Authentication required" }, { status: 401 });
@@ -109,14 +118,14 @@ export async function PATCH(req: Request) {
     const cleanPhone = typeof phone === "string" ? phone.replace(/\D/g, "").trim() : "";
     const cleanRoll = typeof roll === "string" ? roll.replace(/\D/g, "").trim() : "";
 
-    if (phone && (!cleanPhone || cleanPhone.length !== 10 || !/^\d{10}$/.test(cleanPhone))) {
+    if (phone !== undefined && (!cleanPhone || cleanPhone.length !== 10 || !/^\d{10}$/.test(cleanPhone))) {
       return NextResponse.json(
         { error: "Contact Phone must be a valid 10-digit number." },
         { status: 400 }
       );
     }
 
-    if (roll && (!cleanRoll || !/^\d+$/.test(cleanRoll))) {
+    if (roll !== undefined && (!cleanRoll || !/^\d+$/.test(cleanRoll))) {
       return NextResponse.json(
         { error: "College Roll Number must contain numbers only." },
         { status: 400 }
@@ -125,12 +134,13 @@ export async function PATCH(req: Request) {
 
     await connectDB();
 
-    const updateSet: Record<string, string> = {
-      phone: cleanPhone,
-      roll: cleanRoll,
-    };
-    if (cleanName) {
-      updateSet.name = cleanName;
+    const updateSet: Record<string, string> = {};
+    if (phone !== undefined) updateSet.phone = cleanPhone;
+    if (roll !== undefined) updateSet.roll = cleanRoll;
+    if (cleanName) updateSet.name = cleanName;
+
+    if (Object.keys(updateSet).length === 0) {
+      return NextResponse.json({ error: "No valid fields provided for update." }, { status: 400 });
     }
 
     const user = await User.findOneAndUpdate(
@@ -144,53 +154,52 @@ export async function PATCH(req: Request) {
     }
 
     // Propagate name, phone and roll to all teams where user is lead
-    const leadSet: Record<string, string> = {
-      "lead.phone": cleanPhone,
-      "lead.roll": cleanRoll,
-    };
-    if (cleanName) {
-      leadSet["lead.name"] = cleanName;
+    const leadSet: Record<string, string> = {};
+    if (phone !== undefined) leadSet["lead.phone"] = cleanPhone;
+    if (roll !== undefined) leadSet["lead.roll"] = cleanRoll;
+    if (cleanName) leadSet["lead.name"] = cleanName;
+
+    if (Object.keys(leadSet).length > 0) {
+      await Team.updateMany({ leadEmail: email }, { $set: leadSet });
     }
-    await Team.updateMany({ leadEmail: email }, { $set: leadSet });
 
     // Propagate name, phone and roll to all teams where user is a member
-    const memberSet: Record<string, string> = {
-      "members.$[elem].phone": cleanPhone,
-      "members.$[elem].roll": cleanRoll,
-    };
-    if (cleanName) {
-      memberSet["members.$[elem].name"] = cleanName;
+    const memberSet: Record<string, string> = {};
+    if (phone !== undefined) memberSet["members.$[elem].phone"] = cleanPhone;
+    if (roll !== undefined) memberSet["members.$[elem].roll"] = cleanRoll;
+    if (cleanName) memberSet["members.$[elem].name"] = cleanName;
+
+    if (Object.keys(memberSet).length > 0) {
+      await Team.updateMany(
+        { "members.email": email },
+        { $set: memberSet },
+        { arrayFilters: [{ "elem.email": email }] }
+      );
     }
-    await Team.updateMany(
-      { "members.email": email },
-      { $set: memberSet },
-      { arrayFilters: [{ "elem.email": email }] }
-    );
 
     // Propagate to Event.registeredTeams if user is lead
-    const regLeadSet: Record<string, string> = {
-      "registeredTeams.$[t].leadPhone": cleanPhone,
-    };
-    if (cleanName) {
-      regLeadSet["registeredTeams.$[t].leadName"] = cleanName;
+    const regLeadSet: Record<string, string> = {};
+    if (phone !== undefined) regLeadSet["registeredTeams.$[t].leadPhone"] = cleanPhone;
+    if (cleanName) regLeadSet["registeredTeams.$[t].leadName"] = cleanName;
+
+    if (Object.keys(regLeadSet).length > 0) {
+      await Event.updateMany(
+        { "registeredTeams.leadEmail": email },
+        { $set: regLeadSet },
+        { arrayFilters: [{ "t.leadEmail": email }] }
+      );
     }
-    await Event.updateMany(
-      { "registeredTeams.leadEmail": email },
-      { $set: regLeadSet },
-      { arrayFilters: [{ "t.leadEmail": email }] }
-    );
 
     // Propagate to Event.registeredTeams members if user is member
-    if (cleanName) {
+    const regMemberSet: Record<string, string> = {};
+    if (cleanName) regMemberSet["registeredTeams.$[].members.$[m].name"] = cleanName;
+    if (phone !== undefined) regMemberSet["registeredTeams.$[].members.$[m].phone"] = cleanPhone;
+    if (roll !== undefined) regMemberSet["registeredTeams.$[].members.$[m].roll"] = cleanRoll;
+
+    if (Object.keys(regMemberSet).length > 0) {
       await Event.updateMany(
         { "registeredTeams.members.email": email },
-        {
-          $set: {
-            "registeredTeams.$[].members.$[m].name": cleanName,
-            "registeredTeams.$[].members.$[m].phone": cleanPhone,
-            "registeredTeams.$[].members.$[m].roll": cleanRoll,
-          },
-        },
+        { $set: regMemberSet },
         { arrayFilters: [{ "m.email": email }] }
       );
     }
