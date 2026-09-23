@@ -116,7 +116,6 @@ export default function EventRegistrationModal({
   const [finalSubmitError, setFinalSubmitError] = useState<string | null>(null);
   const [finalSubmitSuccess, setFinalSubmitSuccess] = useState<string | null>(null);
   const [isEditingSubmission, setIsEditingSubmission] = useState(false);
-  const [showDraftFormEarly, setShowDraftFormEarly] = useState(false);
 
   const minMembers = event.minTeamMembers || 3;
   const maxMembers = event.maxTeamMembers || 5;
@@ -368,150 +367,6 @@ export default function EventRegistrationModal({
 
           return (
             <div className="space-y-5 animate-fadeIn">
-              {/* Status Header Banner */}
-              <div
-                className={`rounded-2xl border p-4 sm:p-5 flex items-center justify-between gap-4 flex-wrap backdrop-blur-xl ${
-                  isSubmitted
-                    ? "border-purple-500/40 bg-purple-950/25"
-                    : meetsMinCriteria
-                    ? "border-emerald-500/40 bg-emerald-950/25"
-                    : "border-amber-500/40 bg-amber-950/25"
-                }`}
-              >
-                <div className="flex items-center gap-3 min-w-0">
-                  {isSubmitted ? (
-                    <Sparkles className="h-6 w-6 text-purple-400 shrink-0" />
-                  ) : meetsMinCriteria ? (
-                    <CheckCircle2 className="h-6 w-6 text-emerald-400 shrink-0" />
-                  ) : (
-                    <AlertCircle className="h-6 w-6 text-amber-400 shrink-0" />
-                  )}
-                  <div className="min-w-0">
-                    <span className="font-[family-name:var(--font-google-sans)] text-sm sm:text-base font-bold text-white block">
-                      {isSubmitted
-                        ? "Application Officially Submitted"
-                        : meetsMinCriteria
-                        ? "Team Criteria Satisfied"
-                        : "Forming Team (Roster Incomplete)"}
-                    </span>
-                    <span className="text-[11px] text-white/60 font-mono block mt-0.5">
-                      {isSubmitted
-                        ? `Submitted on ${
-                            existingTeam.submittedAt
-                              ? new Date(existingTeam.submittedAt).toLocaleDateString()
-                              : "Confirmed record"
-                          } • Recorded for Judging`
-                        : meetsMinCriteria
-                        ? `${currentMembersCount} of ${maxMembers} members enrolled • Ready for submission`
-                        : `Needs ${minMembers - currentMembersCount} more member(s) to reach minimum ${minMembers}`}
-                    </span>
-                  </div>
-                </div>
-
-                <div className="flex items-center gap-2 shrink-0">
-                  {isSubmitted && (
-                    <span className="rounded-full bg-purple-500/20 border border-purple-500/40 text-purple-300 text-[10px] font-bold uppercase tracking-wider px-3 py-1 font-mono">
-                      Submitted
-                    </span>
-                  )}
-                  <span
-                    className={`rounded-full border text-[10px] font-bold uppercase tracking-wider px-3 py-1 font-mono flex items-center gap-1.5 ${
-                      userRole === "lead"
-                        ? "bg-rose-500/20 border-rose-500/40 text-rose-300"
-                        : "bg-blue-500/20 border-blue-500/40 text-blue-300"
-                    }`}
-                  >
-                    {userRole === "lead" ? (
-                      <>
-                        <ShieldCheck size={12} />
-                        <span>Team Leader</span>
-                      </>
-                    ) : (
-                      <>
-                        <Users size={12} />
-                        <span>Team Member</span>
-                      </>
-                    )}
-                  </span>
-                </div>
-              </div>
-
-              {/* Roster Criteria Progress Meter */}
-              <div className="rounded-2xl border border-white/15 bg-white/[0.03] backdrop-blur-xl p-5 space-y-3">
-                <div className="flex items-center justify-between text-xs">
-                  <span className="font-mono uppercase font-bold tracking-wider text-white/60 text-[10px] flex items-center gap-1.5">
-                    <Users size={13} className="text-[#f20089]" />
-                    <span>Roster Criteria Progress</span>
-                  </span>
-                  <span className="font-mono text-xs font-bold text-white">
-                    {currentMembersCount} / {maxMembers} Students{" "}
-                    <span className="text-white/40 font-normal">
-                      (Min: {minMembers})
-                    </span>
-                  </span>
-                </div>
-
-                {/* Progress bar */}
-                <div className="w-full bg-white/10 h-2.5 rounded-full overflow-hidden">
-                  <div
-                    className={`h-full transition-all duration-500 ${
-                      isSubmitted
-                        ? "bg-purple-500"
-                        : meetsMinCriteria
-                        ? "bg-emerald-500"
-                        : "bg-amber-500"
-                    }`}
-                    style={{
-                      width: `${Math.min(
-                        100,
-                        Math.max(18, (currentMembersCount / maxMembers) * 100)
-                      )}%`,
-                    }}
-                  />
-                </div>
-
-                {/* Context alert */}
-                {!meetsMinCriteria ? (
-                  <div className="rounded-xl border border-amber-500/30 bg-amber-950/20 p-3 text-xs text-amber-200/90 flex items-start gap-2.5">
-                    <AlertCircle size={15} className="text-amber-400 shrink-0 mt-0.5" />
-                    <div>
-                      <span className="font-bold text-amber-300 block font-[family-name:var(--font-google-sans)]">
-                        Criteria Pending: Minimum {minMembers} Members Required
-                      </span>
-                      <p className="text-[11px] text-amber-200/80 mt-0.5 leading-relaxed">
-                        Share your Team Code below with classmates. Once at least {minMembers} students join, the Team Leader can submit official venture details.
-                      </p>
-                    </div>
-                  </div>
-                ) : !isSubmitted ? (
-                  <div className="rounded-xl border border-emerald-500/30 bg-emerald-950/20 p-3 text-xs text-emerald-200/90 flex items-start gap-2.5">
-                    <CheckCircle2 size={15} className="text-emerald-400 shrink-0 mt-0.5" />
-                    <div>
-                      <span className="font-bold text-emerald-300 block font-[family-name:var(--font-google-sans)]">
-                        Team Criteria Satisfied ({currentMembersCount} Members)
-                      </span>
-                      <p className="text-[11px] text-emerald-200/80 mt-0.5 leading-relaxed">
-                        {userRole === "lead"
-                          ? "As Team Leader, you can now finalize and submit your venture proposal and pitch deck below."
-                          : "Your team satisfies the member threshold. Your Team Leader can now submit the final venture proposal."}
-                      </p>
-                    </div>
-                  </div>
-                ) : (
-                  <div className="rounded-xl border border-purple-500/30 bg-purple-950/20 p-3 text-xs text-purple-200/90 flex items-start gap-2.5">
-                    <Sparkles size={15} className="text-purple-400 shrink-0 mt-0.5" />
-                    <div>
-                      <span className="font-bold text-purple-300 block font-[family-name:var(--font-google-sans)]">
-                        Roster &amp; Application Confirmed
-                      </span>
-                      <p className="text-[11px] text-purple-200/80 mt-0.5 leading-relaxed">
-                        All competition criteria matched and final team details are recorded for judging.
-                      </p>
-                    </div>
-                  </div>
-                )}
-              </div>
-
               {/* Team Name & Invite Code Hero Card */}
               <div className="rounded-2xl border border-white/15 bg-white/[0.04] backdrop-blur-xl p-5 sm:p-7 space-y-4 shadow-xl">
                 <div className="flex items-center justify-between gap-3 flex-wrap">
@@ -524,11 +379,49 @@ export default function EventRegistrationModal({
                     </h3>
                   </div>
 
-                  {existingTeam.ventureName && (
-                    <span className="text-xs font-mono text-white/70 bg-white/10 border border-white/15 px-3 py-1.5 rounded-full">
-                      Track: {existingTeam.ventureName}
+                  <div className="flex items-center gap-2 flex-wrap">
+                    {/* Role Badge */}
+                    <span
+                      className={`rounded-full border text-[10px] font-bold uppercase tracking-wider px-3 py-1 font-mono flex items-center gap-1.5 ${
+                        userRole === "lead"
+                          ? "bg-rose-500/20 border-rose-500/40 text-rose-300"
+                          : "bg-blue-500/20 border-blue-500/40 text-blue-300"
+                      }`}
+                    >
+                      {userRole === "lead" ? (
+                        <>
+                          <ShieldCheck size={12} />
+                          <span>Team Leader</span>
+                        </>
+                      ) : (
+                        <>
+                          <Users size={12} />
+                          <span>Team Member</span>
+                        </>
+                      )}
                     </span>
-                  )}
+
+                    {/* Clean Technical Status Pill (1-line, no walls of text) */}
+                    {isSubmitted ? (
+                      <span className="rounded-full bg-purple-500/20 border border-purple-500/40 text-purple-300 text-[10px] font-bold uppercase tracking-wider px-3 py-1 font-mono">
+                        Submitted
+                      </span>
+                    ) : meetsMinCriteria ? (
+                      <span className="rounded-full bg-emerald-500/20 border border-emerald-500/40 text-emerald-300 text-[10px] font-bold uppercase tracking-wider px-3 py-1 font-mono">
+                        Ready to Submit ({currentMembersCount}/{maxMembers})
+                      </span>
+                    ) : (
+                      <span className="rounded-full bg-amber-500/20 border border-amber-500/40 text-amber-300 text-[10px] font-bold uppercase tracking-wider px-3 py-1 font-mono">
+                        Forming ({currentMembersCount}/{minMembers} Min Required)
+                      </span>
+                    )}
+
+                    {existingTeam.ventureName && (
+                      <span className="text-xs font-mono text-white/70 bg-white/10 border border-white/15 px-3 py-1 rounded-full">
+                        Track: {existingTeam.ventureName}
+                      </span>
+                    )}
+                  </div>
                 </div>
 
                 {/* Team Invite Code Bar */}
@@ -689,165 +582,10 @@ export default function EventRegistrationModal({
                     ))}
                   </div>
                 )}
-
-                {/* Open Slot Visual Indicators */}
-                {Array.from({ length: maxMembers - currentMembersCount }).map((_, i) => {
-                  const slotNumber = currentMembersCount + i + 1;
-                  const isRequiredForMin = slotNumber <= minMembers;
-                  return (
-                    <div
-                      key={`open-slot-${i}`}
-                      className={`rounded-2xl border border-dashed p-4 flex items-center justify-between gap-3 text-xs transition-colors ${
-                        isRequiredForMin
-                          ? "border-amber-500/35 bg-amber-950/15 text-amber-200/90"
-                          : "border-white/15 bg-white/[0.02] text-white/50"
-                      }`}
-                    >
-                      <div className="flex items-center gap-3">
-                        <div
-                          className={`h-8 w-8 rounded-full border flex items-center justify-center text-xs font-mono font-bold shrink-0 ${
-                            isRequiredForMin
-                              ? "border-amber-500/40 text-amber-300 bg-amber-500/10"
-                              : "border-white/20 text-white/50 bg-white/5"
-                          }`}
-                        >
-                          {slotNumber}
-                        </div>
-                        <div>
-                          <span className="font-semibold block text-white text-xs sm:text-sm font-[family-name:var(--font-google-sans)]">
-                            {isRequiredForMin ? "Awaiting Required Teammate" : "Open Member Slot (Optional)"}
-                          </span>
-                          <span className="text-[11px] font-mono opacity-70">
-                            {isRequiredForMin ? `Required to meet minimum ${minMembers} members` : `Can fill up to max ${maxMembers}`}
-                          </span>
-                        </div>
-                      </div>
-
-                      <button
-                        type="button"
-                        onClick={() => handleCopyCode(existingTeam.teamCode)}
-                        className="rounded-full border border-white/20 bg-white/10 hover:bg-white/20 px-3.5 py-1.5 text-xs font-mono font-medium text-white transition-all cursor-pointer shrink-0"
-                      >
-                        Copy Code
-                      </button>
-                    </div>
-                  );
-                })}
               </div>
 
-              {/* Venture Proposal & Submission Dossier */}
-              {!meetsMinCriteria ? (
-                /* Form Locked State when Criteria is NOT yet met */
-                <div className="rounded-2xl border border-white/15 bg-white/[0.04] backdrop-blur-xl p-5 sm:p-7 space-y-4 shadow-xl">
-                  <div className="flex items-center justify-between gap-3 flex-wrap">
-                    <div className="flex items-center gap-3 min-w-0">
-                      <div className="h-10 w-10 rounded-2xl bg-white/5 border border-white/15 flex items-center justify-center text-white/50 shrink-0">
-                        <Lock size={16} />
-                      </div>
-                      <div className="min-w-0">
-                        <div className="flex items-center gap-2">
-                          <h4 className="font-serif text-lg font-bold text-white tracking-tight">
-                            Venture Proposal &amp; Pitch Deck
-                          </h4>
-                          <span className="text-[9px] font-mono font-bold uppercase tracking-wider px-2.5 py-0.5 rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/30 shrink-0">
-                            Locked
-                          </span>
-                        </div>
-                        <p className="text-xs text-white/50 font-mono mt-0.5">
-                          Official submission unlocks automatically once {minMembers - currentMembersCount} more member(s) join.
-                        </p>
-                      </div>
-                    </div>
-
-                    {userRole === "lead" && (
-                      <button
-                        type="button"
-                        onClick={() => setShowDraftFormEarly((prev) => !prev)}
-                        className="text-xs font-mono text-[#f20089] hover:underline cursor-pointer shrink-0"
-                      >
-                        {showDraftFormEarly ? "Hide Draft Form" : "Draft Details Early →"}
-                      </button>
-                    )}
-                  </div>
-
-                  {existingTeam.ventureName && !showDraftFormEarly && (
-                    <div className="rounded-2xl bg-white/[0.03] border border-white/10 p-4 text-xs flex items-center justify-between">
-                      <span className="text-white/50 font-mono">Draft Project Title:</span>
-                      <span className="text-white font-semibold">{existingTeam.ventureName}</span>
-                    </div>
-                  )}
-
-                  {/* Optional Early Draft Form for Team Leader */}
-                  {showDraftFormEarly && userRole === "lead" && (
-                    <form onSubmit={handleFinalSubmit} className="space-y-4 pt-4 border-t border-white/10">
-                      {finalSubmitError && (
-                        <div className="rounded-xl border border-rose-500/40 bg-rose-950/30 p-3.5 text-xs text-rose-200">
-                          {finalSubmitError}
-                        </div>
-                      )}
-                      {finalSubmitSuccess && (
-                        <div className="rounded-xl border border-emerald-500/40 bg-emerald-950/30 p-3.5 text-xs text-emerald-200">
-                          {finalSubmitSuccess}
-                        </div>
-                      )}
-
-                      <div>
-                        <label className="block text-xs font-mono uppercase tracking-wider text-white/60 mb-1.5 font-bold">
-                          Venture Track / Project Name
-                        </label>
-                        <input
-                          type="text"
-                          required
-                          placeholder="e.g. EcoPack Innovations"
-                          value={submissionForm.ventureName}
-                          onChange={(e) =>
-                            setSubmissionForm((p) => ({ ...p, ventureName: e.target.value }))
-                          }
-                          className="w-full rounded-2xl border border-white/15 bg-white/[0.04] hover:bg-white/[0.07] focus:bg-white/[0.1] px-4 py-3 text-xs sm:text-sm text-white placeholder-white/30 focus:border-[#f20089] focus:outline-none transition-all"
-                        />
-                      </div>
-
-                      <div>
-                        <label className="block text-xs font-mono uppercase tracking-wider text-white/60 mb-1.5 font-bold">
-                          Executive Problem &amp; Solution Summary
-                        </label>
-                        <textarea
-                          rows={3}
-                          placeholder="Briefly describe your venture's social impact, target problem, and proposed innovation..."
-                          value={submissionForm.ventureDescription}
-                          onChange={(e) =>
-                            setSubmissionForm((p) => ({
-                              ...p,
-                              ventureDescription: e.target.value,
-                            }))
-                          }
-                          className="w-full rounded-2xl border border-white/15 bg-white/[0.04] hover:bg-white/[0.07] focus:bg-white/[0.1] px-4 py-3 text-xs sm:text-sm text-white placeholder-white/30 focus:border-[#f20089] focus:outline-none resize-none transition-all"
-                        />
-                      </div>
-
-                      <div>
-                        <label className="block text-xs font-mono uppercase tracking-wider text-white/60 mb-1.5 font-bold">
-                          Pitch Deck Link (Google Drive / Canva / Notion)
-                        </label>
-                        <input
-                          type="url"
-                          placeholder="https://drive.google.com/... or Canva presentation link"
-                          value={submissionForm.pitchDeckUrl}
-                          onChange={(e) =>
-                            setSubmissionForm((p) => ({ ...p, pitchDeckUrl: e.target.value }))
-                          }
-                          className="w-full rounded-2xl border border-white/15 bg-white/[0.04] hover:bg-white/[0.07] focus:bg-white/[0.1] px-4 py-3 text-xs sm:text-sm text-white placeholder-white/30 focus:border-[#f20089] focus:outline-none font-mono transition-all"
-                        />
-                      </div>
-
-                      <p className="text-xs text-amber-300/80 font-mono">
-                        Official submission will be validated once {minMembers} members join.
-                      </p>
-                    </form>
-                  )}
-                </div>
-              ) : (
-                /* Form Unlocked / Ready State when Criteria IS Met */
+              {/* Venture Proposal & Submission Dossier (Unlocks once minimum criteria is reached) */}
+              {meetsMinCriteria && (
                 <div className="rounded-2xl border border-white/15 bg-white/[0.04] backdrop-blur-xl p-5 sm:p-7 space-y-5 shadow-xl">
                   <div className="flex items-center justify-between gap-3 pb-2 border-b border-white/10">
                     <span className="font-mono uppercase font-bold tracking-wider text-white/70 text-xs flex items-center gap-2">
