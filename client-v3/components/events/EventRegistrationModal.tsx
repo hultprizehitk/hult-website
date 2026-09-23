@@ -1428,169 +1428,141 @@ export default function EventRegistrationModal({
 
     const currentMembersCount = 1 + (existingTeam.members?.length || 0);
     const meetsMinCriteria = currentMembersCount >= minMembers;
-    const isSubmitted = existingTeam.submissionStatus === "submitted";
+    const isActuallyConfirmed = existingTeam.submissionStatus === "submitted" && meetsMinCriteria;
 
     return (
       <div
-        className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 bg-black/85 backdrop-blur-xl animate-fadeIn"
+        className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 transition-opacity"
         onClick={() => setIsSubmissionModalOpen(false)}
       >
         <div
-          className="relative w-full max-w-lg flex flex-col rounded-[2.5rem] border border-white/20 bg-[#0c0a12]/95 backdrop-blur-2xl shadow-2xl text-white font-sans overflow-hidden my-auto"
+          className="relative w-full max-w-md rounded-2xl border border-white/10 bg-[#121118] text-white font-sans shadow-2xl p-6 space-y-4 antialiased"
           onClick={(e) => e.stopPropagation()}
         >
-          {/* Top Iridescent Edge */}
-          <div className="pointer-events-none absolute inset-x-0 top-0 h-[1.5px] bg-gradient-to-r from-transparent via-[#f20089]/60 to-transparent" />
-
-          {/* Modal Header */}
-          <div className="p-6 pb-4 border-b border-white/10 shrink-0 bg-[#0c0a12] flex items-center justify-between gap-4">
-            <div className="space-y-1 pr-4 min-w-0">
-              <div className="flex items-center gap-2 flex-wrap">
-                <span className="rounded-full bg-white/10 border border-white/20 text-white text-[10px] font-bold uppercase tracking-wider px-2.5 py-0.5 font-mono">
-                  Official Registration
-                </span>
-                <span className="text-[11px] text-white/50 font-mono truncate max-w-xs">
-                  Team: {existingTeam.teamName}
-                </span>
-              </div>
-              <h2 className="font-serif text-xl sm:text-2xl font-bold text-white tracking-tight truncate">
-                {isSubmitted ? "Registration Confirmed" : "Confirm Team Registration"}
-              </h2>
+          {/* Header */}
+          <div className="flex items-center justify-between pb-3 border-b border-white/10">
+            <div>
+              <span className="text-[10px] font-mono uppercase tracking-wider text-white/40 block">
+                Official Registration
+              </span>
+              <h3 className="text-base sm:text-lg font-bold text-white tracking-tight">
+                {isActuallyConfirmed ? "Registration Confirmed" : "Team Registration"}
+              </h3>
             </div>
-
             <button
               type="button"
               onClick={() => setIsSubmissionModalOpen(false)}
-              aria-label="Close Modal"
-              className="h-9 w-9 rounded-full bg-white/10 hover:bg-white/20 text-white/70 hover:text-white flex items-center justify-center transition-colors cursor-pointer border border-white/10 shrink-0"
+              className="h-8 w-8 rounded-full bg-white/5 hover:bg-white/15 text-white/70 hover:text-white flex items-center justify-center transition-colors cursor-pointer border border-white/10"
+              aria-label="Close"
             >
-              <X className="h-4 w-4" />
+              <X size={15} />
             </button>
           </div>
 
-          {/* Modal Body */}
-          <div className="p-6 sm:p-7 space-y-5">
-            {/* Status Feedback */}
-            {isSubmitted ? (
-              <div className="flex items-center gap-3 rounded-2xl border border-emerald-500/30 bg-emerald-950/30 p-4 text-xs text-emerald-200 font-mono">
-                <CheckCircle2 size={18} className="text-emerald-400 shrink-0" />
-                <div className="space-y-0.5">
-                  <div className="font-bold text-emerald-300">Team Registered Successfully</div>
-                  <div className="text-[11px] text-emerald-200/80">
-                    Your team is officially registered for this event.
-                  </div>
-                </div>
-              </div>
-            ) : !meetsMinCriteria ? (
-              <div className="rounded-2xl border border-amber-500/30 bg-amber-950/25 p-4 text-xs font-mono space-y-1.5 text-amber-200">
-                <div className="font-bold flex items-center gap-2 text-amber-300">
-                  <AlertCircle size={15} className="text-amber-400 shrink-0" />
-                  <span>Team Criteria Not Met ({currentMembersCount}/{minMembers} Members)</span>
-                </div>
-                <p className="text-[11px] text-amber-200/80 leading-relaxed">
-                  This competition requires at least {minMembers} members per team before registration can be officially submitted. Your team currently has {currentMembersCount} of {minMembers} required members.
-                </p>
-                <div className="text-[11px] text-white/70 pt-2 border-t border-amber-500/20 flex items-center justify-between gap-2 flex-wrap">
-                  <span>Invite Code: <strong className="text-[#f20089] tracking-wider">{existingTeam.teamCode}</strong></span>
-                  <span className="text-amber-300 font-bold">Need {minMembers - currentMembersCount} more member{minMembers - currentMembersCount === 1 ? "" : "s"}</span>
-                </div>
-              </div>
-            ) : (
-              <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-4 text-xs font-mono space-y-1 text-white/80">
-                <div className="font-bold text-white flex items-center gap-2 text-sm">
-                  <Sparkles size={14} className="text-[#f20089]" />
-                  <span>Ready to Register</span>
-                </div>
-                <p className="text-[11px] text-white/60">
-                  {userRole === "lead"
-                    ? `All member requirements met (${currentMembersCount} enrolled). Clicking below will officially finalize registration for "${existingTeam.teamName}".`
-                    : `Team "${existingTeam.teamName}" is awaiting final registration submission by Team Leader (${existingTeam.lead.name}).`}
-                </p>
-              </div>
-            )}
-
-            {/* Error Banner */}
-            {finalSubmitError && (
-              <div className="flex items-start gap-2.5 rounded-2xl border border-rose-500/40 bg-rose-950/40 p-3.5 text-xs text-rose-200 font-mono animate-fadeIn">
-                <AlertCircle size={15} className="text-rose-400 shrink-0 mt-0.5" />
-                <span>{finalSubmitError}</span>
-              </div>
-            )}
-
-            {/* Team Details Summary Card */}
-            <div className="rounded-2xl border border-white/10 bg-white/[0.02] p-4 space-y-3 font-mono text-xs">
-              <div className="flex items-center justify-between py-1 border-b border-white/5">
-                <span className="text-white/40 uppercase text-[10px]">Event</span>
-                <span className="text-white font-semibold text-right truncate max-w-[240px]">
-                  {event.title}
-                </span>
-              </div>
-              <div className="flex items-center justify-between py-1 border-b border-white/5">
-                <span className="text-white/40 uppercase text-[10px]">Team Name</span>
-                <span className="text-white font-semibold">{existingTeam.teamName}</span>
-              </div>
-              <div className="flex items-center justify-between py-1 border-b border-white/5">
-                <span className="text-white/40 uppercase text-[10px]">Invite Code</span>
-                <span className="text-[#f20089] font-bold tracking-wider">{existingTeam.teamCode}</span>
-              </div>
-              <div className="flex items-center justify-between py-1 border-b border-white/5">
-                <span className="text-white/40 uppercase text-[10px]">Team Members</span>
-                <span className={meetsMinCriteria ? "text-white" : "text-amber-300 font-bold"}>
-                  {currentMembersCount} / {minMembers} minimum {!meetsMinCriteria && `(Need ${minMembers - currentMembersCount} more)`}
-                </span>
-              </div>
-              <div className="flex items-center justify-between py-1">
-                <span className="text-white/40 uppercase text-[10px]">Registration</span>
-                <span
-                  className={
-                    isSubmitted ? "text-emerald-400 font-bold" : "text-amber-400 font-bold"
-                  }
-                >
-                  {isSubmitted ? "Registered & Confirmed" : "Pending Submission"}
-                </span>
+          {/* Body Content - Minimal, Technical, Professional */}
+          {isActuallyConfirmed ? (
+            <div className="space-y-3">
+              <div className="flex items-center gap-2.5 rounded-xl border border-emerald-500/30 bg-emerald-950/20 p-3.5 text-xs text-emerald-200 font-mono">
+                <CheckCircle2 size={16} className="text-emerald-400 shrink-0" />
+                <span>Team &quot;{existingTeam.teamName}&quot; is registered for this event.</span>
               </div>
             </div>
+          ) : !meetsMinCriteria ? (
+            <div className="space-y-3">
+              {/* Status Pill Row */}
+              <div className="flex items-center justify-between p-3 rounded-xl border border-amber-500/20 bg-amber-500/10 text-xs font-mono text-amber-200">
+                <span className="flex items-center gap-2">
+                  <AlertCircle size={14} className="text-amber-400 shrink-0" />
+                  <span>Roster Incomplete</span>
+                </span>
+                <span className="font-bold text-amber-300">
+                  {currentMembersCount} / {minMembers} Required
+                </span>
+              </div>
 
-            {/* Actions */}
-            <div className="flex items-center justify-between gap-3 pt-3 border-t border-white/10 flex-wrap">
+              {/* Invite Code Compact Box */}
+              <div className="flex items-center justify-between p-3 rounded-xl border border-white/10 bg-white/[0.03] text-xs font-mono">
+                <span className="text-white/50">Invite Code</span>
+                <div className="flex items-center gap-2">
+                  <span className="font-bold text-[#f20089] text-sm tracking-wider">
+                    {existingTeam.teamCode}
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => handleCopyCode(existingTeam.teamCode)}
+                    className="p-1.5 rounded-lg bg-white/5 hover:bg-white/10 text-white/70 hover:text-white transition-colors cursor-pointer"
+                    title="Copy Invite Code"
+                  >
+                    {copiedCode ? <Check size={13} className="text-emerald-400" /> : <Copy size={13} />}
+                  </button>
+                </div>
+              </div>
+
+              <p className="text-[11px] text-white/50 font-mono text-center pt-1">
+                Need {minMembers - currentMembersCount} more member{minMembers - currentMembersCount === 1 ? "" : "s"} to submit registration.
+              </p>
+            </div>
+          ) : (
+            <div className="space-y-3">
+              <div className="flex items-center justify-between p-3 rounded-xl border border-emerald-500/20 bg-emerald-500/10 text-xs font-mono text-emerald-200">
+                <span className="flex items-center gap-2">
+                  <CheckCircle2 size={14} className="text-emerald-400 shrink-0" />
+                  <span>Roster Ready</span>
+                </span>
+                <span className="font-bold text-emerald-300">{currentMembersCount} Members</span>
+              </div>
+
+              <div className="p-3 rounded-xl border border-white/10 bg-white/[0.03] text-xs font-mono space-y-1.5">
+                <div className="flex justify-between">
+                  <span className="text-white/40">Team</span>
+                  <span className="text-white font-medium">{existingTeam.teamName}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-white/40">Event</span>
+                  <span className="text-white font-medium truncate max-w-[200px]">{event.title}</span>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Error Message */}
+          {finalSubmitError && (
+            <div className="flex items-start gap-2 rounded-xl border border-rose-500/30 bg-rose-950/30 p-3 text-xs text-rose-200 font-mono">
+              <AlertCircle size={14} className="text-rose-400 shrink-0 mt-0.5" />
+              <span>{finalSubmitError}</span>
+            </div>
+          )}
+
+          {/* Actions */}
+          <div className="flex items-center justify-end gap-2.5 pt-3 border-t border-white/10">
+            <button
+              type="button"
+              onClick={() => setIsSubmissionModalOpen(false)}
+              className="rounded-full border border-white/15 bg-white/5 hover:bg-white/10 px-4 py-2 text-xs font-semibold text-white/70 hover:text-white transition-colors cursor-pointer font-mono"
+            >
+              Close
+            </button>
+
+            {meetsMinCriteria && !isActuallyConfirmed && userRole === "lead" && (
               <button
                 type="button"
-                onClick={() => setIsSubmissionModalOpen(false)}
-                className="rounded-full border border-white/15 bg-white/5 hover:bg-white/15 px-5 py-2.5 text-xs font-semibold text-white/70 hover:text-white transition-colors cursor-pointer font-mono"
+                disabled={submittingFinal}
+                onClick={() => handleFinalSubmit()}
+                className="rounded-full bg-white hover:bg-neutral-200 text-black font-bold text-xs py-2 px-5 transition-all cursor-pointer shadow-md font-mono inline-flex items-center gap-2 disabled:opacity-50"
               >
-                {isSubmitted ? "Close" : "Cancel"}
+                {submittingFinal ? (
+                  <>
+                    <Loader2 size={12} className="animate-spin" />
+                    <span>Submitting...</span>
+                  </>
+                ) : (
+                  <>
+                    <CheckCircle2 size={12} />
+                    <span>Confirm Registration</span>
+                  </>
+                )}
               </button>
-
-              {!isSubmitted && userRole === "lead" && (
-                <button
-                  type="button"
-                  disabled={submittingFinal || !meetsMinCriteria}
-                  onClick={() => handleFinalSubmit()}
-                  className={`rounded-full font-bold text-xs py-2.5 px-6 transition-all font-mono inline-flex items-center gap-2 shadow-lg ${
-                    meetsMinCriteria
-                      ? "bg-white hover:bg-neutral-200 text-black hover:scale-105 cursor-pointer"
-                      : "bg-white/10 text-white/40 border border-white/10 cursor-not-allowed"
-                  }`}
-                >
-                  {submittingFinal ? (
-                    <>
-                      <Loader2 size={13} className="animate-spin" />
-                      <span>Submitting Registration...</span>
-                    </>
-                  ) : !meetsMinCriteria ? (
-                    <>
-                      <Lock size={13} />
-                      <span>Need {minMembers - currentMembersCount} More Member{minMembers - currentMembersCount === 1 ? "" : "s"}</span>
-                    </>
-                  ) : (
-                    <>
-                      <CheckCircle2 size={13} />
-                      <span>Confirm &amp; Submit Registration</span>
-                    </>
-                  )}
-                </button>
-              )}
-            </div>
+            )}
           </div>
         </div>
       </div>
@@ -1646,8 +1618,8 @@ export default function EventRegistrationModal({
   // ── MODAL MODE (FALLBACK DIALOG) ───────────────────────────────────────────
   return (
     <>
-      <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 md:p-6 bg-black/85 backdrop-blur-xl animate-fadeIn">
-        <div className="relative w-full max-w-2xl max-h-[90vh] flex flex-col rounded-[2.5rem] border border-white/15 bg-[#0c0a12]/95 backdrop-blur-2xl shadow-2xl text-white font-sans overflow-hidden">
+      <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 md:p-6 bg-black/50 backdrop-blur-md animate-fadeIn">
+        <div className="relative w-full max-w-2xl max-h-[90vh] flex flex-col rounded-[2.5rem] border border-white/15 bg-neutral-900/90 backdrop-blur-2xl shadow-2xl text-white font-sans overflow-hidden">
           {/* Top Iridescent Edge */}
           <div className="pointer-events-none absolute inset-x-0 top-0 h-[1.5px] bg-gradient-to-r from-transparent via-white/30 to-transparent" />
 

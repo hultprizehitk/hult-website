@@ -54,6 +54,23 @@ export async function GET(req: Request) {
 
     if (eventId) {
       const myTeam = teams[0] || null;
+      if (myTeam) {
+        // Enforce criteria consistency: If team members are below required minimum, it cannot be submitted/confirmed
+        const ev = myTeam.eventId as { minTeamMembers?: number } | null;
+        const minRequired = ev?.minTeamMembers || 3;
+        const totalMembers = 1 + (Array.isArray(myTeam.members) ? myTeam.members.length : 0);
+        if (totalMembers < minRequired && (myTeam.submissionStatus === "submitted" || myTeam.status === "confirmed")) {
+          await Team.findByIdAndUpdate(myTeam._id, {
+            submissionStatus: "forming",
+            status: "pending",
+            submittedAt: null,
+          });
+          myTeam.submissionStatus = "forming";
+          myTeam.status = "pending";
+          myTeam.submittedAt = undefined;
+        }
+      }
+
       return NextResponse.json({
         success: true,
         hasTeam: Boolean(myTeam),
