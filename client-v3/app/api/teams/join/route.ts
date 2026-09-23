@@ -121,9 +121,12 @@ export async function POST(req: Request) {
     });
 
     if (otherTeam) {
+      const isLead = otherTeam.leadEmail?.toLowerCase() === userEmail;
       return NextResponse.json(
         {
-          error: `You are already registered in another team ("${otherTeam.teamName}") for this event. A student can only join one team per event.`,
+          error: isLead
+            ? `You are already the Team Leader of another team ("${otherTeam.teamName}") for this event. You must disband/delete that team first before joining another.`
+            : `You are already a member of another team ("${otherTeam.teamName}") for this event. A student can only participate in one team per event. Please leave your current team first.`,
         },
         { status: 400 }
       );

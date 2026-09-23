@@ -25,6 +25,9 @@ import {
   GraduationCap,
   Edit3,
   Send,
+  Trash2,
+  UserMinus,
+  LogOut,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import type { PublicEvent } from "@/types";
@@ -151,16 +154,30 @@ export default function EventRegistrationModal({
   const [finalSubmitSuccess, setFinalSubmitSuccess] = useState<string | null>(null);
   const [isEditingSubmission, setIsEditingSubmission] = useState(false);
 
+  // Team Management State (Edit info, Remove Member, Leave Team, Delete Team)
+  const [isEditingTeam, setIsEditingTeam] = useState(false);
+  const [editTeamForm, setEditTeamForm] = useState({
+    teamName: "",
+    ventureName: "",
+  });
+  const [actionLoading, setActionLoading] = useState(false);
+  const [actionError, setActionError] = useState<string | null>(null);
+  const [actionSuccess, setActionSuccess] = useState<string | null>(null);
+
   const minMembers = event.minTeamMembers || 3;
   const maxMembers = event.maxTeamMembers || 5;
 
-  // Sync submission form with existing team data
+  // Sync submission form & edit team form with existing team data
   useEffect(() => {
     if (existingTeam) {
       setSubmissionForm({
         ventureName: existingTeam.ventureName || "",
         ventureDescription: existingTeam.ventureDescription || "",
         pitchDeckUrl: existingTeam.pitchDeckUrl || "",
+      });
+      setEditTeamForm({
+        teamName: existingTeam.teamName || "",
+        ventureName: existingTeam.ventureName || "",
       });
     }
   }, [existingTeam]);
@@ -245,6 +262,183 @@ export default function EventRegistrationModal({
   useEffect(() => {
     checkUserTeam();
   }, [checkUserTeam]);
+
+  // Team Leader edits team info
+  const handleEditTeamSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!existingTeam) return;
+
+    if (!editTeamForm.teamName.trim()) {
+      setActionError("Team Name cannot be blank.");
+      return;
+    }
+
+    setActionLoading(true);
+    setActionError(null);
+    setActionSuccess(null);
+
+    try {
+      const res = await fetch("/api/teams", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          teamId: existingTeam._id,
+          action: "edit_team",
+          teamName: editTeamForm.teamName.trim(),
+          ventureName: editTeamForm.ventureName.trim(),
+        }),
+      });
+
+      const data = await res.json();
+      if (!res.ok || !data.success) {
+        throw new Error(data.error || "Failed to update team details.");
+      }
+
+      setExistingTeam((prev) =>
+        prev
+          ? {
+              ...prev,
+              teamName: editTeamForm.teamName.trim(),
+              ventureName: editTeamForm.ventureName.trim(),
+            }
+          : null
+      );
+      setIsEditingTeam(false);
+      setActionSuccess("Team details updated successfully.");
+      setTimeout(() => setActionSuccess(null), 3500);
+      if (onRegistrationComplete) onRegistrationComplete();
+    } catch (err: unknown) {
+      setActionError((err as Error).message || "Failed to update team.");
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  // Team Leader removes a member from the roster
+  const handleRemoveMember = async (memberEmail: string, memberName: string) => {
+    if (!existingTeam) return;
+
+    if (!window.confirm(`Remove ${memberName} from this team roster?`)) {
+      return;
+    }
+
+    setActionLoading(true);
+    setActionError(null);
+    setActionSuccess(null);
+
+    try {
+      const res = await fetch("/api/teams", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          teamId: existingTeam._id,
+          action: "remove_member",
+          memberEmail,
+        }),
+      });
+
+      const data = await res.json();
+      if (!res.ok || !data.success) {
+        throw new Error(data.error || "Failed to remove member.");
+      }
+
+      setActionSuccess(`${memberName} removed from team.`);
+      setTimeout(() => setActionSuccess(null), 3500);
+      await checkUserTeam();
+      if (onRegistrationComplete) onRegistrationComplete();
+    } catch (err: unknown) {
+      setActionError((err as Error).message || "Failed to remove member.");
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  // Team Member leaves the team
+  const handleLeaveTeam = async () => {
+    if (!existingTeam) return;
+
+    if (
+      !window.confirm(
+        `Are you sure you want to leave team "${existingTeam.teamName}"? You will be free to join or create another team.`
+      )
+    ) {
+      return;
+    }
+
+    setActionLoading(true);
+    setActionError(null);
+    setActionSuccess(null);
+
+    try {
+      const res = await fetch("/api/teams", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          teamId: existingTeam._id,
+          action: "leave_team",
+        }),
+      });
+
+      const data = await res.json();
+      if (!res.ok || !data.success) {
+        throw new Error(data.error || "Failed to leave team.");
+      }
+
+      const prevName = existingTeam.teamName;
+      setExistingTeam(null);
+      setUserRole(null);
+      setMode("select");
+      setActionSuccess(`You left team "${prevName}". You can now create or join a new team.`);
+      setTimeout(() => setActionSuccess(null), 4000);
+      if (onRegistrationComplete) onRegistrationComplete();
+      await checkUserTeam();
+    } catch (err: unknown) {
+      setActionError((err as Error).message || "Failed to leave team.");
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  // Team Leader disbands/deletes the team
+  const handleDeleteTeam = async () => {
+    if (!existingTeam) return;
+
+    if (
+      !window.confirm(
+        `Disband and delete team "${existingTeam.teamName}"? All teammates will be released, and you can join or create another team.`
+      )
+    ) {
+      return;
+    }
+
+    setActionLoading(true);
+    setActionError(null);
+    setActionSuccess(null);
+
+    try {
+      const res = await fetch(`/api/teams?teamId=${existingTeam._id}`, {
+        method: "DELETE",
+      });
+
+      const data = await res.json();
+      if (!res.ok || !data.success) {
+        throw new Error(data.error || "Failed to disband team.");
+      }
+
+      const prevName = existingTeam.teamName;
+      setExistingTeam(null);
+      setUserRole(null);
+      setMode("select");
+      setActionSuccess(`Team "${prevName}" disbanded. You can now create or join a new team.`);
+      setTimeout(() => setActionSuccess(null), 4000);
+      if (onRegistrationComplete) onRegistrationComplete();
+      await checkUserTeam();
+    } catch (err: unknown) {
+      setActionError((err as Error).message || "Failed to delete team.");
+    } finally {
+      setActionLoading(false);
+    }
+  };
 
   const handleCopyCode = (code: string) => {
     if (typeof window !== "undefined") {
@@ -445,48 +639,184 @@ export default function EventRegistrationModal({
 
                   <div className="flex items-center gap-2 flex-wrap">
                     {/* Role Badge */}
-                    <span
-                      className={`rounded-full border text-[10px] font-bold uppercase tracking-wider px-3 py-1 font-mono flex items-center gap-1.5 ${
-                        userRole === "lead"
-                          ? "bg-rose-500/20 border-rose-500/40 text-rose-300"
-                          : "bg-blue-500/20 border-blue-500/40 text-blue-300"
-                      }`}
-                    >
+                    <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-mono font-semibold uppercase tracking-wider bg-white/5 border border-white/15 text-white/90">
                       {userRole === "lead" ? (
                         <>
-                          <ShieldCheck size={12} />
+                          <ShieldCheck size={11} className="text-[#f20089]" />
                           <span>Team Leader</span>
                         </>
                       ) : (
                         <>
-                          <Users size={12} />
+                          <Users size={11} className="text-white/60" />
                           <span>Team Member</span>
                         </>
                       )}
                     </span>
 
-                    {/* Clean Technical Status Pill (1-line, no walls of text) */}
+                    {/* Status Pill with refined indicator dot */}
                     {isSubmitted ? (
-                      <span className="rounded-full bg-purple-500/20 border border-purple-500/40 text-purple-300 text-[10px] font-bold uppercase tracking-wider px-3 py-1 font-mono">
-                        Submitted
+                      <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-mono font-semibold uppercase tracking-wider bg-white/5 border border-white/15 text-white/90">
+                        <span className="w-1.5 h-1.5 rounded-full bg-purple-400" />
+                        <span>Submitted</span>
                       </span>
                     ) : meetsMinCriteria ? (
-                      <span className="rounded-full bg-emerald-500/20 border border-emerald-500/40 text-emerald-300 text-[10px] font-bold uppercase tracking-wider px-3 py-1 font-mono">
-                        Ready to Submit ({currentMembersCount}/{maxMembers})
+                      <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-mono font-semibold uppercase tracking-wider bg-white/5 border border-white/15 text-white/90">
+                        <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                        <span>Ready ({currentMembersCount}/{maxMembers})</span>
                       </span>
                     ) : (
-                      <span className="rounded-full bg-amber-500/20 border border-amber-500/40 text-amber-300 text-[10px] font-bold uppercase tracking-wider px-3 py-1 font-mono">
-                        Forming ({currentMembersCount}/{minMembers} Min Required)
+                      <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-mono font-semibold uppercase tracking-wider bg-white/5 border border-white/15 text-white/80">
+                        <span className="w-1.5 h-1.5 rounded-full bg-amber-400/80" />
+                        <span>Forming ({currentMembersCount}/{minMembers} Min)</span>
                       </span>
                     )}
 
                     {existingTeam.ventureName && (
-                      <span className="text-xs font-mono text-white/70 bg-white/10 border border-white/15 px-3 py-1 rounded-full">
+                      <span className="inline-flex items-center px-3 py-1 rounded-full text-[10px] font-mono uppercase tracking-wider text-white/65 bg-white/[0.04] border border-white/10">
                         Track: {existingTeam.ventureName}
                       </span>
                     )}
                   </div>
                 </div>
+
+                {/* Team Management Action Buttons Row */}
+                <div className="flex items-center justify-between gap-2 pt-2 border-t border-white/10 flex-wrap">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    {userRole === "lead" ? (
+                      <>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setIsEditingTeam(!isEditingTeam);
+                            setActionError(null);
+                          }}
+                          className="rounded-full bg-white/5 hover:bg-white/15 border border-white/15 px-3.5 py-1.5 text-xs font-semibold text-white/90 hover:text-white transition-all cursor-pointer inline-flex items-center gap-1.5 font-mono"
+                        >
+                          <Edit3 size={11} className="text-white/70" />
+                          <span>{isEditingTeam ? "Cancel Edit" : "Edit Team"}</span>
+                        </button>
+
+                        <button
+                          type="button"
+                          onClick={handleDeleteTeam}
+                          disabled={actionLoading}
+                          className="rounded-full bg-white/5 hover:bg-rose-500/10 border border-white/15 hover:border-rose-500/30 px-3.5 py-1.5 text-xs font-semibold text-white/75 hover:text-rose-200 transition-all cursor-pointer inline-flex items-center gap-1.5 font-mono disabled:opacity-50"
+                        >
+                          {actionLoading ? (
+                            <Loader2 size={11} className="animate-spin" />
+                          ) : (
+                            <Trash2 size={11} />
+                          )}
+                          <span>Disband Team</span>
+                        </button>
+                      </>
+                    ) : (
+                      <button
+                        type="button"
+                        onClick={handleLeaveTeam}
+                        disabled={actionLoading}
+                        className="rounded-full bg-white/5 hover:bg-rose-500/10 border border-white/15 hover:border-rose-500/30 px-3.5 py-1.5 text-xs font-semibold text-white/75 hover:text-rose-200 transition-all cursor-pointer inline-flex items-center gap-1.5 font-mono disabled:opacity-50"
+                      >
+                        {actionLoading ? (
+                          <Loader2 size={11} className="animate-spin" />
+                        ) : (
+                          <LogOut size={11} />
+                        )}
+                        <span>Leave Team</span>
+                      </button>
+                    )}
+                  </div>
+
+                  <span className="text-[10px] font-mono text-white/40">
+                    {userRole === "lead"
+                      ? "Leader controls: rename, remove members, or disband"
+                      : "Member control: leave team to join another"}
+                  </span>
+                </div>
+
+                {/* Action Alerts */}
+                {actionError && (
+                  <div className="flex items-start gap-2.5 rounded-2xl border border-rose-500/40 bg-rose-950/40 p-3 text-xs text-rose-200 animate-fadeIn">
+                    <AlertCircle className="h-4 w-4 shrink-0 text-rose-400 mt-0.5" />
+                    <span className="leading-relaxed">{actionError}</span>
+                  </div>
+                )}
+                {actionSuccess && (
+                  <div className="flex items-start gap-2.5 rounded-2xl border border-emerald-500/40 bg-emerald-950/40 p-3 text-xs text-emerald-200 animate-fadeIn">
+                    <CheckCircle2 className="h-4 w-4 shrink-0 text-emerald-400 mt-0.5" />
+                    <span className="leading-relaxed">{actionSuccess}</span>
+                  </div>
+                )}
+
+                {/* Inline Team Info Edit Form (for Team Leader) */}
+                {isEditingTeam && (
+                  <form
+                    onSubmit={handleEditTeamSubmit}
+                    className="bg-white/5 border border-white/15 rounded-2xl p-4 sm:p-5 space-y-3.5 animate-fadeIn"
+                  >
+                    <div className="flex items-center justify-between pb-2 border-b border-white/10">
+                      <span className="text-xs font-mono font-bold uppercase tracking-wider text-white flex items-center gap-1.5">
+                        <Edit3 size={13} className="text-rose-300" />
+                        <span>Edit Team Details</span>
+                      </span>
+                      <span className="text-[10px] font-mono text-rose-300">Leader Privilege</span>
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+                      <div>
+                        <label className="block text-[11px] font-mono uppercase tracking-wider text-white/70 mb-1 font-bold">
+                          Team Name *
+                        </label>
+                        <input
+                          type="text"
+                          required
+                          value={editTeamForm.teamName}
+                          onChange={(e) =>
+                            setEditTeamForm((p) => ({ ...p, teamName: e.target.value }))
+                          }
+                          className="w-full rounded-xl border border-white/15 bg-white/[0.04] hover:bg-white/[0.07] focus:bg-white/[0.1] px-3.5 py-2.5 text-xs text-white placeholder-white/30 focus:border-[#f20089] focus:outline-none transition-all font-sans"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block text-[11px] font-mono uppercase tracking-wider text-white/70 mb-1 font-bold">
+                          Track / Venture Name
+                        </label>
+                        <input
+                          type="text"
+                          placeholder="e.g. EcoPack Innovations"
+                          value={editTeamForm.ventureName}
+                          onChange={(e) =>
+                            setEditTeamForm((p) => ({ ...p, ventureName: e.target.value }))
+                          }
+                          className="w-full rounded-xl border border-white/15 bg-white/[0.04] hover:bg-white/[0.07] focus:bg-white/[0.1] px-3.5 py-2.5 text-xs text-white placeholder-white/30 focus:border-[#f20089] focus:outline-none transition-all font-sans"
+                        />
+                      </div>
+                    </div>
+
+                    <div className="flex items-center gap-2 pt-1 justify-end">
+                      <button
+                        type="button"
+                        onClick={() => setIsEditingTeam(false)}
+                        className="rounded-full border border-white/15 bg-white/5 hover:bg-white/10 px-4 py-1.5 text-xs text-white/70 hover:text-white transition-all cursor-pointer font-mono"
+                      >
+                        Cancel
+                      </button>
+                      <button
+                        type="submit"
+                        disabled={actionLoading}
+                        className="rounded-full bg-white text-black hover:bg-neutral-200 font-bold px-4 py-1.5 text-xs transition-all cursor-pointer shadow-md inline-flex items-center gap-1.5 disabled:opacity-50 font-mono"
+                      >
+                        {actionLoading ? (
+                          <Loader2 size={12} className="animate-spin" />
+                        ) : (
+                          <Check size={12} />
+                        )}
+                        <span>Save Changes</span>
+                      </button>
+                    </div>
+                  </form>
+                )}
 
                 {/* Team Invite Code Bar */}
                 <div className="rounded-2xl border border-white/20 bg-black/50 backdrop-blur-2xl p-4 sm:p-5 flex items-center justify-between gap-4 flex-wrap">
@@ -551,22 +881,17 @@ export default function EventRegistrationModal({
                 {/* Team Leader Card */}
                 <div className="rounded-2xl bg-white/[0.04] border border-white/15 p-4 sm:p-5 space-y-2.5">
                   <div className="flex items-center justify-between gap-3">
-                    <div className="flex items-center gap-3 min-w-0">
-                      <div className="h-10 w-10 rounded-full bg-rose-500/20 border border-rose-500/40 text-rose-300 font-bold text-sm flex items-center justify-center shrink-0 font-[family-name:var(--font-google-sans)]">
-                        {existingTeam.lead.name.charAt(0).toUpperCase()}
+                    <div className="min-w-0">
+                      <div className="flex items-center gap-2">
+                        <span className="font-[family-name:var(--font-google-sans)] font-bold text-white text-sm sm:text-base truncate">
+                          {existingTeam.lead.name}
+                        </span>
+                        <span className="text-[9px] font-mono font-semibold uppercase tracking-wider px-2 py-0.5 rounded-md bg-white/10 border border-white/20 text-white/90 shrink-0">
+                          Leader
+                        </span>
                       </div>
-                      <div className="min-w-0">
-                        <div className="flex items-center gap-2">
-                          <span className="font-[family-name:var(--font-google-sans)] font-bold text-white text-sm sm:text-base truncate">
-                            {existingTeam.lead.name}
-                          </span>
-                          <span className="text-[9px] font-mono font-bold uppercase tracking-wider px-2.5 py-0.5 rounded-full bg-rose-500/20 border border-rose-500/30 text-rose-300 shrink-0">
-                            Leader
-                          </span>
-                        </div>
-                        <div className="text-xs text-white/50 font-mono truncate">
-                          {existingTeam.lead.email}
-                        </div>
+                      <div className="text-xs text-white/50 font-mono truncate">
+                        {existingTeam.lead.email}
                       </div>
                     </div>
 
@@ -602,30 +927,39 @@ export default function EventRegistrationModal({
                         className="rounded-2xl bg-white/[0.04] border border-white/10 p-4 space-y-2.5"
                       >
                         <div className="flex items-center justify-between gap-3">
-                          <div className="flex items-center gap-3 min-w-0">
-                            <div className="h-10 w-10 rounded-full bg-blue-500/20 border border-blue-500/40 text-blue-300 font-bold text-sm flex items-center justify-center shrink-0 font-[family-name:var(--font-google-sans)]">
-                              {m.name.charAt(0).toUpperCase()}
+                          <div className="min-w-0">
+                            <div className="flex items-center gap-2">
+                              <span className="font-[family-name:var(--font-google-sans)] font-semibold text-white text-sm truncate">
+                                {m.name}
+                              </span>
+                              <span className="text-[9px] font-mono font-medium uppercase tracking-wider px-2 py-0.5 rounded-md bg-white/5 border border-white/10 text-white/60 shrink-0">
+                                Member
+                              </span>
                             </div>
-                            <div className="min-w-0">
-                              <div className="flex items-center gap-2">
-                                <span className="font-[family-name:var(--font-google-sans)] font-semibold text-white text-sm truncate">
-                                  {m.name}
-                                </span>
-                                <span className="text-[9px] font-mono text-blue-300 uppercase tracking-wider px-2.5 py-0.5 rounded-full bg-blue-500/10 border border-blue-500/20 shrink-0">
-                                  Member
-                                </span>
-                              </div>
-                              <div className="text-xs text-white/50 font-mono truncate">
-                                {m.email}
-                              </div>
+                            <div className="text-xs text-white/50 font-mono truncate">
+                              {m.email}
                             </div>
                           </div>
 
-                          {m.roll && (
-                            <span className="text-xs font-mono text-white/60 bg-white/5 border border-white/10 px-2.5 py-1 rounded-lg shrink-0">
-                              Roll: {m.roll}
-                            </span>
-                          )}
+                          <div className="flex items-center gap-2 flex-wrap">
+                            {m.roll && (
+                              <span className="text-xs font-mono text-white/60 bg-white/5 border border-white/10 px-2.5 py-1 rounded-lg shrink-0">
+                                Roll: {m.roll}
+                              </span>
+                            )}
+                            {userRole === "lead" && (
+                              <button
+                                type="button"
+                                onClick={() => handleRemoveMember(m.email, m.name)}
+                                disabled={actionLoading}
+                                className="inline-flex items-center gap-1 text-[10px] font-mono text-white/60 hover:text-rose-300 bg-white/[0.04] hover:bg-rose-500/10 border border-white/10 hover:border-rose-500/30 px-2.5 py-1 rounded-lg transition-all cursor-pointer shrink-0 disabled:opacity-50"
+                                title={`Remove ${m.name} from team`}
+                              >
+                                <UserMinus size={11} />
+                                <span>Remove</span>
+                              </button>
+                            )}
+                          </div>
                         </div>
 
                         <div className="flex items-center gap-2 flex-wrap text-xs text-white/60 pt-2 border-t border-white/5 font-mono">
@@ -915,19 +1249,6 @@ export default function EventRegistrationModal({
               value={createForm.teamName}
               onChange={(e) => setCreateForm({ ...createForm, teamName: e.target.value })}
               className="w-full rounded-2xl border border-white/15 bg-white/[0.04] hover:bg-white/[0.07] focus:bg-white/[0.1] px-4 py-3 text-white placeholder-white/30 outline-none focus:border-[#f20089] text-xs sm:text-sm font-medium transition-all"
-            />
-          </div>
-
-          <div>
-            <label className="block text-xs font-mono uppercase tracking-wider text-white/70 font-bold mb-1.5">
-              Venture Track / Idea (Optional)
-            </label>
-            <input
-              type="text"
-              placeholder="e.g. Renewable Microgrid Solution"
-              value={createForm.ventureName}
-              onChange={(e) => setCreateForm({ ...createForm, ventureName: e.target.value })}
-              className="w-full rounded-2xl border border-white/15 bg-white/[0.04] hover:bg-white/[0.07] focus:bg-white/[0.1] px-4 py-3 text-white placeholder-white/30 outline-none focus:border-[#f20089] text-xs sm:text-sm transition-all"
             />
           </div>
 

@@ -155,9 +155,12 @@ export async function POST(req: Request) {
     });
 
     if (existingTeam) {
+      const isLead = existingTeam.leadEmail?.toLowerCase() === userEmail;
       return NextResponse.json(
         {
-          error: `You are already registered in team "${existingTeam.teamName}" (Code: ${existingTeam.teamCode}) for this event.`,
+          error: isLead
+            ? `You are already the Team Leader of team "${existingTeam.teamName}" for this event. Disband/delete this team first if you want to join or create another team.`
+            : `You are already a member of team "${existingTeam.teamName}" for this event. Leave this team first before creating a new team.`,
           existingTeam,
         },
         { status: 400 }
@@ -257,7 +260,13 @@ export async function POST(req: Request) {
 }
 
 /**
- * PATCH /api/teams (Finalize / Submit Team Info by Team Leader)
+/**
+ * PATCH /api/teams
+ * Handles:
+ * - Leader edits team name / venture track (action: "edit_team")
+ * - Leader removes a member (action: "remove_member")
+ * - Member leaves the team (action: "leave_team")
+ * - Leader final proposal submission (default / action: "submit_final")
  */
 export async function PATCH(req: Request) {
   try {
@@ -271,11 +280,11 @@ export async function PATCH(req: Request) {
 
     const email = session.user.email.toLowerCase().trim();
     const body = await req.json();
-    const { teamId, teamCode, ventureName, ventureDescription, pitchDeckUrl } = body;
+    const { action, teamId, teamCode, teamName, ventureName, ventureDescription, pitchDeckUrl, memberEmail } = body;
 
     if (!teamId && !teamCode) {
       return NextResponse.json(
-        { error: "Team ID or Team Code is required to update team details." },
+        { error: "Team ID or Team Code is required." },
         { status: 400 }
       );
     }
@@ -297,26 +306,170 @@ export async function PATCH(req: Request) {
       return NextResponse.json({ error: "Team not found." }, { status: 404 });
     }
 
-    // Verify caller is the Team Leader
     const isLead =
       team.leadEmail?.toLowerCase() === email ||
       team.lead?.email?.toLowerCase() === email;
 
+    const event = await Event.findById(team.eventId);
+    const minMembers = event?.minTeamMembers || 3;
+    const maxMembers = event?.maxTeamMembers || 5;
+
+    // ── ACTION 1: LEADER REMOVES A MEMBER ──────────────────────────────────
+    if (action === "remove_member") {
+      if (!isLead) {
+        return NextResponse.json(
+          { error: "Unauthorized. Only the Team Leader can remove members." },
+          { status: 403 }
+        );
+      }
+
+      if (!memberEmail) {
+        return NextResponse.json({ error: "Member email is required." }, { status: 400 });
+      }
+
+      const targetEmail = String(memberEmail).toLowerCase().trim();
+      const memberExists = (team.members || []).some(
+        (m: { email?: string }) => m.email?.toLowerCase() === targetEmail
+      );
+
+      if (!memberExists) {
+        return NextResponse.json({ error: "Member not found in team." }, { status: 404 });
+      }
+
+      team.members = team.members.filter(
+        (m: { email?: string }) => m.email?.toLowerCase() !== targetEmail
+      );
+
+      const newTotal = 1 + team.members.length;
+      if (team.submissionStatus !== "submitted") {
+        team.submissionStatus = newTotal >= minMembers ? "ready" : "forming";
+      }
+
+      await team.save();
+
+      // Synchronize to Event.registeredTeams
+      if (event && Array.isArray(event.registeredTeams)) {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const eventTeam = event.registeredTeams.find(
+          (t: any) =>
+            t.id === team._id.toString() ||
+            t.teamCode?.toUpperCase() === team.teamCode.toUpperCase()
+        );
+        if (eventTeam) {
+          eventTeam.members = team.members;
+          eventTeam.submissionStatus = team.submissionStatus;
+          await event.save();
+        }
+      }
+
+      return NextResponse.json({
+        success: true,
+        message: "Member removed from team.",
+        team,
+      });
+    }
+
+    // ── ACTION 2: MEMBER LEAVES THE TEAM ───────────────────────────────────
+    if (action === "leave_team") {
+      if (isLead) {
+        return NextResponse.json(
+          {
+            error:
+              "Team Leaders cannot leave the team. You can delete/disband the team if you wish to join another team.",
+          },
+          { status: 400 }
+        );
+      }
+
+      const isMember = (team.members || []).some(
+        (m: { email?: string }) => m.email?.toLowerCase() === email
+      );
+      if (!isMember) {
+        return NextResponse.json({ error: "You are not a member of this team." }, { status: 400 });
+      }
+
+      team.members = team.members.filter(
+        (m: { email?: string }) => m.email?.toLowerCase() !== email
+      );
+
+      const newTotal = 1 + team.members.length;
+      if (team.submissionStatus !== "submitted") {
+        team.submissionStatus = newTotal >= minMembers ? "ready" : "forming";
+      }
+
+      await team.save();
+
+      // Synchronize to Event.registeredTeams
+      if (event && Array.isArray(event.registeredTeams)) {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const eventTeam = event.registeredTeams.find(
+          (t: any) =>
+            t.id === team._id.toString() ||
+            t.teamCode?.toUpperCase() === team.teamCode.toUpperCase()
+        );
+        if (eventTeam) {
+          eventTeam.members = team.members;
+          eventTeam.submissionStatus = team.submissionStatus;
+          await event.save();
+        }
+      }
+
+      return NextResponse.json({
+        success: true,
+        message: `You have successfully left team "${team.teamName}". You can now join or create another team.`,
+      });
+    }
+
+    // ── ACTION 3: LEADER EDITS TEAM INFO ────────────────────────────────────
+    if (action === "edit_team" || action === "update_info") {
+      if (!isLead) {
+        return NextResponse.json(
+          { error: "Unauthorized. Only the Team Leader can edit team details." },
+          { status: 403 }
+        );
+      }
+
+      if (teamName && typeof teamName === "string" && teamName.trim()) {
+        team.teamName = teamName.trim();
+      }
+      if (ventureName !== undefined && typeof ventureName === "string") {
+        team.ventureName = ventureName.trim();
+      }
+
+      await team.save();
+
+      if (event && Array.isArray(event.registeredTeams)) {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const eventTeam = event.registeredTeams.find(
+          (t: any) =>
+            t.id === team._id.toString() ||
+            t.teamCode?.toUpperCase() === team.teamCode.toUpperCase()
+        );
+        if (eventTeam) {
+          eventTeam.teamName = team.teamName;
+          eventTeam.ventureName = team.ventureName;
+          await event.save();
+        }
+      }
+
+      return NextResponse.json({
+        success: true,
+        message: "Team information updated successfully.",
+        team,
+      });
+    }
+
+    // ── ACTION 4: FINAL VENTURE SUBMISSION (DEFAULT) ────────────────────────
     if (!isLead) {
       return NextResponse.json(
-        { error: "Unauthorized. Only the Team Leader is authorized to submit or update team info." },
+        {
+          error:
+            "Unauthorized. Only the Team Leader is authorized to submit official venture details.",
+        },
         { status: 403 }
       );
     }
 
-    // Fetch associated event to verify criteria
-    const event = await Event.findById(team.eventId);
-    if (!event) {
-      return NextResponse.json({ error: "Associated event not found." }, { status: 404 });
-    }
-
-    const minMembers = event.minTeamMembers || 3;
-    const maxMembers = event.maxTeamMembers || 5;
     const currentTotalMembers = 1 + (Array.isArray(team.members) ? team.members.length : 0);
 
     // Enforce minimum members criteria
@@ -356,7 +509,7 @@ export async function PATCH(req: Request) {
     await team.save();
 
     // Synchronize to Event.registeredTeams
-    if (Array.isArray(event.registeredTeams)) {
+    if (event && Array.isArray(event.registeredTeams)) {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const eventTeam = event.registeredTeams.find(
         (t: any) =>
@@ -366,7 +519,8 @@ export async function PATCH(req: Request) {
 
       if (eventTeam) {
         if (team.ventureName) eventTeam.ventureName = team.ventureName;
-        if (team.ventureDescription !== undefined) eventTeam.ventureDescription = team.ventureDescription;
+        if (team.ventureDescription !== undefined)
+          eventTeam.ventureDescription = team.ventureDescription;
         if (team.pitchDeckUrl !== undefined) eventTeam.pitchDeckUrl = team.pitchDeckUrl;
         eventTeam.submissionStatus = "submitted";
         eventTeam.submittedAt = team.submittedAt;
@@ -384,6 +538,82 @@ export async function PATCH(req: Request) {
     console.error("PATCH /api/teams error:", error);
     return NextResponse.json(
       { error: "Failed to update team details: " + (error as Error).message },
+      { status: 500 }
+    );
+  }
+}
+
+/**
+ * DELETE /api/teams
+ * Team Leader deletes/disbands their team, freeing leader and members to join or create other teams.
+ */
+export async function DELETE(req: Request) {
+  try {
+    const session = await auth();
+    if (!session?.user?.email) {
+      return NextResponse.json({ error: "Authentication required." }, { status: 401 });
+    }
+
+    const email = session.user.email.toLowerCase().trim();
+    const url = new URL(req.url);
+    let teamId = url.searchParams.get("teamId");
+
+    if (!teamId) {
+      try {
+        const body = await req.json();
+        teamId = body.teamId;
+      } catch {
+        // ignore body parse failure
+      }
+    }
+
+    if (!teamId || !mongoose.Types.ObjectId.isValid(teamId)) {
+      return NextResponse.json({ error: "Valid team ID is required." }, { status: 400 });
+    }
+
+    await connectDB();
+
+    const team = await Team.findById(teamId);
+    if (!team) {
+      return NextResponse.json({ error: "Team not found." }, { status: 404 });
+    }
+
+    // Verify caller is Leader
+    const isLead =
+      team.leadEmail?.toLowerCase() === email ||
+      team.lead?.email?.toLowerCase() === email;
+
+    if (!isLead) {
+      return NextResponse.json(
+        { error: "Unauthorized. Only the Team Leader can disband and delete the team." },
+        { status: 403 }
+      );
+    }
+
+    // 1. Remove from Event.registeredTeams
+    const event = await Event.findById(team.eventId);
+    if (event && Array.isArray(event.registeredTeams)) {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      event.registeredTeams = event.registeredTeams.filter(
+        (t: any) =>
+          t.id !== team._id.toString() &&
+          t.teamCode?.toUpperCase() !== team.teamCode.toUpperCase()
+      );
+      event.registeredTeamsCount = Math.max(0, event.registeredTeams.length);
+      await event.save();
+    }
+
+    // 2. Delete Team document
+    await Team.findByIdAndDelete(team._id);
+
+    return NextResponse.json({
+      success: true,
+      message: `Team "${team.teamName}" has been disbanded and deleted. You can now create or join another team for this event.`,
+    });
+  } catch (error: unknown) {
+    console.error("DELETE /api/teams error:", error);
+    return NextResponse.json(
+      { error: "Failed to delete team: " + (error as Error).message },
       { status: 500 }
     );
   }

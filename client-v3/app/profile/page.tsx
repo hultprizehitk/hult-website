@@ -23,6 +23,8 @@ import {
   GraduationCap,
   Edit3,
   Loader2,
+  Trash2,
+  UserMinus,
 } from "lucide-react";
 import SiteHeader from "@/components/layout/SiteHeader";
 import GrainOverlay from "@/components/hero/GrainOverlay";
@@ -220,6 +222,168 @@ export default function StudentProfilePage() {
     window.open(`https://api.whatsapp.com/send?text=${text}`, "_blank");
   };
 
+  // Team Management State on Profile
+  const [editingTeamId, setEditingTeamId] = useState<string | null>(null);
+  const [editTeamName, setEditTeamName] = useState("");
+  const [editVentureName, setEditVentureName] = useState("");
+  const [teamActionLoading, setTeamActionLoading] = useState<string | null>(null);
+  const [teamActionError, setTeamActionError] = useState<string | null>(null);
+  const [teamActionSuccess, setTeamActionSuccess] = useState<string | null>(null);
+
+  const handleStartEditTeam = (team: UserTeam) => {
+    setEditingTeamId(team._id);
+    setEditTeamName(team.teamName || "");
+    setEditVentureName(team.ventureName || "");
+    setTeamActionError(null);
+  };
+
+  const handleSaveTeamEdit = async (teamId: string, e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editTeamName.trim()) {
+      setTeamActionError("Team Name cannot be blank.");
+      return;
+    }
+
+    setTeamActionLoading(teamId);
+    setTeamActionError(null);
+    setTeamActionSuccess(null);
+
+    try {
+      const res = await fetch("/api/teams", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          teamId,
+          action: "edit_team",
+          teamName: editTeamName.trim(),
+          ventureName: editVentureName.trim(),
+        }),
+      });
+
+      const data = await res.json();
+      if (!res.ok || !data.success) {
+        throw new Error(data.error || "Failed to update team details.");
+      }
+
+      setEditingTeamId(null);
+      setTeamActionSuccess("Team details updated successfully.");
+      setTimeout(() => setTeamActionSuccess(null), 3500);
+      await fetchTeams();
+    } catch (err: unknown) {
+      setTeamActionError((err as Error).message || "Failed to update team.");
+    } finally {
+      setTeamActionLoading(null);
+    }
+  };
+
+  const handleRemoveMemberFromProfile = async (
+    teamId: string,
+    memberEmail: string,
+    memberName: string
+  ) => {
+    if (!window.confirm(`Remove ${memberName} from this team roster?`)) return;
+
+    setTeamActionLoading(`${teamId}_${memberEmail}`);
+    setTeamActionError(null);
+    setTeamActionSuccess(null);
+
+    try {
+      const res = await fetch("/api/teams", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          teamId,
+          action: "remove_member",
+          memberEmail,
+        }),
+      });
+
+      const data = await res.json();
+      if (!res.ok || !data.success) {
+        throw new Error(data.error || "Failed to remove member.");
+      }
+
+      setTeamActionSuccess(`${memberName} removed from team.`);
+      setTimeout(() => setTeamActionSuccess(null), 3500);
+      await fetchTeams();
+    } catch (err: unknown) {
+      setTeamActionError((err as Error).message || "Failed to remove member.");
+    } finally {
+      setTeamActionLoading(null);
+    }
+  };
+
+  const handleLeaveTeamFromProfile = async (team: UserTeam) => {
+    if (
+      !window.confirm(
+        `Are you sure you want to leave team "${team.teamName}"? You will be free to join or create another team.`
+      )
+    ) {
+      return;
+    }
+
+    setTeamActionLoading(team._id);
+    setTeamActionError(null);
+    setTeamActionSuccess(null);
+
+    try {
+      const res = await fetch("/api/teams", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          teamId: team._id,
+          action: "leave_team",
+        }),
+      });
+
+      const data = await res.json();
+      if (!res.ok || !data.success) {
+        throw new Error(data.error || "Failed to leave team.");
+      }
+
+      setTeamActionSuccess(`You left team "${team.teamName}".`);
+      setTimeout(() => setTeamActionSuccess(null), 3500);
+      await fetchTeams();
+    } catch (err: unknown) {
+      setTeamActionError((err as Error).message || "Failed to leave team.");
+    } finally {
+      setTeamActionLoading(null);
+    }
+  };
+
+  const handleDeleteTeamFromProfile = async (team: UserTeam) => {
+    if (
+      !window.confirm(
+        `Disband and delete team "${team.teamName}"? All team members will be removed, and you can join or create another team.`
+      )
+    ) {
+      return;
+    }
+
+    setTeamActionLoading(team._id);
+    setTeamActionError(null);
+    setTeamActionSuccess(null);
+
+    try {
+      const res = await fetch(`/api/teams?teamId=${team._id}`, {
+        method: "DELETE",
+      });
+
+      const data = await res.json();
+      if (!res.ok || !data.success) {
+        throw new Error(data.error || "Failed to disband team.");
+      }
+
+      setTeamActionSuccess(`Team "${team.teamName}" was disbanded.`);
+      setTimeout(() => setTeamActionSuccess(null), 3500);
+      await fetchTeams();
+    } catch (err: unknown) {
+      setTeamActionError((err as Error).message || "Failed to disband team.");
+    } finally {
+      setTeamActionLoading(null);
+    }
+  };
+
   return (
     <div className="relative min-h-screen w-full overflow-hidden bg-black font-sans text-white selection:bg-white/90 selection:text-black flex flex-col justify-between">
       {/* Kolkata skyline scene */}
@@ -256,33 +420,6 @@ export default function StudentProfilePage() {
                 </div>
               ) : status === "authenticated" && user ? (
                 <div className="py-1 animate-fadeIn">
-                  {/* Avatar */}
-                  <div className="relative mx-auto mb-3 flex items-center justify-center">
-                    <div className="relative flex h-20 w-20 items-center justify-center rounded-full border border-white/25 bg-white/10 text-3xl font-bold text-white shadow-lg overflow-hidden backdrop-blur-md">
-                      {user.image ? (
-                        // eslint-disable-next-line @next/next/no-img-element
-                        <img
-                          src={user.image}
-                          alt={user.name || "Student"}
-                          className="h-full w-full object-cover"
-                        />
-                      ) : (
-                        user.name?.charAt(0) || "H"
-                      )}
-                    </div>
-                  </div>
-
-                  {/* Status Badges Row matching EventInsideView */}
-                  <div className="flex items-center justify-center gap-2 mb-3 flex-wrap">
-                    <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-bold tracking-wider uppercase bg-emerald-950/40 border border-emerald-400/50 text-emerald-300">
-                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-                      Verified HITK Student
-                    </span>
-                    <span className="inline-flex items-center px-3 py-1 rounded-full text-[10px] font-bold tracking-widest uppercase bg-white/10 border border-white/30 text-white/90 font-mono">
-                      Hult Prize 2027
-                    </span>
-                  </div>
-
                   {/* Student Name */}
                   <h1 className="font-serif text-3xl sm:text-4xl font-bold tracking-tight text-white drop-shadow-[0_2px_24px_rgba(255,255,255,0.18)] mb-1">
                     {user.name}
@@ -511,6 +648,20 @@ export default function StudentProfilePage() {
                       )}
                     </div>
 
+                    {/* Team Action Feedback Alerts */}
+                    {teamActionError && (
+                      <div className="mb-3 p-3 rounded-2xl bg-rose-950/60 border border-rose-500/40 text-rose-200 text-xs flex items-center gap-2 animate-fadeIn font-mono">
+                        <AlertCircle size={13} className="text-rose-400 shrink-0" />
+                        <span>{teamActionError}</span>
+                      </div>
+                    )}
+                    {teamActionSuccess && (
+                      <div className="mb-3 p-3 rounded-2xl bg-emerald-950/40 border border-emerald-400/50 text-emerald-300 text-xs flex items-center gap-2 animate-fadeIn font-mono">
+                        <CheckCircle2 size={13} className="text-emerald-400 shrink-0" />
+                        <span>{teamActionSuccess}</span>
+                      </div>
+                    )}
+
                     {loadingTeams ? (
                       <div className="bg-white/5 border border-white/10 rounded-2xl p-6 text-center shadow-md">
                         <div className="w-5 h-5 border-2 border-white/20 border-t-white rounded-full animate-spin mx-auto mb-2" />
@@ -553,19 +704,19 @@ export default function StudentProfilePage() {
 
                                 <div className="flex items-center gap-1.5 flex-wrap">
                                   {t.submissionStatus === "submitted" ? (
-                                    <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-bold tracking-wider uppercase bg-purple-950/40 border border-purple-400/50 text-purple-300 font-mono">
-                                      <Sparkles size={11} />
+                                    <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-mono font-semibold uppercase tracking-wider bg-white/5 border border-white/15 text-white/90">
+                                      <span className="w-1.5 h-1.5 rounded-full bg-purple-400" />
                                       <span>Submitted</span>
                                     </span>
                                   ) : (1 + (t.members?.length || 0)) >=
                                     (t.eventId?.minTeamMembers || 3) ? (
-                                    <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-bold tracking-wider uppercase bg-emerald-950/40 border border-emerald-400/50 text-emerald-300 font-mono">
+                                    <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-mono font-semibold uppercase tracking-wider bg-white/5 border border-white/15 text-white/90">
                                       <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
                                       <span>Criteria Met</span>
                                     </span>
                                   ) : (
-                                    <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-bold tracking-wider uppercase bg-amber-950/40 border border-amber-400/50 text-amber-300 font-mono">
-                                      <AlertCircle size={11} />
+                                    <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-mono font-semibold uppercase tracking-wider bg-white/5 border border-white/15 text-white/80">
+                                      <span className="w-1.5 h-1.5 rounded-full bg-amber-400/80" />
                                       <span>
                                         Forming ({1 + (t.members?.length || 0)}/
                                         {t.eventId?.minTeamMembers || 3} Min)
@@ -573,17 +724,19 @@ export default function StudentProfilePage() {
                                     </span>
                                   )}
 
-                                  {isLead ? (
-                                    <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full text-[10px] font-bold tracking-wider uppercase bg-rose-950/40 border border-rose-400/50 text-rose-300 font-mono">
-                                      <ShieldCheck size={11} />
-                                      <span>Leader</span>
-                                    </span>
-                                  ) : (
-                                    <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full text-[10px] font-bold tracking-wider uppercase bg-blue-950/40 border border-blue-400/50 text-blue-300 font-mono">
-                                      <Users size={11} />
-                                      <span>Member</span>
-                                    </span>
-                                  )}
+                                  <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-mono font-semibold uppercase tracking-wider bg-white/5 border border-white/15 text-white/90">
+                                    {isLead ? (
+                                      <>
+                                        <ShieldCheck size={11} className="text-[#f20089]" />
+                                        <span>Leader</span>
+                                      </>
+                                    ) : (
+                                      <>
+                                        <Users size={11} className="text-white/60" />
+                                        <span>Member</span>
+                                      </>
+                                    )}
+                                  </span>
                                 </div>
                               </div>
 
@@ -658,8 +811,132 @@ export default function StudentProfilePage() {
                                     <Share2 size={12} />
                                     <span>Share</span>
                                   </button>
-                                </div>
+                                  </div>
                               </div>
+
+                              {/* Team Management Action Row */}
+                              <div className="flex items-center justify-between gap-2 pt-2 border-t border-white/10 flex-wrap">
+                                <div className="flex items-center gap-2 flex-wrap">
+                                  {isLead ? (
+                                    <>
+                                      <button
+                                        type="button"
+                                        onClick={() =>
+                                          editingTeamId === t._id
+                                            ? setEditingTeamId(null)
+                                            : handleStartEditTeam(t)
+                                        }
+                                        className="inline-flex items-center gap-1.5 rounded-lg border border-white/15 bg-white/5 hover:bg-white/15 px-3 py-1.5 text-[11px] font-medium text-white/90 hover:text-white transition-all cursor-pointer font-mono"
+                                      >
+                                        <Edit3 size={11} className="text-white/70" />
+                                        <span>{editingTeamId === t._id ? "Cancel" : "Edit Team"}</span>
+                                      </button>
+
+                                      <button
+                                        type="button"
+                                        onClick={() => handleDeleteTeamFromProfile(t)}
+                                        disabled={teamActionLoading === t._id}
+                                        className="inline-flex items-center gap-1.5 rounded-lg border border-white/15 hover:border-rose-500/30 bg-white/5 hover:bg-rose-500/10 px-3 py-1.5 text-[11px] font-medium text-white/75 hover:text-rose-200 transition-all cursor-pointer font-mono disabled:opacity-50"
+                                      >
+                                        {teamActionLoading === t._id ? (
+                                          <Loader2 size={11} className="animate-spin" />
+                                        ) : (
+                                          <Trash2 size={11} />
+                                        )}
+                                        <span>Disband Team</span>
+                                      </button>
+                                    </>
+                                  ) : (
+                                    <button
+                                      type="button"
+                                      onClick={() => handleLeaveTeamFromProfile(t)}
+                                      disabled={teamActionLoading === t._id}
+                                      className="inline-flex items-center gap-1.5 rounded-lg border border-white/15 hover:border-rose-500/30 bg-white/5 hover:bg-rose-500/10 px-3 py-1.5 text-[11px] font-medium text-white/75 hover:text-rose-200 transition-all cursor-pointer font-mono disabled:opacity-50"
+                                    >
+                                      {teamActionLoading === t._id ? (
+                                        <Loader2 size={11} className="animate-spin" />
+                                      ) : (
+                                        <LogOut size={11} />
+                                      )}
+                                      <span>Leave Team</span>
+                                    </button>
+                                  )}
+                                </div>
+
+                                <Link
+                                  href={`/events?event=${t.eventId?._id || t.eventId}`}
+                                  className="inline-flex items-center gap-1 text-[11px] font-mono text-white/60 hover:text-white transition-colors"
+                                >
+                                  <span>Go to Event</span>
+                                  <ArrowRight size={11} />
+                                </Link>
+                              </div>
+
+                              {/* Inline Edit Form when editingTeamId === t._id */}
+                              {editingTeamId === t._id && (
+                                <form
+                                  onSubmit={(e) => handleSaveTeamEdit(t._id, e)}
+                                  className="bg-white/5 border border-white/15 rounded-xl p-3.5 space-y-3 animate-fadeIn text-left"
+                                >
+                                  <div className="flex items-center justify-between pb-1.5 border-b border-white/10">
+                                    <span className="text-[11px] font-mono font-bold uppercase tracking-wider text-white flex items-center gap-1.5">
+                                      <Edit3 size={11} className="text-rose-300" />
+                                      <span>Edit Team Details</span>
+                                    </span>
+                                    <span className="text-[10px] font-mono text-rose-300">Leader Edit</span>
+                                  </div>
+
+                                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                    <div>
+                                      <label className="block text-[10px] font-mono uppercase tracking-wider text-white/70 mb-1 font-bold">
+                                        Team Name *
+                                      </label>
+                                      <input
+                                        type="text"
+                                        required
+                                        value={editTeamName}
+                                        onChange={(e) => setEditTeamName(e.target.value)}
+                                        className="w-full rounded-lg border border-white/15 bg-white/[0.04] px-3 py-1.5 text-xs text-white placeholder-white/30 focus:border-[#f20089] focus:outline-none transition-all font-sans"
+                                      />
+                                    </div>
+
+                                    <div>
+                                      <label className="block text-[10px] font-mono uppercase tracking-wider text-white/70 mb-1 font-bold">
+                                        Track / Venture Name
+                                      </label>
+                                      <input
+                                        type="text"
+                                        placeholder="e.g. EcoPack Innovations"
+                                        value={editVentureName}
+                                        onChange={(e) => setEditVentureName(e.target.value)}
+                                        className="w-full rounded-lg border border-white/15 bg-white/[0.04] px-3 py-1.5 text-xs text-white placeholder-white/30 focus:border-[#f20089] focus:outline-none transition-all font-sans"
+                                      />
+                                    </div>
+                                  </div>
+
+                                  <div className="flex items-center gap-2 pt-1 justify-end">
+                                    <button
+                                      type="button"
+                                      onClick={() => setEditingTeamId(null)}
+                                      className="rounded-full border border-white/15 bg-white/5 hover:bg-white/10 px-3 py-1 text-xs text-white/70 hover:text-white transition-all cursor-pointer font-mono"
+                                    >
+                                      Cancel
+                                    </button>
+                                    <button
+                                      type="submit"
+                                      disabled={teamActionLoading === t._id}
+                                      className="rounded-full bg-white text-black hover:bg-neutral-200 font-bold px-3.5 py-1 text-xs transition-all cursor-pointer shadow-md inline-flex items-center gap-1.5 disabled:opacity-50 font-mono"
+                                    >
+                                      {teamActionLoading === t._id ? (
+                                        <Loader2 size={11} className="animate-spin" />
+                                      ) : (
+                                        <Check size={11} />
+                                      )}
+                                      <span>Save</span>
+                                    </button>
+                                  </div>
+                                </form>
+                              )}
 
                               {/* Members Roster Summary */}
                               <div className="pt-2 border-t border-white/10 text-xs">
@@ -681,14 +958,39 @@ export default function StudentProfilePage() {
                                     t.members.map((m, idx) => (
                                       <div
                                         key={idx}
-                                        className="flex items-center justify-between text-white/60 text-[11px]"
+                                        className="flex items-center justify-between text-white/60 text-[11px] gap-2 py-0.5"
                                       >
-                                        <span>{m.name || m.email}</span>
-                                        <span className="text-white/50 font-mono text-[10px]">
-                                          {m.department || "Member"}{" "}
-                                          {m.roll ? `• Roll: ${m.roll}` : ""}
-                                          {m.phone ? ` • Tel: ${m.phone}` : ""}
-                                        </span>
+                                        <div className="truncate min-w-0">
+                                          <span>{m.name || m.email}</span>
+                                          <span className="text-white/50 font-mono text-[10px] ml-1.5">
+                                            {m.department || "Member"}{" "}
+                                            {m.roll ? `• Roll: ${m.roll}` : ""}
+                                            {m.phone ? ` • Tel: ${m.phone}` : ""}
+                                          </span>
+                                        </div>
+
+                                        {isLead && (
+                                          <button
+                                            type="button"
+                                            onClick={() =>
+                                              handleRemoveMemberFromProfile(
+                                                t._id,
+                                                m.email,
+                                                m.name || m.email
+                                              )
+                                            }
+                                            disabled={teamActionLoading === `${t._id}_${m.email}`}
+                                            className="inline-flex items-center gap-1 text-[10px] font-mono text-white/60 hover:text-rose-300 bg-white/[0.04] hover:bg-rose-500/10 border border-white/10 hover:border-rose-500/30 px-2 py-0.5 rounded transition-all cursor-pointer shrink-0 disabled:opacity-50"
+                                            title={`Remove ${m.name || m.email} from team`}
+                                          >
+                                            {teamActionLoading === `${t._id}_${m.email}` ? (
+                                              <Loader2 size={10} className="animate-spin" />
+                                            ) : (
+                                              <UserMinus size={10} />
+                                            )}
+                                            <span>Remove</span>
+                                          </button>
+                                        )}
                                       </div>
                                     ))}
                                 </div>
