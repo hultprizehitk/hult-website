@@ -82,6 +82,16 @@ export async function POST(req: Request) {
       );
     }
 
+    // 1b. Check if Team registration is already submitted and locked
+    if (team.submissionStatus === "submitted") {
+      return NextResponse.json(
+        {
+          error: `Registration for team "${team.teamName}" has already been finalized and submitted by the team leader. The team roster is locked and no additional members can join.`,
+        },
+        { status: 400 }
+      );
+    }
+
     // 2. Fetch associated Event
     const event = await Event.findById(team.eventId);
     if (!event) {
@@ -183,9 +193,7 @@ export async function POST(req: Request) {
 
     const minMembers = event.minTeamMembers || 3;
     const currentTotal = 1 + team.members.length;
-    if (team.submissionStatus !== "submitted") {
-      team.submissionStatus = currentTotal >= minMembers ? "ready" : "forming";
-    }
+    team.submissionStatus = currentTotal >= minMembers ? "ready" : "forming";
 
     await team.save();
 

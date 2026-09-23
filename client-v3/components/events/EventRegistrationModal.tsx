@@ -775,46 +775,70 @@ export default function EventRegistrationModal({
                     <span className="text-[9px] font-mono uppercase tracking-wider text-white/50 block mb-1">
                       Team Invite Code
                     </span>
-                    <span className="font-mono text-2xl sm:text-3xl md:text-4xl font-black tracking-widest text-[#f20089]">
-                      {existingTeam.teamCode}
-                    </span>
+                    <div className="flex items-center gap-2.5 flex-wrap">
+                      <span className="font-mono text-2xl sm:text-3xl md:text-4xl font-black tracking-widest text-[#f20089]">
+                        {existingTeam.teamCode}
+                      </span>
+                      {isSubmitted && (
+                        <span className="inline-flex items-center gap-1 rounded-full bg-emerald-500/15 border border-emerald-500/30 px-2.5 py-0.5 text-[10px] font-mono font-bold text-emerald-400 uppercase tracking-wider">
+                          <Lock size={10} />
+                          <span>Roster Locked</span>
+                        </span>
+                      )}
+                    </div>
                   </div>
 
                   <div className="flex items-center gap-2.5 flex-wrap">
-                    <button
-                      type="button"
-                      onClick={() => handleCopyCode(existingTeam.teamCode)}
-                      className="rounded-full bg-white/10 hover:bg-white/20 border border-white/25 px-4 py-2 text-xs font-semibold text-white transition-all hover:scale-105 cursor-pointer inline-flex items-center gap-1.5 font-[family-name:var(--font-google-sans)]"
-                    >
-                      {copiedCode ? (
-                        <>
-                          <Check className="h-3.5 w-3.5 text-emerald-400" />
-                          <span className="text-emerald-300">Copied!</span>
-                        </>
-                      ) : (
-                        <>
-                          <Copy className="h-3.5 w-3.5 text-white/70" />
-                          <span>Copy Code</span>
-                        </>
-                      )}
-                    </button>
+                    {!isSubmitted ? (
+                      <>
+                        <button
+                          type="button"
+                          onClick={() => handleCopyCode(existingTeam.teamCode)}
+                          className="rounded-full bg-white/10 hover:bg-white/20 border border-white/25 px-4 py-2 text-xs font-semibold text-white transition-all hover:scale-105 cursor-pointer inline-flex items-center gap-1.5 font-[family-name:var(--font-google-sans)]"
+                        >
+                          {copiedCode ? (
+                            <>
+                              <Check className="h-3.5 w-3.5 text-emerald-400" />
+                              <span className="text-emerald-300">Copied!</span>
+                            </>
+                          ) : (
+                            <>
+                              <Copy className="h-3.5 w-3.5 text-white/70" />
+                              <span>Copy Code</span>
+                            </>
+                          )}
+                        </button>
 
-                    <button
-                      type="button"
-                      onClick={() =>
-                        handleShareWhatsApp(existingTeam.teamCode, existingTeam.teamName)
-                      }
-                      className="rounded-full bg-emerald-600 hover:bg-emerald-500 text-white font-bold px-4 py-2 text-xs transition-all hover:scale-105 cursor-pointer inline-flex items-center gap-1.5 font-[family-name:var(--font-google-sans)] shadow-lg shadow-emerald-900/30"
-                    >
-                      <Share2 className="h-3.5 w-3.5" />
-                      <span>Share on WhatsApp</span>
-                    </button>
+                        <button
+                          type="button"
+                          onClick={() =>
+                            handleShareWhatsApp(existingTeam.teamCode, existingTeam.teamName)
+                          }
+                          className="rounded-full bg-emerald-600 hover:bg-emerald-500 text-white font-bold px-4 py-2 text-xs transition-all hover:scale-105 cursor-pointer inline-flex items-center gap-1.5 font-[family-name:var(--font-google-sans)] shadow-lg shadow-emerald-900/30"
+                        >
+                          <Share2 className="h-3.5 w-3.5" />
+                          <span>Share on WhatsApp</span>
+                        </button>
+                      </>
+                    ) : (
+                      <span className="inline-flex items-center gap-1.5 rounded-full bg-white/5 border border-white/15 px-3.5 py-1.5 text-xs font-mono text-white/60">
+                        <Lock size={12} className="text-emerald-400" />
+                        <span>Registration Finalized</span>
+                      </span>
+                    )}
                   </div>
                 </div>
 
-                <p className="text-[11px] text-white/50 leading-relaxed font-[family-name:var(--font-google-sans)]">
-                  Share this invite code with classmates. When they enter this code on the event page, they join your team roster automatically.
-                </p>
+                {isSubmitted ? (
+                  <p className="text-[11px] text-emerald-400/90 leading-relaxed font-[family-name:var(--font-google-sans)] flex items-center gap-1.5">
+                    <CheckCircle2 size={12} className="shrink-0" />
+                    <span>Official team registration has been finalized and submitted. The team roster is locked and no new members can join using this code.</span>
+                  </p>
+                ) : (
+                  <p className="text-[11px] text-white/50 leading-relaxed font-[family-name:var(--font-google-sans)]">
+                    Share this invite code with classmates. When they enter this code on the event page, they join your team roster automatically.
+                  </p>
+                )}
               </div>
 
               {/* Full Team Roster Dossier & Open Slots */}
@@ -898,7 +922,7 @@ export default function EventRegistrationModal({
                                 Roll: {m.roll}
                               </span>
                             )}
-                            {userRole === "lead" && (
+                            {userRole === "lead" && !isSubmitted && (
                               <button
                                 type="button"
                                 onClick={() => handleRemoveMember(m.email, m.name)}
@@ -965,27 +989,10 @@ export default function EventRegistrationModal({
 
                 {isSubmitted ? (
                   <div className="flex items-center gap-3 flex-wrap">
-                    {userRole === "lead" ? (
-                      <button
-                        type="button"
-                        onClick={handleDeleteTeam}
-                        disabled={actionLoading}
-                        className="rounded-full bg-white/5 hover:bg-rose-500/10 border border-white/15 hover:border-rose-500/30 px-4 py-2.5 text-xs font-semibold text-rose-300 hover:text-rose-200 transition-all cursor-pointer inline-flex items-center gap-1.5 font-mono disabled:opacity-50"
-                      >
-                        {actionLoading ? <Loader2 size={12} className="animate-spin" /> : <Trash2 size={12} />}
-                        <span>Disband Team</span>
-                      </button>
-                    ) : (
-                      <button
-                        type="button"
-                        onClick={handleLeaveTeam}
-                        disabled={actionLoading}
-                        className="rounded-full bg-white/5 hover:bg-rose-500/10 border border-white/15 hover:border-rose-500/30 px-4 py-2.5 text-xs font-semibold text-white/75 hover:text-rose-200 transition-all cursor-pointer inline-flex items-center gap-1.5 font-mono disabled:opacity-50"
-                      >
-                        {actionLoading ? <Loader2 size={12} className="animate-spin" /> : <LogOut size={12} />}
-                        <span>Leave Team</span>
-                      </button>
-                    )}
+                    <span className="inline-flex items-center gap-1.5 rounded-full bg-white/5 border border-white/15 px-4 py-2.5 text-xs font-mono text-white/70">
+                      <Lock size={12} className="text-emerald-400" />
+                      <span>Roster Finalized &amp; Locked</span>
+                    </span>
 
                     <button
                       type="button"

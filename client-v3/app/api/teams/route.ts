@@ -359,6 +359,13 @@ export async function PATCH(req: Request) {
         );
       }
 
+      if (team.submissionStatus === "submitted") {
+        return NextResponse.json(
+          { error: "Official team registration has already been finalized and submitted. The team roster is locked and members cannot be removed." },
+          { status: 400 }
+        );
+      }
+
       if (!memberEmail) {
         return NextResponse.json({ error: "Member email is required." }, { status: 400 });
       }
@@ -377,9 +384,7 @@ export async function PATCH(req: Request) {
       );
 
       const newTotal = 1 + team.members.length;
-      if (team.submissionStatus !== "submitted") {
-        team.submissionStatus = newTotal >= minMembers ? "ready" : "forming";
-      }
+      team.submissionStatus = newTotal >= minMembers ? "ready" : "forming";
 
       await team.save();
 
@@ -416,6 +421,13 @@ export async function PATCH(req: Request) {
         );
       }
 
+      if (team.submissionStatus === "submitted") {
+        return NextResponse.json(
+          { error: "Official team registration has already been finalized and submitted. The team roster is locked and members cannot leave." },
+          { status: 400 }
+        );
+      }
+
       const isMember = (team.members || []).some(
         (m: { email?: string }) => m.email?.toLowerCase() === email
       );
@@ -428,9 +440,7 @@ export async function PATCH(req: Request) {
       );
 
       const newTotal = 1 + team.members.length;
-      if (team.submissionStatus !== "submitted") {
-        team.submissionStatus = newTotal >= minMembers ? "ready" : "forming";
-      }
+      team.submissionStatus = newTotal >= minMembers ? "ready" : "forming";
 
       await team.save();
 
@@ -627,6 +637,13 @@ export async function DELETE(req: Request) {
       return NextResponse.json(
         { error: "Unauthorized. Only the Team Leader can disband and delete the team." },
         { status: 403 }
+      );
+    }
+
+    if (team.submissionStatus === "submitted") {
+      return NextResponse.json(
+        { error: "Official team registration has already been finalized and submitted. A submitted team cannot be disbanded. Please contact the organizing committee if you need changes." },
+        { status: 400 }
       );
     }
 

@@ -831,9 +831,17 @@ export default function StudentProfilePage() {
                                   <span className="block text-[9px] font-mono uppercase font-bold tracking-widest text-white/50">
                                     Team Invite Code
                                   </span>
-                                  <span className="font-mono text-base font-extrabold text-[#f20089] tracking-widest">
-                                    {t.teamCode}
-                                  </span>
+                                  <div className="flex items-center gap-2">
+                                    <span className="font-mono text-base font-extrabold text-[#f20089] tracking-widest">
+                                      {t.teamCode}
+                                    </span>
+                                    {t.submissionStatus === "submitted" && (
+                                      <span className="inline-flex items-center gap-1 rounded-full bg-emerald-500/15 border border-emerald-500/30 px-2 py-0.5 text-[9px] font-mono font-bold text-emerald-400 uppercase tracking-wider">
+                                        <Lock size={9} />
+                                        <span>Roster Locked</span>
+                                      </span>
+                                    )}
+                                  </div>
                                 </div>
 
                                 <div className="flex items-center gap-2">
@@ -856,15 +864,17 @@ export default function StudentProfilePage() {
                                     )}
                                   </button>
 
-                                  <button
-                                    type="button"
-                                    onClick={() => handleShareWhatsApp(t)}
-                                    className="inline-flex items-center gap-1.5 rounded-lg border border-emerald-500/30 bg-emerald-500/10 hover:bg-emerald-500/20 px-3 py-1.5 text-[11px] font-medium text-emerald-300 transition-all cursor-pointer"
-                                    title="Share invite code via WhatsApp"
-                                  >
-                                    <Share2 size={12} />
-                                    <span>Share</span>
-                                  </button>
+                                  {t.submissionStatus !== "submitted" && (
+                                    <button
+                                      type="button"
+                                      onClick={() => handleShareWhatsApp(t)}
+                                      className="inline-flex items-center gap-1.5 rounded-lg border border-emerald-500/30 bg-emerald-500/10 hover:bg-emerald-500/20 px-3 py-1.5 text-[11px] font-medium text-emerald-300 transition-all cursor-pointer"
+                                      title="Share invite code via WhatsApp"
+                                    >
+                                      <Share2 size={12} />
+                                      <span>Share</span>
+                                    </button>
+                                  )}
                                 </div>
                               </div>
 
@@ -886,34 +896,48 @@ export default function StudentProfilePage() {
                                         <span>{editingTeamId === t._id ? "Cancel" : "Edit Team"}</span>
                                       </button>
 
+                                      {t.submissionStatus !== "submitted" ? (
+                                        <button
+                                          type="button"
+                                          onClick={() => handleDeleteTeamFromProfile(t)}
+                                          disabled={teamActionLoading === t._id}
+                                          className="inline-flex items-center gap-1.5 rounded-lg border border-white/15 hover:border-rose-500/30 bg-white/5 hover:bg-rose-500/10 px-3 py-1.5 text-[11px] font-medium text-white/75 hover:text-rose-200 transition-all cursor-pointer font-mono disabled:opacity-50"
+                                        >
+                                          {teamActionLoading === t._id ? (
+                                            <Loader2 size={11} className="animate-spin" />
+                                          ) : (
+                                            <Trash2 size={11} />
+                                          )}
+                                          <span>Disband Team</span>
+                                        </button>
+                                      ) : (
+                                        <span className="inline-flex items-center gap-1 text-[11px] font-mono text-white/60 bg-white/5 border border-white/10 px-2.5 py-1 rounded-lg">
+                                          <Lock size={10} className="text-emerald-400" />
+                                          <span>Roster Finalized</span>
+                                        </span>
+                                      )}
+                                    </>
+                                  ) : (
+                                    t.submissionStatus !== "submitted" ? (
                                       <button
                                         type="button"
-                                        onClick={() => handleDeleteTeamFromProfile(t)}
+                                        onClick={() => handleLeaveTeamFromProfile(t)}
                                         disabled={teamActionLoading === t._id}
                                         className="inline-flex items-center gap-1.5 rounded-lg border border-white/15 hover:border-rose-500/30 bg-white/5 hover:bg-rose-500/10 px-3 py-1.5 text-[11px] font-medium text-white/75 hover:text-rose-200 transition-all cursor-pointer font-mono disabled:opacity-50"
                                       >
                                         {teamActionLoading === t._id ? (
                                           <Loader2 size={11} className="animate-spin" />
                                         ) : (
-                                          <Trash2 size={11} />
+                                          <LogOut size={11} />
                                         )}
-                                        <span>Disband Team</span>
+                                        <span>Leave Team</span>
                                       </button>
-                                    </>
-                                  ) : (
-                                    <button
-                                      type="button"
-                                      onClick={() => handleLeaveTeamFromProfile(t)}
-                                      disabled={teamActionLoading === t._id}
-                                      className="inline-flex items-center gap-1.5 rounded-lg border border-white/15 hover:border-rose-500/30 bg-white/5 hover:bg-rose-500/10 px-3 py-1.5 text-[11px] font-medium text-white/75 hover:text-rose-200 transition-all cursor-pointer font-mono disabled:opacity-50"
-                                    >
-                                      {teamActionLoading === t._id ? (
-                                        <Loader2 size={11} className="animate-spin" />
-                                      ) : (
-                                        <LogOut size={11} />
-                                      )}
-                                      <span>Leave Team</span>
-                                    </button>
+                                    ) : (
+                                      <span className="inline-flex items-center gap-1 text-[11px] font-mono text-white/60 bg-white/5 border border-white/10 px-2.5 py-1 rounded-lg">
+                                        <Lock size={10} className="text-emerald-400" />
+                                        <span>Roster Finalized</span>
+                                      </span>
+                                    )
                                   )}
                                 </div>
 
