@@ -202,7 +202,9 @@ export async function PUT(req: Request) {
         membersCount: members,
         department: team.department?.trim() || "General",
         registeredAt: new Date(),
-        status: (team.status as "confirmed" | "pending" | "waitlist" | "disqualified") || "confirmed",
+        submissionStatus: "submitted" as const,
+        submittedAt: new Date(),
+        status: (team.status === "disqualified" ? "disqualified" : "confirmed") as "confirmed" | "disqualified",
         checkedIn: false,
       };
 

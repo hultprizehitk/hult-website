@@ -23,7 +23,7 @@ export interface IRegisteredTeam {
   department: string;
   members?: ITeamMember[];
   registeredAt: Date;
-  status: "confirmed" | "pending" | "waitlist" | "disqualified";
+  status: "confirmed" | "disqualified";
   submissionStatus?: "forming" | "ready" | "submitted";
   submittedAt?: Date;
   checkedIn?: boolean;

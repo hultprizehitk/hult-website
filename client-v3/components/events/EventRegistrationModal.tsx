@@ -1048,7 +1048,7 @@ export default function EventRegistrationModal({
               Choose How to Participate
             </h3>
             <p className="text-xs text-white/60 font-[family-name:var(--font-google-sans)]">
-              Lead your own startup venture or join an existing student team with a team code.
+              Lead your own team or join an existing student team with a team code.
             </p>
           </div>
 
@@ -1070,7 +1070,7 @@ export default function EventRegistrationModal({
                   Create Team
                 </h4>
                 <p className="text-xs text-white/60 leading-relaxed font-[family-name:var(--font-google-sans)]">
-                  Start a new venture as Team Leader. A unique Team Invite Code will be generated for your classmates to join.
+                  Register as Team Leader. A unique Team Invite Code will be generated for your teammates to join.
                 </p>
               </div>
 

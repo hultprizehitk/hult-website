@@ -19,6 +19,7 @@ export async function GET(req: Request) {
     const url = new URL(req.url);
     const eventId = url.searchParams.get("eventId");
     const status = url.searchParams.get("status");
+    const submissionStatus = url.searchParams.get("submissionStatus");
 
     await connectDB();
 
@@ -36,6 +37,7 @@ export async function GET(req: Request) {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const filter: Record<string, any> = { eventId: event._id };
       if (status && status !== "all") filter.status = status;
+      if (submissionStatus && submissionStatus !== "all") filter.submissionStatus = submissionStatus;
 
       const normalizedTeams = await Team.find(filter)
         .sort({ registeredAt: -1, createdAt: -1 })
@@ -98,6 +100,8 @@ export async function GET(req: Request) {
             department: lt.department || "General",
             members: Array.isArray(lt.members) ? lt.members : [],
             status: lt.status || "confirmed",
+            submissionStatus: lt.submissionStatus || "submitted",
+            submittedAt: lt.submittedAt || null,
             checkedIn: Boolean(lt.checkedIn),
             checkedInAt: lt.checkedInAt || null,
             registeredAt: lt.registeredAt || new Date(),
@@ -129,6 +133,7 @@ export async function GET(req: Request) {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const filter: Record<string, any> = {};
     if (status && status !== "all") filter.status = status;
+    if (submissionStatus && submissionStatus !== "all") filter.submissionStatus = submissionStatus;
 
     const allNormalized = await Team.find(filter)
       .populate("eventId", "title date tag")
@@ -241,6 +246,8 @@ export async function POST(req: Request) {
       department: department?.trim() || "General",
       members: membersList,
       status: status || "confirmed",
+      submissionStatus: "submitted",
+      submittedAt: new Date(),
       checkedIn: false,
       registeredAt: new Date(),
     });
@@ -257,6 +264,8 @@ export async function POST(req: Request) {
       department: newTeam.department,
       members: membersList,
       registeredAt: new Date(),
+      submissionStatus: "submitted",
+      submittedAt: new Date(),
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       status: newTeam.status as any,
       checkedIn: false,
@@ -380,7 +389,7 @@ export async function PUT(req: Request) {
 
     if (action === "update_status") {
       const newStatus = body.status;
-      if (!["confirmed", "pending", "waitlist", "disqualified"].includes(newStatus)) {
+      if (!["confirmed", "disqualified"].includes(newStatus)) {
         return NextResponse.json({ error: "Invalid status value." }, { status: 400 });
       }
 
@@ -489,7 +498,7 @@ export async function PATCH(req: Request) {
     }
 
     const updates: Record<string, unknown> = {};
-    if (status && ["confirmed", "pending", "waitlist", "disqualified"].includes(status)) {
+    if (status && ["confirmed", "disqualified"].includes(status)) {
       team.status = status;
       updates.status = status;
     }

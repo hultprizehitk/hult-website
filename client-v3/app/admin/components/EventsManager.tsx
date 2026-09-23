@@ -7,8 +7,6 @@ import {
   Calendar,
   ExternalLink,
   MapPin,
-  Users,
-  Clock,
   ArrowRight,
   Trash2,
   Plus,
@@ -18,27 +16,6 @@ import {
 } from "lucide-react";
 
 import type { EventItem, RegisteredTeamItem } from "@/types";
-
-// Helper to style event tag badges tastefully
-function getTagBadgeStyle(tag?: string): string {
-  const t = (tag || "").toLowerCase();
-  if (t.includes("flagship")) {
-    return "bg-rose-500/10 text-rose-300 border-rose-500/25";
-  }
-  if (t.includes("workshop")) {
-    return "bg-purple-500/10 text-purple-300 border-purple-500/25";
-  }
-  if (t.includes("orientation")) {
-    return "bg-blue-500/10 text-blue-300 border-blue-500/25";
-  }
-  if (t.includes("hackathon") || t.includes("competition")) {
-    return "bg-amber-500/10 text-amber-300 border-amber-500/25";
-  }
-  if (t.includes("speaker") || t.includes("keynote")) {
-    return "bg-sky-500/10 text-sky-300 border-sky-500/25";
-  }
-  return "bg-white/5 text-neutral-300 border-white/15";
-}
 
 // Helper to convert ISO/Date strings to "YYYY-MM-DDTHH:mm" for <input type="datetime-local">
 function toDatetimeLocalValue(val?: string): string {
@@ -144,7 +121,7 @@ export default function EventsManager() {
     leadEmail: "",
     membersCount: 4,
     department: "Computer Science & Engineering",
-    status: "confirmed" as "confirmed" | "pending" | "waitlist",
+    status: "confirmed" as const,
   });
 
   const showToast = (type: "success" | "error", text: string) => {
@@ -465,7 +442,6 @@ export default function EventsManager() {
     const headers = [
       "Team Code",
       "Team Name",
-      "Venture Title",
       "Team Lead",
       "Lead Email",
       "Lead Phone",
@@ -478,7 +454,6 @@ export default function EventsManager() {
     const rows = selectedEvent.registeredTeams.map((t) => [
       `"${t.teamCode || "N/A"}"`,
       `"${t.teamName.replace(/"/g, '""')}"`,
-      `"${(t.ventureName || "").replace(/"/g, '""')}"`,
       `"${t.leadName.replace(/"/g, '""')}"`,
       `"${t.leadEmail.replace(/"/g, '""')}"`,
       `"${(t.leadPhone || "").replace(/"/g, '""')}"`,
@@ -589,14 +564,6 @@ export default function EventsManager() {
           <div className="rounded-3xl border border-white/15 bg-[#0e0e12] p-6 sm:p-8 shadow-2xl space-y-4">
             <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
               <div className="flex items-center gap-2 flex-wrap">
-                <span
-                  className={`rounded-md border px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wider ${getTagBadgeStyle(
-                    selectedEvent.tag
-                  )}`}
-                >
-                  {selectedEvent.tag}
-                </span>
-
                 {selectedEvent.registrationStatus !== "closed" ? (
                   <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-500/10 border border-emerald-500/20 px-2.5 py-1 text-[11px] font-medium text-emerald-300">
                     <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse" />
@@ -715,34 +682,16 @@ export default function EventsManager() {
                   />
                 </div>
 
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-white/70 font-semibold mb-1">Tag / Category</label>
-                    <select
-                      value={eventFormData.tag}
-                      onChange={(e) => setEventFormData({ ...eventFormData, tag: e.target.value })}
-                      className="w-full rounded-2xl border border-white/15 bg-[#16161d] px-4 py-2.5 text-white outline-none focus:border-white/50 focus:ring-1 focus:ring-white/20 shadow-inner transition-all cursor-pointer"
-                    >
-                      <option value="Flagship" className="bg-neutral-900 text-white">Flagship</option>
-                      <option value="Workshop" className="bg-neutral-900 text-white">Workshop</option>
-                      <option value="Masterclass" className="bg-neutral-900 text-white">Masterclass</option>
-                      <option value="Sprint" className="bg-neutral-900 text-white">Design Sprint</option>
-                      <option value="Clinic" className="bg-neutral-900 text-white">Mentorship Clinic</option>
-                      <option value="Info Session" className="bg-neutral-900 text-white">Info Session</option>
-                    </select>
-                  </div>
-
-                  <div>
-                    <label className="block text-white/70 font-semibold mb-1">Display Priority Order</label>
-                    <input
-                      type="number"
-                      value={eventFormData.order}
-                      onChange={(e) =>
-                        setEventFormData({ ...eventFormData, order: Number(e.target.value) })
-                      }
-                      className="w-full rounded-2xl border border-white/15 bg-[#16161d] px-4 py-2.5 text-white outline-none focus:border-white/50 focus:ring-1 focus:ring-white/20 shadow-inner transition-all font-mono"
-                    />
-                  </div>
+                <div>
+                  <label className="block text-white/70 font-semibold mb-1">Display Priority Order</label>
+                  <input
+                    type="number"
+                    value={eventFormData.order}
+                    onChange={(e) =>
+                      setEventFormData({ ...eventFormData, order: Number(e.target.value) })
+                    }
+                    className="w-full rounded-2xl border border-white/15 bg-[#16161d] px-4 py-2.5 text-white outline-none focus:border-white/50 focus:ring-1 focus:ring-white/20 shadow-inner transition-all font-mono"
+                  />
                 </div>
 
                 {/* Team Size Limits (Min & Max Members) */}
@@ -928,7 +877,7 @@ export default function EventsManager() {
                   <span className="text-sm font-bold text-white block">Registration Status</span>
                   <p className="text-xs text-white/60 mt-0.5">
                     {selectedEvent.registrationStatus !== "closed"
-                      ? "Currently open: Students can register and submit team ventures."
+                      ? "Currently open: Students can register teams."
                       : "Currently stopped: Submissions are paused on the public website."}
                   </p>
                 </div>
@@ -1104,7 +1053,7 @@ export default function EventsManager() {
                     Registered Teams Roster ({selectedEvent.registeredTeams?.length || 0})
                   </h3>
                   <p className="text-xs text-white/60 mt-0.5">
-                    Team member constraint: <strong>{selectedEvent.minTeamMembers || 3} to {selectedEvent.maxTeamMembers || 5} members</strong> per venture.
+                    Team member constraint: <strong>{selectedEvent.minTeamMembers || 3} to {selectedEvent.maxTeamMembers || 5} members</strong> per team.
                   </p>
                 </div>
 
@@ -1165,15 +1114,6 @@ export default function EventsManager() {
                       placeholder="Team Name *"
                       value={newTeamData.teamName}
                       onChange={(e) => setNewTeamData({ ...newTeamData, teamName: e.target.value })}
-                      className="rounded-xl border border-white/15 bg-[#121217] px-3.5 py-2 text-white placeholder-white/40 outline-none focus:border-white/50 focus:ring-1 focus:ring-white/20 shadow-inner transition-all"
-                    />
-                    <input
-                      type="text"
-                      placeholder="Venture Title"
-                      value={newTeamData.ventureName}
-                      onChange={(e) =>
-                        setNewTeamData({ ...newTeamData, ventureName: e.target.value })
-                      }
                       className="rounded-xl border border-white/15 bg-[#121217] px-3.5 py-2 text-white placeholder-white/40 outline-none focus:border-white/50 focus:ring-1 focus:ring-white/20 shadow-inner transition-all"
                     />
                     <input
@@ -1241,7 +1181,7 @@ export default function EventsManager() {
                   <thead className="bg-[#121217] border-b border-white/10 text-[11px] uppercase tracking-wider text-white/70">
                     <tr>
                       <th className="px-5 py-3.5">#</th>
-                      <th className="px-5 py-3.5">Team & Venture</th>
+                      <th className="px-5 py-3.5">Team Name</th>
                       <th className="px-5 py-3.5">Lead Student & Contact</th>
                       <th className="px-5 py-3.5">Department</th>
                       <th className="px-5 py-3.5">Members</th>
@@ -1253,7 +1193,6 @@ export default function EventsManager() {
                         const q = teamSearchQuery.toLowerCase();
                         return (
                           t.teamName.toLowerCase().includes(q) ||
-                          (t.ventureName && t.ventureName.toLowerCase().includes(q)) ||
                           t.leadName.toLowerCase().includes(q) ||
                           t.leadEmail.toLowerCase().includes(q)
                         );
@@ -1279,11 +1218,6 @@ export default function EventsManager() {
                                 </span>
                               )}
                             </div>
-                            {team.ventureName && (
-                              <span className="text-[11px] text-white/60 block line-clamp-1 mt-0.5">
-                                {team.ventureName}
-                              </span>
-                            )}
                             {team.pitchDeckUrl && (
                               <a
                                 href={team.pitchDeckUrl}
@@ -1384,37 +1318,19 @@ export default function EventsManager() {
                 />
               </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-white/70 font-semibold mb-1">Category / Tag</label>
-                  <select
-                    value={eventFormData.tag}
-                    onChange={(e) => setEventFormData({ ...eventFormData, tag: e.target.value })}
-                    className="w-full rounded-2xl border border-white/15 bg-[#16161d] hover:border-white/30 focus:border-white/50 focus:ring-1 focus:ring-white/20 px-4 py-2.5 text-white outline-none shadow-inner transition-all cursor-pointer"
-                  >
-                    <option value="Flagship" className="bg-[#16161d] text-white">Flagship</option>
-                    <option value="Workshop" className="bg-[#16161d] text-white">Workshop</option>
-                    <option value="Masterclass" className="bg-[#16161d] text-white">Masterclass</option>
-                    <option value="Sprint" className="bg-[#16161d] text-white">Design Sprint</option>
-                    <option value="Clinic" className="bg-[#16161d] text-white">Mentorship Clinic</option>
-                    <option value="Info Session" className="bg-[#16161d] text-white">Info Session</option>
-                  </select>
-                </div>
-
-                <div>
-                  <label className="block text-white/70 font-semibold mb-1">Display Priority Order</label>
-                  <input
-                    type="number"
-                    value={eventFormData.order}
-                    onChange={(e) =>
-                      setEventFormData({ ...eventFormData, order: Number(e.target.value) })
-                    }
-                    className="w-full rounded-2xl border border-white/15 bg-[#16161d] hover:border-white/30 focus:border-white/50 focus:ring-1 focus:ring-white/20 px-4 py-2.5 text-white outline-none shadow-inner transition-all font-mono"
-                  />
-                  <span className="text-[10px] text-white/40 mt-1 block">
-                    Display order on website (0 = standard)
-                  </span>
-                </div>
+              <div>
+                <label className="block text-white/70 font-semibold mb-1">Display Priority Order</label>
+                <input
+                  type="number"
+                  value={eventFormData.order}
+                  onChange={(e) =>
+                    setEventFormData({ ...eventFormData, order: Number(e.target.value) })
+                  }
+                  className="w-full rounded-2xl border border-white/15 bg-[#16161d] hover:border-white/30 focus:border-white/50 focus:ring-1 focus:ring-white/20 px-4 py-2.5 text-white outline-none shadow-inner transition-all font-mono"
+                />
+                <span className="text-[10px] text-white/40 mt-1 block">
+                  Display order on website (0 = standard)
+                </span>
               </div>
 
               {/* Min & Max Members per Team */}
@@ -1642,7 +1558,7 @@ export default function EventsManager() {
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-neutral-500" />
                 <input
                   type="text"
-                  placeholder="Filter events by title, tag, or venue..."
+                  placeholder="Filter events by title or venue..."
                   value={eventsFilterQuery}
                   onChange={(e) => setEventsFilterQuery(e.target.value)}
                   className="w-full pl-8.5 pr-7 py-1.5 text-xs bg-white/[0.03] border border-white/10 rounded-lg text-white placeholder-neutral-500 focus:outline-none focus:border-rose-500/50 transition-colors"
@@ -1663,7 +1579,6 @@ export default function EventsManager() {
                     const q = eventsFilterQuery.toLowerCase();
                     return (
                       e.title.toLowerCase().includes(q) ||
-                      (e.tag && e.tag.toLowerCase().includes(q)) ||
                       (e.venue && e.venue.toLowerCase().includes(q))
                     );
                   }).length}{" "}
@@ -1698,20 +1613,12 @@ export default function EventsManager() {
                   const q = eventsFilterQuery.toLowerCase();
                   return (
                     e.title.toLowerCase().includes(q) ||
-                    (e.tag && e.tag.toLowerCase().includes(q)) ||
                     (e.venue && e.venue.toLowerCase().includes(q))
                   );
                 })
                 .map((event) => {
                   const isRegOpen =
                     event.registrationStatus === "open" || event.registrationStatus === "extended";
-                  const registeredCount =
-                    event.registeredTeamsCount || event.registeredTeams?.length || 0;
-                  const minMem = event.minTeamMembers || 3;
-                  const maxMem = event.maxTeamMembers || 5;
-                  const countdown = getDeadlineCountdown(event.registrationDeadline);
-                  const maxTeams = event.maxTeams || 40;
-                  const capacityPct = Math.min(100, Math.round((registeredCount / maxTeams) * 100));
 
                   return (
                     <div
@@ -1723,17 +1630,9 @@ export default function EventsManager() {
                       <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-white/10 to-transparent group-hover:via-rose-500/40 transition-all duration-500" />
 
                       <div>
-                        {/* Top Status & Tag Ribbon */}
+                        {/* Top Status Ribbon */}
                         <div className="flex items-center justify-between gap-2 mb-3.5 flex-wrap">
                           <div className="flex items-center gap-2 flex-wrap">
-                            <span
-                              className={`rounded-md border px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wider ${getTagBadgeStyle(
-                                event.tag
-                              )}`}
-                            >
-                              {event.tag || "Event"}
-                            </span>
-
                             {isRegOpen ? (
                               <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-500/10 border border-emerald-500/20 px-2.5 py-1 text-[11px] font-medium text-emerald-300">
                                 <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse" />
@@ -1803,55 +1702,11 @@ export default function EventsManager() {
                         </div>
 
                         {/* Description with fixed height for equal grid alignment */}
-                        <p className="text-xs text-neutral-400 line-clamp-2 leading-relaxed mb-4 min-h-[2.5rem]">
+                        <p className="text-xs text-neutral-400 line-clamp-2 leading-relaxed mb-5 min-h-[2.5rem]">
                           {event.description || (
                             <span className="italic text-neutral-600">No event description provided.</span>
                           )}
                         </p>
-
-                        {/* Roster & Capacity Metrics Card */}
-                        <div className="rounded-xl bg-white/[0.03] border border-white/10 p-3 mb-5 space-y-2.5">
-                          <div className="flex items-center justify-between gap-3 text-xs flex-wrap">
-                            <div className="flex items-center gap-2">
-                              <Users className="w-3.5 h-3.5 text-neutral-400 shrink-0" />
-                              <span className="font-semibold text-white">
-                                {registeredCount}{" "}
-                                <span className="text-neutral-400 font-normal">
-                                  / {maxTeams} {registeredCount === 1 ? "team" : "teams"}
-                                </span>
-                              </span>
-                              <span className="text-[11px] text-neutral-400 font-mono">
-                                ({minMem}–{maxMem}/team)
-                              </span>
-                            </div>
-
-                            <div className="flex items-center gap-1.5 text-[11px] text-neutral-400">
-                              <Clock className="w-3 h-3 text-neutral-400 shrink-0" />
-                              <span>{formatDeadline(event.registrationDeadline)}</span>
-                              {countdown && (
-                                <span
-                                  className={`text-[10px] font-medium px-2 py-0.5 rounded-full border ${
-                                    countdown.expired
-                                      ? "bg-neutral-800 text-neutral-400 border-white/10"
-                                      : "bg-rose-500/10 text-rose-300 border-rose-500/20"
-                                  }`}
-                                >
-                                  {countdown.text}
-                                </span>
-                              )}
-                            </div>
-                          </div>
-
-                          {/* Capacity Progress Bar */}
-                          <div className="w-full bg-white/5 h-1.5 rounded-full overflow-hidden">
-                            <div
-                              className="bg-gradient-to-r from-rose-500 to-pink-500 h-full rounded-full transition-all duration-500"
-                              style={{
-                                width: `${Math.min(100, Math.max(registeredCount > 0 ? 5 : 0, capacityPct))}%`,
-                              }}
-                            />
-                          </div>
-                        </div>
                       </div>
 
                       {/* Bottom Card Actions */}

@@ -52,14 +52,14 @@ export async function GET(req: Request) {
         const ev = myTeam.eventId as { minTeamMembers?: number } | null;
         const minRequired = ev?.minTeamMembers || 3;
         const totalMembers = 1 + (Array.isArray(myTeam.members) ? myTeam.members.length : 0);
-        if (totalMembers < minRequired && (myTeam.submissionStatus === "submitted" || myTeam.status === "confirmed")) {
+        if (totalMembers < minRequired && myTeam.submissionStatus === "submitted") {
           await Team.findByIdAndUpdate(myTeam._id, {
             submissionStatus: "forming",
-            status: "pending",
+            status: "confirmed",
             submittedAt: null,
           });
           myTeam.submissionStatus = "forming";
-          myTeam.status = "pending";
+          myTeam.status = "confirmed";
           myTeam.submittedAt = undefined;
         }
       }
