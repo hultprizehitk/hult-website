@@ -155,9 +155,7 @@ export default function HeroThemeAbout() {
               <p className="text-xs sm:text-sm font-medium text-[#4a3b3e] leading-relaxed">
                 The world’s premier student social entrepreneurship incubator at Heritage Institute of Technology, turning bold ideas into scalable, investment-ready enterprises.
               </p>
-              <div className="font-hult-script text-2xl text-[#65535e] rotate-[-2deg]">
-                Ideas for a brighter tomorrow
-              </div>
+
             </div>
           </div>
         </ScrollReveal>
@@ -252,8 +250,8 @@ export default function HeroThemeAbout() {
                           idx === 0
                             ? "/assets/hult-prize-hero/branches/cherry-branch-right.png"
                             : idx === 1
-                            ? "/assets/hult-prize-hero/branches/branch-left-secondary.png"
-                            : "/assets/hult-prize-hero/branches/cherry-branch-left.png"
+                              ? "/assets/hult-prize-hero/branches/branch-left-secondary.png"
+                              : "/assets/hult-prize-hero/branches/cherry-branch-left.png"
                         }
                         alt=""
                         className="w-full h-auto object-contain drop-shadow-sm"
@@ -268,8 +266,8 @@ export default function HeroThemeAbout() {
                           idx === 0
                             ? "/assets/hult-prize-hero/branches/cherry-blossoms-left-bottom.png"
                             : idx === 1
-                            ? "/assets/hult-prize-hero/branches/branch-left-bottom.png"
-                            : "/assets/hult-prize-hero/foreground/foreground-blossoms-right.png"
+                              ? "/assets/hult-prize-hero/branches/branch-left-bottom.png"
+                              : "/assets/hult-prize-hero/foreground/foreground-blossoms-right.png"
                         }
                         alt=""
                         className="w-full h-auto object-contain drop-shadow-sm"

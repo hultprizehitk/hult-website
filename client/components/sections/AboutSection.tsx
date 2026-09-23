@@ -99,9 +99,7 @@ export default function AboutSection() {
               </p>
 
               <div className="pt-2 border-t border-white/10">
-                <p className="text-lg sm:text-xl font-serif italic text-pink-200/90 tracking-wide">
-                  Ideas for a brighter tomorrow
-                </p>
+
               </div>
             </div>
           </div>
