@@ -82,7 +82,10 @@ export default function AdminSignInGate() {
             <Button
               variant="default"
               size="lg"
-              onClick={() => signIn("google", { callbackUrl: isSubdomain ? "/" : "/admin" })}
+              onClick={() => {
+                const targetUrl = typeof window !== "undefined" ? window.location.href : (isSubdomain ? "/" : "/admin");
+                signIn("google", { callbackUrl: targetUrl });
+              }}
               className="w-full flex items-center justify-center gap-3 rounded-2xl py-6 font-bold shadow-2xl transition-all duration-200 hover:scale-[1.02] active:scale-[0.98] font-[family-name:var(--font-google-sans)]"
             >
               <svg className="h-5 w-5 shrink-0" viewBox="0 0 24 24">
