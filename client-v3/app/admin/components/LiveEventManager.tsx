@@ -3,7 +3,6 @@
 import React, { useState, useEffect, useMemo, useCallback } from "react";
 import Link from "next/link";
 import {
-  Plus,
   RefreshCw,
   Calendar,
   MapPin,
@@ -19,9 +18,31 @@ import {
   Camera,
   Lightbulb,
   AlertTriangle,
+  ArrowRight,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import LiveCameraScannerModal from "./LiveCameraScannerModal";
+
+// Helper to style event tag badges tastefully
+function getTagBadgeStyle(tag?: string): string {
+  const t = (tag || "").toLowerCase();
+  if (t.includes("flagship")) {
+    return "bg-rose-500/10 text-rose-300 border-rose-500/25";
+  }
+  if (t.includes("workshop")) {
+    return "bg-purple-500/10 text-purple-300 border-purple-500/25";
+  }
+  if (t.includes("orientation")) {
+    return "bg-blue-500/10 text-blue-300 border-blue-500/25";
+  }
+  if (t.includes("hackathon") || t.includes("competition")) {
+    return "bg-amber-500/10 text-amber-300 border-amber-500/25";
+  }
+  if (t.includes("speaker") || t.includes("keynote")) {
+    return "bg-sky-500/10 text-sky-300 border-sky-500/25";
+  }
+  return "bg-white/5 text-neutral-300 border-white/15";
+}
 
 interface TeamMember {
   name: string;
@@ -573,171 +594,202 @@ export default function LiveEventManager() {
       {/* VIEW 1: ALL EVENTS HUB (When no event is selected)                        */}
       {/* ========================================================================= */}
       {!selectedEventId ? (
-        <div className="space-y-8">
-          {/* Header Banner */}
-          <div className="relative overflow-hidden rounded-[2.5rem] border border-white/15 bg-[#0e0e12] p-8 sm:p-12 shadow-2xl">
-            <div className="pointer-events-none absolute inset-x-0 top-0 h-[1.5px] bg-gradient-to-r from-transparent via-white/40 to-white/10" />
-            <div className="pointer-events-none absolute -top-24 -right-24 h-72 w-72 rounded-full bg-white/5 blur-[100px]" />
-
-            <div className="relative z-10 max-w-3xl">
-              <span className="inline-flex items-center gap-2 rounded-full border border-emerald-500/40 bg-[#0a1f18] px-3.5 py-1 text-[11px] font-extrabold uppercase tracking-widest text-emerald-300 mb-4 shadow-sm">
-                <span className="h-2 w-2 rounded-full bg-emerald-400 animate-pulse" />
-                Live Event Operations Console
-              </span>
-              <h1 className="text-3xl sm:text-4xl lg:text-5xl font-black text-white font-[family-name:var(--font-google-sans)] tracking-tight mb-3">
-                Live Event Management
-              </h1>
-              <p className="text-sm sm:text-base text-white/70 leading-relaxed font-sans mb-6">
-                Step inside any active event to review registered teams, inspect co-founder rosters, manage team statuses, and orchestrate real-time attendee check-ins.
-              </p>
-
-              <div className="flex flex-wrap items-center gap-3">
-                <Button asChild variant="default" size="default" className="font-[family-name:var(--font-google-sans)]">
-                  <Link href="/admin">
-                    <Plus className="h-4 w-4" />
-                    <span>Create New Event in Events Manager</span>
-                  </Link>
-                </Button>
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="default"
-                  onClick={fetchEvents}
-                >
-                  <RefreshCw className="h-4 w-4" />
-                  <span>Refresh Events</span>
-                </Button>
-              </div>
-            </div>
-          </div>
-
-          {/* Search bar & Section Title */}
+        <div className="space-y-6">
+          {/* Header */}
           <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
             <div>
-              <h2 className="text-xl sm:text-2xl font-black text-white font-[family-name:var(--font-google-sans)]">
-                Select an Event to Manage ({events.length})
-              </h2>
-              <p className="text-xs text-white/60">
-                Click &quot;Enter Event &amp; Manage Teams&quot; on any event card below to open its live management control room.
+              <div className="flex items-center gap-3">
+                <h1 className="text-xl sm:text-2xl font-black font-[family-name:var(--font-google-sans)] text-white tracking-tight">
+                  Live Event Operations
+                </h1>
+                <span className="rounded-full bg-white/10 border border-white/10 px-2.5 py-0.5 text-xs font-mono font-medium text-neutral-300">
+                  {events.length} {events.length === 1 ? "Event" : "Events"}
+                </span>
+              </div>
+              <p className="text-xs text-neutral-400 mt-1">
+                Select an active event to coordinate stage queue, inspect rosters, and monitor live check-ins.
               </p>
             </div>
 
-            <div className="w-full sm:w-80 relative">
-              <input
-                type="text"
-                value={eventSearch}
-                onChange={(e) => setEventSearch(e.target.value)}
-                placeholder="Search events by title, tag, or venue..."
-                className="w-full rounded-2xl border border-white/15 bg-[#16161d] px-4 py-2.5 text-xs text-white placeholder:text-white/40 focus:border-white/50 focus:outline-none focus:ring-1 focus:ring-white/20 shadow-inner transition-all"
-              />
-              {eventSearch && (
-                <button
-                  type="button"
-                  onClick={() => setEventSearch("")}
-                  className="absolute right-3 top-2.5 text-xs text-white/50 hover:text-white cursor-pointer"
-                >
-                  ✕
-                </button>
-              )}
+            <div className="flex items-center gap-2.5 w-full sm:w-auto">
+              <div className="relative flex-1 sm:w-72">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-neutral-500" />
+                <input
+                  type="text"
+                  value={eventSearch}
+                  onChange={(e) => setEventSearch(e.target.value)}
+                  placeholder="Filter events by title, tag, or venue..."
+                  className="w-full pl-8.5 pr-7 py-2 text-xs bg-white/[0.03] border border-white/10 rounded-lg text-white placeholder-neutral-500 focus:outline-none focus:border-rose-500/50 transition-colors"
+                />
+                {eventSearch && (
+                  <button
+                    type="button"
+                    onClick={() => setEventSearch("")}
+                    className="absolute right-2.5 top-1/2 -translate-y-1/2 text-neutral-500 hover:text-white text-xs p-1 cursor-pointer"
+                  >
+                    ✕
+                  </button>
+                )}
+              </div>
+
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                className="h-9 shrink-0 gap-1.5 cursor-pointer"
+                onClick={fetchEvents}
+                title="Refresh events from database"
+              >
+                <RefreshCw className={`h-3.5 w-3.5 ${loadingEvents ? "animate-spin" : ""}`} />
+                <span className="hidden sm:inline">Refresh</span>
+              </Button>
             </div>
           </div>
 
           {/* Events Grid */}
           {loadingEvents ? (
-            <div className="py-20 text-center">
-              <div className="inline-block h-8 w-8 animate-spin rounded-full border-2 border-white border-t-transparent mb-4" />
-              <p className="text-sm text-white/50 font-mono">Loading events from database...</p>
+            <div className="py-20 text-center text-white/50 text-xs tracking-wider uppercase font-mono">
+              <RefreshCw className="h-6 w-6 animate-spin mx-auto mb-3 text-neutral-500" />
+              Loading events from database...
             </div>
           ) : filteredEventsList.length === 0 ? (
-            <div className="rounded-3xl border border-white/15 bg-[#0e0e12] p-12 text-center shadow-2xl">
-              <Calendar className="h-10 w-10 text-white mx-auto mb-3" />
-              <h3 className="text-lg font-bold text-white font-[family-name:var(--font-google-sans)] mb-2">
+            <div className="rounded-2xl border border-white/10 bg-[#0c0c12]/90 p-12 text-center shadow-xl">
+              <Calendar className="h-10 w-10 text-neutral-400 mx-auto mb-3" />
+              <h3 className="text-base font-bold text-white font-[family-name:var(--font-google-sans)] mb-2">
                 No Events Found
               </h3>
-              <p className="text-xs text-white/60 max-w-md mx-auto mb-6">
+              <p className="text-xs text-neutral-400 max-w-md mx-auto mb-6">
                 {eventSearch
                   ? `No events match "${eventSearch}". Try a different search term.`
                   : "You haven't created any events yet. Create your first event in the Events Manager to begin receiving team registrations."}
               </p>
-              <Button asChild variant="default" size="default" className="font-[family-name:var(--font-google-sans)]">
+              <Button asChild variant="default" size="default" className="font-[family-name:var(--font-google-sans)] font-semibold shadow-md">
                 <Link href="/admin">
                   Go to Events Manager →
                 </Link>
               </Button>
             </div>
           ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {filteredEventsList.map((ev) => (
-                <div
-                  key={ev._id}
-                  className="group relative overflow-hidden rounded-3xl border border-white/15 bg-[#0e0e12] hover:bg-[#15151c] p-6 hover:border-white/40 hover:shadow-[0_20px_45px_rgba(0,0,0,0.8)] hover:-translate-y-1 transition-all duration-300 flex flex-col justify-between shadow-2xl"
-                >
-                  <div className="pointer-events-none absolute inset-x-0 top-0 h-[2px] bg-gradient-to-r from-transparent via-white/40 to-transparent" />
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+              {filteredEventsList.map((ev) => {
+                const registeredCount = ev.registeredTeamsCount || 0;
+                const maxTeams = ev.maxTeams || 40;
+                const capacityPct = Math.min(100, Math.round((registeredCount / maxTeams) * 100));
+                const isRegOpen = ev.registrationStatus === "open";
+                const isExtended = ev.registrationStatus === "extended";
 
-                  <div>
-                    {/* Tags & Status */}
-                    <div className="flex items-center justify-between gap-2 mb-4">
-                      <span className="rounded-full bg-white/10 border border-white/20 px-3 py-0.5 text-[10px] font-extrabold uppercase tracking-wider text-white">
-                        {ev.tag || "Event"}
-                      </span>
-                      <span
-                        className={`rounded-full px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wider border ${
-                          ev.registrationStatus === "open"
-                            ? "bg-emerald-500/15 border-emerald-500/40 text-emerald-300"
-                            : ev.registrationStatus === "extended"
-                            ? "bg-amber-500/15 border-amber-500/40 text-amber-300"
-                            : "bg-white/10 border-white/20 text-white/60"
-                        }`}
+                return (
+                  <div
+                    key={ev._id}
+                    onClick={() => handleSelectEvent(ev._id)}
+                    className="group relative rounded-2xl border border-white/10 bg-[#0c0c12]/90 hover:border-white/20 hover:bg-[#121219] p-5 sm:p-6 transition-all duration-300 flex flex-col justify-between shadow-xl cursor-pointer hover:shadow-2xl overflow-hidden"
+                  >
+                    {/* Ambient top highlight edge */}
+                    <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-white/10 to-transparent group-hover:via-rose-500/40 transition-all duration-500" />
+
+                    <div>
+                      {/* Tags & Status Ribbon */}
+                      <div className="flex items-center justify-between gap-2 mb-3.5 flex-wrap">
+                        <span
+                          className={`rounded-md border px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wider ${getTagBadgeStyle(
+                            ev.tag
+                          )}`}
+                        >
+                          {ev.tag || "Event"}
+                        </span>
+
+                        {isRegOpen ? (
+                          <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-500/10 border border-emerald-500/20 px-2.5 py-1 text-[11px] font-medium text-emerald-300">
+                            <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                            Registrations Open
+                          </span>
+                        ) : isExtended ? (
+                          <span className="inline-flex items-center gap-1.5 rounded-full bg-amber-500/10 border border-amber-500/20 px-2.5 py-1 text-[11px] font-medium text-amber-300">
+                            <span className="h-1.5 w-1.5 rounded-full bg-amber-400" />
+                            Extended
+                          </span>
+                        ) : (
+                          <span className="inline-flex items-center gap-1.5 rounded-full bg-white/[0.04] border border-white/10 px-2.5 py-1 text-[11px] font-medium text-neutral-400">
+                            <span className="h-1.5 w-1.5 rounded-full bg-neutral-500" />
+                            Closed
+                          </span>
+                        )}
+                      </div>
+
+                      {/* Event Title */}
+                      <h3 className="text-lg sm:text-xl font-bold text-white group-hover:text-rose-300 transition-colors leading-snug line-clamp-1 mb-2.5 font-[family-name:var(--font-google-sans)]">
+                        {ev.title}
+                      </h3>
+
+                      {/* Date & Venue */}
+                      <div className="space-y-1.5 mb-3.5 text-xs text-neutral-300">
+                        <div className="flex items-center gap-2" title={ev.date}>
+                          <Calendar className="w-3.5 h-3.5 text-neutral-400 shrink-0" />
+                          <span className="font-medium text-neutral-200 truncate">
+                            {ev.date || "Date to be announced"}
+                          </span>
+                        </div>
+                        <div className="flex items-center gap-2 text-neutral-400" title={ev.venue}>
+                          <MapPin className="w-3.5 h-3.5 text-neutral-500 shrink-0" />
+                          <span className="truncate">
+                            {ev.venue || "Venue to be announced"}
+                          </span>
+                        </div>
+                      </div>
+
+                      {/* Description with fixed height for equal grid alignment */}
+                      <p className="text-xs text-neutral-400 line-clamp-2 leading-relaxed mb-4 min-h-[2.5rem]">
+                        {ev.description || (
+                          <span className="italic text-neutral-600">No event description provided.</span>
+                        )}
+                      </p>
+
+                      {/* Roster & Capacity Metrics Card */}
+                      <div className="rounded-xl bg-white/[0.03] border border-white/10 p-3 mb-5 space-y-2">
+                        <div className="flex items-center justify-between text-xs">
+                          <div className="flex items-center gap-2">
+                            <Users className="w-3.5 h-3.5 text-neutral-400 shrink-0" />
+                            <span className="font-semibold text-white">
+                              {registeredCount}{" "}
+                              <span className="text-neutral-400 font-normal">
+                                / {maxTeams} {registeredCount === 1 ? "team" : "teams"}
+                              </span>
+                            </span>
+                          </div>
+                          <span className="text-[11px] font-mono text-neutral-400">
+                            {capacityPct}% capacity
+                          </span>
+                        </div>
+
+                        {/* Capacity Progress Bar */}
+                        <div className="w-full bg-white/5 h-1.5 rounded-full overflow-hidden">
+                          <div
+                            className="bg-gradient-to-r from-rose-500 to-pink-500 h-full rounded-full transition-all duration-500"
+                            style={{
+                              width: `${Math.min(100, Math.max(registeredCount > 0 ? 5 : 0, capacityPct))}%`,
+                            }}
+                          />
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Bottom Card Action */}
+                    <div className="pt-3.5 border-t border-white/10">
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleSelectEvent(ev._id);
+                        }}
+                        className="h-9 w-full inline-flex items-center justify-center gap-1.5 rounded-lg bg-white text-neutral-950 px-3.5 text-xs font-semibold hover:bg-neutral-200 transition-colors shadow-sm cursor-pointer"
                       >
-                        {ev.registrationStatus}
-                      </span>
+                        <span>Enter Event & Manage Teams</span>
+                        <ArrowRight className="w-3.5 h-3.5 transition-transform group-hover:translate-x-0.5" />
+                      </button>
                     </div>
-
-                    {/* Title */}
-                    <h3 className="text-xl font-bold text-white font-[family-name:var(--font-google-sans)] group-hover:text-white transition-colors mb-2 line-clamp-2">
-                      {ev.title}
-                    </h3>
-
-                    {/* Venue & Date */}
-                    <div className="space-y-1.5 text-xs text-white/70 mb-4 font-mono">
-                      <div className="flex items-center gap-2">
-                        <MapPin className="h-3 w-3 text-neutral-400" />
-                        <span className="truncate">{ev.venue}</span>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <Calendar className="h-3 w-3 text-neutral-400" />
-                        <span>{ev.date}</span>
-                      </div>
-                    </div>
-
-                    {/* Description preview */}
-                    <p className="text-xs text-white/60 line-clamp-2 leading-relaxed mb-6 font-sans">
-                      {ev.description}
-                    </p>
                   </div>
-
-                  {/* Footer Metrics & Button */}
-                  <div className="pt-4 border-t border-white/10">
-                    <div className="flex items-center justify-between text-xs font-mono mb-4">
-                      <span className="text-white/60">Registered Teams:</span>
-                      <span className="font-bold text-emerald-400 bg-emerald-500/15 border border-emerald-500/30 rounded-full px-2.5 py-0.5">
-                        {ev.registeredTeamsCount || 0} / {ev.maxTeams || 40}
-                      </span>
-                    </div>
-
-                    <Button
-                      type="button"
-                      variant="default"
-                      size="default"
-                      className="w-full font-[family-name:var(--font-google-sans)]"
-                      onClick={() => handleSelectEvent(ev._id)}
-                    >
-                      <span>Enter Event & Manage Teams</span>
-                      <span>→</span>
-                    </Button>
-                  </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           )}
         </div>

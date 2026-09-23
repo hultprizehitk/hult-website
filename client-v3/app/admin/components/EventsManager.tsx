@@ -3,9 +3,42 @@
 import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
-import { Calendar, ExternalLink } from "lucide-react";
+import {
+  Calendar,
+  ExternalLink,
+  MapPin,
+  Users,
+  Clock,
+  ArrowRight,
+  Trash2,
+  Plus,
+  Eye,
+  EyeOff,
+  Search,
+} from "lucide-react";
 
 import type { EventItem, RegisteredTeamItem } from "@/types";
+
+// Helper to style event tag badges tastefully
+function getTagBadgeStyle(tag?: string): string {
+  const t = (tag || "").toLowerCase();
+  if (t.includes("flagship")) {
+    return "bg-rose-500/10 text-rose-300 border-rose-500/25";
+  }
+  if (t.includes("workshop")) {
+    return "bg-purple-500/10 text-purple-300 border-purple-500/25";
+  }
+  if (t.includes("orientation")) {
+    return "bg-blue-500/10 text-blue-300 border-blue-500/25";
+  }
+  if (t.includes("hackathon") || t.includes("competition")) {
+    return "bg-amber-500/10 text-amber-300 border-amber-500/25";
+  }
+  if (t.includes("speaker") || t.includes("keynote")) {
+    return "bg-sky-500/10 text-sky-300 border-sky-500/25";
+  }
+  return "bg-white/5 text-neutral-300 border-white/15";
+}
 
 // Helper to convert ISO/Date strings to "YYYY-MM-DDTHH:mm" for <input type="datetime-local">
 function toDatetimeLocalValue(val?: string): string {
@@ -80,6 +113,7 @@ export default function EventsManager() {
   const [selectedEventId, setSelectedEventId] = useState<string | null>(null);
   const [isCreatingNew, setIsCreatingNew] = useState(false);
   const [insideTab, setInsideTab] = useState<"details" | "registration" | "teams">("details");
+  const [eventsFilterQuery, setEventsFilterQuery] = useState("");
 
   // Form State for editing the active event
   const [eventFormData, setEventFormData] = useState({
@@ -400,58 +434,6 @@ export default function EventsManager() {
     }
   };
 
-  // Team Registration: Remove Team
-  const handleRemoveTeamFromEvent = async (teamId: string) => {
-    if (!selectedEventId) return;
-    try {
-      const res = await fetch("/api/admin/events", {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          id: selectedEventId,
-          action: "remove_team",
-          teamId,
-        }),
-      });
-      const data = await res.json();
-      if (res.ok) {
-        setEvents((prev) => prev.map((ev) => (ev._id === selectedEventId ? data.event : ev)));
-        showToast("success", "Team removed from registration roster.");
-      }
-    } catch {
-      showToast("error", "Failed to remove team.");
-    }
-  };
-
-  // Team Registration: Update Team Status
-  const handleUpdateTeamStatus = async (
-    teamId: string,
-    newStatus: "confirmed" | "pending" | "waitlist"
-  ) => {
-    if (!selectedEventId) return;
-    try {
-      const res = await fetch("/api/admin/events", {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          id: selectedEventId,
-          action: "update_team_status",
-          teamId,
-          teamStatus: newStatus,
-        }),
-      });
-      const data = await res.json();
-      if (res.ok) {
-        setEvents((prev) => prev.map((ev) => (ev._id === selectedEventId ? data.event : ev)));
-        showToast("success", `Team status updated to "${newStatus.toUpperCase()}".`);
-      } else {
-        throw new Error(data.error || "Failed to update team status.");
-      }
-    } catch (err: unknown) {
-      showToast("error", err instanceof Error ? err.message : "Error updating status.");
-    }
-  };
-
   // Sync Teams to Live Event Stage Queue
   const handleSyncToLiveEvent = () => {
     if (!selectedEvent || !selectedEvent.registeredTeams) return;
@@ -607,17 +589,22 @@ export default function EventsManager() {
           <div className="rounded-3xl border border-white/15 bg-[#0e0e12] p-6 sm:p-8 shadow-2xl space-y-4">
             <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
               <div className="flex items-center gap-2 flex-wrap">
-                <span className="rounded-full bg-white/10 border border-white/20 px-3 py-0.5 text-[10px] font-bold uppercase tracking-wider text-white">
+                <span
+                  className={`rounded-md border px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wider ${getTagBadgeStyle(
+                    selectedEvent.tag
+                  )}`}
+                >
                   {selectedEvent.tag}
                 </span>
 
                 {selectedEvent.registrationStatus !== "closed" ? (
-                  <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-500/15 border border-emerald-500/30 px-2.5 py-0.5 text-[10px] font-semibold text-emerald-300">
+                  <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-500/10 border border-emerald-500/20 px-2.5 py-1 text-[11px] font-medium text-emerald-300">
                     <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse" />
                     Registrations Open
                   </span>
                 ) : (
-                  <span className="inline-flex items-center gap-1.5 rounded-full bg-neutral-800 border border-white/10 px-2.5 py-0.5 text-[10px] font-medium text-white/50">
+                  <span className="inline-flex items-center gap-1.5 rounded-full bg-white/[0.04] border border-white/10 px-2.5 py-1 text-[11px] font-medium text-neutral-400">
+                    <span className="h-1.5 w-1.5 rounded-full bg-neutral-500" />
                     Registrations Closed
                   </span>
                 )}
@@ -627,13 +614,23 @@ export default function EventsManager() {
                 <button
                   type="button"
                   onClick={() => handleTogglePublish(selectedEvent)}
-                  className={`rounded-full px-3 py-1 text-xs font-bold uppercase tracking-wider cursor-pointer border transition-colors ${
+                  className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-medium cursor-pointer border transition-colors ${
                     selectedEvent.isPublished
-                      ? "bg-emerald-500/20 text-emerald-300 border-emerald-500/40 hover:bg-emerald-500/30"
-                      : "bg-white/5 text-white/60 border-white/15 hover:bg-white/10"
+                      ? "bg-emerald-500/10 text-emerald-300 border-emerald-500/25 hover:bg-emerald-500/20"
+                      : "bg-white/[0.04] text-neutral-400 border-white/10 hover:bg-white/[0.08] hover:text-white"
                   }`}
                 >
-                  {selectedEvent.isPublished ? "● Live on Site" : "○ Draft Hidden"}
+                  {selectedEvent.isPublished ? (
+                    <>
+                      <Eye className="w-3.5 h-3.5 text-emerald-400" />
+                      <span>Live on Site</span>
+                    </>
+                  ) : (
+                    <>
+                      <EyeOff className="w-3.5 h-3.5 text-neutral-500" />
+                      <span>Draft Hidden</span>
+                    </>
+                  )}
                 </button>
 
                 <Button
@@ -1248,8 +1245,6 @@ export default function EventsManager() {
                       <th className="px-5 py-3.5">Lead Student & Contact</th>
                       <th className="px-5 py-3.5">Department</th>
                       <th className="px-5 py-3.5">Members</th>
-                      <th className="px-5 py-3.5">Status</th>
-                      <th className="px-5 py-3.5 text-right">Action</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-white/5 font-sans">
@@ -1328,51 +1323,13 @@ export default function EventsManager() {
                               </div>
                             )}
                           </td>
-                          <td className="px-5 py-3.5">
-                            <select
-                              value={team.status || "confirmed"}
-                              onChange={(e) =>
-                                handleUpdateTeamStatus(
-                                  team.id,
-                                  e.target.value as "confirmed" | "pending" | "waitlist"
-                                )
-                              }
-                              className={`rounded-full border px-2.5 py-1 text-[10px] font-bold uppercase outline-none cursor-pointer transition-all ${
-                                team.status === "confirmed"
-                                  ? "bg-emerald-500/20 border-emerald-500/40 text-emerald-300"
-                                  : team.status === "waitlist"
-                                  ? "bg-amber-500/20 border-amber-500/40 text-amber-300"
-                                  : "bg-blue-500/20 border-blue-500/40 text-blue-300"
-                              }`}
-                            >
-                              <option className="bg-neutral-900 text-emerald-300" value="confirmed">
-                                Confirmed
-                              </option>
-                              <option className="bg-neutral-900 text-amber-300" value="waitlist">
-                                Waitlist
-                              </option>
-                              <option className="bg-neutral-900 text-blue-300" value="pending">
-                                Pending
-                              </option>
-                            </select>
-                          </td>
-                          <td className="px-5 py-3.5 text-right">
-                            <button
-                              type="button"
-                              onClick={() => handleRemoveTeamFromEvent(team.id)}
-                              className="text-white/40 hover:text-red-400 p-1 text-xs cursor-pointer transition-colors"
-                              title="Remove team"
-                            >
-                              ✕
-                            </button>
-                          </td>
                         </tr>
                       ))}
 
                     {(!selectedEvent.registeredTeams ||
                       selectedEvent.registeredTeams.length === 0) && (
                       <tr>
-                        <td colSpan={7} className="px-5 py-12 text-center text-white/40">
+                        <td colSpan={5} className="px-5 py-12 text-center text-white/40">
                           <p className="text-sm font-semibold text-white/70">No teams registered yet.</p>
                           <p className="text-xs text-white/40 mt-1">
                             Registered teams will appear here once submitted.
@@ -1633,11 +1590,16 @@ export default function EventsManager() {
           {/* Header */}
           <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
             <div>
-              <h2 className="text-xl sm:text-2xl font-black font-[family-name:var(--font-google-sans)] text-white">
-                Events & Schedule
-              </h2>
-              <p className="text-xs text-white/60 mt-0.5">
-                Click any event card to open its registration controls, deadline extender, and teams roster.
+              <div className="flex items-center gap-3">
+                <h2 className="text-xl sm:text-2xl font-black font-[family-name:var(--font-google-sans)] text-white tracking-tight">
+                  Events & Schedule
+                </h2>
+                <span className="rounded-full bg-white/10 border border-white/10 px-2.5 py-0.5 text-xs font-mono font-medium text-neutral-300">
+                  {events.length} {events.length === 1 ? "Event" : "Events"}
+                </span>
+              </div>
+              <p className="text-xs text-neutral-400 mt-1">
+                Manage live events, team registration limits, deadlines, and rosters.
               </p>
             </div>
 
@@ -1645,7 +1607,7 @@ export default function EventsManager() {
               type="button"
               variant="default"
               size="default"
-              className="font-[family-name:var(--font-google-sans)]"
+              className="font-[family-name:var(--font-google-sans)] font-semibold shadow-md flex items-center gap-2"
               onClick={() => {
                 setIsCreatingNew(true);
                 setSelectedEventId(null);
@@ -1668,17 +1630,56 @@ export default function EventsManager() {
                 });
               }}
             >
-              + Create New Event
+              <Plus className="w-4 h-4" />
+              <span>Create New Event</span>
             </Button>
           </div>
 
+          {/* Search Toolbar (if multiple events exist) */}
+          {events.length > 2 && (
+            <div className="flex items-center justify-between gap-3">
+              <div className="relative flex-1 max-w-sm">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-neutral-500" />
+                <input
+                  type="text"
+                  placeholder="Filter events by title, tag, or venue..."
+                  value={eventsFilterQuery}
+                  onChange={(e) => setEventsFilterQuery(e.target.value)}
+                  className="w-full pl-8.5 pr-7 py-1.5 text-xs bg-white/[0.03] border border-white/10 rounded-lg text-white placeholder-neutral-500 focus:outline-none focus:border-rose-500/50 transition-colors"
+                />
+                {eventsFilterQuery && (
+                  <button
+                    type="button"
+                    onClick={() => setEventsFilterQuery("")}
+                    className="absolute right-2 top-1/2 -translate-y-1/2 text-neutral-500 hover:text-white text-xs p-1"
+                  >
+                    ✕
+                  </button>
+                )}
+              </div>
+              {eventsFilterQuery && (
+                <div className="text-xs text-neutral-500 font-mono">
+                  {events.filter((e) => {
+                    const q = eventsFilterQuery.toLowerCase();
+                    return (
+                      e.title.toLowerCase().includes(q) ||
+                      (e.tag && e.tag.toLowerCase().includes(q)) ||
+                      (e.venue && e.venue.toLowerCase().includes(q))
+                    );
+                  }).length}{" "}
+                  found
+                </div>
+              )}
+            </div>
+          )}
+
           {/* Cards Grid */}
           {loading ? (
-            <div className="py-20 text-center text-white/50 text-xs tracking-wider uppercase">
+            <div className="py-20 text-center text-white/50 text-xs tracking-wider uppercase font-mono">
               Loading events...
             </div>
           ) : events.length === 0 ? (
-            <div className="rounded-3xl border border-white/15 bg-[#0e0e12] p-12 text-center shadow-2xl">
+            <div className="rounded-2xl border border-white/10 bg-[#0c0c12]/90 p-12 text-center shadow-xl">
               <p className="text-neutral-400 text-sm mb-4">No events found in database.</p>
               <Button
                 type="button"
@@ -1690,159 +1691,215 @@ export default function EventsManager() {
               </Button>
             </div>
           ) : (
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              {events.map((event) => {
-                const isRegOpen =
-                  event.registrationStatus === "open" || event.registrationStatus === "extended";
-                const registeredCount =
-                  event.registeredTeamsCount || event.registeredTeams?.length || 0;
-                const minMem = event.minTeamMembers || 3;
-                const maxMem = event.maxTeamMembers || 5;
-                const countdown = getDeadlineCountdown(event.registrationDeadline);
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
+              {events
+                .filter((e) => {
+                  if (!eventsFilterQuery.trim()) return true;
+                  const q = eventsFilterQuery.toLowerCase();
+                  return (
+                    e.title.toLowerCase().includes(q) ||
+                    (e.tag && e.tag.toLowerCase().includes(q)) ||
+                    (e.venue && e.venue.toLowerCase().includes(q))
+                  );
+                })
+                .map((event) => {
+                  const isRegOpen =
+                    event.registrationStatus === "open" || event.registrationStatus === "extended";
+                  const registeredCount =
+                    event.registeredTeamsCount || event.registeredTeams?.length || 0;
+                  const minMem = event.minTeamMembers || 3;
+                  const maxMem = event.maxTeamMembers || 5;
+                  const countdown = getDeadlineCountdown(event.registrationDeadline);
+                  const maxTeams = event.maxTeams || 40;
+                  const capacityPct = Math.min(100, Math.round((registeredCount / maxTeams) * 100));
 
-                return (
-                  <div
-                    key={event._id}
-                    onClick={() => handleGoInsideEvent(event)}
-                    className="group relative rounded-3xl border border-white/15 bg-[#0e0e12] hover:border-white/35 hover:bg-[#15151c] p-6 sm:p-7 transition-all duration-300 flex flex-col justify-between shadow-2xl cursor-pointer hover:shadow-[0_16px_40px_rgba(0,0,0,0.8)]"
-                  >
-                    <div>
-                      {/* Top Bar Badges */}
-                      <div className="flex items-center justify-between gap-2 mb-4 flex-wrap">
-                        <div className="flex items-center gap-2">
-                          <span className="rounded-full bg-[#16161d] border border-white/20 px-3 py-0.5 text-[10px] font-bold uppercase tracking-wider text-white">
-                            {event.tag}
-                          </span>
+                  return (
+                    <div
+                      key={event._id}
+                      onClick={() => handleGoInsideEvent(event)}
+                      className="group relative rounded-2xl border border-white/10 bg-[#0c0c12]/90 hover:border-white/20 hover:bg-[#121219] p-5 sm:p-6 transition-all duration-300 flex flex-col justify-between shadow-xl cursor-pointer hover:shadow-2xl overflow-hidden"
+                    >
+                      {/* Ambient top highlight edge */}
+                      <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-white/10 to-transparent group-hover:via-rose-500/40 transition-all duration-500" />
 
-                          {isRegOpen ? (
-                            <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-500/15 border border-emerald-500/30 px-2.5 py-0.5 text-[10px] font-semibold text-emerald-300">
-                              <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse" />
-                              Registrations Open
+                      <div>
+                        {/* Top Status & Tag Ribbon */}
+                        <div className="flex items-center justify-between gap-2 mb-3.5 flex-wrap">
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <span
+                              className={`rounded-md border px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wider ${getTagBadgeStyle(
+                                event.tag
+                              )}`}
+                            >
+                              {event.tag || "Event"}
                             </span>
-                          ) : (
-                            <span className="inline-flex items-center gap-1.5 rounded-full bg-[#16161d] border border-white/10 px-2.5 py-0.5 text-[10px] font-medium text-white/50">
-                              Registrations Closed
-                            </span>
-                          )}
+
+                            {isRegOpen ? (
+                              <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-500/10 border border-emerald-500/20 px-2.5 py-1 text-[11px] font-medium text-emerald-300">
+                                <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                                Registrations Open
+                              </span>
+                            ) : event.registrationStatus === "extended" ? (
+                              <span className="inline-flex items-center gap-1.5 rounded-full bg-amber-500/10 border border-amber-500/20 px-2.5 py-1 text-[11px] font-medium text-amber-300">
+                                <span className="h-1.5 w-1.5 rounded-full bg-amber-400" />
+                                Extended
+                              </span>
+                            ) : (
+                              <span className="inline-flex items-center gap-1.5 rounded-full bg-white/[0.04] border border-white/10 px-2.5 py-1 text-[11px] font-medium text-neutral-400">
+                                <span className="h-1.5 w-1.5 rounded-full bg-neutral-500" />
+                                Registrations Closed
+                              </span>
+                            )}
+                          </div>
+
+                          <div className="flex items-center gap-2">
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleTogglePublish(event);
+                              }}
+                              title={event.isPublished ? "Click to set as Draft" : "Click to publish"}
+                              className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[11px] font-medium cursor-pointer border transition-colors ${
+                                event.isPublished
+                                  ? "bg-emerald-500/10 text-emerald-300 border-emerald-500/25 hover:bg-emerald-500/20"
+                                  : "bg-white/[0.04] text-neutral-400 border-white/10 hover:bg-white/[0.08] hover:text-white"
+                              }`}
+                            >
+                              {event.isPublished ? (
+                                <>
+                                  <Eye className="w-3 h-3 text-emerald-400" />
+                                  <span>Live</span>
+                                </>
+                              ) : (
+                                <>
+                                  <EyeOff className="w-3 h-3 text-neutral-500" />
+                                  <span>Draft</span>
+                                </>
+                              )}
+                            </button>
+                          </div>
                         </div>
+
+                        {/* Event Title */}
+                        <h3 className="text-lg sm:text-xl font-bold text-white group-hover:text-rose-300 transition-colors leading-snug line-clamp-1 mb-2.5 font-[family-name:var(--font-google-sans)]">
+                          {event.title}
+                        </h3>
+
+                        {/* Schedule & Venue Meta */}
+                        <div className="space-y-1.5 mb-3.5 text-xs text-neutral-300">
+                          <div className="flex items-center gap-2" title={event.date}>
+                            <Calendar className="w-3.5 h-3.5 text-neutral-400 shrink-0" />
+                            <span className="font-medium text-neutral-200 truncate">
+                              {event.date || "Date to be announced"}
+                            </span>
+                          </div>
+                          <div className="flex items-center gap-2 text-neutral-400" title={event.venue}>
+                            <MapPin className="w-3.5 h-3.5 text-neutral-500 shrink-0" />
+                            <span className="truncate">
+                              {event.venue || "Venue to be announced"}
+                            </span>
+                          </div>
+                        </div>
+
+                        {/* Description with fixed height for equal grid alignment */}
+                        <p className="text-xs text-neutral-400 line-clamp-2 leading-relaxed mb-4 min-h-[2.5rem]">
+                          {event.description || (
+                            <span className="italic text-neutral-600">No event description provided.</span>
+                          )}
+                        </p>
+
+                        {/* Roster & Capacity Metrics Card */}
+                        <div className="rounded-xl bg-white/[0.03] border border-white/10 p-3 mb-5 space-y-2.5">
+                          <div className="flex items-center justify-between gap-3 text-xs flex-wrap">
+                            <div className="flex items-center gap-2">
+                              <Users className="w-3.5 h-3.5 text-neutral-400 shrink-0" />
+                              <span className="font-semibold text-white">
+                                {registeredCount}{" "}
+                                <span className="text-neutral-400 font-normal">
+                                  / {maxTeams} {registeredCount === 1 ? "team" : "teams"}
+                                </span>
+                              </span>
+                              <span className="text-[11px] text-neutral-400 font-mono">
+                                ({minMem}–{maxMem}/team)
+                              </span>
+                            </div>
+
+                            <div className="flex items-center gap-1.5 text-[11px] text-neutral-400">
+                              <Clock className="w-3 h-3 text-neutral-400 shrink-0" />
+                              <span>{formatDeadline(event.registrationDeadline)}</span>
+                              {countdown && (
+                                <span
+                                  className={`text-[10px] font-medium px-2 py-0.5 rounded-full border ${
+                                    countdown.expired
+                                      ? "bg-neutral-800 text-neutral-400 border-white/10"
+                                      : "bg-rose-500/10 text-rose-300 border-rose-500/20"
+                                  }`}
+                                >
+                                  {countdown.text}
+                                </span>
+                              )}
+                            </div>
+                          </div>
+
+                          {/* Capacity Progress Bar */}
+                          <div className="w-full bg-white/5 h-1.5 rounded-full overflow-hidden">
+                            <div
+                              className="bg-gradient-to-r from-rose-500 to-pink-500 h-full rounded-full transition-all duration-500"
+                              style={{
+                                width: `${Math.min(100, Math.max(registeredCount > 0 ? 5 : 0, capacityPct))}%`,
+                              }}
+                            />
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Bottom Card Actions */}
+                      <div className="flex items-center justify-between gap-2 pt-3.5 border-t border-white/10">
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleToggleRegistration(event._id);
+                          }}
+                          className={`h-8.5 rounded-lg px-3 text-xs font-medium transition-all cursor-pointer border ${
+                            isRegOpen
+                              ? "border-white/10 bg-white/[0.03] text-neutral-300 hover:text-rose-400 hover:bg-rose-500/10 hover:border-rose-500/25"
+                              : "border-emerald-500/30 bg-emerald-500/10 text-emerald-300 hover:bg-emerald-500/20"
+                          }`}
+                        >
+                          {isRegOpen ? "Close Registration" : "Open Registration"}
+                        </button>
 
                         <div className="flex items-center gap-2">
                           <button
                             type="button"
                             onClick={(e) => {
                               e.stopPropagation();
-                              handleTogglePublish(event);
+                              handleGoInsideEvent(event);
                             }}
-                            className={`rounded-full px-3 py-0.5 text-[10px] font-bold uppercase tracking-wider cursor-pointer border transition-colors ${
-                              event.isPublished
-                                ? "bg-emerald-500/15 text-emerald-300 border-emerald-500/30 hover:bg-emerald-500/25"
-                                : "bg-[#16161d] text-white/50 border-white/10 hover:bg-[#202028]"
-                            }`}
+                            className="h-8.5 inline-flex items-center gap-1.5 rounded-lg bg-white text-neutral-950 px-3.5 text-xs font-semibold hover:bg-neutral-200 transition-colors shadow-sm cursor-pointer"
                           >
-                            {event.isPublished ? "● Live on Site" : "○ Draft"}
+                            <span>Manage Event</span>
+                            <ArrowRight className="w-3.5 h-3.5 transition-transform group-hover:translate-x-0.5" />
+                          </button>
+
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleDeleteEvent(event._id, event.title);
+                            }}
+                            className="h-8.5 w-8.5 inline-flex items-center justify-center rounded-lg border border-white/10 bg-white/[0.02] text-neutral-400 hover:text-rose-400 hover:bg-rose-500/10 hover:border-rose-500/25 transition-colors cursor-pointer"
+                            title="Delete event"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
                           </button>
                         </div>
                       </div>
-
-                      {/* Event Title */}
-                      <h3 className="text-xl sm:text-2xl font-black text-white mb-2.5 font-[family-name:var(--font-google-sans)] group-hover:text-white transition-colors leading-tight">
-                        {event.title}
-                      </h3>
-
-                      {/* Schedule & Venue Meta */}
-                      <div className="space-y-1.5 text-xs text-white/70 mb-3.5 font-sans">
-                        <div className="flex items-center gap-2">
-                          <span className="font-mono text-[9px] text-white/50 uppercase font-bold border border-white/10 bg-[#16161d] rounded px-1.5 py-0.5">DATE</span>
-                          <span className="font-semibold text-white font-mono tabular-nums">{event.date}</span>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <span className="font-mono text-[9px] text-white/50 uppercase font-bold border border-white/10 bg-[#16161d] rounded px-1.5 py-0.5">VENUE</span>
-                          <span>{event.venue}</span>
-                        </div>
-                      </div>
-
-                      {/* Description */}
-                      <p className="text-xs text-white/60 line-clamp-2 leading-relaxed mb-5">
-                        {event.description}
-                      </p>
-
-                      {/* Roster, Cutoff & Member Limits Strip */}
-                      <div className="flex items-center justify-between gap-3 py-2.5 px-3.5 rounded-2xl bg-[#16161d] border border-white/10 shadow-inner text-xs mb-5 flex-wrap">
-                        <div className="flex items-center gap-2">
-                          <span className="font-mono text-[9px] text-emerald-400 uppercase font-bold border border-emerald-500/20 bg-emerald-500/10 rounded px-1.5 py-0.5">ROSTER</span>
-                          <span className="font-bold text-white font-mono tabular-nums">
-                            {registeredCount} Registered {registeredCount === 1 ? "Team" : "Teams"}
-                          </span>
-                          <span className="text-[11px] text-neutral-300 font-medium font-mono">
-                            ({minMem}–{maxMem} members/team)
-                          </span>
-                        </div>
-
-                        <div className="flex items-center gap-2">
-                          <span className="text-white/40 text-[11px]">
-                            Deadline: {formatDeadline(event.registrationDeadline)}
-                          </span>
-                          {countdown && (
-                            <span
-                              className={`text-[10px] font-mono px-2 py-0.5 rounded-full ${
-                                countdown.expired
-                                  ? "bg-neutral-800 text-neutral-400"
-                                  : "bg-purple-500/20 text-purple-300"
-                              }`}
-                            >
-                              {countdown.text}
-                            </span>
-                          )}
-                        </div>
-                      </div>
                     </div>
-
-                    {/* Bottom Card Actions */}
-                    <div className="flex items-center justify-between gap-2 pt-4 border-t border-white/10">
-                      <button
-                        type="button"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleToggleRegistration(event._id);
-                        }}
-                        className={`rounded-xl px-3 py-1.5 text-xs font-semibold transition-all cursor-pointer border ${
-                          isRegOpen
-                            ? "border-white/15 bg-[#16161d] text-white/70 hover:text-red-300 hover:border-red-500/40 hover:bg-red-950/40"
-                            : "border-emerald-500/40 bg-emerald-500/15 text-emerald-300 hover:bg-emerald-500/25"
-                        }`}
-                      >
-                        {isRegOpen ? "Stop Registration" : "Open Registration"}
-                      </button>
-
-                      <div className="flex items-center gap-2">
-                        <Button
-                          type="button"
-                          variant="default"
-                          size="sm"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleGoInsideEvent(event);
-                          }}
-                        >
-                          Manage Event →
-                        </Button>
-
-                        <button
-                          type="button"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleDeleteEvent(event._id, event.title);
-                          }}
-                          className="rounded-xl p-1.5 text-white/40 hover:text-red-300 hover:bg-red-950/40 transition-colors"
-                          title="Delete event"
-                        >
-                          ✕
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-                );
-              })}
+                  );
+                })}
             </div>
           )}
         </div>
