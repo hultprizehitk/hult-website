@@ -16,7 +16,6 @@ export default function EventInsideView({
   onBack,
 }: EventInsideViewProps) {
   const [copied, setCopied] = useState(false);
-  const [isRegistrationModalOpen, setIsRegistrationModalOpen] = useState(false);
 
   const minMembers = event.minTeamMembers || 3;
   const maxMembers = event.maxTeamMembers || 5;
@@ -222,8 +221,13 @@ export default function EventInsideView({
               ) : (
                 <button
                   type="button"
-                  onClick={() => setIsRegistrationModalOpen(true)}
-                  className="rounded-full bg-white hover:bg-neutral-100 px-6 py-2.5 text-xs font-bold text-neutral-950 shadow-lg shadow-white/10 transition-all cursor-pointer hover:scale-105 inline-flex items-center gap-2"
+                  onClick={() => {
+                    const el = document.getElementById("team-registration");
+                    if (el) {
+                      el.scrollIntoView({ behavior: "smooth" });
+                    }
+                  }}
+                  className="rounded-full bg-white hover:bg-neutral-100 px-6 py-2.5 text-xs font-bold text-neutral-950 shadow-lg shadow-white/10 transition-all cursor-pointer hover:scale-105 inline-flex items-center gap-2 font-[family-name:var(--font-google-sans)]"
                 >
                   <Users size={14} className="text-neutral-950" />
                   <span>Register Team (Create / Join)</span>
@@ -235,11 +239,10 @@ export default function EventInsideView({
         </div>
       </section>
 
-      {/* Team Registration & Roster Modal */}
+      {/* Team Registration & Roster Workspace (Embedded Inline on Page - No Popup) */}
       <EventRegistrationModal
         event={event}
-        isOpen={isRegistrationModalOpen}
-        onClose={() => setIsRegistrationModalOpen(false)}
+        isInline={true}
       />
     </div>
   );

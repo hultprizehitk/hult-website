@@ -158,8 +158,13 @@ export default function RegisterPage() {
                   </h4>
                   <button
                     type="button"
-                    onClick={() => setIsEventModalOpen(true)}
-                    className="w-full rounded-xl bg-white hover:bg-neutral-100 text-neutral-950 px-4 py-2.5 text-xs font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer shadow-lg"
+                    onClick={() => {
+                      const el = document.getElementById("team-registration");
+                      if (el) {
+                        el.scrollIntoView({ behavior: "smooth" });
+                      }
+                    }}
+                    className="w-full rounded-xl bg-white hover:bg-neutral-100 text-neutral-950 px-4 py-2.5 text-xs font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer shadow-lg font-[family-name:var(--font-google-sans)] hover:scale-105"
                   >
                     <Users size={13} />
                     <span>Register Team (Create / Join)</span>
@@ -330,13 +335,14 @@ export default function RegisterPage() {
         </p>
       </footer>
 
-      {/* Target Event Registration Modal */}
+      {/* Target Event Registration Workspace (Inline on page) */}
       {targetEvent && (
-        <EventRegistrationModal
-          event={targetEvent}
-          isOpen={isEventModalOpen}
-          onClose={() => setIsEventModalOpen(false)}
-        />
+        <section className="relative z-10 w-full max-w-4xl mx-auto px-4 sm:px-6 pb-16">
+          <EventRegistrationModal
+            event={targetEvent}
+            isInline={true}
+          />
+        </section>
       )}
     </div>
   );
