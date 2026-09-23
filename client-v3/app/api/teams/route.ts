@@ -8,6 +8,7 @@ import { auth } from "@/auth";
 import { parseHeritageEmail } from "@/lib/heritage-parser";
 import { generateTeamCode, sanitizeNumeric, isValidPhone, isValidRoll } from "@/lib/teams/team-utils";
 import { checkRateLimit, getClientIp } from "@/lib/rate-limit";
+import { sendTeamCreatedEmail, sendTeamSubmittedEmail } from "@/lib/email-templates";
 
 /**
  * GET /api/teams?eventId=<id>
@@ -279,6 +280,23 @@ export async function POST(req: Request) {
         { $set: { phone: cleanPhone, roll: cleanRoll } }
       );
     }
+
+    // 10. Asynchronously dispatch Team Created confirmation email to the Team Lead (non-blocking)
+    sendTeamCreatedEmail({
+      leadName: userName,
+      leadEmail: userEmail,
+      teamName: cleanTeamName,
+      teamCode: code,
+      eventTitle: event.title,
+      eventId: event._id.toString(),
+      eventDate: event.date,
+      eventVenue: event.venue,
+      minMembers,
+      maxMembers,
+      deadline: event.registrationDeadline,
+    }).catch((emailErr) => {
+      console.error("[Google Workspace SMTP] Failed to send team created email:", emailErr);
+    });
 
     return NextResponse.json(
       {
@@ -586,6 +604,27 @@ export async function PATCH(req: Request) {
         eventTeam.status = "confirmed";
         await event.save();
       }
+    }
+
+    // Asynchronously dispatch Team Submitted confirmation email to the Team Lead (non-blocking)
+    const tLeadName = team.lead?.name || team.lead?.email || "";
+    const tLeadEmail = team.lead?.email || team.leadEmail || "";
+    if (tLeadEmail) {
+      sendTeamSubmittedEmail({
+        leadName: tLeadName,
+        leadEmail: tLeadEmail,
+        teamName: team.teamName,
+        ventureName: team.ventureName,
+        eventTitle: event?.title || "Event",
+        eventId: event?._id?.toString?.() || "",
+        eventDate: event?.date,
+        eventVenue: event?.venue,
+        membersCount: 1 + (Array.isArray(team.members) ? team.members.length : 0),
+        minMembers,
+        maxMembers,
+      }).catch((emailErr: unknown) => {
+        console.error("[Google Workspace SMTP] Failed to send team submitted email:", emailErr);
+      });
     }
 
     return NextResponse.json({
