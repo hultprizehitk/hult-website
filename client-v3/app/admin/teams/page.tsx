@@ -5,6 +5,7 @@ import {
   Users,
   Search,
   RefreshCw,
+  Calendar,
 } from "lucide-react";
 
 interface TeamMember {
@@ -12,6 +13,14 @@ interface TeamMember {
   email: string;
   department?: string;
   roll?: string;
+}
+
+interface EventRecord {
+  _id: string;
+  title: string;
+  tag?: string;
+  date?: string;
+  maxTeams?: number;
 }
 
 interface TeamRecord {
@@ -44,35 +53,76 @@ interface TeamRecord {
 
 export default function AdminTeamsPage() {
   const [teams, setTeams] = useState<TeamRecord[]>([]);
+  const [events, setEvents] = useState<EventRecord[]>([]);
+  const [selectedEventId, setSelectedEventId] = useState("all");
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [selectedTeam, setSelectedTeam] = useState<TeamRecord | null>(null);
 
-  const fetchTeams = async () => {
+  const fetchTeamsAndEvents = async () => {
     try {
       setLoading(true);
-      const res = await fetch("/api/admin/teams");
-      const data = await res.json();
-      if (data.success) {
-        setTeams(data.teams);
+      const [teamsRes, eventsRes] = await Promise.all([
+        fetch("/api/admin/teams"),
+        fetch("/api/admin/events"),
+      ]);
+      const teamsData = await teamsRes.json();
+      if (teamsData.success) {
+        setTeams(teamsData.teams || []);
+      }
+      if (eventsRes.ok) {
+        const eventsData = await eventsRes.json();
+        if (eventsData.events) {
+          setEvents(eventsData.events);
+        }
       }
     } catch (err) {
-      console.error("Failed to load teams:", err);
+      console.error("Failed to load teams or events:", err);
     } finally {
       setLoading(false);
     }
   };
 
   useEffect(() => {
-    fetchTeams();
+    fetchTeamsAndEvents();
   }, []);
 
-  const filteredTeams = teams.filter(
-    (t) =>
-      t.teamName.toLowerCase().includes(search.toLowerCase()) ||
-      t.lead.name.toLowerCase().includes(search.toLowerCase()) ||
-      t.lead.email.toLowerCase().includes(search.toLowerCase()) ||
-      t.teamCode.toLowerCase().includes(search.toLowerCase())
+  // Merge events from API and any unique event populated on teams
+  const allEventsMap = new Map<string, { _id: string; title: string; maxTeams?: number }>();
+  for (const ev of events) {
+    allEventsMap.set(ev._id, { _id: ev._id, title: ev.title, maxTeams: ev.maxTeams });
+  }
+  for (const t of teams) {
+    if (t.eventId?._id && !allEventsMap.has(t.eventId._id)) {
+      allEventsMap.set(t.eventId._id, {
+        _id: t.eventId._id,
+        title: t.eventId.title || "Untitled Event",
+      });
+    }
+  }
+  const availableEvents = Array.from(allEventsMap.values());
+
+  const filteredTeams = teams.filter((t) => {
+    const matchesEvent =
+      selectedEventId === "all" ||
+      t.eventId?._id === selectedEventId ||
+      (!t.eventId && selectedEventId === "unassigned");
+
+    const q = search.toLowerCase();
+    const matchesSearch =
+      t.teamName.toLowerCase().includes(q) ||
+      t.lead.name.toLowerCase().includes(q) ||
+      t.lead.email.toLowerCase().includes(q) ||
+      t.teamCode.toLowerCase().includes(q) ||
+      (t.eventId?.title ? t.eventId.title.toLowerCase().includes(q) : false);
+
+    return matchesEvent && matchesSearch;
+  });
+
+  const selectedEvent = availableEvents.find((e) => e._id === selectedEventId);
+  const totalStudentsInFiltered = filteredTeams.reduce(
+    (sum, t) => sum + 1 + (t.members?.length || 0),
+    0
   );
 
   return (
@@ -88,7 +138,7 @@ export default function AdminTeamsPage() {
           </p>
         </div>
         <button
-          onClick={fetchTeams}
+          onClick={fetchTeamsAndEvents}
           disabled={loading}
           className="flex items-center gap-1.5 rounded-xl border border-white/10 bg-white/5 hover:bg-white/10 px-3.5 py-2 text-xs font-medium text-white transition-all cursor-pointer self-start sm:self-auto"
         >
@@ -97,16 +147,60 @@ export default function AdminTeamsPage() {
         </button>
       </div>
 
-      {/* Search Bar */}
-      <div className="relative">
-        <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-neutral-400" />
-        <input
-          type="text"
-          placeholder="Search team name, code, or leader..."
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          className="w-full pl-10 pr-4 py-2.5 text-xs bg-[#16161d] border border-white/15 rounded-xl text-white placeholder-neutral-500 focus:outline-none focus:border-rose-500/50"
-        />
+      {/* Search & Event Filter Bar */}
+      <div className="flex flex-col sm:flex-row gap-3">
+        <div className="relative flex-1">
+          <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-neutral-400" />
+          <input
+            type="text"
+            placeholder="Search team name, code, leader, or event..."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            className="w-full pl-10 pr-4 py-2.5 text-xs bg-[#16161d] border border-white/15 rounded-xl text-white placeholder-neutral-500 focus:outline-none focus:border-rose-500/50"
+          />
+        </div>
+
+        <div className="relative sm:w-80">
+          <Calendar className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-neutral-400 pointer-events-none" />
+          <select
+            value={selectedEventId}
+            onChange={(e) => setSelectedEventId(e.target.value)}
+            className="w-full pl-10 pr-4 py-2.5 text-xs bg-[#16161d] border border-white/15 rounded-xl text-white outline-none focus:border-rose-500/50 cursor-pointer appearance-none"
+          >
+            <option value="all">
+              All Events ({teams.length} total registrations)
+            </option>
+            {availableEvents.map((ev) => {
+              const count = teams.filter((t) => t.eventId?._id === ev._id).length;
+              return (
+                <option key={ev._id} value={ev._id}>
+                  {ev.title} ({count} {count === 1 ? "team" : "teams"})
+                </option>
+              );
+            })}
+          </select>
+        </div>
+      </div>
+
+      {/* Registration Stats Bar */}
+      <div className="flex flex-wrap items-center justify-between gap-3 px-4 py-2.5 rounded-xl bg-[#16161d] border border-white/10 text-xs">
+        <div className="flex items-center gap-2 flex-wrap font-mono text-[11px]">
+          <span className="text-neutral-400">Event:</span>
+          <span className="font-semibold text-white px-2 py-0.5 rounded bg-white/10 border border-white/10 font-sans">
+            {selectedEventId === "all" ? "All Events" : selectedEvent?.title || "Selected Event"}
+          </span>
+          <span className="text-rose-400 font-bold">
+            {filteredTeams.length} {filteredTeams.length === 1 ? "team registered" : "teams registered"}
+          </span>
+          {selectedEvent?.maxTeams && (
+            <span className="text-neutral-400">
+              • Capacity: {filteredTeams.length}/{selectedEvent.maxTeams} slots
+            </span>
+          )}
+        </div>
+        <div className="text-neutral-400 font-mono text-[11px]">
+          <span className="text-emerald-400 font-bold">{totalStudentsInFiltered}</span> student participants
+        </div>
       </div>
 
       {/* Teams Table */}
