@@ -271,9 +271,7 @@ export default function HeroThemeAbout() {
               >
                 The world's premier student social entrepreneurship incubator at Heritage Institute of Technology, turning bold ideas into scalable, investment-ready enterprises.
               </p>
-              <div className="font-hult-script text-2xl text-white/90 rotate-[-2deg] drop-shadow-[0_2px_8px_rgba(0,0,0,0.6)]">
-                Ideas for a brighter tomorrow
-              </div>
+
             </div>
           </div>
         </ScrollReveal>

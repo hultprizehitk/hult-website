@@ -7,8 +7,10 @@ import HeroThemeAbout from "@/components/sections/HeroThemeAbout";
 import HeroThemeEvents from "@/components/sections/HeroThemeEvents";
 import HeroThemeFooter from "@/components/sections/HeroThemeFooter";
 import CardThemeDevTool from "@/components/dev/CardThemeDevTool";
+import FallingLeaves from "@/components/hero/FallingLeaves";
+import ClothHumanLayer from "@/components/hero/ClothHumanLayer";
 import { ThemeTunerProvider, useThemeTuner } from "@/context/ThemeTunerContext";
-import { KOLKATA_LAYERS } from "@/lib/kolkata-layers-config";
+import { HERO_LAYERS, HeroLayer } from "@/lib/hero-layers-config";
 
 export default function Home() {
   const [showDevTool, setShowDevTool] = useState(false);
@@ -27,31 +29,54 @@ export default function Home() {
   );
 }
 
+/**
+ * Returns the CSS transform for a layer's entrance animation
+ * BEFORE it has entered (the "from" state).
+ */
+function getEntranceFromTransform(entrance: HeroLayer["entrance"]): string {
+  switch (entrance) {
+    case "fade":
+      return "translate3d(0, 0, 0)";
+    case "slide-up":
+      return "translate3d(0, 100vh, 0)";
+    case "slide-right":
+      return "translate3d(-100vw, 0, 0)";
+    case "zoom-in":
+      return "scale(1.3) translate3d(0, 0, 0)";
+    default:
+      return "translate3d(0, 0, 0)";
+  }
+}
+
 function HomeContent() {
   const { config } = useThemeTuner();
   const [isGrainEnabled] = useState(false);
   const [grainOpacity] = useState(0.04);
 
-  const [isSkyLoaded, setIsSkyLoaded] = useState(false);
-  const [assembledCount, setAssembledCount] = useState(0);
-  const [isAssemblyComplete, setIsAssemblyComplete] = useState(false);
+  // Track which layers have "entered" — cascading one-by-one
+  const [enteredLayers, setEnteredLayers] = useState<Set<string>>(new Set());
+  const [allLayersEntered, setAllLayersEntered] = useState(false);
 
   const [scrollY, setScrollY] = useState(0);
   const [scrollProgress, setScrollProgress] = useState(0);
 
   useEffect(() => {
-    const skyTimer = setTimeout(() => setIsSkyLoaded(true), 60);
+    // Background layer enters on mount
+    const timers: ReturnType<typeof setTimeout>[] = [];
 
-    let currentCount = 0;
-    // Sequential layer slide-in interval: smooth, cascading arrival from the very bottom outside
-    const slideInterval = setInterval(() => {
-      currentCount++;
-      setAssembledCount(currentCount);
-      if (currentCount >= KOLKATA_LAYERS.length) {
-        clearInterval(slideInterval);
-        setTimeout(() => setIsAssemblyComplete(true), 1800);
-      }
-    }, 46);
+    for (const layer of HERO_LAYERS) {
+      if (layer.id === "human-layer" || layer.id === "trees-front") continue; // only background enters initially
+      const timer = setTimeout(() => {
+        setEnteredLayers((prev) => new Set(prev).add(layer.id));
+      }, layer.entranceDelay);
+      timers.push(timer);
+    }
+
+    // Mark layers entered
+    const allDoneTimer = setTimeout(() => {
+      setAllLayersEntered(true);
+    }, 1200);
+    timers.push(allDoneTimer);
 
     // Silky-smooth RAF momentum scroll tracking
     let targetScrollY = typeof window !== "undefined" ? window.scrollY : 0;
@@ -65,7 +90,6 @@ function HomeContent() {
     const updateSmoothScroll = () => {
       currentSmoothY += (targetScrollY - currentSmoothY) * 0.12;
       const windowH = window.innerHeight || 800;
-      // Spread progress over 1.45x viewport height for extended, stately pacing
       const progress = Math.min(1, Math.max(0, currentSmoothY / (windowH * 1.45)));
       setScrollY(currentSmoothY);
       setScrollProgress(progress);
@@ -76,31 +100,75 @@ function HomeContent() {
     rafId = requestAnimationFrame(updateSmoothScroll);
 
     return () => {
-      clearTimeout(skyTimer);
-      clearInterval(slideInterval);
+      timers.forEach((t) => clearTimeout(t));
       cancelAnimationFrame(rafId);
       window.removeEventListener("scroll", onScroll);
     };
   }, []);
 
+  // ── Scroll-driven layer transitions ──
+  // Screen 1 (scrollProgress < 0.02): Pure background + Screen 1 monumental text
+  // Screen 2 (scrollProgress 0.02 -> 0.35): Text shifts left, human layer & trees fade in
+  const humanHasEntered = scrollProgress >= 0.015;
+
+  // Human layer opacity curve:
+  // - scrollProgress < 0.02: 0 (completely hidden initially)
+  // - scrollProgress 0.02 -> 0.20: simple clean fade-in (0 -> 1)
+  // - scrollProgress 0.20 -> 0.35: steady (1)
+  // - scrollProgress > 0.35: exits (1 -> 0)
+  const humanOpacity =
+    scrollProgress < 0.02
+      ? 0
+      : scrollProgress <= 0.35
+      ? Math.min(1, (scrollProgress - 0.02) / 0.16)
+      : Math.max(0, 1 - (scrollProgress - 0.35) / 0.28);
+
+  // Trees opacity curve:
+  // - scrollProgress < 0.02: 0 (hidden initially)
+  // - scrollProgress 0.02 -> 0.20: fades in (0 -> 1)
+  // - scrollProgress 0.20 -> 0.35: steady (1)
+  // - scrollProgress > 0.35: splits and fades out (1 -> 0)
+  const treeSplitProgress = Math.min(1, Math.max(0, (scrollProgress - 0.35) / 0.35));
+  const treeSplitAmount = treeSplitProgress;
+  const treesOpacity =
+    scrollProgress < 0.02
+      ? 0
+      : scrollProgress <= 0.35
+      ? Math.min(1, (scrollProgress - 0.02) / 0.16)
+      : Math.max(0, 1 - treeSplitProgress * 1.5);
+
+  // Leaves: active and visible only when trees are visible
+  const leavesActive = scrollProgress >= 0.06 && scrollProgress <= 0.60;
+  const leavesOpacity = treesOpacity;
+
   return (
     <>
       <style>{`
-        /* True bottom off-screen slide-in: starts 100% outside the viewport at the bottom */
-        @keyframes slideFromBottomOutside {
-          0% {
-            transform: translate3d(0, 115vh, 0);
-          }
-          100% {
-            transform: translate3d(0, 0, 0);
-          }
+        /* Entrance animations */
+        @keyframes heroFadeIn {
+          0% { opacity: 0; }
+          100% { opacity: 1; }
         }
-        @keyframes boatFloat {
-          0%, 100% { transform: translateY(0px) rotate(0deg); }
-          50%       { transform: translateY(-2.8px) rotate(0.4deg); }
+
+        @keyframes heroSlideUp {
+          0% { transform: translate3d(0, 100vh, 0); opacity: 0; }
+          15% { opacity: 1; }
+          100% { transform: translate3d(0, 0, 0); opacity: 1; }
         }
-        /* Smooth high-definition rendering (no crisp-edges nearest-neighbor pixelation) */
-        .kolkata-smooth-layer {
+
+        @keyframes heroSlideRight {
+          0% { transform: translate3d(-100vw, 0, 0); opacity: 0; }
+          15% { opacity: 1; }
+          100% { transform: translate3d(0, 0, 0); opacity: 1; }
+        }
+
+        @keyframes heroZoomIn {
+          0% { transform: scale(1.3); opacity: 0; }
+          30% { opacity: 1; }
+          100% { transform: scale(1); opacity: 1; }
+        }
+
+        .hero-smooth-layer {
           backface-visibility: hidden;
           -webkit-backface-visibility: hidden;
           transform: translateZ(0);
@@ -111,10 +179,10 @@ function HomeContent() {
         ┌─────────────────────────────────────────────────────────┐
         │  HERO  (position: fixed, inset-0)                       │
         │  THE one permanent background for the entire page.      │
-        │  Sections scroll over it at z-20 with transparent bg.   │
+        │  Layers transition on scroll — no dimmer overlay.       │
         └─────────────────────────────────────────────────────────┘
       */}
-      <div className="fixed inset-0 z-10 overflow-hidden">
+      <div className="fixed inset-0 z-10 overflow-hidden bg-[#0a0c14]">
         {/* Full-bleed aspect-ratio preserved canvas */}
         <div
           className="absolute inset-0 flex items-center justify-center pointer-events-none"
@@ -126,93 +194,140 @@ function HomeContent() {
               width: "max(100vw, calc(100vh * (1672 / 941)))",
               height: "max(100vh, calc(100vw * (941 / 1672)))",
               aspectRatio: "1672 / 941",
-              transform: "translate3d(0, -4%, 0)",
             }}
           >
-            {/* Base sky — LOCKED, never moves */}
-            <img
-              src="/assets/kolkata-ui/extreme-background.png"
-              alt="Kolkata Base Sky"
-              className="absolute inset-0 w-full h-full block select-none pointer-events-none kolkata-smooth-layer"
-              draggable={false}
-              style={{
-                zIndex: 1,
-                opacity: isSkyLoaded ? 1 : 0,
-                transition: "opacity 1.4s cubic-bezier(0.16, 1, 0.3, 1)",
-              }}
-            />
+            {/* ============================================================
+                HERO LAYERS — with scroll-driven transitions
+                ============================================================ */}
+            {HERO_LAYERS.map((layer) => {
+              const hasEntered = enteredLayers.has(layer.id);
 
-            {/* 26 cutout layers — parallax movement based on layer.parallax */}
-            {KOLKATA_LAYERS.map((layer, idx) => {
-              const isPopped = idx < assembledCount;
-              const sy = scrollY * layer.parallax * (config.parallaxMultiplier ?? 0.28);
-              const isBoat = layer.id.includes("boat");
+              // Determine entrance animation
+              const entranceAnimationMap: Record<HeroLayer["entrance"], string> = {
+                fade: `heroFadeIn ${layer.entranceDuration}ms cubic-bezier(0.16, 1, 0.3, 1) forwards`,
+                "slide-up": `heroSlideUp ${layer.entranceDuration}ms cubic-bezier(0.16, 1, 0.3, 1) forwards`,
+                "slide-right": `heroSlideRight ${layer.entranceDuration}ms cubic-bezier(0.16, 1, 0.3, 1) forwards`,
+                "zoom-in": `heroZoomIn ${layer.entranceDuration}ms cubic-bezier(0.16, 1, 0.3, 1) forwards`,
+              };
 
+              // ── Per-layer scroll transforms ──
+              if (layer.id === "trees-front") {
+                // Trees split into left and right halves
+                return (
+                  <React.Fragment key={layer.id}>
+                    {/* Left half of trees — slides left */}
+                    <div
+                      className="absolute pointer-events-none"
+                      style={{
+                        left: layer.position.left,
+                        top: layer.position.top,
+                        width: layer.position.width,
+                        height: layer.position.height,
+                        zIndex: layer.zIndex,
+                        clipPath: "inset(0 50% 0 0)",
+                        opacity: treesOpacity,
+                        transform: `translate3d(${-treeSplitAmount * 110}%, 0, 0)`,
+                        transition: "opacity 0.2s ease-out",
+                        willChange: "transform, opacity",
+                      }}
+                    >
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img
+                        src={layer.src}
+                        alt={`${layer.id}-left`}
+                        className="w-full h-full block select-none pointer-events-none hero-smooth-layer"
+                        draggable={false}
+                        style={{ objectFit: layer.objectFit, objectPosition: layer.objectPosition }}
+                      />
+                    </div>
+                    {/* Right half of trees — slides right */}
+                    <div
+                      className="absolute pointer-events-none"
+                      style={{
+                        left: layer.position.left,
+                        top: layer.position.top,
+                        width: layer.position.width,
+                        height: layer.position.height,
+                        zIndex: layer.zIndex,
+                        clipPath: "inset(0 0 0 50%)",
+                        opacity: treesOpacity,
+                        transform: `translate3d(${treeSplitAmount * 110}%, 0, 0)`,
+                        transition: "opacity 0.2s ease-out",
+                        willChange: "transform, opacity",
+                      }}
+                    >
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img
+                        src={layer.src}
+                        alt={`${layer.id}-right`}
+                        className="w-full h-full block select-none pointer-events-none hero-smooth-layer"
+                        draggable={false}
+                        style={{ objectFit: layer.objectFit, objectPosition: layer.objectPosition }}
+                      />
+                    </div>
+                  </React.Fragment>
+                );
+              }
+
+              // Human layer — clean, simple opacity fade-in
+              if (layer.id === "human-layer") {
+                return (
+                  <ClothHumanLayer
+                    key={layer.id}
+                    src={layer.src}
+                    hasEntered={humanHasEntered}
+                    humanOpacity={humanOpacity}
+                    position={layer.position}
+                    zIndex={layer.zIndex}
+                    objectFit={layer.objectFit}
+                    objectPosition={layer.objectPosition}
+                  />
+                );
+              }
+
+              // Base layer — stays permanently, no scroll transform
               return (
                 <div
                   key={layer.id}
                   className="absolute pointer-events-none"
                   style={{
-                    left: `${layer.leftPct}%`,
-                    top: `${layer.topPct}%`,
-                    width: `${layer.widthPct}%`,
-                    height: `${layer.heightPct}%`,
+                    left: layer.position.left,
+                    top: layer.position.top,
+                    width: layer.position.width,
+                    height: layer.position.height,
                     zIndex: layer.zIndex,
-                    opacity: 1,
-                    transform: isAssemblyComplete
-                      ? `translate3d(0, ${sy}px, 0)`
-                      : isPopped
-                      ? "translate3d(0, 0, 0)"
-                      : "translate3d(0, 115vh, 0)",
-                    transition: isAssemblyComplete ? "transform 0.1s ease-out" : undefined,
-                    willChange: "transform",
+                    opacity: hasEntered ? undefined : 0,
+                    transform: hasEntered ? undefined : getEntranceFromTransform(layer.entrance),
+                    animation: hasEntered && !allLayersEntered
+                      ? entranceAnimationMap[layer.entrance]
+                      : undefined,
+                    willChange: "transform, opacity",
                   }}
                 >
-                  <div
-                    className="w-full h-full"
-                    style={{
-                      transform: isPopped ? "translate3d(0, 0, 0)" : "translate3d(0, 115vh, 0)",
-                      animation: isPopped && !isAssemblyComplete
-                        ? "slideFromBottomOutside 1.25s cubic-bezier(0.16, 1, 0.3, 1) forwards"
-                        : undefined,
-                    }}
-                  >
-                    <div
-                      className="w-full h-full"
-                      style={{
-                        animation:
-                          isAssemblyComplete && isBoat
-                            ? `boatFloat ${3.4 + (idx % 3) * 0.8}s ease-in-out infinite ${(idx % 2) * 0.6}s`
-                            : undefined,
-                      }}
-                    >
-                      <img
-                        src={layer.src}
-                        alt={layer.id}
-                        className="w-full h-full block select-none pointer-events-none kolkata-smooth-layer"
-                        draggable={false}
-                      />
-                    </div>
-                  </div>
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img
+                    src={layer.src}
+                    alt={layer.id}
+                    className="w-full h-full block select-none pointer-events-none hero-smooth-layer"
+                    draggable={false}
+                    style={{ objectFit: layer.objectFit, objectPosition: layer.objectPosition }}
+                  />
                 </div>
               );
             })}
 
-            {/* Monumental Centerpiece Typography (zIndex: 50 — elevated in FRONT of all 26 cutout layers) */}
+            {/* Falling Leaves — z-index 5, fades with trees */}
+            <div style={{ opacity: leavesOpacity, transition: "opacity 0.15s ease-out" }}>
+              <FallingLeaves active={leavesActive} count={14} />
+            </div>
+
+            {/* Monumental Hero Headline — exact Figma coordinates within 1672x941 canvas */}
             <HeroCenterpiece scrollProgress={scrollProgress} />
           </div>
         </div>
 
         {/* Film grain */}
         <GrainOverlay enabled={isGrainEnabled} opacity={grainOpacity} zIndex={82} />
-
-        {/* Scroll Dimmer Overlay — smoothly darkens background as cards scroll up */}
-        <div
-          className="pointer-events-none absolute inset-0 z-[73] bg-[#08090d] transition-opacity duration-150 ease-out"
-          style={{
-            opacity: Math.min(config.dimmerMax ?? 0.80, scrollProgress * 1.15),
-          }}
-        />
 
         {/* Bottom subtle gradient — hero fades softly into sections */}
         <div
@@ -225,7 +340,7 @@ function HomeContent() {
           }}
         />
 
-        {/* Hero typography & side accents */}
+        {/* Hero scroll cue */}
         <HeroInterfaceOverlay scrollProgress={scrollProgress} />
       </div>
 

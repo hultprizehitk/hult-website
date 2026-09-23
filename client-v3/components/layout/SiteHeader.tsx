@@ -67,17 +67,15 @@ export default function SiteHeader({
         <nav className="hidden md:flex items-center gap-8 text-[13px] font-medium select-none text-white/85">
           <Link
             href="/"
-            className={`relative transition-colors duration-200 hover:text-white after:absolute after:-bottom-1 after:left-0 after:h-[1.5px] after:bg-white hover:after:w-full after:transition-all after:duration-200 drop-shadow-[0_1px_4px_rgba(0,0,0,0.6)] ${
-              pathname === "/" ? "text-white font-semibold after:w-full" : "text-white/80 after:w-0"
-            }`}
+            className={`relative transition-colors duration-200 hover:text-white after:absolute after:-bottom-1 after:left-0 after:h-[1.5px] after:bg-white hover:after:w-full after:transition-all after:duration-200 drop-shadow-[0_1px_4px_rgba(0,0,0,0.6)] ${pathname === "/" ? "text-white font-semibold after:w-full" : "text-white/80 after:w-0"
+              }`}
           >
             Home
           </Link>
           <Link
             href="/events"
-            className={`relative transition-colors duration-200 hover:text-white after:absolute after:-bottom-1 after:left-0 after:h-[1.5px] after:bg-white hover:after:w-full after:transition-all after:duration-200 drop-shadow-[0_1px_4px_rgba(0,0,0,0.6)] ${
-              pathname.startsWith("/events") ? "text-white font-semibold after:w-full" : "text-white/80 after:w-0"
-            }`}
+            className={`relative transition-colors duration-200 hover:text-white after:absolute after:-bottom-1 after:left-0 after:h-[1.5px] after:bg-white hover:after:w-full after:transition-all after:duration-200 drop-shadow-[0_1px_4px_rgba(0,0,0,0.6)] ${pathname.startsWith("/events") ? "text-white font-semibold after:w-full" : "text-white/80 after:w-0"
+              }`}
           >
             Events
           </Link>
@@ -93,9 +91,7 @@ export default function SiteHeader({
 
         {/* Right CTA Group */}
         <div className="flex items-center gap-3 sm:gap-4 select-none">
-          <span className="hidden lg:inline-block font-serif italic text-xs text-white/70 tracking-wide drop-shadow-[0_1px_4px_rgba(0,0,0,0.6)]">
-            Ideas for a Brighter Tomorrow
-          </span>
+
 
           {status === "authenticated" && session?.user ? (
             <div className="flex items-center gap-2 sm:gap-3">

@@ -84,9 +84,8 @@ export default function HeroInterfaceOverlay({ scrollProgress = 0 }: HeroInterfa
       {/* 1. LEFT COLUMN ACCENTS (z-[55])                           */}
       {/* ========================================================= */}
       <div
-        className={`absolute left-6 sm:left-10 top-1/2 -translate-y-1/2 z-[55] hidden sm:flex flex-col items-center pointer-events-none select-none transition-all duration-1000 delay-800 ease-out ${
-          mounted ? "opacity-100 translate-x-0" : "opacity-0 -translate-x-6"
-        }`}
+        className={`absolute left-6 sm:left-10 top-1/2 -translate-y-1/2 z-[55] hidden sm:flex flex-col items-center pointer-events-none select-none transition-all duration-1000 delay-800 ease-out ${mounted ? "opacity-100 translate-x-0" : "opacity-0 -translate-x-6"
+          }`}
         style={{
           opacity: mounted ? sideOpacity : 0,
           transform: `translate3d(${-scrollProgress * 45 + (mounted ? 0 : -24)}px, -50%, 0)`,
@@ -112,9 +111,8 @@ export default function HeroInterfaceOverlay({ scrollProgress = 0 }: HeroInterfa
       {/* 4. RIGHT COLUMN ACCENTS & SCRIPT CALLIGRAPHY (z-[55])     */}
       {/* ========================================================= */}
       <div
-        className={`absolute right-8 sm:right-16 md:right-24 top-[32%] sm:top-[35%] z-[55] pointer-events-none select-none flex flex-col items-start transition-all duration-1000 delay-800 ease-out ${
-          mounted ? "opacity-100 translate-x-0" : "opacity-0 translate-x-6"
-        }`}
+        className={`absolute right-8 sm:right-16 md:right-24 top-[32%] sm:top-[35%] z-[55] pointer-events-none select-none flex flex-col items-start transition-all duration-1000 delay-800 ease-out ${mounted ? "opacity-100 translate-x-0" : "opacity-0 translate-x-6"
+          }`}
         style={{
           opacity: mounted ? sideOpacity : 0,
           transform: `translate3d(${scrollProgress * 45 + (mounted ? 0 : 24)}px, 0, 0)`,
@@ -143,9 +141,8 @@ export default function HeroInterfaceOverlay({ scrollProgress = 0 }: HeroInterfa
       {/* 5. BOTTOM BAR (z-[90])                                    */}
       {/* ========================================================= */}
       <footer
-        className={`fixed bottom-0 left-0 right-0 z-[90] flex items-center justify-between px-6 sm:px-10 md:px-14 py-4 select-none transition-all duration-1000 delay-1000 ease-out ${
-          mounted ? "translate-y-0 opacity-100" : "translate-y-6 opacity-0"
-        }`}
+        className={`fixed bottom-0 left-0 right-0 z-[90] flex items-center justify-between px-6 sm:px-10 md:px-14 py-4 select-none transition-all duration-1000 delay-1000 ease-out ${mounted ? "translate-y-0 opacity-100" : "translate-y-6 opacity-0"
+          }`}
         style={{
           opacity: mounted ? bottomOpacity : 0,
           pointerEvents: scrollProgress > 0.08 ? "none" : "auto",
@@ -248,9 +245,8 @@ export function HeroCenterpiece({ scrollProgress = 0 }: HeroInterfaceOverlayProp
       >
         {/* Subtle luminous ambient glow behind letters */}
         <div
-          className={`absolute pointer-events-none -z-10 transition-opacity duration-1000 ${
-            mounted ? "opacity-100" : "opacity-0"
-          }`}
+          className={`absolute pointer-events-none -z-10 transition-opacity duration-1000 ${mounted ? "opacity-100" : "opacity-0"
+            }`}
           style={{
             top: "32%",
             left: "52%",
@@ -265,9 +261,8 @@ export function HeroCenterpiece({ scrollProgress = 0 }: HeroInterfaceOverlayProp
 
         {/* Top Eyebrow Hairline Bar (Entrance Slide Down) */}
         <div
-          className={`flex items-center gap-3 sm:gap-4 mb-2 sm:mb-3 transition-all duration-1000 delay-300 ease-out ${
-            mounted ? "opacity-100 translate-y-0" : "opacity-0 -translate-y-3"
-          }`}
+          className={`flex items-center gap-3 sm:gap-4 mb-2 sm:mb-3 transition-all duration-1000 delay-300 ease-out ${mounted ? "opacity-100 translate-y-0" : "opacity-0 -translate-y-3"
+            }`}
         >
           <span className="h-px w-10 sm:w-16 bg-white/60" />
           <span className="text-[10px] sm:text-xs font-semibold tracking-[0.28em] text-white uppercase drop-shadow-[0_2px_8px_rgba(0,0,0,0.8)]">
@@ -280,9 +275,8 @@ export function HeroCenterpiece({ scrollProgress = 0 }: HeroInterfaceOverlayProp
         <div className="relative flex flex-col items-center text-center leading-[0.85] tracking-tight">
           {/* Row 1: HULT (Entrance glide down from top) */}
           <div
-            className={`relative transition-all duration-1000 delay-500 ease-out ${
-              mounted ? "opacity-100 translate-y-0" : "opacity-0 -translate-y-6"
-            }`}
+            className={`relative transition-all duration-1000 delay-500 ease-out ${mounted ? "opacity-100 translate-y-0" : "opacity-0 -translate-y-6"
+              }`}
           >
             <h1 className="font-monumental text-5xl xs:text-6xl sm:text-7xl md:text-8xl lg:text-[9.5rem] xl:text-[11rem] font-bold tracking-wider hult-title-gradient">
               HULT
@@ -291,9 +285,8 @@ export function HeroCenterpiece({ scrollProgress = 0 }: HeroInterfaceOverlayProp
 
           {/* Row 2: PRIZE (Entrance glide up from bottom) */}
           <div
-            className={`relative mt-1 sm:mt-2 md:mt-3 transition-all duration-1000 delay-700 ease-out ${
-              mounted ? "opacity-100 translate-y-0" : "opacity-0 translate-y-6"
-            }`}
+            className={`relative mt-1 sm:mt-2 md:mt-3 transition-all duration-1000 delay-700 ease-out ${mounted ? "opacity-100 translate-y-0" : "opacity-0 translate-y-6"
+              }`}
           >
             <span className="font-monumental text-5xl xs:text-6xl sm:text-7xl md:text-8xl lg:text-[9.5rem] xl:text-[11rem] font-bold tracking-wider prize-title-gradient">
               PRIZE
@@ -303,9 +296,8 @@ export function HeroCenterpiece({ scrollProgress = 0 }: HeroInterfaceOverlayProp
 
         {/* Primary CTA — high-contrast white pill */}
         <div
-          className={`relative z-[60] mt-6 sm:mt-8 pointer-events-auto transition-all duration-1000 delay-900 ease-out ${
-            mounted ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"
-          }`}
+          className={`relative z-[60] mt-6 sm:mt-8 pointer-events-auto transition-all duration-1000 delay-900 ease-out ${mounted ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"
+            }`}
         >
           <Link
             href="/register"
@@ -377,9 +369,7 @@ export function HeroNavbar() {
 
       {/* Right CTA Group */}
       <div className="flex items-center gap-4 select-none">
-        <span className="hidden lg:inline-block font-serif italic text-xs text-white/70 tracking-wide drop-shadow-[0_1px_4px_rgba(0,0,0,0.6)]">
-          Ideas for a Brighter Tomorrow
-        </span>
+
         <Link
           href="/register"
           className="flex items-center gap-2 rounded-full bg-white hover:bg-neutral-100 px-5 py-2 text-xs font-semibold text-neutral-950 shadow-md shadow-black/30 border border-white/80 transition-all duration-300 hover:scale-105 active:scale-95"

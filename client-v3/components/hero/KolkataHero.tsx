@@ -124,39 +124,36 @@ export default function KolkataHero({ mouseOffset, isRevealed, hideText, hideFor
         {!hideText && (
           <div
             id="hero-layer-text"
-            className={`pointer-events-none absolute inset-x-0 top-[8%] sm:top-[9%] md:top-[10%] lg:top-[11%] z-[8] flex items-center justify-center px-4 transition-all duration-700 ease-out ${
-              isRevealed ? "opacity-100 translate-y-0" : "opacity-0 translate-y-8"
-            }`}
+            className={`pointer-events-none absolute inset-x-0 top-[8%] sm:top-[9%] md:top-[10%] lg:top-[11%] z-[8] flex items-center justify-center px-4 transition-all duration-700 ease-out ${isRevealed ? "opacity-100 translate-y-0" : "opacity-0 translate-y-8"
+              }`}
             style={{
               transform: `translate3d(${mouseOffset.x * 6}px, ${mouseOffset.y * 4}px, 0)`,
             }}
           >
             <div className="flex flex-col items-center justify-center text-center">
-            {/* Elegant Chapter Badge */}
-            <div className="mb-2 sm:mb-3 inline-flex items-center gap-2 rounded-full border border-white/20 bg-black/40 backdrop-blur-md px-3.5 py-1 text-[9px] sm:text-[11px] font-mono font-bold uppercase tracking-[0.25em] text-pink-200">
-              <span className="h-1.5 w-1.5 rounded-full bg-[#f20089] animate-pulse" />
-              <span>01 / OnCampus Chapter</span>
+              {/* Elegant Chapter Badge */}
+              <div className="mb-2 sm:mb-3 inline-flex items-center gap-2 rounded-full border border-white/20 bg-black/40 backdrop-blur-md px-3.5 py-1 text-[9px] sm:text-[11px] font-mono font-bold uppercase tracking-[0.25em] text-pink-200">
+                <span className="h-1.5 w-1.5 rounded-full bg-[#f20089] animate-pulse" />
+                <span>01 / OnCampus Chapter</span>
+              </div>
+
+              {/* High-Contrast Editorial Serif Title */}
+              <h1 className="font-serif text-4xl sm:text-6xl md:text-7xl lg:text-8xl xl:text-9xl 2xl:text-[10.5rem] font-bold tracking-[0.04em] sm:tracking-[0.10em] leading-none uppercase select-none text-white drop-shadow-[0_12px_40px_rgba(0,0,0,0.95)]">
+                HULT PRIZE
+              </h1>
+
+              {/* Subtitle & Italic Motto */}
+              <div className="mt-2 sm:mt-3 flex items-center gap-3">
+                <span className="h-[1px] w-6 sm:w-16 bg-gradient-to-r from-transparent to-[#f20089]" />
+                <span className="text-[10px] sm:text-xs md:text-sm font-semibold tracking-[0.25em] sm:tracking-[0.35em] uppercase text-white/95 drop-shadow-[0_2px_12px_rgba(0,0,0,0.95)]">
+                  Heritage Institute of Technology
+                </span>
+                <span className="h-[1px] w-6 sm:w-16 bg-gradient-to-l from-transparent to-[#f20089]" />
+              </div>
+
+
             </div>
-
-            {/* High-Contrast Editorial Serif Title */}
-            <h1 className="font-serif text-4xl sm:text-6xl md:text-7xl lg:text-8xl xl:text-9xl 2xl:text-[10.5rem] font-bold tracking-[0.04em] sm:tracking-[0.10em] leading-none uppercase select-none text-white drop-shadow-[0_12px_40px_rgba(0,0,0,0.95)]">
-              HULT PRIZE
-            </h1>
-
-            {/* Subtitle & Italic Motto */}
-            <div className="mt-2 sm:mt-3 flex items-center gap-3">
-              <span className="h-[1px] w-6 sm:w-16 bg-gradient-to-r from-transparent to-[#f20089]" />
-              <span className="text-[10px] sm:text-xs md:text-sm font-semibold tracking-[0.25em] sm:tracking-[0.35em] uppercase text-white/95 drop-shadow-[0_2px_12px_rgba(0,0,0,0.95)]">
-                Heritage Institute of Technology
-              </span>
-              <span className="h-[1px] w-6 sm:w-16 bg-gradient-to-l from-transparent to-[#f20089]" />
-            </div>
-
-            <p className="mt-1.5 sm:mt-2 text-xs sm:text-sm md:text-base font-serif italic text-pink-200/90 tracking-wider drop-shadow-[0_2px_8px_rgba(0,0,0,0.9)]">
-              Ideas for a brighter tomorrow
-            </p>
           </div>
-        </div>
         )}
 
         {/* 

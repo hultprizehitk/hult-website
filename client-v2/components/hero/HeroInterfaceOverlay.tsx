@@ -78,13 +78,11 @@ export default function HeroInterfaceOverlay({ scrollProgress = 0 }: HeroInterfa
       {/* 1. TOP NAVBAR (z-[90])                                    */}
       {/* ========================================================= */}
       <header
-        className={`fixed top-0 left-0 right-0 z-[90] flex items-center justify-between px-6 sm:px-10 md:px-14 py-4 transition-all duration-700 ease-out pointer-events-auto ${
-          mounted ? "translate-y-0 opacity-100" : "-translate-y-4 opacity-0"
-        } ${
-          isScrolled
+        className={`fixed top-0 left-0 right-0 z-[90] flex items-center justify-between px-6 sm:px-10 md:px-14 py-4 transition-all duration-700 ease-out pointer-events-auto ${mounted ? "translate-y-0 opacity-100" : "-translate-y-4 opacity-0"
+          } ${isScrolled
             ? "bg-white/85 backdrop-blur-xl border-b border-[#6F302B]/15 shadow-lg shadow-[#6F302B]/5 text-neutral-900"
             : "bg-transparent text-neutral-900"
-        }`}
+          }`}
       >
         {/* Brand Lockup Left */}
         <div className="flex items-center gap-3 select-none">
@@ -141,9 +139,7 @@ export default function HeroInterfaceOverlay({ scrollProgress = 0 }: HeroInterfa
 
         {/* Right CTA Group */}
         <div className="flex items-center gap-4 select-none">
-          <span className="hidden lg:inline-block font-serif italic text-xs text-neutral-500 tracking-wide">
-            Ideas for a Brighter Tomorrow
-          </span>
+
           <Link
             href="/register"
             className="flex items-center gap-2 rounded-full bg-gradient-to-r from-[#e60067] via-[#db155a] to-[#c70b4c] px-5 py-2 text-xs font-semibold text-white shadow-md shadow-pink-600/20 transition-all duration-300 hover:scale-105 hover:shadow-pink-600/40 active:scale-95"
@@ -166,9 +162,8 @@ export default function HeroInterfaceOverlay({ scrollProgress = 0 }: HeroInterfa
       >
         {/* Subtle warm radial glow behind letters */}
         <div
-          className={`absolute pointer-events-none -z-10 transition-opacity duration-1000 ${
-            mounted ? "opacity-100" : "opacity-0"
-          }`}
+          className={`absolute pointer-events-none -z-10 transition-opacity duration-1000 ${mounted ? "opacity-100" : "opacity-0"
+            }`}
           style={{
             top: "32%",
             left: "52%",
@@ -183,9 +178,8 @@ export default function HeroInterfaceOverlay({ scrollProgress = 0 }: HeroInterfa
 
         {/* Top Eyebrow Hairline Bar (Entrance Slide Down) */}
         <div
-          className={`flex items-center gap-3 sm:gap-4 mb-2 sm:mb-3 transition-all duration-1000 delay-300 ease-out ${
-            mounted ? "opacity-95 translate-y-0" : "opacity-0 -translate-y-3"
-          }`}
+          className={`flex items-center gap-3 sm:gap-4 mb-2 sm:mb-3 transition-all duration-1000 delay-300 ease-out ${mounted ? "opacity-95 translate-y-0" : "opacity-0 -translate-y-3"
+            }`}
         >
           <span className="h-px w-10 sm:w-16 bg-neutral-800/30" />
           <span className="text-[10px] sm:text-xs font-semibold tracking-[0.28em] text-neutral-800 uppercase">
@@ -198,9 +192,8 @@ export default function HeroInterfaceOverlay({ scrollProgress = 0 }: HeroInterfa
         <div className="relative flex flex-col items-center text-center leading-[0.82] tracking-tight">
           {/* Row 1: HULT (Entrance glide down from top) */}
           <div
-            className={`relative transition-all duration-1000 delay-500 ease-out ${
-              mounted ? "opacity-100 translate-y-0" : "opacity-0 -translate-y-6"
-            }`}
+            className={`relative transition-all duration-1000 delay-500 ease-out ${mounted ? "opacity-100 translate-y-0" : "opacity-0 -translate-y-6"
+              }`}
           >
             <h1 className="font-jomolhari text-6xl xs:text-7xl sm:text-8xl md:text-9xl lg:text-[10.8rem] xl:text-[12.2rem] font-normal tracking-tight hult-title-gradient drop-shadow-[0_2px_18px_rgba(0,0,0,0.08)]">
               HULT
@@ -208,9 +201,8 @@ export default function HeroInterfaceOverlay({ scrollProgress = 0 }: HeroInterfa
 
             {/* Resting Sakura Petal on letter 'U'/'L' junction (Flutter drop entrance) */}
             <div
-              className={`absolute bottom-[4%] left-[44%] w-8 h-8 sm:w-12 sm:h-12 pointer-events-none drop-shadow-md transition-all duration-1000 delay-1000 ease-out ${
-                mounted ? "opacity-100 scale-100 rotate-[-22deg]" : "opacity-0 scale-50 rotate-[-75deg] translate-y-[-15px]"
-              }`}
+              className={`absolute bottom-[4%] left-[44%] w-8 h-8 sm:w-12 sm:h-12 pointer-events-none drop-shadow-md transition-all duration-1000 delay-1000 ease-out ${mounted ? "opacity-100 scale-100 rotate-[-22deg]" : "opacity-0 scale-50 rotate-[-75deg] translate-y-[-15px]"
+                }`}
             >
               <svg viewBox="0 0 100 100" fill="none" className="w-full h-full">
                 <path
@@ -229,9 +221,8 @@ export default function HeroInterfaceOverlay({ scrollProgress = 0 }: HeroInterfa
 
           {/* Row 2: PRIZE™ (Entrance glide up from bottom) */}
           <div
-            className={`relative -mt-3 sm:-mt-6 md:-mt-9 lg:-mt-11 transition-all duration-1000 delay-700 ease-out ${
-              mounted ? "opacity-100 translate-y-0" : "opacity-0 translate-y-6"
-            }`}
+            className={`relative -mt-3 sm:-mt-6 md:-mt-9 lg:-mt-11 transition-all duration-1000 delay-700 ease-out ${mounted ? "opacity-100 translate-y-0" : "opacity-0 translate-y-6"
+              }`}
           >
             <span className="font-jomolhari text-6xl xs:text-7xl sm:text-8xl md:text-9xl lg:text-[10.8rem] xl:text-[12.2rem] font-normal tracking-tight prize-title-gradient drop-shadow-[0_4px_24px_rgba(233,111,130,0.22)]">
               PRIZE
@@ -241,9 +232,8 @@ export default function HeroInterfaceOverlay({ scrollProgress = 0 }: HeroInterfa
 
         {/* Lower Subtitle (Entrance fade in) */}
         <div
-          className={`mt-4 sm:mt-5 flex flex-col items-center text-center font-semibold text-[10px] sm:text-xs tracking-[0.3em] text-neutral-800 uppercase leading-snug transition-all duration-1000 delay-900 ease-out ${
-            mounted ? "opacity-100 translate-y-0" : "opacity-0 translate-y-3"
-          }`}
+          className={`mt-4 sm:mt-5 flex flex-col items-center text-center font-semibold text-[10px] sm:text-xs tracking-[0.3em] text-neutral-800 uppercase leading-snug transition-all duration-1000 delay-900 ease-out ${mounted ? "opacity-100 translate-y-0" : "opacity-0 translate-y-3"
+            }`}
         >
           <span>Turning Bold Ideas</span>
           <span>Into A Brighter Tomorrow</span>
@@ -251,9 +241,8 @@ export default function HeroInterfaceOverlay({ scrollProgress = 0 }: HeroInterfa
 
         {/* Dual Call-to-Action Buttons (Entrance slide up) */}
         <div
-          className={`mt-6 sm:mt-7 flex items-center gap-4 pointer-events-auto transition-all duration-1000 delay-1100 ease-out ${
-            mounted ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"
-          }`}
+          className={`mt-6 sm:mt-7 flex items-center gap-4 pointer-events-auto transition-all duration-1000 delay-1100 ease-out ${mounted ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"
+            }`}
         >
           {/* Primary Pill Button */}
           <Link
@@ -285,9 +274,8 @@ export default function HeroInterfaceOverlay({ scrollProgress = 0 }: HeroInterfa
       {/* 3. LEFT COLUMN ACCENTS (z-[55])                           */}
       {/* ========================================================= */}
       <div
-        className={`absolute left-6 sm:left-10 top-1/2 -translate-y-1/2 z-[55] hidden sm:flex flex-col items-center pointer-events-none select-none transition-all duration-1000 delay-800 ease-out ${
-          mounted ? "opacity-100 translate-x-0" : "opacity-0 -translate-x-6"
-        }`}
+        className={`absolute left-6 sm:left-10 top-1/2 -translate-y-1/2 z-[55] hidden sm:flex flex-col items-center pointer-events-none select-none transition-all duration-1000 delay-800 ease-out ${mounted ? "opacity-100 translate-x-0" : "opacity-0 -translate-x-6"
+          }`}
         style={{
           opacity: mounted ? sideOpacity : 0,
           transform: `translate3d(${-scrollProgress * 45 + (mounted ? 0 : -24)}px, -50%, 0)`,
@@ -313,9 +301,8 @@ export default function HeroInterfaceOverlay({ scrollProgress = 0 }: HeroInterfa
       {/* 4. RIGHT COLUMN ACCENTS & SCRIPT CALLIGRAPHY (z-[55])     */}
       {/* ========================================================= */}
       <div
-        className={`absolute right-8 sm:right-16 md:right-24 top-[32%] sm:top-[35%] z-[55] pointer-events-none select-none flex flex-col items-start transition-all duration-1000 delay-800 ease-out ${
-          mounted ? "opacity-100 translate-x-0" : "opacity-0 translate-x-6"
-        }`}
+        className={`absolute right-8 sm:right-16 md:right-24 top-[32%] sm:top-[35%] z-[55] pointer-events-none select-none flex flex-col items-start transition-all duration-1000 delay-800 ease-out ${mounted ? "opacity-100 translate-x-0" : "opacity-0 translate-x-6"
+          }`}
         style={{
           opacity: mounted ? sideOpacity : 0,
           transform: `translate3d(${scrollProgress * 45 + (mounted ? 0 : 24)}px, 0, 0)`,
@@ -344,9 +331,8 @@ export default function HeroInterfaceOverlay({ scrollProgress = 0 }: HeroInterfa
       {/* 5. BOTTOM BAR (z-[90])                                    */}
       {/* ========================================================= */}
       <footer
-        className={`fixed bottom-0 left-0 right-0 z-[90] flex items-center justify-between px-6 sm:px-10 md:px-14 py-4 select-none transition-all duration-1000 delay-1000 ease-out ${
-          mounted ? "translate-y-0 opacity-100" : "translate-y-6 opacity-0"
-        }`}
+        className={`fixed bottom-0 left-0 right-0 z-[90] flex items-center justify-between px-6 sm:px-10 md:px-14 py-4 select-none transition-all duration-1000 delay-1000 ease-out ${mounted ? "translate-y-0 opacity-100" : "translate-y-6 opacity-0"
+          }`}
         style={{
           opacity: mounted ? bottomOpacity : 0,
           pointerEvents: scrollProgress > 0.08 ? "none" : "auto",
