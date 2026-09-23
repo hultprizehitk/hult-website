@@ -107,9 +107,30 @@ export async function PUT(req: Request) {
       return NextResponse.json({ error: "Missing content item ID" }, { status: 400 });
     }
 
+    const allowedFields = [
+      "contentType",
+      "title",
+      "subtitle",
+      "category",
+      "description",
+      "image",
+      "links",
+      "badge",
+      "accentColor",
+      "order",
+      "isActive",
+    ];
+
+    const safeUpdates: Record<string, unknown> = {};
+    for (const key of allowedFields) {
+      if (key in updates) {
+        safeUpdates[key] = updates[key];
+      }
+    }
+
     await connectDB();
 
-    const item = await SiteContent.findByIdAndUpdate(id, updates, { new: true });
+    const item = await SiteContent.findByIdAndUpdate(id, { $set: safeUpdates }, { new: true });
     if (!item) {
       return NextResponse.json({ error: "Content item not found" }, { status: 404 });
     }
@@ -121,7 +142,7 @@ export async function PUT(req: Request) {
       action: `Updated ${item.contentType} content: "${item.title}"`,
       targetType: "content",
       targetId: id,
-      details: updates,
+      details: safeUpdates,
       req,
     });
 
