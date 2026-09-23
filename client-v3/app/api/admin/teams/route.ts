@@ -1,20 +1,12 @@
 import { NextResponse } from "next/server";
 import mongoose from "mongoose";
 import { connectDB } from "@/lib/mongodb";
-import Event from "@/models/Event";
+import Event, { IRegisteredTeam } from "@/models/Event";
 import Team from "@/models/Team";
 import { isAuthorizedAdmin } from "@/lib/admin-check";
 import { logAdminAction } from "@/lib/audit-logger";
 import { auth } from "@/auth";
-
-function generateCode(): string {
-  const chars = "23456789ABCDEFGHJKLMNPQRSTUVWXYZ";
-  let suffix = "";
-  for (let i = 0; i < 4; i++) {
-    suffix += chars.charAt(Math.floor(Math.random() * chars.length));
-  }
-  return `HULT-${suffix}`;
-}
+import { generateTeamCode } from "@/lib/teams/team-utils";
 
 export async function GET(req: Request) {
   const isAdmin = await isAuthorizedAdmin(req);
@@ -185,19 +177,17 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Event not found" }, { status: 404 });
     }
 
-    let code = generateCode();
+    let code = generateTeamCode();
     let attempts = 0;
     while (attempts < 10) {
       const exists = await Team.findOne({ teamCode: code });
       if (!exists) break;
-      code = generateCode();
+      code = generateTeamCode();
       attempts++;
     }
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const membersList = Array.isArray(members)
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      ? members.map((m: any) => ({
+      ? members.map((m: { name?: unknown; email?: unknown; phone?: unknown; department?: unknown; roll?: unknown }) => ({
           name: String(m.name || "").trim(),
           email: String(m.email || "").trim().toLowerCase(),
           phone: String(m.phone || "").trim(),
@@ -315,9 +305,8 @@ export async function PUT(req: Request) {
       if (effectiveEventId && mongoose.Types.ObjectId.isValid(effectiveEventId)) {
         const ev = await Event.findById(effectiveEventId);
         if (ev && Array.isArray(ev.registeredTeams)) {
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
           const match = ev.registeredTeams.find(
-            (t: any) =>
+            (t: IRegisteredTeam) =>
               (teamId && t.id === teamId) ||
               (cleanCode && t.teamCode?.toUpperCase() === cleanCode) ||
               (updatedTeam && (t.id === updatedTeam._id.toString() || t.teamCode?.toUpperCase() === updatedTeam.teamCode?.toUpperCase()))

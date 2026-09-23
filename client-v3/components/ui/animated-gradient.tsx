@@ -196,19 +196,12 @@ export function AnimatedGradient({
             ...preset,
             speed: config.speed ?? preset.speed,
         };
-    }, [
-        config.preset,
-        // @ts-ignore
-        config.color1,
-        // @ts-ignore
-        config.color2,
-        // @ts-ignore
-        config.color3,
-        config.speed,
-    ]);
+    }, [config]);
 
     const paramsRef = useRef(params);
-    paramsRef.current = params;
+    useEffect(() => {
+        paramsRef.current = params;
+    }, [params]);
 
     useEffect(() => {
         if (hasWebGLError) return;
@@ -385,8 +378,7 @@ export function AnimatedGradient({
                 style={{
                     borderRadius: radius,
                     ...style,
-                    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                } as any}
+                } as React.CSSProperties}
             >
                 <canvas
                     ref={canvasRef}

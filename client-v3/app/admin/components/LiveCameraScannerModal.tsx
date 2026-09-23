@@ -53,7 +53,9 @@ export default function LiveCameraScannerModal({
   // Play audio chime on scan success
   const playScanBeep = useCallback((isSuccess = true) => {
     try {
-      const AudioCtx = window.AudioContext || (window as any).webkitAudioContext;
+      const AudioCtx =
+        window.AudioContext ||
+        (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
       if (!AudioCtx) return;
       const ctx = new AudioCtx();
       const osc = ctx.createOscillator();
@@ -144,11 +146,12 @@ export default function LiveCameraScannerModal({
           setScanningActive(true);
           setLastScanResult(null);
         }, 2200);
-      } catch (err: any) {
+      } catch (err: unknown) {
         playScanBeep(false);
+        const errMsg = err instanceof Error ? err.message : "Failed to process check-in.";
         setLastScanResult({
           success: false,
-          message: err?.message || "Failed to process check-in.",
+          message: errMsg,
           teamCode: code,
         });
         setTimeout(() => {
@@ -188,7 +191,7 @@ export default function LiveCameraScannerModal({
 
       // Check for torch capability
       const track = mediaStream.getVideoTracks()[0];
-      const capabilities = track.getCapabilities?.() as any;
+      const capabilities = track?.getCapabilities ? (track.getCapabilities() as { torch?: boolean }) : undefined;
       setHasTorch(Boolean(capabilities?.torch));
 
       if (videoRef.current) {
@@ -196,17 +199,21 @@ export default function LiveCameraScannerModal({
         videoRef.current.setAttribute("playsinline", "true");
         await videoRef.current.play();
       }
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error("Camera access error:", err);
-      if (err.name === "NotAllowedError" || err.name === "PermissionDeniedError") {
+      const isNamedError = err && typeof err === "object" && "name" in err;
+      const errName = isNamedError ? String((err as { name: unknown }).name) : "";
+      const errMsg = err instanceof Error ? err.message : "Failed to start camera.";
+
+      if (errName === "NotAllowedError" || errName === "PermissionDeniedError") {
         setCameraError("Camera permission denied. Please allow camera permissions in your browser bar.");
-      } else if (err.name === "NotFoundError" || err.name === "DevicesNotFoundError") {
+      } else if (errName === "NotFoundError" || errName === "DevicesNotFoundError") {
         setCameraError("No camera device found on this system.");
       } else {
-        setCameraError(`Camera error: ${err.message || "Failed to start camera."}`);
+        setCameraError(`Camera error: ${errMsg}`);
       }
     }
-  }, [cameraFacing]);
+  }, [cameraFacing, stream]);
 
   // Stop camera stream
   const stopCamera = useCallback(() => {
@@ -222,8 +229,11 @@ export default function LiveCameraScannerModal({
     const track = stream.getVideoTracks()[0];
     try {
       const nextTorch = !torchActive;
-      await (track as any).applyConstraints({
-        advanced: [{ torch: nextTorch }],
+      const trackWithConstraints = track as MediaStreamTrack & {
+        applyConstraints: (c: MediaTrackConstraints) => Promise<void>;
+      };
+      await trackWithConstraints.applyConstraints({
+        advanced: [{ torch: nextTorch } as MediaTrackConstraintSet],
       });
       setTorchActive(nextTorch);
     } catch (err) {
@@ -240,15 +250,17 @@ export default function LiveCameraScannerModal({
   useEffect(() => {
     if (isOpen) {
       startCamera();
-      setScanningActive(true);
-      setLastScanResult(null);
+      queueMicrotask(() => {
+        setScanningActive(true);
+        setLastScanResult(null);
+      });
     } else {
       stopCamera();
     }
     return () => {
       stopCamera();
     };
-  }, [isOpen, cameraFacing]);
+  }, [isOpen, cameraFacing, startCamera, stopCamera]);
 
   // Continuous frame scanning loop
   useEffect(() => {
@@ -314,7 +326,7 @@ export default function LiveCameraScannerModal({
 
   return (
     <div className="fixed inset-0 z-50 bg-black/90 backdrop-blur-2xl flex items-center justify-center p-3 sm:p-6 animate-fadeIn font-sans">
-      <div className="relative w-full max-w-2xl overflow-hidden rounded-[2.5rem] border border-emerald-500/40 bg-gradient-to-b from-neutral-900/95 via-black/95 to-black p-6 sm:p-8 backdrop-blur-3xl shadow-[0_25px_70px_rgba(16,185,129,0.25)] flex flex-col justify-between max-h-[95vh] overflow-y-auto">
+      <div data-event-id={eventId} className="relative w-full max-w-2xl overflow-hidden rounded-[2.5rem] border border-emerald-500/40 bg-gradient-to-b from-neutral-900/95 via-black/95 to-black p-6 sm:p-8 backdrop-blur-3xl shadow-[0_25px_70px_rgba(16,185,129,0.25)] flex flex-col justify-between max-h-[95vh] overflow-y-auto">
         {/* Top Iridescent Glow */}
         <div className="pointer-events-none absolute inset-x-0 top-0 h-[2px] bg-gradient-to-r from-transparent via-emerald-400 to-transparent" />
         <div className="pointer-events-none absolute -top-20 -right-20 h-56 w-56 rounded-full bg-emerald-500/15 blur-3xl" />
@@ -333,7 +345,7 @@ export default function LiveCameraScannerModal({
                 </span>
               </div>
               <h2 className="text-xl sm:text-2xl font-black text-white font-[family-name:var(--font-google-sans)] tracking-tight">
-                Scan Participant QR Pass
+                {eventTitle ? `${eventTitle} Check-In` : "Scan Participant QR Pass"}
               </h2>
             </div>
           </div>

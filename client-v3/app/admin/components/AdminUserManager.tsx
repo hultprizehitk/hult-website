@@ -9,27 +9,6 @@ interface AdminUserManagerProps {
   currentUserEmail: string;
 }
 
-const ROLE_PRESETS = [
-  {
-    role: "junior_admin" as const,
-    label: "Junior Admin",
-    badgeClass: "bg-purple-500/20 border-purple-500/40 text-purple-300",
-    desc: "Junior Admin • Verification and roster support",
-  },
-  {
-    role: "lead_admin" as const,
-    label: "Lead Admin",
-    badgeClass: "bg-sky-500/20 border-sky-500/40 text-sky-300",
-    desc: "Lead Admin • Operations, events, and participant management",
-  },
-  {
-    role: "master_admin" as const,
-    label: "Master Admin",
-    badgeClass: "bg-amber-500/20 border-amber-500/40 text-amber-300",
-    desc: "Master Admin • Full authority to grant & revoke roles",
-  },
-];
-
 export default function AdminUserManager({ currentUserEmail }: AdminUserManagerProps) {
   const [admins, setAdmins] = useState<AdminRecord[]>([]);
   const [participants, setParticipants] = useState<Participant[]>([]);

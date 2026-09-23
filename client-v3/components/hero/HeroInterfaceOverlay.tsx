@@ -1,10 +1,9 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import Image from "next/image";
 import Link from "next/link";
-import { ArrowRight, Play } from "lucide-react";
-import { useSession, signOut } from "next-auth/react";
+import { ArrowRight } from "lucide-react";
+import { useSession } from "next-auth/react";
 import SiteHeader from "@/components/layout/SiteHeader";
 
 interface HeroInterfaceOverlayProps {
@@ -19,8 +18,6 @@ export default function HeroInterfaceOverlay({ scrollProgress = 0 }: HeroInterfa
     return () => clearTimeout(timer);
   }, []);
 
-  const isScrolled = scrollProgress > 0.05;
-  const contentOpacity = Math.max(0, 1 - scrollProgress * 2.2);
   const sideOpacity = Math.max(0, 1 - scrollProgress * 2.6);
   const bottomOpacity = Math.max(0, 1 - scrollProgress * 10.0);
 
@@ -229,7 +226,7 @@ export default function HeroInterfaceOverlay({ scrollProgress = 0 }: HeroInterfa
 }
 
 export function HeroCenterpiece({ scrollProgress = 0 }: HeroInterfaceOverlayProps) {
-  const { data: session, status } = useSession();
+  const { status } = useSession();
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {

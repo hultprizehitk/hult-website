@@ -48,6 +48,7 @@ export const isMasterAdminEmail = isSuperAdminEmail;
  * Checks against server environment variables and live MongoDB database User collection.
  */
 export async function isAuthorizedAdmin(_req?: Request): Promise<boolean> {
+  void _req;
   try {
     const session = await auth();
     if (!session?.user?.email) return false;
@@ -83,6 +84,7 @@ export async function isAuthorizedAdmin(_req?: Request): Promise<boolean> {
  * Checks directly against live MongoDB database records and server environment variables.
  */
 export async function isAuthorizedSuperAdmin(_req?: Request): Promise<boolean> {
+  void _req;
   try {
     const session = await auth();
     if (!session?.user?.email) return false;

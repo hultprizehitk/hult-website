@@ -5,12 +5,10 @@ import Link from "next/link";
 import {
   Plus,
   RefreshCw,
-  X,
   Calendar,
   MapPin,
   Users,
   Download,
-  Printer,
   Search,
   Clipboard,
   Mail,
@@ -19,12 +17,11 @@ import {
   Trash2,
   Check,
   Camera,
-  ScanLine,
   Lightbulb,
   AlertTriangle,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import LiveCameraScannerModal from "@/components/admin/LiveCameraScannerModal";
+import LiveCameraScannerModal from "./LiveCameraScannerModal";
 
 interface TeamMember {
   name: string;
@@ -70,7 +67,7 @@ interface EventItem {
   isPublished: boolean;
   maxTeams: number;
   registeredTeamsCount: number;
-  registeredTeams?: any[];
+  registeredTeams?: RegisteredTeam[];
 }
 
 export default function LiveEventManager() {
@@ -83,7 +80,7 @@ export default function LiveEventManager() {
 
   const [teams, setTeams] = useState<RegisteredTeam[]>([]);
   const [loadingTeams, setLoadingTeams] = useState(false);
-  const [eventMeta, setEventMeta] = useState<any>(null);
+  const [eventMeta, setEventMeta] = useState<EventItem | null>(null);
 
   // Filter & Search
   const [searchQuery, setSearchQuery] = useState("");
@@ -621,7 +618,7 @@ export default function LiveEventManager() {
                 Select an Event to Manage ({events.length})
               </h2>
               <p className="text-xs text-white/60">
-                Click "Enter Event & Manage Teams" on any event card below to open its live management control room.
+                Click &quot;Enter Event &amp; Manage Teams&quot; on any event card below to open its live management control room.
               </p>
             </div>
 
@@ -1690,10 +1687,11 @@ export default function LiveEventManager() {
                       message: data.error || `Failed to check in team (${scannedCode}).`,
                     };
                   }
-                } catch (err: any) {
+                } catch (err: unknown) {
+                  const message = err instanceof Error ? err.message : "Network error processing check-in.";
                   return {
                     success: false,
-                    message: err?.message || "Network error processing check-in.",
+                    message,
                   };
                 }
               }}

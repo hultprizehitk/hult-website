@@ -1,6 +1,6 @@
 "use client";
 
-import React, { createContext, useContext, useState, useEffect } from "react";
+import React, { createContext, useContext, useState } from "react";
 
 export interface ThemeTunerConfig {
   // Card Glass
@@ -41,7 +41,7 @@ const DEFAULT_CONFIG: ThemeTunerConfig = {
 
 interface ThemeTunerContextType {
   config: ThemeTunerConfig;
-  updateConfig: (key: keyof ThemeTunerConfig, value: any) => void;
+  updateConfig: <K extends keyof ThemeTunerConfig>(key: K, value: ThemeTunerConfig[K]) => void;
   resetConfig: () => void;
   copyJson: () => Promise<boolean>;
   getCardStyle: (customBgAlpha?: number) => React.CSSProperties;
@@ -53,13 +53,8 @@ const ThemeTunerContext = createContext<ThemeTunerContextType | null>(null);
 
 export function ThemeTunerProvider({ children }: { children: React.ReactNode }) {
   const [config, setConfig] = useState<ThemeTunerConfig>(DEFAULT_CONFIG);
-  const [mounted, setMounted] = useState(false);
 
-  useEffect(() => {
-    setMounted(true);
-  }, []);
-
-  const updateConfig = (key: keyof ThemeTunerConfig, value: any) => {
+  const updateConfig = <K extends keyof ThemeTunerConfig>(key: K, value: ThemeTunerConfig[K]) => {
     setConfig((prev) => ({ ...prev, [key]: value }));
   };
 

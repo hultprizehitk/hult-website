@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import { useSession, signIn, signOut } from "next-auth/react";
-import { Lock, ArrowRight, CheckCircle2, ShieldAlert, Sparkles, Users } from "lucide-react";
+import { Lock, ArrowRight, CheckCircle2, ShieldAlert, Users } from "lucide-react";
 import SiteHeader from "@/components/layout/SiteHeader";
 import GrainOverlay from "@/components/hero/GrainOverlay";
 import KolkataHero from "@/components/hero/KolkataHero";
@@ -15,7 +15,6 @@ export default function RegisterPage() {
   const [isSigningIn, setIsSigningIn] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [targetEvent, setTargetEvent] = useState<PublicEvent | null>(null);
-  const [isEventModalOpen, setIsEventModalOpen] = useState(false);
 
   useEffect(() => {
     if (typeof window !== "undefined") {
@@ -38,7 +37,6 @@ export default function RegisterPage() {
           .then((data) => {
             if (data.success && data.event) {
               setTargetEvent(data.event);
-              setIsEventModalOpen(true);
             }
           })
           .catch((err) => {

@@ -661,7 +661,7 @@ export default function EventsManager() {
             <div className="flex items-center gap-2 pt-2 border-t border-white/10 overflow-x-auto no-scrollbar">
               <button
                 type="button"
-                onClick={() => setInsideTab("details")}
+                onClick={() => handleSwitchTab("details")}
                 className={`rounded-xl px-4 py-2 text-xs font-bold uppercase tracking-wider transition-all cursor-pointer whitespace-nowrap font-[family-name:var(--font-google-sans)] ${
                   insideTab === "details"
                     ? "bg-white text-black font-bold shadow-md shadow-white/10"
@@ -672,7 +672,7 @@ export default function EventsManager() {
               </button>
               <button
                 type="button"
-                onClick={() => setInsideTab("registration")}
+                onClick={() => handleSwitchTab("registration")}
                 className={`rounded-xl px-4 py-2 text-xs font-bold uppercase tracking-wider transition-all cursor-pointer whitespace-nowrap font-[family-name:var(--font-google-sans)] ${
                   insideTab === "registration"
                     ? "bg-white text-black font-bold shadow-md shadow-white/10"
@@ -683,7 +683,7 @@ export default function EventsManager() {
               </button>
               <button
                 type="button"
-                onClick={() => setInsideTab("teams")}
+                onClick={() => handleSwitchTab("teams")}
                 className={`rounded-xl px-4 py-2 text-xs font-bold uppercase tracking-wider transition-all cursor-pointer whitespace-nowrap font-[family-name:var(--font-google-sans)] ${
                   insideTab === "teams"
                     ? "bg-white text-black font-bold shadow-md shadow-white/10"
@@ -1144,6 +1144,13 @@ export default function EventsManager() {
                   >
                     Sync to Live Queue →
                   </Button>
+                  <input
+                    type="text"
+                    value={teamSearchQuery}
+                    onChange={(e) => setTeamSearchQuery(e.target.value)}
+                    placeholder="Search teams..."
+                    className="rounded-lg bg-neutral-900 border border-white/10 px-3 py-1.5 text-xs text-white placeholder-white/40 focus:outline-none focus:border-white/30"
+                  />
                 </div>
               </div>
 

@@ -1,4 +1,4 @@
-import { TeamCategory, TeamMember, TeamSectionConfig } from "@/types";
+import { TeamMember, TeamSectionConfig } from "@/types";
 
 export const TEAM_SECTIONS: TeamSectionConfig[] = [
   {

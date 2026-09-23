@@ -20,7 +20,7 @@ export async function GET() {
     const email = session.user.email.toLowerCase().trim();
     await connectDB();
 
-    let user = await User.findOne({ email });
+    const user = await User.findOne({ email });
 
     if (!user) {
       return NextResponse.json({ error: "User profile not found" }, { status: 404 });

@@ -3,7 +3,6 @@
 import React, { useEffect, useState } from "react";
 import Image from "next/image";
 import {
-  FileText,
   Radio,
   Users,
   Award,
@@ -12,7 +11,6 @@ import {
   Edit,
   Check,
   X,
-  ExternalLink,
   RefreshCw,
 } from "lucide-react";
 

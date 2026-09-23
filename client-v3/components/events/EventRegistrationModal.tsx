@@ -1,7 +1,6 @@
 "use client";
 
 import React, { useState, useEffect, useCallback } from "react";
-import Link from "next/link";
 import { useSession, signIn } from "next-auth/react";
 import {
   X,
@@ -12,14 +11,12 @@ import {
   Check,
   Share2,
   ArrowRight,
-  ArrowLeft,
   ShieldCheck,
   AlertCircle,
   Lock,
   Sparkles,
   Loader2,
   CheckCircle2,
-  ExternalLink,
   FileText,
   Phone,
   GraduationCap,
@@ -28,10 +25,10 @@ import {
   Trash2,
   UserMinus,
   LogOut,
-  Save,
 } from "lucide-react";
-import { Button } from "@/components/ui/button";
 import type { PublicEvent } from "@/types";
+import CreateTeamForm from "./registration/CreateTeamForm";
+import JoinTeamForm from "./registration/JoinTeamForm";
 
 interface EventRegistrationModalProps {
   event: PublicEvent;
@@ -1113,323 +1110,34 @@ export default function EventRegistrationModal({
         </div>
       ) : mode === "create" ? (
         /* ── STATE 5: CREATE TEAM FORM ─────────────────────────────────────── */
-        <form onSubmit={handleCreateSubmit} className="space-y-5 animate-fadeIn">
-          <div className="flex items-center justify-between pb-3 border-b border-white/10">
-            <button
-              type="button"
-              onClick={() => {
-                setErrorMessage(null);
-                setMode("select");
-              }}
-              className="inline-flex items-center gap-1.5 text-xs text-white/60 hover:text-white transition-colors cursor-pointer font-[family-name:var(--font-google-sans)]"
-            >
-              <ArrowLeft className="h-3.5 w-3.5" />
-              <span>Back to choices</span>
-            </button>
-            <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-emerald-400">
-              You will be Team Leader
-            </span>
-          </div>
-
-          <div>
-            <label className="block text-xs font-mono uppercase tracking-wider text-white/70 font-bold mb-1.5">
-              Team Name *
-            </label>
-            <input
-              type="text"
-              required
-              placeholder="e.g. EcoInnovators"
-              value={createForm.teamName}
-              onChange={(e) => setCreateForm({ ...createForm, teamName: e.target.value })}
-              className="w-full rounded-2xl border border-white/15 bg-white/[0.04] hover:bg-white/[0.07] focus:bg-white/[0.1] px-4 py-3 text-white placeholder-white/30 outline-none focus:border-[#f20089] text-xs sm:text-sm font-medium transition-all"
-            />
-          </div>
-
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div>
-              <div className="flex items-center justify-between mb-1.5">
-                <label className="text-xs font-mono uppercase tracking-wider text-white/70 font-bold flex items-center gap-1.5">
-                  <Phone className="h-3 w-3 text-white/50" />
-                  <span>Contact Phone {isPhoneSaved ? "" : "*"}</span>
-                </label>
-                {isPhoneSaved && (
-                  <span className="inline-flex items-center gap-1 text-[10px] font-mono font-bold text-white/70 bg-white/10 border border-white/20 px-2 py-0.5 rounded-full">
-                    <Lock className="h-2.5 w-2.5 text-white/50" />
-                    <span>Saved in Profile</span>
-                  </span>
-                )}
-              </div>
-              <input
-                type="tel"
-                inputMode="numeric"
-                pattern="[0-9]*"
-                maxLength={10}
-                required={!isPhoneSaved}
-                readOnly={isPhoneSaved}
-                placeholder="10-digit mobile"
-                value={createForm.phone}
-                onChange={(e) =>
-                  setCreateForm({
-                    ...createForm,
-                    phone: e.target.value.replace(/\D/g, "").slice(0, 10),
-                  })
-                }
-                className={`w-full rounded-2xl border px-4 py-3 text-xs sm:text-sm font-mono transition-all outline-none ${
-                  isPhoneSaved
-                    ? "border-white/15 bg-white/[0.04] text-white/90 cursor-not-allowed select-none"
-                    : "border-white/15 bg-white/[0.04] hover:bg-white/[0.07] focus:bg-white/[0.1] text-white placeholder-white/30 focus:border-[#f20089]"
-                }`}
-              />
-              {isPhoneSaved && (
-                <span className="text-[10px] text-white/40 mt-1 block">
-                  Can only be edited in your{" "}
-                  <Link href="/profile" className="text-white/70 hover:text-white underline font-mono">
-                    Profile →
-                  </Link>
-                </span>
-              )}
-            </div>
-
-            <div>
-              <div className="flex items-center justify-between mb-1.5">
-                <label className="text-xs font-mono uppercase tracking-wider text-white/70 font-bold flex items-center gap-1.5">
-                  <GraduationCap className="h-3 w-3 text-white/50" />
-                  <span>College Roll No. {isRollSaved ? "" : "*"}</span>
-                </label>
-                {isRollSaved && (
-                  <span className="inline-flex items-center gap-1 text-[10px] font-mono font-bold text-white/70 bg-white/10 border border-white/20 px-2 py-0.5 rounded-full">
-                    <Lock className="h-2.5 w-2.5 text-white/50" />
-                    <span>Saved in Profile</span>
-                  </span>
-                )}
-              </div>
-              <input
-                type="text"
-                inputMode="numeric"
-                pattern="[0-9]*"
-                required={!isRollSaved}
-                readOnly={isRollSaved}
-                placeholder="Numbers only (e.g. 2152001)"
-                value={createForm.roll}
-                onChange={(e) =>
-                  setCreateForm({
-                    ...createForm,
-                    roll: e.target.value.replace(/\D/g, ""),
-                  })
-                }
-                className={`w-full rounded-2xl border px-4 py-3 text-xs sm:text-sm font-mono transition-all outline-none ${
-                  isRollSaved
-                    ? "border-white/15 bg-white/[0.04] text-white/90 cursor-not-allowed select-none"
-                    : "border-white/15 bg-white/[0.04] hover:bg-white/[0.07] focus:bg-white/[0.1] text-white placeholder-white/30 focus:border-[#f20089]"
-                }`}
-              />
-              {isRollSaved && (
-                <span className="text-[10px] text-white/40 mt-1 block">
-                  Can only be edited in your{" "}
-                  <Link href="/profile" className="text-white/70 hover:text-white underline font-mono">
-                    Profile →
-                  </Link>
-                </span>
-              )}
-            </div>
-          </div>
-
-          {/* Student Verified Identity Preview */}
-          <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-4 text-left">
-            <span className="text-[10px] font-mono uppercase tracking-wider text-white/40 block mb-1">
-              Leader Credentials
-            </span>
-            <div className="text-white font-medium text-sm font-[family-name:var(--font-google-sans)]">
-              {session?.user?.name}
-            </div>
-            <div className="text-xs text-white/50 font-mono mt-0.5">{session?.user?.email}</div>
-          </div>
-
-          <div className="pt-2 flex items-center justify-end gap-3">
-            <button
-              type="button"
-              onClick={() => setMode("select")}
-              className="rounded-full border border-white/15 bg-white/5 hover:bg-white/10 px-5 py-2.5 text-xs font-semibold text-white/70 hover:text-white transition-colors cursor-pointer"
-            >
-              Cancel
-            </button>
-            <button
-              type="submit"
-              disabled={submitting}
-              className="rounded-full bg-white hover:bg-neutral-100 text-neutral-950 font-bold px-7 py-3 text-xs sm:text-sm shadow-xl shadow-white/10 transition-all hover:scale-105 cursor-pointer font-[family-name:var(--font-google-sans)] inline-flex items-center gap-2"
-            >
-              {submitting ? (
-                <>
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                  <span>Generating Code...</span>
-                </>
-              ) : (
-                <span>Create Team &amp; Get Code →</span>
-              )}
-            </button>
-          </div>
-        </form>
+        <CreateTeamForm
+          createForm={createForm}
+          setCreateForm={setCreateForm}
+          isPhoneSaved={isPhoneSaved}
+          isRollSaved={isRollSaved}
+          userName={session?.user?.name}
+          userEmail={session?.user?.email}
+          submitting={submitting}
+          onBack={() => {
+            setErrorMessage(null);
+            setMode("select");
+          }}
+          onSubmit={handleCreateSubmit}
+        />
       ) : (
         /* ── STATE 6: JOIN TEAM FORM ───────────────────────────────────────── */
-        <form onSubmit={handleJoinSubmit} className="space-y-5 animate-fadeIn">
-          <div className="flex items-center justify-between pb-3 border-b border-white/10">
-            <button
-              type="button"
-              onClick={() => {
-                setErrorMessage(null);
-                setMode("select");
-              }}
-              className="inline-flex items-center gap-1.5 text-xs text-white/60 hover:text-white transition-colors cursor-pointer font-[family-name:var(--font-google-sans)]"
-            >
-              <ArrowLeft className="h-3.5 w-3.5" />
-              <span>Back to choices</span>
-            </button>
-            <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-emerald-400">
-              Join by Invite Code
-            </span>
-          </div>
-
-          <div>
-            <label className="block text-xs font-mono uppercase tracking-wider text-white/70 font-bold mb-1.5">
-              Enter Team Invite Code *
-            </label>
-            <input
-              type="text"
-              required
-              placeholder="e.g. HULT-7X9B"
-              value={joinForm.teamCode}
-              onChange={(e) => setJoinForm({ ...joinForm, teamCode: e.target.value.toUpperCase() })}
-              className="w-full rounded-2xl border-2 border-white/20 bg-black/40 px-5 py-4 text-white placeholder-white/30 outline-none focus:border-[#f20089] shadow-inner font-mono text-xl sm:text-2xl font-black tracking-widest text-[#f20089] uppercase text-center transition-all"
-            />
-            <span className="text-[11px] text-white/50 mt-1.5 block text-center font-[family-name:var(--font-google-sans)]">
-              Ask your team leader for their 8-character invite code (e.g. HULT-XXXX)
-            </span>
-          </div>
-
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div>
-              <div className="flex items-center justify-between mb-1.5">
-                <label className="text-xs font-mono uppercase tracking-wider text-white/70 font-bold flex items-center gap-1.5">
-                  <Phone className="h-3 w-3 text-white/50" />
-                  <span>Contact Phone {isPhoneSaved ? "" : "*"}</span>
-                </label>
-                {isPhoneSaved && (
-                  <span className="inline-flex items-center gap-1 text-[10px] font-mono font-bold text-white/70 bg-white/10 border border-white/20 px-2 py-0.5 rounded-full">
-                    <Lock className="h-2.5 w-2.5 text-white/50" />
-                    <span>Saved in Profile</span>
-                  </span>
-                )}
-              </div>
-              <input
-                type="tel"
-                inputMode="numeric"
-                pattern="[0-9]*"
-                maxLength={10}
-                required={!isPhoneSaved}
-                readOnly={isPhoneSaved}
-                placeholder="10-digit mobile"
-                value={joinForm.phone}
-                onChange={(e) =>
-                  setJoinForm({
-                    ...joinForm,
-                    phone: e.target.value.replace(/\D/g, "").slice(0, 10),
-                  })
-                }
-                className={`w-full rounded-2xl border px-4 py-3 text-xs sm:text-sm font-mono transition-all outline-none ${
-                  isPhoneSaved
-                    ? "border-white/15 bg-white/[0.04] text-white/90 cursor-not-allowed select-none"
-                    : "border-white/15 bg-white/[0.04] hover:bg-white/[0.07] focus:bg-white/[0.1] text-white placeholder-white/30 focus:border-[#f20089]"
-                }`}
-              />
-              {isPhoneSaved && (
-                <span className="text-[10px] text-white/40 mt-1 block">
-                  Can only be edited in your{" "}
-                  <Link href="/profile" className="text-white/70 hover:text-white underline font-mono">
-                    Profile →
-                  </Link>
-                </span>
-              )}
-            </div>
-
-            <div>
-              <div className="flex items-center justify-between mb-1.5">
-                <label className="text-xs font-mono uppercase tracking-wider text-white/70 font-bold flex items-center gap-1.5">
-                  <GraduationCap className="h-3 w-3 text-white/50" />
-                  <span>College Roll No. {isRollSaved ? "" : "*"}</span>
-                </label>
-                {isRollSaved && (
-                  <span className="inline-flex items-center gap-1 text-[10px] font-mono font-bold text-white/70 bg-white/10 border border-white/20 px-2 py-0.5 rounded-full">
-                    <Lock className="h-2.5 w-2.5 text-white/50" />
-                    <span>Saved in Profile</span>
-                  </span>
-                )}
-              </div>
-              <input
-                type="text"
-                inputMode="numeric"
-                pattern="[0-9]*"
-                required={!isRollSaved}
-                readOnly={isRollSaved}
-                placeholder="Numbers only (e.g. 2152002)"
-                value={joinForm.roll}
-                onChange={(e) =>
-                  setJoinForm({
-                    ...joinForm,
-                    roll: e.target.value.replace(/\D/g, ""),
-                  })
-                }
-                className={`w-full rounded-2xl border px-4 py-3 text-xs sm:text-sm font-mono transition-all outline-none ${
-                  isRollSaved
-                    ? "border-white/15 bg-white/[0.04] text-white/90 cursor-not-allowed select-none"
-                    : "border-white/15 bg-white/[0.04] hover:bg-white/[0.07] focus:bg-white/[0.1] text-white placeholder-white/30 focus:border-[#f20089]"
-                }`}
-              />
-              {isRollSaved && (
-                <span className="text-[10px] text-white/40 mt-1 block">
-                  Can only be edited in your{" "}
-                  <Link href="/profile" className="text-white/70 hover:text-white underline font-mono">
-                    Profile →
-                  </Link>
-                </span>
-              )}
-            </div>
-          </div>
-
-          {/* Student Verified Identity Preview */}
-          <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-4 text-left">
-            <span className="text-[10px] font-mono uppercase tracking-wider text-white/40 block mb-1">
-              Joining Member Credentials
-            </span>
-            <div className="text-white font-medium text-sm font-[family-name:var(--font-google-sans)]">
-              {session?.user?.name}
-            </div>
-            <div className="text-xs text-white/50 font-mono mt-0.5">{session?.user?.email}</div>
-          </div>
-
-          <div className="pt-2 flex items-center justify-end gap-3">
-            <button
-              type="button"
-              onClick={() => setMode("select")}
-              className="rounded-full border border-white/15 bg-white/5 hover:bg-white/10 px-5 py-2.5 text-xs font-semibold text-white/70 hover:text-white transition-colors cursor-pointer"
-            >
-              Cancel
-            </button>
-            <button
-              type="submit"
-              disabled={submitting}
-              className="rounded-full bg-white hover:bg-neutral-100 text-neutral-950 font-bold px-7 py-3 text-xs sm:text-sm shadow-xl shadow-white/10 transition-all hover:scale-105 cursor-pointer font-[family-name:var(--font-google-sans)] inline-flex items-center gap-2"
-            >
-              {submitting ? (
-                <>
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                  <span>Joining Team...</span>
-                </>
-              ) : (
-                <span>Join Team Roster →</span>
-              )}
-            </button>
-          </div>
-        </form>
+        <JoinTeamForm
+          joinForm={joinForm}
+          setJoinForm={setJoinForm}
+          isPhoneSaved={isPhoneSaved}
+          isRollSaved={isRollSaved}
+          submitting={submitting}
+          onBack={() => {
+            setErrorMessage(null);
+            setMode("select");
+          }}
+          onSubmit={handleJoinSubmit}
+        />
       )}
     </div>
   );
@@ -1542,6 +1250,14 @@ export default function EventRegistrationModal({
             <div className="flex items-start gap-2 rounded-xl border border-rose-500/30 bg-rose-950/30 p-3 text-xs text-rose-200 font-mono">
               <AlertCircle size={14} className="text-rose-400 shrink-0 mt-0.5" />
               <span>{finalSubmitError}</span>
+            </div>
+          )}
+
+          {/* Success Message */}
+          {finalSubmitSuccess && (
+            <div className="flex items-start gap-2 rounded-xl border border-emerald-500/30 bg-emerald-950/30 p-3 text-xs text-emerald-200 font-mono">
+              <CheckCircle2 size={14} className="text-emerald-400 shrink-0 mt-0.5" />
+              <span>{finalSubmitSuccess}</span>
             </div>
           )}
 

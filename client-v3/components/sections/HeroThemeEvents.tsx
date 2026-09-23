@@ -2,7 +2,6 @@
 
 import React, { useEffect, useState, useRef } from "react";
 import Link from "next/link";
-import Image from "next/image";
 import ScrollReveal from "@/components/ui/ScrollReveal";
 import { Calendar, MapPin, Users, ArrowRight, ExternalLink } from "lucide-react";
 import type { PublicEvent } from "@/types";
@@ -31,7 +30,7 @@ function wrapText(text: string, cardWidth: number, approxCharWidth: number): str
 }
 
 export default function HeroThemeEvents() {
-  const { config, getCardStyle, getBigTextStyle, getHeaderShadow } = useThemeTuner();
+  const { config, getHeaderShadow } = useThemeTuner();
   const [events, setEvents] = useState<PublicEvent[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedIndex, setSelectedIndex] = useState(0);
@@ -41,7 +40,6 @@ export default function HeroThemeEvents() {
   const [cardSize, setCardSize] = useState({ width: 1200, height: 400 });
   const [titlePos, setTitlePos] = useState({ x: 48, y: 120, fontSize: "40px" });
   const [transform, setTransform] = useState("perspective(1000px) rotateX(0deg) rotateY(0deg) scale3d(1, 1, 1)");
-  const [spotlight, setSpotlight] = useState({ x: 50, y: 50, opacity: 0 });
 
   const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
     if (!cardRef.current) return;
@@ -53,12 +51,10 @@ export default function HeroThemeEvents() {
     const rotateX = ((y - centerY) / centerY) * -5;
     const rotateY = ((x - centerX) / centerX) * 5;
     setTransform(`perspective(1000px) rotateX(${rotateX.toFixed(2)}deg) rotateY(${rotateY.toFixed(2)}deg) scale3d(1.01, 1.01, 1.01)`);
-    setSpotlight({ x: (x / rect.width) * 100, y: (y / rect.height) * 100, opacity: 1 });
   };
 
   const handleMouseLeave = () => {
     setTransform("perspective(1000px) rotateX(0deg) rotateY(0deg) scale3d(1, 1, 1)");
-    setSpotlight((prev) => ({ ...prev, opacity: 0 }));
   };
 
   useEffect(() => {

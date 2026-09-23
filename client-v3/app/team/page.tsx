@@ -1,7 +1,6 @@
 "use client";
 
 import React, { useState, useEffect, useRef, useCallback } from "react";
-import Image from "next/image";
 import Link from "next/link";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import SiteHeader from "@/components/layout/SiteHeader";
@@ -62,15 +61,6 @@ export default function TeamPage() {
   const facultyMembers = members.filter((m) => m.category === "faculty_coordinator");
   const cdMembers = members.filter((m) => m.category === "cd");
   const dcdMembers = members.filter((m) => m.category === "dcd");
-  const eventMembers = members.filter((m) => m.category === "event_management");
-  const workshopMembers = members.filter((m) => m.category === "workshop");
-  const techMembers = members.filter((m) => m.category === "tech");
-  const designMembers = members.filter((m) => m.category === "design");
-
-  const filteredMembers =
-    activeCategory === "all"
-      ? members
-      : members.filter((m) => m.category === activeCategory);
 
   const getTeamColor = (category: TeamCategory) => {
     switch (category) {

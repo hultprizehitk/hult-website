@@ -1,11 +1,11 @@
 import { NextResponse } from "next/server";
-import mongoose from "mongoose";
 import { connectDB } from "@/lib/mongodb";
-import Event from "@/models/Event";
+import Event, { IRegisteredTeam } from "@/models/Event";
 import Team from "@/models/Team";
 import User from "@/models/User";
 import { auth } from "@/auth";
 import { parseHeritageEmail } from "@/lib/heritage-parser";
+import { sanitizeNumeric, isValidPhone, isValidRoll } from "@/lib/teams/team-utils";
 
 /**
  * POST /api/teams/join
@@ -34,11 +34,11 @@ export async function POST(req: Request) {
     await connectDB();
 
     const userInDb = await User.findOne({ email: userEmail });
-    const rawPhone = phone?.trim() || userInDb?.phone?.trim() || "";
-    const rawRoll = roll?.trim() || userInDb?.roll?.trim() || "";
+    const rawPhone = phone || userInDb?.phone || "";
+    const rawRoll = roll || userInDb?.roll || "";
 
-    const effectivePhone = rawPhone.replace(/\D/g, "").slice(0, 10);
-    const effectiveRoll = rawRoll.replace(/\D/g, "");
+    const effectivePhone = sanitizeNumeric(rawPhone, 10);
+    const effectiveRoll = sanitizeNumeric(rawRoll);
 
     if (!teamCode?.trim() || !effectivePhone || !effectiveRoll) {
       return NextResponse.json(
@@ -47,14 +47,14 @@ export async function POST(req: Request) {
       );
     }
 
-    if (!/^\d{10}$/.test(effectivePhone)) {
+    if (!isValidPhone(effectivePhone)) {
       return NextResponse.json(
         { error: "Contact Phone must be a valid 10-digit number." },
         { status: 400 }
       );
     }
 
-    if (!/^\d+$/.test(effectiveRoll)) {
+    if (!isValidRoll(effectiveRoll)) {
       return NextResponse.json(
         { error: "College Roll No. must contain numbers only." },
         { status: 400 }
@@ -181,9 +181,8 @@ export async function POST(req: Request) {
 
     // 8. Synchronize to Event.registeredTeams
     if (Array.isArray(event.registeredTeams)) {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const eventTeam = event.registeredTeams.find(
-        (t: any) =>
+        (t: IRegisteredTeam) =>
           t.id === team._id.toString() ||
           t.teamCode?.toUpperCase() === cleanCode
       );

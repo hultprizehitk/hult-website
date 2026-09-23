@@ -54,8 +54,8 @@ function wrapText(text: string, cardWidth: number, approxCharWidth: number): str
 interface MetricItem { index: string; value: string; label: string; sublabel: string; icon: React.ElementType; }
 interface PillarItem { step: string; tag: string; title: string; desc: string; icon: React.ElementType; }
 
-function MetricCard({ m, uid, getCardStyle, bgOpacity }: {
-  m: MetricItem; uid: string; getCardStyle: (n?: number) => React.CSSProperties; bgOpacity: number;
+function MetricCard({ m, uid, bgOpacity }: {
+  m: MetricItem; uid: string; bgOpacity: number;
 }) {
   const { cardRef, titleRef, cardSize, titlePos } = useCutout();
   const Icon = m.icon;
@@ -104,8 +104,8 @@ function MetricCard({ m, uid, getCardStyle, bgOpacity }: {
 }
 
 // ─── Pillar Card with SVG stencil cutout ─────────────────────────────────────
-function PillarCard({ pillar, idx, uid, getCardStyle, bgOpacity }: {
-  pillar: PillarItem; idx: number; uid: string; getCardStyle: (n?: number) => React.CSSProperties; bgOpacity: number;
+function PillarCard({ pillar, idx, uid, bgOpacity }: {
+  pillar: PillarItem; idx: number; uid: string; bgOpacity: number;
 }) {
   const { cardRef, titleRef, cardSize, titlePos } = useCutout();
   const Icon = pillar.icon;
@@ -173,7 +173,7 @@ function PillarCard({ pillar, idx, uid, getCardStyle, bgOpacity }: {
 }
 
 export default function HeroThemeAbout() {
-  const { config, getCardStyle, getHeaderShadow } = useThemeTuner();
+  const { config, getHeaderShadow } = useThemeTuner();
 
   const metrics = [
     {
@@ -269,7 +269,7 @@ export default function HeroThemeAbout() {
               <p
                 className="text-xs sm:text-sm font-medium text-white/80 leading-relaxed drop-shadow-[0_1px_4px_rgba(0,0,0,0.7)]"
               >
-                The world's premier student social entrepreneurship incubator at Heritage Institute of Technology, turning bold ideas into scalable, investment-ready enterprises.
+                The world&apos;s premier student social entrepreneurship incubator at Heritage Institute of Technology, turning bold ideas into scalable, investment-ready enterprises.
               </p>
               <div className="font-hult-script text-2xl text-white/90 rotate-[-2deg] drop-shadow-[0_2px_8px_rgba(0,0,0,0.6)]">
                 Ideas for a brighter tomorrow
@@ -282,7 +282,7 @@ export default function HeroThemeAbout() {
         <ScrollReveal direction="up" delay={120}>
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
             {metrics.map((m, idx) => (
-              <MetricCard key={idx} m={m} uid={`cutout-metric-${idx}`} getCardStyle={getCardStyle} bgOpacity={config.cardBgOpacity} />
+              <MetricCard key={idx} m={m} uid={`cutout-metric-${idx}`} bgOpacity={config.cardBgOpacity} />
             ))}
           </div>
         </ScrollReveal>
@@ -318,7 +318,7 @@ export default function HeroThemeAbout() {
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
               {pillars.map((pillar, idx) => (
-                <PillarCard key={idx} pillar={pillar} idx={idx} uid={`cutout-pillar-${idx}`} getCardStyle={getCardStyle} bgOpacity={config.cardBgOpacity} />
+                <PillarCard key={idx} pillar={pillar} idx={idx} uid={`cutout-pillar-${idx}`} bgOpacity={config.cardBgOpacity} />
               ))}
             </div>
           </div>

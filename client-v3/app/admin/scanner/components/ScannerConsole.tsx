@@ -16,11 +16,8 @@ import {
   Search,
   Undo2,
   Calendar,
-  MapPin,
   Users,
   Check,
-  Pause,
-  Play,
 } from "lucide-react";
 
 interface TeamMember {
@@ -130,7 +127,9 @@ export default function ScannerConsole() {
     (type: "success" | "duplicate" | "error") => {
       if (!soundEnabled) return;
       try {
-        const AudioCtx = window.AudioContext || (window as any).webkitAudioContext;
+        const AudioCtx =
+          window.AudioContext ||
+          (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
         if (!AudioCtx) return;
         const ctx = new AudioCtx();
         const osc = ctx.createOscillator();
@@ -383,11 +382,12 @@ export default function ScannerConsole() {
             teamCode: code,
           });
         }
-      } catch (err: any) {
+      } catch (err: unknown) {
         playAudioChime("error");
+        const errMsg = err instanceof Error ? err.message : "Network error submitting check-in.";
         setLastScanResult({
           status: "error",
-          message: err?.message || "Network error submitting check-in.",
+          message: errMsg,
           teamCode: code,
         });
       } finally {
@@ -495,7 +495,7 @@ export default function ScannerConsole() {
       streamRef.current = mediaStream;
 
       const track = mediaStream.getVideoTracks()[0];
-      const capabilities = track.getCapabilities?.() as any;
+      const capabilities = track?.getCapabilities ? (track.getCapabilities() as { torch?: boolean }) : undefined;
       setHasTorch(Boolean(capabilities?.torch));
 
       if (videoRef.current) {
@@ -505,14 +505,18 @@ export default function ScannerConsole() {
       }
 
       setIsCameraActive(true);
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error("Camera start error:", err);
-      if (err.name === "NotAllowedError" || err.name === "PermissionDeniedError") {
+      const isNamedError = err && typeof err === "object" && "name" in err;
+      const errName = isNamedError ? String((err as { name: unknown }).name) : "";
+      const errMsg = err instanceof Error ? err.message : "Failed to initialize camera.";
+
+      if (errName === "NotAllowedError" || errName === "PermissionDeniedError") {
         setCameraError("Camera permission was denied in browser settings.");
-      } else if (err.name === "NotFoundError") {
+      } else if (errName === "NotFoundError") {
         setCameraError("No camera hardware found on this machine.");
       } else {
-        setCameraError(err.message || "Failed to initialize camera.");
+        setCameraError(errMsg);
       }
       setIsCameraActive(false);
     }
@@ -539,8 +543,11 @@ export default function ScannerConsole() {
     const track = streamRef.current.getVideoTracks()[0];
     try {
       const nextTorch = !torchActive;
-      await (track as any).applyConstraints({
-        advanced: [{ torch: nextTorch }],
+      const trackWithConstraints = track as MediaStreamTrack & {
+        applyConstraints: (c: MediaTrackConstraints) => Promise<void>;
+      };
+      await trackWithConstraints.applyConstraints({
+        advanced: [{ torch: nextTorch } as MediaTrackConstraintSet],
       });
       setTorchActive(nextTorch);
     } catch (err) {
@@ -632,7 +639,6 @@ export default function ScannerConsole() {
   // -------------------------------------------------------------
   // Computed Stats
   // -------------------------------------------------------------
-  const selectedEvent = events.find((e) => e._id === selectedEventId);
   const totalRegistered = teams.length;
   const checkedInCount = teams.filter((t) => t.checkedIn).length;
   const pendingCount = totalRegistered - checkedInCount;

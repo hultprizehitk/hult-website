@@ -31,7 +31,18 @@ export default function AnnouncementBanner() {
     } catch {
       // sessionStorage restricted
     }
-    setLoaded(true);
+
+    fetch("/api/admin/content?type=announcement")
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => {
+        if (data?.items && Array.isArray(data.items)) {
+          setAnnouncements(data.items);
+        }
+      })
+      .catch(() => {})
+      .finally(() => {
+        setLoaded(true);
+      });
   }, []);
 
   const activeAnnouncements = announcements.filter((a) => !dismissedIds.has(a._id));

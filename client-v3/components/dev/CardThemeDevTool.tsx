@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
-import { useThemeTuner, ThemeTunerConfig } from "@/context/ThemeTunerContext";
+import { useThemeTuner } from "@/context/ThemeTunerContext";
 import { Sliders, Copy, Check, RotateCcw, X, Eye, Layers } from "lucide-react";
 
 export default function CardThemeDevTool() {
