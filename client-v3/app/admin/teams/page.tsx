@@ -16,6 +16,7 @@ interface TeamMember {
   department?: string;
   roll?: string;
   phone?: string;
+  joinedAt?: string;
 }
 
 interface EventRecord {
@@ -444,7 +445,21 @@ export default function AdminTeamsPage() {
                   {selectedTeam.submissionStatus === "submitted" ? (
                     <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-mono font-medium bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
                       <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
-                      <span>Application Submitted</span>
+                      <span>
+                        Application Submitted
+                        {selectedTeam.submittedAt &&
+                          ` (${new Date(selectedTeam.submittedAt).toLocaleDateString("en-IN", {
+                            day: "numeric",
+                            month: "short",
+                            year: "numeric",
+                          })} • ${new Date(selectedTeam.submittedAt)
+                            .toLocaleTimeString("en-IN", {
+                              hour: "2-digit",
+                              minute: "2-digit",
+                              hour12: true,
+                            })
+                            .toUpperCase()})`}
+                      </span>
                     </span>
                   ) : (
                     <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-mono font-medium bg-amber-500/10 text-amber-300 border border-amber-500/20">
@@ -499,6 +514,24 @@ export default function AdminTeamsPage() {
                       >
                         <div className="text-white font-medium">{m.name}</div>
                         <div className="text-neutral-400 font-mono text-[11px]">{m.email}</div>
+                        {m.joinedAt && (
+                          <div className="text-neutral-500 font-mono text-[10px]">
+                            Joined:{" "}
+                            {new Date(m.joinedAt).toLocaleDateString("en-IN", {
+                              day: "numeric",
+                              month: "short",
+                              year: "numeric",
+                            })}{" "}
+                            •{" "}
+                            {new Date(m.joinedAt)
+                              .toLocaleTimeString("en-IN", {
+                                hour: "2-digit",
+                                minute: "2-digit",
+                                hour12: true,
+                              })
+                              .toUpperCase()}
+                          </div>
+                        )}
                         <div className="flex flex-wrap gap-1.5 pt-0.5 font-mono text-[10px]">
                           {m.roll && (
                             <span className="px-2 py-0.5 rounded bg-rose-500/15 border border-rose-500/30 text-rose-300 font-semibold">

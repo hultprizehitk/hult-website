@@ -464,6 +464,7 @@ export interface EventQrPassEmailParams {
   teamName?: string;
   teamCode?: string;
   role?: string;
+  registeredAt?: string | Date;
 }
 
 /**
@@ -490,6 +491,7 @@ export function getEventQrPassEmailHtml(params: EventQrPassEmailParams): string 
     name: params.name || "",
     email: params.email.trim().toLowerCase(),
     roll: params.roll ? params.roll.trim() : undefined,
+    registeredAt: params.registeredAt ? String(params.registeredAt) : undefined,
   });
 
   const qrImageUrl = `https://api.qrserver.com/v1/create-qr-code/?size=260x260&margin=10&format=png&data=${encodeURIComponent(qrPayload)}`;
@@ -504,6 +506,25 @@ export function getEventQrPassEmailHtml(params: EventQrPassEmailParams): string 
   if (teamName) rows.push(["Team Name", teamName]);
   if (teamCode) rows.push(["Team Code", `<strong style="color: #f20089; font-size: 15px; letter-spacing: 1.5px;">${teamCode}</strong>`]);
   if (role) rows.push(["Role", role]);
+  if (params.registeredAt) {
+    const d = new Date(params.registeredAt);
+    if (!isNaN(d.getTime())) {
+      const formattedDate = d.toLocaleDateString("en-IN", {
+        day: "2-digit",
+        month: "short",
+        year: "numeric",
+      });
+      const formattedTime = d
+        .toLocaleTimeString("en-IN", {
+          hour: "2-digit",
+          minute: "2-digit",
+          second: "2-digit",
+          hour12: true,
+        })
+        .toUpperCase();
+      rows.push(["Registered At", `${formattedDate} &bull; ${formattedTime}`]);
+    }
+  }
   if (eventDate) rows.push(["Event Date", eventDate]);
   if (eventVenue) rows.push(["Venue", eventVenue]);
 
