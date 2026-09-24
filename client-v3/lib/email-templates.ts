@@ -451,3 +451,162 @@ export async function sendTeamSubmittedEmail(params: TeamSubmittedEmailParams): 
     htmlContent,
   });
 }
+
+export interface EventQrPassEmailParams {
+  name: string;
+  email: string;
+  roll?: string;
+  department?: string;
+  eventTitle: string;
+  eventId?: string;
+  eventDate?: string | Date;
+  eventVenue?: string;
+  teamName?: string;
+  teamCode?: string;
+  role?: string;
+}
+
+/**
+ * HTML for the Official Event QR Entry Pass email.
+ * Styled in the exact dark branded aesthetic as the Welcome email.
+ */
+export function getEventQrPassEmailHtml(params: EventQrPassEmailParams): string {
+  const safeName = escapeHtml(params.name || "Heritage Student");
+  const eventTitle = escapeHtml(params.eventTitle);
+  const eventVenue = escapeHtml(params.eventVenue || "Heritage Institute of Technology");
+  const eventDate = formatEventDate(params.eventDate);
+  const teamCode = escapeHtml(params.teamCode || "");
+  const teamName = escapeHtml(params.teamName || "");
+  const role = escapeHtml(params.role || "Participant");
+  const roll = escapeHtml(params.roll || "");
+  const department = escapeHtml(params.department || "Heritage Institute of Technology");
+  const origin = "https://www.hultprizehitk.live";
+
+  // Construct QR Payload (Matches scanner payload parsing in app/api/admin/teams/route.ts)
+  const qrPayload = JSON.stringify({
+    type: "hult_event_pass",
+    event: params.eventTitle,
+    teamCode: params.teamCode || "",
+    name: params.name || "",
+    email: params.email.trim().toLowerCase(),
+    roll: params.roll ? params.roll.trim() : undefined,
+  });
+
+  const qrImageUrl = `https://api.qrserver.com/v1/create-qr-code/?size=260x260&margin=10&format=png&data=${encodeURIComponent(qrPayload)}`;
+
+  const rows: [string, string][] = [
+    ["Event", eventTitle],
+    ["Attendee", safeName],
+    ["College Email", escapeHtml(params.email)],
+  ];
+  if (roll) rows.push(["College Roll No.", roll]);
+  if (department) rows.push(["Department", department]);
+  if (teamName) rows.push(["Team Name", teamName]);
+  if (teamCode) rows.push(["Team Code", `<strong style="color: #f20089; font-size: 15px; letter-spacing: 1.5px;">${teamCode}</strong>`]);
+  if (role) rows.push(["Role", role]);
+  if (eventDate) rows.push(["Event Date", eventDate]);
+  if (eventVenue) rows.push(["Venue", eventVenue]);
+
+  const rowsHtml = rows
+    .map(
+      ([label, value]) => `
+                      <tr>
+                        <td style="color: #858591; padding: 5px 0; width: 34%;">${label}:</td>
+                        <td style="color: #ffffff; font-weight: 600; padding: 5px 0;">${value}</td>
+                      </tr>`
+    )
+    .join("\n");
+
+  const badgeText = [teamCode, roll ? `ROLL: ${roll}` : ""].filter(Boolean).join(" &bull; ");
+
+  const contentHtml = `
+                <h1 style="margin: 0 0 16px 0; font-size: 22px; font-weight: 700; color: #ffffff; letter-spacing: -0.2px;">
+                  Official Event Entry Pass
+                </h1>
+
+                <p style="margin: 0 0 24px 0; font-size: 15px; line-height: 1.65; color: #d4d4d8;">
+                  Hello <strong>${safeName}</strong>, your digital check-in pass for <strong style="color: #ffffff;">${eventTitle}</strong> is ready. Present the QR code below at the registration desk for venue entry.
+                </p>
+
+                <!-- High-Contrast QR Code Card -->
+                <table role="presentation" width="100%" border="0" cellspacing="0" cellpadding="0" style="background-color: #1a1a20; border: 1px solid #2e2e36; border-radius: 12px; margin-bottom: 24px; text-align: center;">
+                  <tr>
+                    <td style="padding: 24px 20px;" align="center">
+                      <div style="display: inline-block; background-color: #ffffff; padding: 14px; border-radius: 12px; box-shadow: 0 6px 20px rgba(0, 0, 0, 0.45);">
+                        <img src="${qrImageUrl}" width="220" height="220" alt="Check-In QR Pass" style="display: block; border: 0;" />
+                      </div>
+                      ${
+                        badgeText
+                          ? `<div style="margin-top: 14px; font-family: 'Courier New', Courier, monospace; font-size: 13px; font-weight: 700; color: #f20089; letter-spacing: 2px;">${badgeText}</div>`
+                          : ""
+                      }
+                      <div style="margin-top: 6px; font-size: 11px; color: #71717a; text-transform: uppercase; letter-spacing: 1px;">
+                        Fast-Track QR Pass &bull; Keep Ready at Entrance
+                      </div>
+                    </td>
+                  </tr>
+                </table>
+
+                <!-- Attendee & Event Dossier -->
+                <table role="presentation" width="100%" border="0" cellspacing="0" cellpadding="0" style="background-color: #1a1a20; border: 1px solid #2e2e36; border-radius: 10px; margin-bottom: 24px;">
+                  <tr>
+                    <td style="padding: 18px 22px;">
+                      <div style="font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; color: #f20089; margin-bottom: 12px;">
+                        Attendee &amp; Event Dossier
+                      </div>
+                      <table role="presentation" width="100%" border="0" cellspacing="0" cellpadding="0" style="font-size: 14px; line-height: 1.6;">
+                        ${rowsHtml}
+                      </table>
+                    </td>
+                  </tr>
+                </table>
+
+                <!-- Check-in Guidance Notice -->
+                <div style="background-color: #14141a; border-left: 3px solid #f20089; padding: 12px 16px; border-radius: 6px; font-size: 12px; color: #a1a1aa; line-height: 1.55; margin-bottom: 28px;">
+                  Keep this email accessible on your mobile phone upon arrival at <strong style="color: #ffffff;">${eventVenue}</strong>. Event coordinators will scan your QR code to record your verified check-in.
+                </div>
+
+                <!-- Action Button -->
+                <table role="presentation" width="100%" border="0" cellspacing="0" cellpadding="0" style="margin-bottom: 32px;">
+                  <tr>
+                    <td align="center">
+                      <a href="${origin}/events" target="_blank" style="display: inline-block; background-color: #f20089; color: #ffffff; font-size: 14px; font-weight: 700; text-decoration: none; padding: 13px 36px; border-radius: 8px; box-shadow: 0 4px 14px rgba(242, 0, 137, 0.35);">
+                        View Event Hub &rarr;
+                      </a>
+                    </td>
+                  </tr>
+                </table>
+
+                <!-- Sign-off -->
+                <table role="presentation" width="100%" border="0" cellspacing="0" cellpadding="0">
+                  <tr>
+                    <td style="border-top: 1px solid #27272a; padding-top: 20px;">
+                      <p style="margin: 0 0 4px 0; font-size: 14px; color: #a1a1aa;">
+                        Warm regards,
+                      </p>
+                      <p style="margin: 0; font-size: 14px; font-weight: 700; color: #ffffff;">
+                        Hult Prize HITK Team
+                      </p>
+                      <p style="margin: 2px 0 0 0; font-size: 12px; color: #71717a;">
+                        Heritage Institute of Technology, Kolkata
+                      </p>
+                    </td>
+                  </tr>
+                </table>`;
+
+  return getHultMailShell(contentHtml);
+}
+
+/**
+ * Dispatches the Official Event QR Entry Pass email directly to a participant.
+ */
+export async function sendEventQrPassEmail(params: EventQrPassEmailParams): Promise<SendEmailResult> {
+  const htmlContent = getEventQrPassEmailHtml(params);
+  return sendEmail({
+    to: [{ email: params.email, name: params.name }],
+    replyTo: { email: "hultprize.heritage@gmail.com", name: "Hult Prize HITK Support" },
+    subject: `Your Event Pass for ${params.eventTitle} — ${params.name}`,
+    htmlContent,
+  });
+}
+
