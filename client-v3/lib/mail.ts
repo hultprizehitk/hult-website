@@ -93,6 +93,9 @@ function sendGoogleWorkspaceSmtp(
           }
         } else if (step === 7 && code === "354") {
           step = 8;
+          const rawBase64 = Buffer.from(htmlContent).toString("base64");
+          const wrappedBase64 = rawBase64.match(/.{1,76}/g)?.join("\r\n") || rawBase64;
+
           const mime = [
             `From: "${senderName}" <${user}>`,
             `To: ${toAddresses.join(", ")}`,
@@ -102,7 +105,7 @@ function sendGoogleWorkspaceSmtp(
             `Content-Type: text/html; charset=UTF-8`,
             `Content-Transfer-Encoding: base64`,
             ``,
-            Buffer.from(htmlContent).toString("base64"),
+            wrappedBase64,
             `.`,
             ``,
           ].join("\r\n");
