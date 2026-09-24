@@ -89,9 +89,8 @@ export default function StudentProfilePage() {
   const [loadingTeams, setLoadingTeams] = useState(false);
   const [copiedCode, setCopiedCode] = useState<string | null>(null);
 
-  // Profile Edit State
+  // Profile Edit State (Phone & Roll only)
   const [isEditing, setIsEditing] = useState(false);
-  const [editName, setEditName] = useState("");
   const [editPhone, setEditPhone] = useState("");
   const [editRoll, setEditRoll] = useState("");
   const [savingProfile, setSavingProfile] = useState(false);
@@ -120,7 +119,6 @@ export default function StudentProfilePage() {
         const data = await res.json();
         if (data.success && data.user) {
           setProfile(data.user);
-          setEditName(data.user.name || user?.name || "");
           setEditPhone(data.user.phone ? data.user.phone.replace(/\D/g, "").slice(0, 10) : "");
           setEditRoll(data.user.roll ? data.user.roll.replace(/\D/g, "") : "");
         }
@@ -130,7 +128,7 @@ export default function StudentProfilePage() {
     } finally {
       setLoadingProfile(false);
     }
-  }, [session?.user?.email, user?.name]);
+  }, [session?.user?.email]);
 
   // 2. Fetch User Teams
   const fetchTeams = useCallback(async () => {
@@ -158,20 +156,14 @@ export default function StudentProfilePage() {
     }
   }, [status, fetchProfile, fetchTeams]);
 
-  // 3. Save Profile Details (Name, Phone & Roll)
+  // 3. Save Profile Details (Phone & Roll only)
   const handleSaveProfile = async (e: React.FormEvent) => {
     e.preventDefault();
     setSaveError(null);
     setSaveSuccess(null);
 
-    const cleanName = editName.trim();
     const cleanPhone = editPhone.replace(/\D/g, "").trim();
     const cleanRoll = editRoll.replace(/\D/g, "").trim();
-
-    if (!cleanName) {
-      setSaveError("Please enter your Full Name.");
-      return;
-    }
 
     if (!cleanPhone || cleanPhone.length !== 10) {
       setSaveError("Contact Phone must be a valid 10-digit number.");
@@ -189,7 +181,6 @@ export default function StudentProfilePage() {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          name: cleanName,
           phone: cleanPhone,
           roll: cleanRoll,
         }),
@@ -432,46 +423,28 @@ export default function StudentProfilePage() {
               />
 
               <div className="relative z-[2]">
-                {/* Avatar */}
-                <div className="relative mx-auto mb-4 flex h-20 w-20 items-center justify-center rounded-full border-2 border-white/40 bg-white/10 text-3xl font-extrabold text-white shadow-xl overflow-hidden backdrop-blur-xl">
-                  {user.image ? (
-                    // eslint-disable-next-line @next/next/no-img-element
-                    <img
-                      src={user.image}
-                      alt={profile?.name || user.name || "Student"}
-                      className="h-full w-full object-cover"
-                    />
-                  ) : (
-                    (profile?.name || user.name || "H").charAt(0).toUpperCase()
-                  )}
-                </div>
+                {/* Student Name & Email at Top */}
+                <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold text-white text-center mb-1">
+                  {profile?.name || user.name}
+                </h1>
+                <p className="text-xs text-white/50 text-center mb-4 font-mono font-medium tracking-tight">
+                  {user.email}
+                </p>
 
-                {/* Verified Badge & Edit Affordance */}
-                <div className="flex items-center justify-center gap-2 mb-3 flex-wrap">
-                  <div className="inline-flex items-center gap-1.5 rounded-full border border-emerald-400/40 bg-emerald-500/15 px-3.5 py-1 text-[10px] font-bold text-emerald-300 uppercase tracking-widest font-mono">
-                    <CheckCircle2 size={12} className="text-emerald-400" />
-                    <span>Verified HITK Student</span>
-                  </div>
+                {/* Edit Profile Affordance Below Email */}
+                <div className="flex items-center justify-center mb-6">
                   <button
                     type="button"
                     onClick={() => {
                       setIsEditing(!isEditing);
                       setSaveError(null);
                     }}
-                    className="inline-flex items-center gap-1.5 rounded-full border border-white/20 bg-white/10 hover:bg-white/20 px-3 py-1 text-[10px] font-bold text-white transition-all cursor-pointer backdrop-blur-md font-mono uppercase tracking-wider"
+                    className="inline-flex items-center gap-1.5 rounded-full border border-white/20 bg-white/10 hover:bg-white/20 px-4 py-1.5 text-[11px] font-bold text-white transition-all cursor-pointer backdrop-blur-md font-mono uppercase tracking-wider"
                   >
                     <Edit3 size={11} className="text-rose-300" />
                     <span>{isEditing ? "Cancel Edit" : "Edit Profile"}</span>
                   </button>
                 </div>
-
-                {/* Student Name & Email */}
-                <h1 className="text-2xl sm:text-3xl font-bold text-white text-center mb-0.5">
-                  {profile?.name || user.name}
-                </h1>
-                <p className="text-xs text-white/50 text-center mb-6 font-mono font-medium tracking-tight">
-                  {user.email}
-                </p>
 
                 {/* Success Alert */}
                 {saveSuccess && (
@@ -507,20 +480,6 @@ export default function StudentProfilePage() {
                     </div>
 
                     <div className="space-y-3.5">
-                      <div>
-                        <label className="block text-[10px] font-mono uppercase font-bold tracking-widest text-white/60 mb-1.5">
-                          Full Name *
-                        </label>
-                        <input
-                          type="text"
-                          required
-                          placeholder="Your full name"
-                          value={editName}
-                          onChange={(e) => setEditName(e.target.value)}
-                          className="w-full rounded-xl border border-white/15 bg-white/5 hover:bg-white/10 focus:bg-white/10 px-3.5 py-2.5 text-white placeholder-white/30 outline-none focus:border-white/40 text-xs sm:text-sm font-sans transition-all"
-                        />
-                      </div>
-
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
                         <div>
                           <label className="block text-[10px] font-mono uppercase font-bold tracking-widest text-white/60 mb-1.5">

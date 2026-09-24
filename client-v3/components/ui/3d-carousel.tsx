@@ -8,8 +8,9 @@ import {
   useMotionValue,
   useTransform,
 } from "framer-motion";
-import { Calendar, MapPin, Users, ArrowRight, Lock, Sparkles } from "lucide-react";
+import { Calendar, MapPin, Users, ArrowRight, Lock, Sparkles, Clock, Timer } from "lucide-react";
 import type { PublicEvent } from "@/types";
+import { useCountdown } from "@/lib/countdown";
 
 export const useIsomorphicLayoutEffect =
   typeof window !== "undefined" ? useLayoutEffect : useEffect;
@@ -116,6 +117,8 @@ interface Event3DCardProps {
 }
 
 function Event3DCard({ card, onSelectEvent, isDraggingRef }: Event3DCardProps) {
+  const countdown = useCountdown(card.event?.registrationDeadline);
+
   if (card.isDummy || !card.event) {
     // Premium Coming Soon Glass Card
     return (
@@ -188,7 +191,9 @@ function Event3DCard({ card, onSelectEvent, isDraggingRef }: Event3DCardProps) {
   const dateLabel = formatDateRange(event.startDate, event.endDate, event.date);
   const minReq = event.minTeamMembers || 2;
   const maxReq = event.maxTeamMembers || 4;
-  const tagLabel = event.tag ? event.tag.toUpperCase() : "FLAGSHIP";
+  const customTag = event.tag && event.tag.trim().toLowerCase() !== "flagship" ? event.tag : null;
+
+  const isClosed = event.registrationStatus === "closed" || countdown.isExpired;
 
   const handleAction = (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -198,23 +203,51 @@ function Event3DCard({ card, onSelectEvent, isDraggingRef }: Event3DCardProps) {
 
   return (
     <article
-      className="relative overflow-hidden rounded-2xl border border-white/25 bg-gradient-to-b from-[#1c182a]/95 via-[#130f21]/95 to-[#0b0914]/95 backdrop-blur-3xl p-4.5 sm:p-5 flex flex-col justify-between w-full h-[355px] sm:h-[365px] shadow-[0_25px_60px_rgba(0,0,0,0.9),inset_0_1px_0_rgba(255,255,255,0.25)] select-none group hover:border-rose-400/50 transition-all cursor-pointer"
+      className="relative overflow-hidden rounded-2xl border border-white/20 bg-gradient-to-b from-[#1c182a]/95 via-[#130f21]/95 to-[#0b0914]/95 backdrop-blur-3xl p-4.5 sm:p-5 flex flex-col justify-between w-full h-[390px] sm:h-[400px] shadow-[0_25px_60px_rgba(0,0,0,0.9),inset_0_1px_0_rgba(255,255,255,0.2)] select-none group hover:border-rose-400/50 transition-all cursor-pointer"
       onClick={handleAction}
     >
       {/* Top Iridescent Glow Line */}
       <div className="pointer-events-none absolute inset-x-0 top-0 h-[1.5px] bg-gradient-to-r from-transparent via-rose-400/60 to-transparent" />
       <div className="pointer-events-none absolute -top-12 -right-12 h-32 w-32 rounded-full bg-rose-500/10 blur-2xl group-hover:bg-rose-500/20 transition-all" />
 
-      <div className="flex flex-col gap-2.5 sm:gap-3">
+      <div className="flex flex-col gap-2">
         {/* Status Badges Row */}
         <div className="flex items-center justify-between gap-1.5 pt-0.5">
-          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-[9px] font-mono font-bold uppercase tracking-widest bg-rose-500/15 border border-rose-400/30 text-rose-200 backdrop-blur-md">
-            {tagLabel}
-          </span>
+          {customTag ? (
+            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-medium bg-white/[0.08] border border-white/20 text-white/90 backdrop-blur-md">
+              {customTag}
+            </span>
+          ) : (
+            <span className="inline-flex items-center gap-1.5 text-[11px] text-white/50 font-medium">
+              <Sparkles size={11} className="text-rose-300/70" />
+              <span>OnCampus Series</span>
+            </span>
+          )}
 
-          <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[9px] font-mono font-bold uppercase tracking-widest bg-emerald-500/15 border border-emerald-400/40 text-emerald-300 backdrop-blur-md">
-            <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse" />
-            <span>REGISTERING</span>
+          <span
+            className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-medium backdrop-blur-md transition-all ${
+              isClosed
+                ? "bg-rose-500/[0.1] border border-rose-500/25 text-rose-300"
+                : event.registrationStatus === "extended"
+                ? "bg-amber-500/[0.1] border border-amber-500/25 text-amber-300 shadow-[0_0_12px_rgba(245,158,11,0.15)]"
+                : "bg-emerald-500/[0.1] border border-emerald-500/25 text-emerald-400 shadow-[0_0_12px_rgba(16,185,129,0.15)]"
+            }`}
+          >
+            {isClosed ? (
+              <span className="h-1.5 w-1.5 rounded-full bg-rose-400/80 shrink-0" />
+            ) : (
+              <span className="relative flex h-1.5 w-1.5 shrink-0">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-60" />
+                <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-emerald-400 shadow-[0_0_6px_rgba(52,211,153,0.8)]" />
+              </span>
+            )}
+            <span>
+              {isClosed
+                ? "Closed"
+                : event.registrationStatus === "extended"
+                ? "Extended"
+                : "Registrations Open"}
+            </span>
           </span>
         </div>
 
@@ -226,23 +259,25 @@ function Event3DCard({ card, onSelectEvent, isDraggingRef }: Event3DCardProps) {
           {event.title}
         </h3>
 
-        {/* Description - 3 lines line-clamp-3 for rich full look */}
+        {/* Description - 2 lines for clean balanced spacing */}
         {event.description && (
-          <p className="text-[11px] text-white/85 line-clamp-3 leading-relaxed font-sans font-medium">
+          <p className="text-[11px] text-white/80 line-clamp-2 leading-relaxed font-sans font-medium">
             {event.description}
           </p>
         )}
 
-        {/* Meta Tiles - pushed down comfortably */}
-        <div className="grid grid-cols-1 gap-2 pt-1 sm:pt-1.5">
-          <div className="bg-white/[0.06] border border-white/12 rounded-xl p-2.5 flex items-center gap-2.5 text-[11px] text-white font-medium backdrop-blur-md">
-            <Calendar size={13} className="text-rose-300 shrink-0" />
+        {/* Meta Tiles Grid */}
+        <div className="grid grid-cols-1 gap-1.5 pt-0.5">
+          {/* Tile 1: Event Schedule */}
+          <div className="bg-white/[0.05] border border-white/10 rounded-xl px-2.5 py-1.5 flex items-center gap-2 text-[11px] text-white font-medium backdrop-blur-md">
+            <Calendar size={12} className="text-rose-300 shrink-0" />
             <span className="truncate">{dateLabel}</span>
           </div>
 
-          <div className="bg-white/[0.06] border border-white/12 rounded-xl p-2.5 flex items-center justify-between text-[11px] text-white font-medium backdrop-blur-md">
-            <span className="flex items-center gap-2 truncate">
-              <MapPin size={13} className="text-rose-300 shrink-0" />
+          {/* Tile 2: Venue & Roster */}
+          <div className="bg-white/[0.05] border border-white/10 rounded-xl px-2.5 py-1.5 flex items-center justify-between text-[11px] text-white font-medium backdrop-blur-md">
+            <span className="flex items-center gap-1.5 truncate">
+              <MapPin size={12} className="text-rose-300 shrink-0" />
               <span className="truncate">{event.venue || "SV Auditorium"}</span>
             </span>
             <span className="flex items-center gap-1 shrink-0 text-white/70 text-[10px] font-mono">
@@ -250,11 +285,49 @@ function Event3DCard({ card, onSelectEvent, isDraggingRef }: Event3DCardProps) {
               <span>{minReq}–{maxReq} Members</span>
             </span>
           </div>
+
+          {/* Tile 3: Registration Deadline & Reverse Countdown Timer */}
+          <div
+            className={`rounded-xl px-2.5 py-1.5 flex items-center justify-between text-[11px] font-medium backdrop-blur-md transition-all ${
+              isClosed
+                ? "bg-white/[0.03] border border-white/10 text-white/60"
+                : "bg-rose-500/[0.08] border border-rose-500/25 text-white shadow-[0_0_15px_rgba(242,0,137,0.1)]"
+            }`}
+          >
+            <div className="flex items-center gap-1.5 truncate min-w-0">
+              <Clock size={12} className={isClosed ? "text-white/40 shrink-0" : "text-rose-400 shrink-0"} />
+              <div className="flex flex-col truncate">
+                <span className="text-[9px] uppercase tracking-wider text-white/50 font-mono leading-none">
+                  Deadline
+                </span>
+                <span className="text-[11px] font-semibold text-white/90 truncate leading-tight pt-0.5">
+                  {countdown.formattedDeadline}
+                </span>
+              </div>
+            </div>
+
+            <div className="shrink-0 pl-1.5">
+              {isClosed ? (
+                <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[9px] font-mono font-semibold bg-rose-500/10 border border-rose-500/20 text-rose-300">
+                  Closed
+                </span>
+              ) : countdown.hasDeadline ? (
+                <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[10px] font-mono font-bold tracking-wider bg-rose-500/20 border border-rose-400/40 text-rose-200 shadow-sm">
+                  <Timer size={10} className="text-rose-300 shrink-0 animate-pulse" />
+                  <span className="tabular-nums">{countdown.countdownText}</span>
+                </span>
+              ) : (
+                <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[9px] font-mono font-semibold bg-emerald-500/10 border border-emerald-500/20 text-emerald-400">
+                  Active
+                </span>
+              )}
+            </div>
+          </div>
         </div>
       </div>
 
       {/* CTA Button Row */}
-      <div className="pt-2.5 border-t border-white/15">
+      <div className="pt-2 border-t border-white/10">
         <button
           type="button"
           onClick={handleAction}
@@ -295,7 +368,7 @@ const Carousel3D = memo(
 
     return (
       <div
-        className="flex min-h-[440px] sm:min-h-[460px] items-center justify-center bg-transparent py-1 select-none"
+        className="flex min-h-[480px] sm:min-h-[500px] items-center justify-center bg-transparent py-1 select-none"
         style={{
           perspective: "2400px",
           transformStyle: "preserve-3d",

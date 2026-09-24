@@ -86,18 +86,9 @@ export default function RegisterPage() {
               />
 
               <div className="relative z-[2]">
-                {/* Avatar */}
-                <div className="relative mx-auto mb-4 flex h-20 w-20 items-center justify-center rounded-full border-2 border-white/40 bg-white/10 text-3xl font-extrabold text-white shadow-xl overflow-hidden backdrop-blur-xl">
-                  {user.image ? (
-                    // eslint-disable-next-line @next/next/no-img-element
-                    <img
-                      src={user.image}
-                      alt={user.name || "Student"}
-                      className="h-full w-full object-cover"
-                    />
-                  ) : (
-                    user.name?.charAt(0) || "H"
-                  )}
+                {/* Profile Letter Circle Avatar (WhatsApp Style) */}
+                <div className="relative mx-auto mb-4 flex h-20 w-20 items-center justify-center rounded-full border-2 border-white/30 bg-white/10 text-3xl sm:text-4xl font-bold text-white shadow-xl backdrop-blur-xl select-none">
+                  {(user.name || "H").trim().charAt(0).toUpperCase()}
                 </div>
 
                 {/* Verified Badge */}

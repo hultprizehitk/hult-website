@@ -6,6 +6,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useSession, signOut } from "next-auth/react";
 import { ArrowRight, Menu, X } from "lucide-react";
+import { parseHeritageEmail } from "@/lib/heritage-parser";
 
 interface SiteHeaderProps {
   className?: string;
@@ -22,7 +23,9 @@ export default function SiteHeader({
   const pathname = usePathname() || "";
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
-  const firstName = session?.user?.name ? session.user.name.split(" ")[0] : "Student";
+  const email = session?.user?.email;
+  const parsedStudent = email ? parseHeritageEmail(email, session?.user?.name) : null;
+  const firstName = parsedStudent?.firstName || (session?.user?.name ? session.user.name.split(" ")[0] : "Student");
 
   return (
     <>
@@ -143,64 +146,103 @@ export default function SiteHeader({
         </div>
       </header>
 
-      {/* Mobile Slide-Down Menu Overlay */}
+      {/* Mobile Slide-Down Menu Overlay — Matching Profile Card Glass Style */}
       {mobileMenuOpen && (
         <div
           style={{ top: "calc(var(--banner-height, 0px) + 64px)" }}
-          className="fixed inset-x-0 z-[85] md:hidden bg-black/95 backdrop-blur-3xl border-b border-white/15 px-6 py-6 shadow-2xl flex flex-col gap-4 font-[family-name:var(--font-google-sans)] animate-in fade-in slide-in-from-top-2 duration-200"
+          className="fixed inset-x-0 z-[85] md:hidden bg-black/60 backdrop-blur-2xl border-b border-white/15 px-5 py-5 shadow-2xl flex flex-col gap-2.5 font-[family-name:var(--font-google-sans)] animate-in fade-in slide-in-from-top-2 duration-200 overflow-hidden"
         >
-          <Link
-            href="/"
-            onClick={() => setMobileMenuOpen(false)}
-            className="text-base font-semibold text-white/90 hover:text-white py-2 border-b border-white/5 transition-colors"
-          >
-            Home
-          </Link>
-          <Link
-            href="/events"
-            onClick={() => setMobileMenuOpen(false)}
-            className="text-base font-semibold text-white/90 hover:text-white py-2 border-b border-white/5 transition-colors"
-          >
-            Events Calendar
-          </Link>
-          {pathname.startsWith("/team") && (
+          {/* Glass Top Specular Highlight matching the profile card below */}
+          <div
+            className="pointer-events-none absolute top-0 inset-x-0 h-[40%] bg-gradient-to-b from-white/10 to-transparent z-[1]"
+            aria-hidden="true"
+          />
+
+          <div className="relative z-[2] flex flex-col gap-2.5">
+            {/* Navigation Links — Styled as the profile card tiles */}
             <Link
-              href="/team"
+              href="/"
               onClick={() => setMobileMenuOpen(false)}
-              className="text-base font-semibold text-white/90 hover:text-white py-2 border-b border-white/5 transition-colors"
+              className={`rounded-2xl border px-4 py-3.5 text-sm font-semibold transition-all flex items-center justify-between backdrop-blur-md ${
+                pathname === "/"
+                  ? "border-white/20 bg-white/[0.09] text-white shadow-sm"
+                  : "border-white/10 bg-white/[0.04] text-white/80 hover:bg-white/[0.07] hover:text-white"
+              }`}
             >
-              Organizing Team
+              <span>Home</span>
+              {pathname === "/" && (
+                <span className="h-1.5 w-1.5 rounded-full bg-white/70 shadow-[0_0_6px_rgba(255,255,255,0.8)]" />
+              )}
             </Link>
-          )}
-          {status === "authenticated" ? (
-            <>
+
+            <Link
+              href="/events"
+              onClick={() => setMobileMenuOpen(false)}
+              className={`rounded-2xl border px-4 py-3.5 text-sm font-semibold transition-all flex items-center justify-between backdrop-blur-md ${
+                pathname.startsWith("/events")
+                  ? "border-white/20 bg-white/[0.09] text-white shadow-sm"
+                  : "border-white/10 bg-white/[0.04] text-white/80 hover:bg-white/[0.07] hover:text-white"
+              }`}
+            >
+              <span>Events Calendar</span>
+              {pathname.startsWith("/events") && (
+                <span className="h-1.5 w-1.5 rounded-full bg-white/70 shadow-[0_0_6px_rgba(255,255,255,0.8)]" />
+              )}
+            </Link>
+
+            {pathname.startsWith("/team") && (
               <Link
-                href="/profile"
+                href="/team"
                 onClick={() => setMobileMenuOpen(false)}
-                className="text-base font-semibold text-white/90 hover:text-white py-2 border-b border-white/5 transition-colors"
+                className="rounded-2xl border border-white/10 bg-white/[0.04] hover:bg-white/[0.07] px-4 py-3.5 text-sm font-semibold text-white/80 hover:text-white transition-all flex items-center justify-between backdrop-blur-md"
               >
-                Student Profile &amp; Pass
+                <span>Organizing Team</span>
               </Link>
-              <button
-                type="button"
-                onClick={() => {
-                  setMobileMenuOpen(false);
-                  signOut({ callbackUrl: "/" });
-                }}
-                className="text-left text-base font-semibold text-rose-400 py-2 transition-colors cursor-pointer"
-              >
-                Sign Out
-              </button>
-            </>
-          ) : (
-            <Link
-              href="/register"
-              onClick={() => setMobileMenuOpen(false)}
-              className="text-base font-semibold text-white/90 hover:text-white py-2 border-b border-white/5 transition-colors"
-            >
-              Student Portal &amp; Registration
-            </Link>
-          )}
+            )}
+
+            {status === "authenticated" ? (
+              <div className="pt-2 flex flex-col gap-2.5 border-t border-white/10 mt-1">
+                <Link
+                  href="/profile"
+                  onClick={() => setMobileMenuOpen(false)}
+                  className={`rounded-2xl border px-4 py-3.5 text-sm font-semibold transition-all flex items-center justify-between backdrop-blur-md ${
+                    pathname === "/profile"
+                      ? "border-white/20 bg-white/[0.09] text-white"
+                      : "border-white/10 bg-white/[0.04] text-white/90 hover:bg-white/[0.07]"
+                  }`}
+                >
+                  <div className="flex items-center gap-2.5">
+                    <span className="h-2 w-2 rounded-full bg-emerald-400 animate-pulse" />
+                    <span>Student Profile &amp; Pass</span>
+                  </div>
+                  <span className="inline-flex items-center text-[10px] font-mono font-bold text-emerald-300 bg-emerald-500/15 border border-emerald-400/40 px-2.5 py-0.5 rounded-full">
+                    {firstName}
+                  </span>
+                </Link>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setMobileMenuOpen(false);
+                    signOut({ callbackUrl: "/" });
+                  }}
+                  className="w-full text-left rounded-2xl border border-white/10 bg-white/[0.04] hover:bg-rose-500/10 hover:border-rose-500/20 px-4 py-3 text-xs font-semibold text-rose-300/90 hover:text-rose-200 transition-all cursor-pointer font-mono"
+                >
+                  Sign Out
+                </button>
+              </div>
+            ) : (
+              <div className="pt-2 border-t border-white/10 mt-1">
+                <Link
+                  href="/register"
+                  onClick={() => setMobileMenuOpen(false)}
+                  className="w-full flex items-center justify-center gap-2 rounded-full bg-white hover:bg-neutral-100 px-5 py-3 text-xs font-bold text-neutral-950 uppercase tracking-wider shadow-lg transition-all cursor-pointer"
+                >
+                  <span>Student Portal &amp; Register</span>
+                  <ArrowRight size={13} className="text-neutral-950" />
+                </Link>
+              </div>
+            )}
+          </div>
         </div>
       )}
     </>

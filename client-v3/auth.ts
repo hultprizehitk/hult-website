@@ -126,6 +126,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
           }
 
           user.id = dbUser._id.toString();
+          user.name = parsed.fullName || dbUser.name || user.name;
           (user as { department?: string }).department = dbUser.department;
           (user as { year?: string }).year = dbUser.year;
           (user as { role?: string }).role = assignedRole;
@@ -141,6 +142,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
     async jwt({ token, user }) {
       if (user) {
         token.id = user.id;
+        if (user.name) token.name = user.name;
         token.department = (user as { department?: string }).department;
         token.year = (user as { year?: string }).year;
         token.role = (user as { role?: string }).role || "user";
@@ -152,6 +154,9 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
     async session({ session, token }) {
       if (session.user && token) {
         session.user.id = token.id as string;
+        if (token.name) {
+          session.user.name = token.name as string;
+        }
         Object.assign(session.user, {
           department: token.department,
           year: token.year,

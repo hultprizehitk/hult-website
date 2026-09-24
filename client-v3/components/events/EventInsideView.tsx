@@ -15,8 +15,11 @@ import {
   Target,
   CheckCircle2,
   Gavel,
+  Clock,
+  Timer,
 } from "lucide-react";
 import type { PublicEvent } from "@/types";
+import { useCountdown } from "@/lib/countdown";
 import EventRegistrationModal from "@/components/events/EventRegistrationModal";
 
 interface EventInsideViewProps {
@@ -91,6 +94,8 @@ export default function EventInsideView({
 
   const minMembers = event.minTeamMembers || 2;
   const maxMembers = event.maxTeamMembers || 4;
+  const countdown = useCountdown(event.registrationDeadline);
+  const isClosed = event.registrationStatus === "closed" || countdown.isExpired;
 
   const hasRounds = Array.isArray(event.rounds) && event.rounds.length > 0;
   const hasRules = Array.isArray(event.rules) && event.rules.length > 0;
@@ -110,17 +115,17 @@ export default function EventInsideView({
         <button
           type="button"
           onClick={onBack}
-          className="inline-flex items-center gap-2 rounded-full bg-black/60 hover:bg-black/85 border border-white/20 backdrop-blur-xl px-5 py-2.5 text-xs font-semibold tracking-wider text-white hover:scale-105 transition-all shadow-xl cursor-pointer"
+          className="inline-flex items-center gap-2 rounded-full bg-gradient-to-r from-white/[0.08] via-white/[0.05] to-white/[0.02] hover:from-white/[0.15] hover:to-white/[0.08] border border-white/20 hover:border-rose-400/40 backdrop-blur-2xl px-5 py-2.5 text-xs font-semibold tracking-wider text-white hover:scale-105 transition-all shadow-[0_8px_25px_rgba(0,0,0,0.6),inset_0_1px_0_rgba(255,255,255,0.15)] cursor-pointer"
         >
-          <ArrowLeft size={14} className="text-white" />
+          <ArrowLeft size={14} className="text-rose-300" />
           <span className="uppercase">Back to Events</span>
         </button>
 
-        <div className="flex items-center gap-2 text-xs font-medium text-white/70 uppercase tracking-widest bg-black/50 border border-white/15 backdrop-blur-xl px-4 py-2 rounded-full shadow-lg">
-          <Link href="/events" onClick={onBack} className="hover:text-white transition-colors">
+        <div className="flex items-center gap-2 text-xs font-medium text-white/80 uppercase tracking-widest bg-gradient-to-r from-[#1c182a]/90 via-[#130f21]/90 to-[#0b0914]/90 border border-white/15 hover:border-white/25 backdrop-blur-2xl px-4 py-2 rounded-full shadow-[0_8px_25px_rgba(0,0,0,0.5),inset_0_1px_0_rgba(255,255,255,0.12)]">
+          <Link href="/events" onClick={onBack} className="hover:text-rose-300 transition-colors">
             Events
           </Link>
-          <span className="text-white/40">/</span>
+          <span className="text-rose-400/60 font-mono">/</span>
           <span className="text-white font-bold max-w-[200px] truncate">
             {event.title}
           </span>
@@ -177,8 +182,8 @@ export default function EventInsideView({
             </h1>
 
             {/* Meta Grid */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
-              <div className="bg-white/5 border border-white/10 rounded-2xl p-3.5 flex flex-col gap-1 shadow-md">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+              <div className="bg-white/5 border border-white/10 rounded-2xl p-3.5 flex flex-col justify-between gap-1 shadow-md">
                 <span className="flex items-center gap-2 text-[10px] font-bold tracking-widest uppercase text-white/60">
                   <Calendar size={13} className="text-rose-300/90 shrink-0" />
                   <span>Schedule</span>
@@ -188,7 +193,7 @@ export default function EventInsideView({
                 </span>
               </div>
 
-              <div className="bg-white/5 border border-white/10 rounded-2xl p-3.5 flex flex-col gap-1 shadow-md">
+              <div className="bg-white/5 border border-white/10 rounded-2xl p-3.5 flex flex-col justify-between gap-1 shadow-md">
                 <span className="flex items-center gap-2 text-[10px] font-bold tracking-widest uppercase text-white/60">
                   <MapPin size={13} className="text-rose-300/90 shrink-0" />
                   <span>Venue</span>
@@ -198,13 +203,45 @@ export default function EventInsideView({
                 </span>
               </div>
 
-              <div className="bg-white/5 border border-white/10 rounded-2xl p-3.5 flex flex-col gap-1 shadow-md sm:col-span-2 md:col-span-1">
+              <div className="bg-white/5 border border-white/10 rounded-2xl p-3.5 flex flex-col justify-between gap-1 shadow-md">
                 <span className="flex items-center gap-2 text-[10px] font-bold tracking-widest uppercase text-white/60">
                   <Users size={13} className="text-rose-300/90 shrink-0" />
                   <span>Roster Size</span>
                 </span>
                 <span className="text-xs sm:text-sm font-bold text-white">
                   {minMembers}–{maxMembers} Members / Team
+                </span>
+              </div>
+
+              <div
+                className={`rounded-2xl p-3.5 flex flex-col justify-between gap-1 shadow-md transition-all ${
+                  isClosed
+                    ? "bg-white/5 border border-white/10 text-white/70"
+                    : "bg-rose-500/[0.08] border border-rose-500/25 text-white shadow-[0_0_15px_rgba(242,0,137,0.12)]"
+                }`}
+              >
+                <div className="flex items-center justify-between gap-2">
+                  <span className="flex items-center gap-1.5 text-[10px] font-bold tracking-widest uppercase text-white/60">
+                    <Clock size={13} className={isClosed ? "text-white/40 shrink-0" : "text-rose-400 shrink-0"} />
+                    <span>Deadline</span>
+                  </span>
+                  {isClosed ? (
+                    <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[9px] font-mono font-semibold bg-rose-500/10 border border-rose-500/20 text-rose-300">
+                      Closed
+                    </span>
+                  ) : countdown.hasDeadline ? (
+                    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-mono font-bold tracking-wider bg-rose-500/20 border border-rose-400/40 text-rose-200 shadow-sm">
+                      <Timer size={10} className="text-rose-300 shrink-0 animate-pulse" />
+                      <span className="tabular-nums">{countdown.countdownText}</span>
+                    </span>
+                  ) : (
+                    <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[9px] font-mono font-semibold bg-emerald-500/10 border border-emerald-500/20 text-emerald-400">
+                      Active
+                    </span>
+                  )}
+                </div>
+                <span className="text-xs sm:text-sm font-semibold text-white truncate">
+                  {countdown.formattedDeadline}
                 </span>
               </div>
             </div>
@@ -403,14 +440,20 @@ export default function EventInsideView({
                     <span className="w-1.5 h-1.5 rounded-full bg-rose-400/80 mt-1.5 shrink-0" />
                     <span>Each participant may belong to only one registered roster.</span>
                   </li>
-                  {event.registrationDeadline && (
+                  {countdown.hasDeadline && (
                     <li className="flex items-start gap-2">
                       <span className="w-1.5 h-1.5 rounded-full bg-rose-400/80 mt-1.5 shrink-0" />
-                      <span>
-                        Registration Deadline:{" "}
-                        <strong className="text-rose-300">
-                          {formatDate(event.registrationDeadline)}
+                      <span className="flex items-center gap-2 flex-wrap">
+                        <span>Registration Deadline:</span>
+                        <strong className="text-rose-300 font-semibold">
+                          {countdown.formattedDeadline}
                         </strong>
+                        {!isClosed && (
+                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-mono font-bold bg-rose-500/20 border border-rose-400/40 text-rose-200">
+                            <Timer size={10} className="text-rose-300 shrink-0 animate-pulse" />
+                            <span className="tabular-nums">{countdown.countdownText}</span>
+                          </span>
+                        )}
                       </span>
                     </li>
                   )}
@@ -423,9 +466,9 @@ export default function EventInsideView({
               <button
                 type="button"
                 onClick={onBack}
-                className="inline-flex items-center gap-2 rounded-full bg-black/60 hover:bg-black/85 border border-white/20 px-5 py-2.5 text-xs font-semibold text-white transition-all cursor-pointer shadow-lg"
+                className="inline-flex items-center gap-2 rounded-full bg-gradient-to-r from-white/[0.08] via-white/[0.05] to-white/[0.02] hover:from-white/[0.15] hover:to-white/[0.08] border border-white/20 hover:border-rose-400/40 backdrop-blur-2xl px-5 py-2.5 text-xs font-semibold text-white transition-all cursor-pointer shadow-[0_8px_25px_rgba(0,0,0,0.6),inset_0_1px_0_rgba(255,255,255,0.15)]"
               >
-                <ArrowLeft size={13} className="text-white" />
+                <ArrowLeft size={13} className="text-rose-300" />
                 <span>Back to All Events</span>
               </button>
 

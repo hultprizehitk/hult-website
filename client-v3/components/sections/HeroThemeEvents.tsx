@@ -3,8 +3,9 @@
 import React, { useEffect, useState } from "react";
 import Link from "next/link";
 import ScrollReveal from "@/components/ui/ScrollReveal";
-import { Calendar, MapPin, Users, ArrowRight } from "lucide-react";
+import { Calendar, MapPin, Users, ArrowRight, Clock, Timer } from "lucide-react";
 import type { PublicEvent } from "@/types";
+import { useCountdown } from "@/lib/countdown";
 
 function formatDate(dateStr?: string) {
   if (!dateStr) return "TBD";
@@ -98,19 +99,9 @@ export default function HeroThemeEvents({ scrollProgress }: HeroThemeEventsProps
     };
   }, []);
 
-  if (loading) {
-    return (
-      <section id="events" className="w-full py-20 px-6 text-center bg-transparent">
-        <div className="inline-block h-6 w-6 animate-spin rounded-full border-2 border-white border-t-transparent" />
-      </section>
-    );
-  }
-
-  if (events.length === 0) return null;
-
-  const featuredEvent = events[selectedIndex] || events[0];
-  const minMembers = featuredEvent.minTeamMembers || 2;
-  const maxMembers = featuredEvent.maxTeamMembers || 4;
+  const featuredEvent = events.length > 0 ? (events[selectedIndex] || events[0]) : null;
+  const countdown = useCountdown(featuredEvent?.registrationDeadline);
+  const isClosed = featuredEvent ? (featuredEvent.registrationStatus === "closed" || countdown.isExpired) : false;
 
   // Scroll-driven pure opacity fade-in (ZERO vertical slide-in!) right after About Hult Prize section clears off
   const isScrollDriven = typeof scrollProgress === "number";
@@ -121,6 +112,19 @@ export default function HeroThemeEvents({ scrollProgress }: HeroThemeEventsProps
     : 1;
   const easeProgress = Math.sin((rawProgress * Math.PI) / 2);
   const eventsOpacity = isScrollDriven ? easeProgress : 1;
+
+  if (loading) {
+    return (
+      <section id="events" className="w-full py-20 px-6 text-center bg-transparent">
+        <div className="inline-block h-6 w-6 animate-spin rounded-full border-2 border-white border-t-transparent" />
+      </section>
+    );
+  }
+
+  if (events.length === 0 || !featuredEvent) return null;
+
+  const minMembers = featuredEvent.minTeamMembers || 2;
+  const maxMembers = featuredEvent.maxTeamMembers || 4;
 
   return (
     <section
@@ -188,28 +192,41 @@ export default function HeroThemeEvents({ scrollProgress }: HeroThemeEventsProps
             <div className="relative z-[2] flex flex-col gap-6">
               {/* Status Badges Row */}
               <div className="flex items-center gap-2.5 flex-wrap">
-                <span className="inline-flex items-center px-3.5 py-1 rounded-full text-[10px] font-bold tracking-widest uppercase bg-white/10 border border-white/30 text-white/90 font-mono">
-                  {featuredEvent.tag || "FLAGSHIP"}
-                </span>
-
-                {featuredEvent.registrationStatus === "closed" ? (
-                  <span className="inline-flex items-center gap-1.5 px-3.5 py-1 rounded-full text-[10px] font-bold tracking-wider uppercase bg-rose-950/40 border border-rose-400/50 text-rose-300 font-mono">
-                    REGISTRATIONS CLOSED
-                  </span>
-                ) : featuredEvent.registrationStatus === "extended" ? (
-                  <span className="inline-flex items-center gap-1.5 px-3.5 py-1 rounded-full text-[10px] font-bold tracking-wider uppercase bg-amber-950/40 border border-amber-400/50 text-amber-300 font-mono">
-                    <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse" />
-                    EXTENDED DEADLINE
-                  </span>
-                ) : (
-                  <span className="inline-flex items-center gap-1.5 px-3.5 py-1 rounded-full text-[10px] font-bold tracking-wider uppercase bg-emerald-950/40 border border-emerald-400/50 text-emerald-300 font-mono">
-                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-                    REGISTRATIONS OPEN
+                {featuredEvent.tag && featuredEvent.tag.trim().toLowerCase() !== "flagship" && (
+                  <span className="inline-flex items-center px-3 py-1 rounded-full text-[10px] font-bold tracking-widest uppercase bg-white/10 border border-white/20 text-white/90 font-mono">
+                    {featuredEvent.tag}
                   </span>
                 )}
 
-                <span className="inline-flex items-center px-3.5 py-1 rounded-full text-[10px] font-bold bg-white/10 border border-white/20 text-white/75 font-mono">
-                  Team: {minMembers} to {maxMembers} Members
+                <span
+                  className={`inline-flex items-center gap-2 px-3.5 py-1 rounded-full text-[10px] font-mono font-medium tracking-wider backdrop-blur-md transition-all ${
+                    isClosed
+                      ? "bg-rose-500/[0.1] border border-rose-500/25 text-rose-300"
+                      : featuredEvent.registrationStatus === "extended"
+                      ? "bg-amber-500/[0.1] border border-amber-500/25 text-amber-300 shadow-[0_0_12px_rgba(245,158,11,0.15)]"
+                      : "bg-emerald-500/[0.1] border border-emerald-500/25 text-emerald-300 shadow-[0_0_12px_rgba(16,185,129,0.15)]"
+                  }`}
+                >
+                  {isClosed ? (
+                    <span className="h-1.5 w-1.5 rounded-full bg-rose-400 shrink-0" />
+                  ) : (
+                    <span className="relative flex h-1.5 w-1.5 shrink-0">
+                      <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-60" />
+                      <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-emerald-400 shadow-[0_0_6px_rgba(52,211,153,0.8)]" />
+                    </span>
+                  )}
+                  <span>
+                    {isClosed
+                      ? "REGISTRATIONS CLOSED"
+                      : featuredEvent.registrationStatus === "extended"
+                      ? "EXTENDED DEADLINE"
+                      : "REGISTRATIONS OPEN"}
+                  </span>
+                </span>
+
+                <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-mono font-medium bg-white/[0.06] border border-white/15 text-white/80">
+                  <Users size={11} className="text-rose-300/80 shrink-0" />
+                  <span>Team: {minMembers}–{maxMembers} Members</span>
                 </span>
               </div>
 
@@ -221,9 +238,9 @@ export default function HeroThemeEvents({ scrollProgress }: HeroThemeEventsProps
                 {featuredEvent.title}
               </h3>
 
-              {/* Meta Grid (SCHEDULE, VENUE, ROSTER SIZE) */}
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3.5">
-                <div className="bg-white/[0.06] border border-white/10 rounded-2xl p-4 flex flex-col gap-1.5 shadow-md backdrop-blur-md hover:border-white/20 transition-all">
+              {/* Meta Grid (SCHEDULE, VENUE, ROSTER SIZE, REGISTRATION DEADLINE) */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5">
+                <div className="bg-white/[0.06] border border-white/10 rounded-2xl p-4 flex flex-col justify-between gap-1.5 shadow-md backdrop-blur-md hover:border-white/20 transition-all">
                   <span className="flex items-center gap-2 text-[10px] font-bold tracking-widest uppercase text-white/60 font-mono">
                     <Calendar size={13} className="text-rose-300/90 shrink-0" />
                     <span>SCHEDULE</span>
@@ -233,7 +250,7 @@ export default function HeroThemeEvents({ scrollProgress }: HeroThemeEventsProps
                   </span>
                 </div>
 
-                <div className="bg-white/[0.06] border border-white/10 rounded-2xl p-4 flex flex-col gap-1.5 shadow-md backdrop-blur-md hover:border-white/20 transition-all">
+                <div className="bg-white/[0.06] border border-white/10 rounded-2xl p-4 flex flex-col justify-between gap-1.5 shadow-md backdrop-blur-md hover:border-white/20 transition-all">
                   <span className="flex items-center gap-2 text-[10px] font-bold tracking-widest uppercase text-white/60 font-mono">
                     <MapPin size={13} className="text-rose-300/90 shrink-0" />
                     <span>VENUE</span>
@@ -243,13 +260,46 @@ export default function HeroThemeEvents({ scrollProgress }: HeroThemeEventsProps
                   </span>
                 </div>
 
-                <div className="bg-white/[0.06] border border-white/10 rounded-2xl p-4 flex flex-col gap-1.5 shadow-md backdrop-blur-md hover:border-white/20 transition-all">
+                <div className="bg-white/[0.06] border border-white/10 rounded-2xl p-4 flex flex-col justify-between gap-1.5 shadow-md backdrop-blur-md hover:border-white/20 transition-all">
                   <span className="flex items-center gap-2 text-[10px] font-bold tracking-widest uppercase text-white/60 font-mono">
                     <Users size={13} className="text-rose-300/90 shrink-0" />
                     <span>ROSTER SIZE</span>
                   </span>
                   <span className="text-xs sm:text-sm font-semibold text-white">
                     {minMembers}–{maxMembers} Members / Team
+                  </span>
+                </div>
+
+                {/* Registration Deadline & Reverse Countdown Tile */}
+                <div
+                  className={`rounded-2xl p-4 flex flex-col justify-between gap-1.5 shadow-md backdrop-blur-md transition-all ${
+                    isClosed
+                      ? "bg-white/[0.04] border border-white/10 text-white/70"
+                      : "bg-rose-500/[0.08] border border-rose-500/25 text-white shadow-[0_0_20px_rgba(242,0,137,0.12)] hover:border-rose-400/40"
+                  }`}
+                >
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="flex items-center gap-1.5 text-[10px] font-bold tracking-widest uppercase text-white/60 font-mono">
+                      <Clock size={13} className={isClosed ? "text-white/40 shrink-0" : "text-rose-400 shrink-0"} />
+                      <span>DEADLINE</span>
+                    </span>
+                    {isClosed ? (
+                      <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[9px] font-mono font-semibold bg-rose-500/10 border border-rose-500/20 text-rose-300">
+                        Closed
+                      </span>
+                    ) : countdown.hasDeadline ? (
+                      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-mono font-bold tracking-wider bg-rose-500/20 border border-rose-400/40 text-rose-200 shadow-sm">
+                        <Timer size={10} className="text-rose-300 shrink-0 animate-pulse" />
+                        <span className="tabular-nums">{countdown.countdownText}</span>
+                      </span>
+                    ) : (
+                      <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[9px] font-mono font-semibold bg-emerald-500/10 border border-emerald-500/20 text-emerald-400">
+                        Active
+                      </span>
+                    )}
+                  </div>
+                  <span className="text-xs sm:text-sm font-semibold text-white truncate">
+                    {countdown.formattedDeadline}
                   </span>
                 </div>
               </div>
