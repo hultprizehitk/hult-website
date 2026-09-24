@@ -155,10 +155,12 @@ export function HeroCenterpiece({ scrollProgress = 0 }: HeroInterfaceOverlayProp
   const editionScale = 1.0 - easeMorph * 0.12;
   const editionBlur = easeMorph * 4;
 
-  const aboutOpacity = Math.min(1, easeMorph * 1.2);
-  const aboutY = (1 - easeMorph) * 14;
-  const aboutScale = 0.88 + easeMorph * 0.12;
-  const aboutBlur = (1 - easeMorph) * 4;
+  const aboutFadeProgress = Math.min(1, Math.max(0, (scrollProgress - 0.06) / 0.18));
+  const easeAbout = Math.sin((aboutFadeProgress * Math.PI) / 2);
+  const aboutOpacity = Math.min(1, easeAbout * 1.2);
+  const aboutY = (1 - easeAbout) * 14;
+  const aboutScale = 0.88 + easeAbout * 0.12;
+  const aboutBlur = (1 - easeAbout) * 4;
 
   // 3. "HULT PRIZE" scale down (FIXED baseline, zero independent upward motion!)
   const hultPrizeTop = 120; 
@@ -172,42 +174,46 @@ export function HeroCenterpiece({ scrollProgress = 0 }: HeroInterfaceOverlayProp
   const exitProgress = Math.min(1, Math.max(0, (scrollProgress - 0.48) / 0.22));
   const overallOpacity = Math.max(0, 1 - exitProgress * 1.4);
 
+  // Mobile smooth upward shift on scroll so ABOUT HULT PRIZE sits 12-16px under Navbar
+  const mobileShiftY = -easeMorph * 154;
+
   return (
     <>
       {/* ── Mobile Phone Viewport Centerpiece (flex sm:hidden) ────────────────── */}
       <div
-        className="fixed inset-x-0 top-[72px] z-[70] pointer-events-none select-none flex sm:hidden flex-col items-start text-left px-5 sm:px-10 transition-opacity duration-300"
+        className="fixed inset-x-0 top-[112px] z-[70] pointer-events-none select-none flex sm:hidden flex-col items-center text-center px-5 sm:px-10 transition-opacity duration-300"
         style={{
           opacity: overallOpacity,
+          transform: `translate3d(0, ${mobileShiftY}px, 0)`,
           visibility: overallOpacity > 0.005 ? "visible" : "hidden",
         }}
       >
-        {/* Initial Subtitles: HERITAGE / INSTITUTE OF / TECHNOLOGY presents 7TH Edition of */}
+        {/* Initial Subtitles: HERITAGE / INSTITUTE OF / TECHNOLOGY presents */}
         <div
-          className="flex flex-col items-start transition-all duration-300 w-full"
+          className="flex flex-col items-center text-center transition-all duration-300 w-full"
           style={{
             opacity: heritageOpacity,
             transform: `translate3d(0, ${heritageY}px, 0)`,
             visibility: heritageOpacity > 0.005 ? "visible" : "hidden",
           }}
         >
-          {/* Monumental 3-Line Title Stack - Left Aligned */}
-          <div className="flex flex-col items-start leading-[1.04] text-[#280523] font-normal font-im-fell uppercase select-none drop-shadow-[0_1px_4px_rgba(255,255,255,0.7)]">
-            <span className="text-[min(10.5vw,2.9rem)] tracking-[0.03em]">
+          {/* Monumental 3-Line Title Stack - Center Aligned */}
+          <div className="flex flex-col items-center text-center leading-[1.04] text-[#280523] font-normal font-im-fell uppercase select-none drop-shadow-[0_1px_4px_rgba(255,255,255,0.7)]">
+            <span className="text-[min(8.2vw,2.25rem)] tracking-[0.04em]">
               HERITAGE
             </span>
-            <span className="text-[min(8.6vw,2.4rem)] tracking-[0.03em] mt-[0.04em]">
+            <span className="text-[min(6.7vw,1.85rem)] tracking-[0.04em] mt-[0.04em]">
               INSTITUTE OF
             </span>
-            <span className="text-[min(10.5vw,2.9rem)] tracking-[0.03em] mt-[0.04em]">
+            <span className="text-[min(8.2vw,2.25rem)] tracking-[0.04em] mt-[0.04em]">
               TECHNOLOGY
             </span>
           </div>
 
           {/* Copper Script "presents" - Centered under title stack */}
-          <div className="w-full flex justify-center max-w-[300px] my-1">
+          <div className="w-full flex justify-center max-w-[240px] my-1">
             <span
-              className="text-[min(8.0vw,2.2rem)] font-arizonia text-[#9E4000] font-normal italic"
+              className="text-[min(6.8vw,1.85rem)] font-arizonia text-[#9E4000] font-normal italic"
               style={{
                 textShadow: "0 2px 8px rgba(255,255,255,0.9)",
               }}
@@ -217,11 +223,11 @@ export function HeroCenterpiece({ scrollProgress = 0 }: HeroInterfaceOverlayProp
           </div>
         </div>
 
-        {/* Morphing 7th Edition / ABOUT Shared Container - 100% Identical vertical position & spacing above HULT PRIZE */}
-        <div className="relative w-full h-[1.6rem] mt-2 mb-0">
-          {/* 7TH Edition of (Initial state) */}
+        {/* Morphing 7th Edition / ABOUT Shared Container - Centered */}
+        <div className="relative w-full h-[2.1rem] mt-1.5 mb-0.5 flex justify-center">
+          {/* 7TH Edition of (Initial state) - Prominent & Centered */}
           <div
-            className="absolute left-0 top-0 flex items-baseline font-im-fell tracking-normal text-[#1A0318] font-normal transition-all duration-300"
+            className="absolute inset-x-0 top-0 flex items-baseline justify-center font-im-fell text-[#1A0318] transition-all duration-300"
             style={{
               opacity: heritageOpacity,
               transform: `translate3d(0, ${heritageY}px, 0)`,
@@ -229,18 +235,19 @@ export function HeroCenterpiece({ scrollProgress = 0 }: HeroInterfaceOverlayProp
               textShadow: "0 1px 6px rgba(255,255,255,0.9)",
             }}
           >
-            <span className="text-[min(6.2vw,1.75rem)] leading-none font-semibold">7</span>
-            <span className="text-[min(3.0vw,0.85rem)] leading-none -top-[0.42em] relative font-semibold ml-[1px] mr-[4px]">TH</span>
-            <span className="text-[min(5.0vw,1.4rem)] leading-none font-medium">Edition of</span>
+            <span className="text-[min(8.8vw,2.4rem)] leading-none font-bold tracking-tight">7</span>
+            <span className="text-[min(4.4vw,1.2rem)] leading-none -top-[0.45em] relative font-bold ml-[1.5px] mr-[5px]">TH</span>
+            <span className="text-[min(7.0vw,1.9rem)] leading-none font-bold tracking-[0.06em] uppercase">EDITION</span>
+            <span className="text-[min(5.0vw,1.35rem)] leading-none font-normal italic lowercase font-serif ml-2 opacity-80">of</span>
           </div>
 
-          {/* Morphing "ABOUT" Header (On scroll state) */}
+          {/* Morphing "ABOUT" Header (On scroll state) - Centered */}
           <div
-            className="absolute left-0 top-0 font-im-fell text-[min(5.0vw,1.4rem)] font-medium uppercase tracking-normal text-[#1A0318] transition-all duration-300"
+            className="absolute inset-x-0 top-0 flex items-center justify-center font-im-fell text-[min(6.2vw,1.75rem)] font-medium uppercase tracking-[0.08em] text-[#1A0318] transition-all duration-300"
             style={{
               opacity: aboutOpacity,
               transform: `translate3d(0, ${aboutY}px, 0)`,
-              visibility: aboutOpacity > 0.005 ? "visible" : "hidden",
+              visibility: aboutOpacity > 0.02 ? "visible" : "hidden",
               textShadow: "0 1px 6px rgba(255,255,255,0.9)",
             }}
           >
@@ -248,59 +255,62 @@ export function HeroCenterpiece({ scrollProgress = 0 }: HeroInterfaceOverlayProp
           </div>
         </div>
 
-        {/* Mobile HULT PRIZE Title - Left Aligned, Snug under 7th Edition / ABOUT */}
-        <div className="filter drop-shadow-[0_2px_10px_rgba(255,255,255,0.9)] -mt-1.5 mb-0.5 w-full">
+        {/* Mobile HULT PRIZE Title - Centered Aligned, 2 Lines */}
+        <div className="filter drop-shadow-[0_2px_10px_rgba(255,255,255,0.9)] mt-2.5 mb-0.5 w-full flex justify-center">
           <h1
-            className="font-serif text-[min(13.5vw,3.8rem)] font-normal uppercase tracking-[0.02em] text-[#3B0537] leading-[1.0] whitespace-nowrap"
+            className="font-serif text-[min(17.5vw,4.8rem)] font-normal uppercase tracking-[0.03em] text-[#3B0537] leading-[0.90] flex flex-col items-center text-center"
             style={{
               fontFamily: "'IM Fell Double Pica', Georgia, serif",
             }}
           >
-            HULT PRIZE
+            <span>HULT</span>
+            <span>PRIZE</span>
           </h1>
         </div>
 
-        {/* Mobile Register Now CTA Button placed cleanly BELOW HULT PRIZE */}
+        {/* Mobile Register Now CTA Button placed cleanly BELOW HULT PRIZE - Centered */}
         <div
-          className="mt-3.5 transition-all duration-300 pointer-events-auto"
+          className="w-full flex justify-center transition-all duration-300 pointer-events-auto overflow-hidden"
           style={{
             opacity: heritageOpacity,
             transform: `translate3d(0, ${heritageY}px, 0)`,
             visibility: heritageOpacity > 0.005 ? "visible" : "hidden",
+            maxHeight: heritageOpacity > 0.005 ? "50px" : "0px",
+            marginTop: heritageOpacity > 0.005 ? "12px" : "0px",
           }}
         >
           <Link
             href="/register"
-            className="inline-flex items-center gap-2 rounded-full bg-[#2D052A] hover:bg-[#450841] text-white px-5 py-2.5 text-xs font-semibold tracking-wide shadow-xl border border-white/20 transition-all duration-300 active:scale-95 group"
+            className="inline-flex items-center gap-2 rounded-full bg-[#2D052A] hover:bg-[#450841] text-white px-6 py-2.5 text-xs font-semibold tracking-wide shadow-xl border border-white/20 transition-all duration-300 active:scale-95 group"
           >
             <span>Register Now</span>
             <ArrowRight className="h-3.5 w-3.5 text-white/90 group-hover:translate-x-0.5 transition-transform" />
           </Link>
         </div>
 
-        {/* Mobile About Paragraph & Movement Taglines */}
+        {/* Mobile About Paragraph & Movement Taglines - Centered */}
         <div
-          className="flex flex-col items-center gap-3 mt-2 transition-all duration-300 max-w-[340px]"
+          className="flex flex-col items-center text-center gap-2.5 mt-1.5 transition-all duration-300 max-w-[340px] w-full"
           style={{
             opacity: paragraphOpacity,
             transform: `translate3d(0, ${paragraphY}px, 0)`,
             visibility: paragraphOpacity > 0.005 ? "visible" : "hidden",
           }}
         >
-          <p className="text-xs text-[#1A0318] leading-relaxed font-semibold bg-white/90 backdrop-blur-xl p-4 rounded-2xl border border-white shadow-2xl text-left">
+          <p className="text-xs text-[#1A0318] leading-[1.48] font-semibold bg-white/90 backdrop-blur-xl py-3 px-3.5 rounded-xl border border-white shadow-2xl text-left">
             The Hult Prize Foundation transforms how young people envision their own possibilities as leaders of change. With a US$1,000,000 global startup prize, we empower student founders to build sustainable social enterprises.
           </p>
 
           <div className="flex flex-wrap items-center justify-center gap-1.5 pt-0.5">
-            <div className="flex items-center gap-1.5 px-3 py-1 rounded-full border border-white/80 bg-white/80 backdrop-blur-md text-[10px] font-bold tracking-wider text-[#1A0318] shadow-md">
+            <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full border border-white/80 bg-white/80 backdrop-blur-md text-[10px] font-bold tracking-wider text-[#1A0318] shadow-md">
               <span className="h-1.5 w-1.5 rounded-full bg-[#E8396E] animate-pulse shrink-0" />
               <span>Join The Movement</span>
             </div>
-            <div className="flex items-center gap-1.5 px-3 py-1 rounded-full border border-white/80 bg-white/80 backdrop-blur-md text-[10px] font-bold tracking-wider text-[#1A0318] shadow-md">
+            <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full border border-white/80 bg-white/80 backdrop-blur-md text-[10px] font-bold tracking-wider text-[#1A0318] shadow-md">
               <span className="h-1.5 w-1.5 rounded-full bg-[#D97706] shrink-0" />
               <span>Bring The Change</span>
             </div>
-            <div className="flex items-center gap-1.5 px-3 py-1 rounded-full border border-white/80 bg-white/80 backdrop-blur-md text-[10px] font-bold tracking-wider text-[#1A0318] shadow-md">
+            <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full border border-white/80 bg-white/80 backdrop-blur-md text-[10px] font-bold tracking-wider text-[#1A0318] shadow-md">
               <span className="h-1.5 w-1.5 rounded-full bg-[#059669] shrink-0" />
               <span>Be The Changemaker</span>
             </div>

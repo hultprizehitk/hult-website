@@ -28,7 +28,7 @@ export default function SiteHeader({
     <>
       {/* Top Viewport Scrim Gradient — Black at top fading to transparent at bottom */}
       <div
-        className="pointer-events-none fixed top-0 inset-x-0 h-20 sm:h-24 md:h-28 z-40"
+        className="pointer-events-none fixed top-0 inset-x-0 h-20 sm:h-24 md:h-28 z-[75]"
         style={{
           background: "linear-gradient(to bottom, rgba(0, 0, 0, 0.6) 0%, rgba(0, 0, 0, 0.2) 65%, transparent 100%)",
         }}
@@ -36,7 +36,7 @@ export default function SiteHeader({
 
       <header
         style={{ top: "var(--banner-height, 0px)" }}
-        className={`fixed inset-x-0 z-50 flex w-full items-center justify-between px-6 sm:px-10 md:px-14 py-4 sm:py-5 bg-transparent border-none text-white select-none font-[family-name:var(--font-google-sans)] pointer-events-auto ${className}`}
+        className={`fixed inset-x-0 z-[80] flex w-full items-center justify-between px-6 sm:px-10 md:px-14 py-4 sm:py-5 bg-transparent border-none text-white select-none font-[family-name:var(--font-google-sans)] pointer-events-auto ${className}`}
       >
         {/* Brand Lockup Left */}
         <div className="flex items-center gap-3 sm:gap-3.5 select-none">
@@ -147,7 +147,7 @@ export default function SiteHeader({
       {mobileMenuOpen && (
         <div
           style={{ top: "calc(var(--banner-height, 0px) + 64px)" }}
-          className="fixed inset-x-0 z-40 md:hidden bg-black/95 backdrop-blur-3xl border-b border-white/15 px-6 py-6 shadow-2xl flex flex-col gap-4 font-[family-name:var(--font-google-sans)] animate-in fade-in slide-in-from-top-2 duration-200"
+          className="fixed inset-x-0 z-[85] md:hidden bg-black/95 backdrop-blur-3xl border-b border-white/15 px-6 py-6 shadow-2xl flex flex-col gap-4 font-[family-name:var(--font-google-sans)] animate-in fade-in slide-in-from-top-2 duration-200"
         >
           <Link
             href="/"
