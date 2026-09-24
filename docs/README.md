@@ -6,6 +6,7 @@ Docs about problems we hit, how we diagnosed them, and the reusable tooling buil
 |---|---|
 | [Debug Logger Guide](./debug-logger.md) | The categorized console logger (`lib/debug-logger.ts`): usage, enabling/disabling, how to add categories |
 | [Case Study: Stuck on Intro Page](./case-study-stuck-on-intro-page.md) | Site frozen on loading screen on one laptop — full investigation from wrong hypotheses to root cause (`prefers-reduced-motion`), plus lessons for any Three.js/GSAP project |
+| [Case Study: Turbopack on exFAT](./case-study-turbopack-exfat-junctions.md) | Quiz API routes all returned 500 because Turbopack cannot create junctions on the exFAT external drive; fixed by running the quiz on webpack |
 
 ## Quick reference
 
