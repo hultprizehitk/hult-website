@@ -11,7 +11,7 @@ export function GateCard({
   badge?: string;
   title: string;
   subtitle?: string;
-  tone?: "hult" | "emerald";
+  tone?: "hult" | "emerald" | "rose";
   children?: React.ReactNode;
 }) {
   return (
@@ -20,7 +20,7 @@ export function GateCard({
         <div
           className={cn(
             "pointer-events-none absolute -top-16 -right-16 h-48 w-48 rounded-full blur-3xl",
-            tone === "hult" ? "bg-hult/15" : "bg-emerald-500/10",
+            tone === "hult" ? "bg-hult/15" : tone === "rose" ? "bg-rose-500/10" : "bg-emerald-500/10",
           )}
         />
         <div className="pointer-events-none absolute -bottom-16 -left-16 h-48 w-48 rounded-full bg-neutral-800/40 blur-3xl" />
@@ -29,7 +29,9 @@ export function GateCard({
             <span
               className={cn(
                 "mb-3 inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-[10px] font-extrabold uppercase tracking-widest",
-                tone === "hult" ? "border-hult/40 bg-hult/15 text-pink-300" : "border-emerald-500/40 bg-emerald-500/15 text-emerald-300",
+                tone === "hult" && "border-hult/40 bg-hult/15 text-pink-300",
+                tone === "rose" && "border-rose-500/40 bg-rose-500/15 text-rose-300",
+                tone === "emerald" && "border-emerald-500/40 bg-emerald-500/15 text-emerald-300",
               )}
             >
               {badge}
