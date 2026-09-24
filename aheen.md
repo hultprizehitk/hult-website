@@ -1,7 +1,7 @@
 # aheen.md — Project Orientation + Quiz Handoff
 
 Written 2026-09-24 from a full read of the repo (all `.md` files, models, API routes, git history).
-Nothing was installed, built, or run. No `node_modules` exists in any folder, so none of this is verified at runtime.
+Sections 1–3 were written from a read of the code. The quiz was then **built and verified on 2026-09-24**; see §4 for its status.
 
 ---
 
@@ -22,7 +22,7 @@ Students sign in with Google. **Only `@heritageit.edu.in` accounts are allowed.*
 | **`client-v3/`** | **The live app.** Next.js 16.3.6, React 19, Tailwind v4, MongoDB (Mongoose), NextAuth v5 (Google). Public site, team system, and admin at `/admin` (served on the admin subdomain through `middleware.ts`). | **Active.** All commits from Sep 23–24 are here. |
 | `client/` | The original full app (v1). Next 16.3.1. Has features v3 dropped: participant self check-in (`/events/checkin`), `EventRsvp` model, SSE live stream, broadcast emails, email logs. Admin lives at a "secret" slug, `/portal-hult-8f4b2c1e9a7d`. | Legacy. Useful as a **reference** for check-in and live features. |
 | `client-v2/` | Frontend-only snapshot with hardcoded `data/events.ts`. | Dead (2 commits). Ignore it. |
-| `quiz/` | Blank `create-next-app` scaffold. One page that says "Quiz. Start building here." No dependencies beyond Next/React/Tailwind. | **Nothing implemented.** This is your area. |
+| `quiz/` | **The live quiz app** (Slido-style): Next.js 16 (webpack), shared MongoDB, NextAuth, shadcn + motion-primitives, admin-dashboard styling. | **Built and load-tested** (2026-09-24). Your area. |
 
 > **Heads-up:** `client-v3/README.md` is **stale**. It says v3 is "frontend-only, no backend, mock auth", but v3 now has real MongoDB models, NextAuth, admin API routes, and SMTP email. Trust the code over that README.
 
@@ -70,7 +70,7 @@ Other top-level files:
 | Theme | **Same UI components and design theme as the admin dashboard** (`client-v3/app/admin`): black background with dots, `#0e0e12` cards, white primary buttons, emerald/rose/amber status colours. Hult pink `#f20089` is kept as the brand accent. (Updated from the original "pink + black" instruction.) |
 | Test data | 10–20 random MCQs for testing edge cases. They are seeded into the DB (never hardcoded in UI code, per team rule). |
 
-### Quiz design and plan (written 2026-09-24, not yet built)
+### Quiz design and plan (written and built 2026-09-24)
 - **Spec:** `docs/superpowers/specs/2026-09-24-quiz-design.md` lists decisions D1–D24, the data model, the state machine, scoring, and screens. Every default I chose is marked "Default" there, so you can override any of them.
 - **Plan:** `docs/superpowers/plans/2026-09-24-quiz.md` has 21 test-first tasks with full code. It runs from tooling through services, API, UI, the seed script, a 50-client simulation, and docs.
 - The key defaults, all Slido-style:
@@ -92,7 +92,27 @@ Other top-level files:
 
 ## 4. The quiz: where things actually stand
 
-**Implemented: nothing.** `quiz/` is an empty scaffold. There is no quiz code, model, or route in any app. The only mentions are a "QUIZ" filter tab in v1's `EventsHero` and a v1 timeline line: *"Scan the projected QR code... to log attendance and compete in the live quiz & pitch."*
+**Status (2026-09-24): implemented, tested, and pushed to `main`.**
+
+| Route | What it does |
+|---|---|
+| `/` | Join by 6-digit code |
+| `/s/<code>` | Phone: sign in, auto check-in, lobby with taker picker (lead), 3-2-1 lead-in, question with countdown, answer lock, reveal with result bars, leaderboard, final rank. Plus screens for "no team", "not eligible", "check-in closed", and "active on another device" |
+| `/present/<code>` | Projector: QR + code + check-in counter, question + timer + answered bar, result bars, top 10, podium |
+| `/admin` | Session list and create (admins only: `ADMIN_EMAILS` or DB admin role) |
+| `/admin/s/<code>` | Console. **Live**: open lobby, start, +15s, close, reveal, leaderboard, next, restart question, end, CSV. **Questions**: add, edit, reorder, delete. **Teams**: check-in board, manual check-in, change taker, reset device |
+
+Verification:
+- 84 unit and service tests.
+- Every screen was exercised in the browser.
+- `npm run simulate` (50 teams × 15 questions against a production build) **passes all checks**:
+  - scores match exactly
+  - state p95 377 ms
+  - answer p95 463 ms
+
+How-to lives in `docs/quiz-runbook.md`. The major bugs solved along the way (exFAT vs Turbopack/webpack, and git on this drive) are written up in `docs/case-study-turbopack-exfat-junctions.md`.
+
+**Still open (needs someone with access):** add the quiz's Google OAuth redirect URIs, pick the production host/domain for the quiz, and do a dry run on venue wifi.
 
 > The two warnings below are now **resolved** (see §4a): Mongo, standalone `quiz/` app. They stay here for context.
 
