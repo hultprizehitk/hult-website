@@ -272,35 +272,35 @@ export default function HeroThemeEvents({ scrollProgress }: HeroThemeEventsProps
 
                 {/* Registration Deadline & Reverse Countdown Tile */}
                 <div
-                  className={`rounded-2xl p-4 flex flex-col justify-between gap-1.5 shadow-md backdrop-blur-md transition-all ${
+                  className={`rounded-2xl p-4 flex flex-col justify-between gap-2 shadow-md backdrop-blur-md transition-all ${
                     isClosed
                       ? "bg-white/[0.04] border border-white/10 text-white/70"
                       : "bg-rose-500/[0.08] border border-rose-500/25 text-white shadow-[0_0_20px_rgba(242,0,137,0.12)] hover:border-rose-400/40"
                   }`}
                 >
-                  <div className="flex items-center justify-between gap-2">
-                    <span className="flex items-center gap-1.5 text-[10px] font-bold tracking-widest uppercase text-white/60 font-mono">
-                      <Clock size={13} className={isClosed ? "text-white/40 shrink-0" : "text-rose-400 shrink-0"} />
-                      <span>DEADLINE</span>
-                    </span>
-                    {isClosed ? (
-                      <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[9px] font-mono font-semibold bg-rose-500/10 border border-rose-500/20 text-rose-300">
-                        Closed
-                      </span>
-                    ) : countdown.hasDeadline ? (
-                      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-mono font-bold tracking-wider bg-rose-500/20 border border-rose-400/40 text-rose-200 shadow-sm">
-                        <Timer size={10} className="text-rose-300 shrink-0 animate-pulse" />
-                        <span className="tabular-nums">{countdown.countdownText}</span>
-                      </span>
-                    ) : (
-                      <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[9px] font-mono font-semibold bg-emerald-500/10 border border-emerald-500/20 text-emerald-400">
-                        Active
-                      </span>
+                  <span className="flex items-center gap-1.5 text-[10px] font-bold tracking-widest uppercase text-white/60 font-mono">
+                    <Clock size={13} className={isClosed ? "text-white/40 shrink-0" : "text-rose-400 shrink-0"} />
+                    <span>DEADLINE</span>
+                    {!isClosed && countdown.hasDeadline && (
+                      <span className="w-1.5 h-1.5 rounded-full bg-rose-400 animate-pulse ml-auto" />
                     )}
-                  </div>
-                  <span className="text-xs sm:text-sm font-semibold text-white truncate">
-                    {countdown.formattedDeadline}
                   </span>
+
+                  <div className="flex flex-col gap-1.5 min-w-0">
+                    <span className="text-xs sm:text-sm font-semibold text-white leading-snug">
+                      {countdown.formattedDeadline}
+                    </span>
+                    {!isClosed && countdown.hasDeadline ? (
+                      <div className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[10px] font-mono font-bold bg-rose-500/15 border border-rose-400/30 text-rose-300 w-fit shadow-sm">
+                        <Timer size={10} className="text-rose-400 shrink-0 animate-pulse" />
+                        <span className="tabular-nums tracking-wide">{countdown.countdownText}</span>
+                      </div>
+                    ) : isClosed ? (
+                      <span className="text-[10px] font-mono text-white/40">
+                        Registration Closed
+                      </span>
+                    ) : null}
+                  </div>
                 </div>
               </div>
 
