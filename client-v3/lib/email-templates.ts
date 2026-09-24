@@ -10,6 +10,7 @@ export interface WelcomeEmailParams {
 
 /**
  * Returns a clean, professional branded HTML email for first-time login / account creation.
+ * Uses the new EF Hult Prize logo and official support email (hultprize.heritage@gmail.com).
  */
 export function getWelcomeEmailHtml({
   name,
@@ -39,10 +40,10 @@ export function getWelcomeEmailHtml({
             <td style="background-color: #101014; border-bottom: 1px solid #27272a; padding: 28px 32px; text-align: center;">
               <table role="presentation" border="0" cellspacing="0" cellpadding="0" align="center" style="margin: 0 auto;">
                 <tr>
-                  <!-- Hult Prize Logo -->
+                  <!-- New Official EF Hult Prize Logo -->
                   <td align="center" valign="middle" style="padding-right: 18px;">
                     <a href="${origin}" target="_blank" style="text-decoration: none; display: inline-block;">
-                      <img src="${origin}/Hult-Prize.png" alt="Hult Prize" width="120" style="display: block; max-height: 44px; width: auto; object-fit: contain; border: 0;" />
+                      <img src="${origin}/ef-hult-prize-logo.png" alt="Hult Prize" width="120" style="display: block; max-height: 44px; width: auto; object-fit: contain; border: 0;" />
                     </a>
                   </td>
                   <!-- Divider Line -->
@@ -113,7 +114,7 @@ export function getWelcomeEmailHtml({
                 <tr>
                   <td align="center">
                     <a href="${origin}/events" target="_blank" style="display: inline-block; background-color: #f20089; color: #ffffff; font-size: 14px; font-weight: 700; text-decoration: none; padding: 13px 36px; border-radius: 8px; box-shadow: 0 4px 14px rgba(242, 0, 137, 0.35);">
-                      Explore Events & Competitions &rarr;
+                      Explore Events &amp; Competitions &rarr;
                     </a>
                   </td>
                 </tr>
@@ -146,7 +147,7 @@ export function getWelcomeEmailHtml({
                 &copy; ${new Date().getFullYear()} Hult Prize HITK &bull; Heritage Institute of Technology
               </p>
               <p style="margin: 0; font-size: 11px; color: #52525b;">
-                Need assistance? Reach us at <a href="mailto:hultprizehitk@gmail.com" style="color: #f20089; text-decoration: none;">hultprizehitk@gmail.com</a>
+                Need assistance? Reach us at <a href="mailto:hultprize.heritage@gmail.com" style="color: #f20089; text-decoration: none;">hultprize.heritage@gmail.com</a>
               </p>
             </td>
           </tr>
@@ -166,6 +167,7 @@ export async function sendWelcomeEmail(params: WelcomeEmailParams): Promise<Send
   const htmlContent = getWelcomeEmailHtml(params);
   return sendEmail({
     to: [{ email: params.email, name: params.name }],
+    replyTo: { email: "hultprize.heritage@gmail.com", name: "Hult Prize HITK Support" },
     subject: `Welcome to Hult Prize HITK, ${params.name}!`,
     htmlContent,
   });

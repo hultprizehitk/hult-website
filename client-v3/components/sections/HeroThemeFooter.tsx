@@ -89,7 +89,7 @@ export default function HeroThemeFooter() {
                 </svg>
               </a>
               <a
-                href="mailto:hultprizehitk@gmail.com"
+                href="mailto:hultprize.heritage@gmail.com"
                 aria-label="Email"
                 className="p-2.5 rounded-full bg-white/5 border border-white/15 text-neutral-300 hover:bg-rose-500/20 hover:text-rose-400 hover:border-rose-500/40 transition-all duration-300 shadow-sm hover:scale-110"
               >
@@ -140,7 +140,7 @@ export default function HeroThemeFooter() {
             <div className="text-xs text-neutral-300 space-y-1 font-mono">
               <p className="font-semibold text-white/90">Heritage Institute of Technology</p>
               <p>Chowbaga Road, Anandapur, Kolkata 700107</p>
-              <p className="text-rose-400/90 pt-0.5">hultprizehitk@gmail.com</p>
+              <p className="text-rose-400/90 pt-0.5">hultprize.heritage@gmail.com</p>
             </div>
 
             {/* Live Interactive Google Map Embed in Dark Glass Frame */}

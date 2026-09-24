@@ -27,7 +27,8 @@ const DEFAULT_SENDER: Recipient = {
 };
 
 const DEFAULT_REPLY_TO: Recipient = {
-  email: "onboarding@hultprizehitk.live",
+  name: "Hult Prize HITK Support",
+  email: "hultprize.heritage@gmail.com",
 };
 
 /**
