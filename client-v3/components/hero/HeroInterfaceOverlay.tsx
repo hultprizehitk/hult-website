@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import { ArrowRight } from "lucide-react";
 import { useSession } from "next-auth/react";
@@ -109,6 +109,8 @@ export default function HeroInterfaceOverlay({ scrollProgress = 0 }: HeroInterfa
 export function HeroCenterpiece({ scrollProgress = 0 }: HeroInterfaceOverlayProps) {
   const [mounted, setMounted] = useState(false);
   const [windowWidth, setWindowWidth] = useState(1200);
+  const hultPrizeRef = useRef<HTMLDivElement>(null);
+  const [hultPrizeWidth, setHultPrizeWidth] = useState(170);
 
   useEffect(() => {
     const timer = setTimeout(() => setMounted(true), 60);
@@ -120,6 +122,12 @@ export function HeroCenterpiece({ scrollProgress = 0 }: HeroInterfaceOverlayProp
       window.removeEventListener("resize", handleResize);
     };
   }, []);
+
+  useEffect(() => {
+    if (hultPrizeRef.current) {
+      setHultPrizeWidth(hultPrizeRef.current.offsetWidth);
+    }
+  }, [windowWidth, mounted]);
 
   // ── Scroll Phase & Responsive Calculations ──
   const p1 = Math.min(1, scrollProgress / 0.32);
@@ -174,14 +182,16 @@ export function HeroCenterpiece({ scrollProgress = 0 }: HeroInterfaceOverlayProp
   const exitProgress = Math.min(1, Math.max(0, (scrollProgress - 0.48) / 0.22));
   const overallOpacity = Math.max(0, 1 - exitProgress * 1.4);
 
-  // Mobile smooth upward shift on scroll so ABOUT HULT PRIZE sits 12-16px under Navbar
+  // Mobile horizontal slide: centered in Hero, shifts left in About
+  const mobileCenterOffsetX = Math.max(0, (windowWidth - 40 - hultPrizeWidth) / 2);
+  const mobileHultPrizeX = (1 - easeMorph) * mobileCenterOffsetX;
   const mobileShiftY = -easeMorph * 154;
 
   return (
     <>
       {/* ── Mobile Phone Viewport Centerpiece (flex sm:hidden) ────────────────── */}
       <div
-        className="fixed inset-x-0 top-[112px] z-[70] pointer-events-none select-none flex sm:hidden flex-col items-center text-center px-5 sm:px-10 transition-opacity duration-300"
+        className="fixed inset-x-0 top-[112px] z-[70] pointer-events-none select-none flex sm:hidden flex-col items-start px-5 sm:px-10 transition-opacity duration-300"
         style={{
           opacity: overallOpacity,
           transform: `translate3d(0, ${mobileShiftY}px, 0)`,
@@ -210,7 +220,7 @@ export function HeroCenterpiece({ scrollProgress = 0 }: HeroInterfaceOverlayProp
             </span>
           </div>
 
-          {/* Copper Script "presents" - Centered under title stack */}
+          {/* Copper Script "presents" - Centered */}
           <div className="w-full flex justify-center max-w-[240px] my-1">
             <span
               className="text-[min(6.8vw,1.85rem)] font-arizonia text-[#9E4000] font-normal italic"
@@ -223,11 +233,11 @@ export function HeroCenterpiece({ scrollProgress = 0 }: HeroInterfaceOverlayProp
           </div>
         </div>
 
-        {/* Morphing 7th Edition / ABOUT Shared Container - Centered */}
-        <div className="relative w-full h-[2.1rem] mt-1.5 mb-0.5 flex justify-center">
-          {/* 7TH Edition of (Initial state) - Prominent & Centered */}
+        {/* Morphing 7th Edition / ABOUT Shared Container */}
+        <div className="relative w-full h-[2.1rem] mt-1.5 mb-0.5">
+          {/* 7TH Edition of (Hero state) - Prominent & Centered */}
           <div
-            className="absolute inset-x-0 top-0 flex items-baseline justify-center font-im-fell text-[#1A0318] transition-all duration-300"
+            className="absolute inset-x-0 top-0 flex items-baseline justify-center font-im-fell text-[#1A0318] transition-all duration-300 select-none"
             style={{
               opacity: heritageOpacity,
               transform: `translate3d(0, ${heritageY}px, 0)`,
@@ -241,9 +251,9 @@ export function HeroCenterpiece({ scrollProgress = 0 }: HeroInterfaceOverlayProp
             <span className="text-[min(5.0vw,1.35rem)] leading-none font-normal italic lowercase font-serif ml-2 opacity-80">of</span>
           </div>
 
-          {/* Morphing "ABOUT" Header (On scroll state) - Centered */}
+          {/* Morphing "ABOUT" Header (About state) - 100% Left Aligned */}
           <div
-            className="absolute inset-x-0 top-0 flex items-center justify-center font-im-fell text-[min(6.2vw,1.75rem)] font-medium uppercase tracking-[0.08em] text-[#1A0318] transition-all duration-300"
+            className="absolute left-0 top-0 flex items-center justify-start font-im-fell text-[min(6.2vw,1.75rem)] font-medium uppercase tracking-[0.06em] text-[#1A0318] transition-all duration-300"
             style={{
               opacity: aboutOpacity,
               transform: `translate3d(0, ${aboutY}px, 0)`,
@@ -255,10 +265,16 @@ export function HeroCenterpiece({ scrollProgress = 0 }: HeroInterfaceOverlayProp
           </div>
         </div>
 
-        {/* Mobile HULT PRIZE Title - Centered Aligned, 2 Lines */}
-        <div className="filter drop-shadow-[0_2px_10px_rgba(255,255,255,0.9)] mt-2.5 mb-0.5 w-full flex justify-center">
+        {/* Constant HULT PRIZE Title - Shifts from Center (Hero) to Left (About) */}
+        <div
+          ref={hultPrizeRef}
+          className="filter drop-shadow-[0_2px_10px_rgba(255,255,255,0.9)] mt-2 mb-0 inline-block w-fit will-change-transform"
+          style={{
+            transform: `translate3d(${mobileHultPrizeX}px, 0, 0)`,
+          }}
+        >
           <h1
-            className="font-serif text-[min(17.5vw,4.8rem)] font-normal uppercase tracking-[0.03em] text-[#3B0537] leading-[0.90] flex flex-col items-center text-center"
+            className="font-serif text-[min(17.5vw,4.8rem)] font-normal uppercase tracking-[0.03em] text-[#3B0537] leading-[0.90] flex flex-col items-start text-left"
             style={{
               fontFamily: "'IM Fell Double Pica', Georgia, serif",
             }}
@@ -268,7 +284,7 @@ export function HeroCenterpiece({ scrollProgress = 0 }: HeroInterfaceOverlayProp
           </h1>
         </div>
 
-        {/* Mobile Register Now CTA Button placed cleanly BELOW HULT PRIZE - Centered */}
+        {/* Mobile Register Now CTA Button placed cleanly BELOW HULT PRIZE - Centered (Hero only) */}
         <div
           className="w-full flex justify-center transition-all duration-300 pointer-events-auto overflow-hidden"
           style={{
@@ -288,9 +304,9 @@ export function HeroCenterpiece({ scrollProgress = 0 }: HeroInterfaceOverlayProp
           </Link>
         </div>
 
-        {/* Mobile About Paragraph & Movement Taglines - Centered */}
+        {/* Mobile About Paragraph & Movement Taglines - 100% Left Aligned (About only) */}
         <div
-          className="flex flex-col items-center text-center gap-2.5 mt-1.5 transition-all duration-300 max-w-[340px] w-full"
+          className="flex flex-col items-start text-left gap-2 mt-1.5 transition-all duration-300 max-w-[340px] w-full"
           style={{
             opacity: paragraphOpacity,
             transform: `translate3d(0, ${paragraphY}px, 0)`,
@@ -301,7 +317,7 @@ export function HeroCenterpiece({ scrollProgress = 0 }: HeroInterfaceOverlayProp
             The Hult Prize Foundation transforms how young people envision their own possibilities as leaders of change. With a US$1,000,000 global startup prize, we empower student founders to build sustainable social enterprises.
           </p>
 
-          <div className="flex flex-wrap items-center justify-center gap-1.5 pt-0.5">
+          <div className="flex flex-wrap items-center justify-start gap-1.5 pt-0.5">
             <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full border border-white/80 bg-white/80 backdrop-blur-md text-[10px] font-bold tracking-wider text-[#1A0318] shadow-md">
               <span className="h-1.5 w-1.5 rounded-full bg-[#E8396E] animate-pulse shrink-0" />
               <span>Join The Movement</span>
