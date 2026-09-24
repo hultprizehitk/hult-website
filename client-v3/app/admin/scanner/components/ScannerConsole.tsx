@@ -11,13 +11,13 @@ import {
   Zap,
   Volume2,
   VolumeX,
-  Keyboard,
   RefreshCw,
   Search,
   Undo2,
   Calendar,
   Users,
   Check,
+  Pause,
 } from "lucide-react";
 
 interface TeamMember {
@@ -126,7 +126,6 @@ export default function ScannerConsole() {
     allCheckedIn?: boolean;
   } | null>(null);
 
-  const [manualCode, setManualCode] = useState<string>("");
   const [sessionLogs, setSessionLogs] = useState<SessionScanLog[]>([]);
   const [rosterSearch, setRosterSearch] = useState<string>("");
   const [rosterFilter, setRosterFilter] = useState<"all" | "checked_in" | "not_checked_in">("all");
@@ -636,16 +635,6 @@ export default function ScannerConsole() {
   }, [isCameraActive, isProcessing, handleCheckInCode]);
 
   // -------------------------------------------------------------
-  // Manual Code Form Submit
-  // -------------------------------------------------------------
-  const handleManualSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!manualCode.trim() || isProcessing) return;
-    handleCheckInCode(manualCode.trim());
-    setManualCode("");
-  };
-
-  // -------------------------------------------------------------
   // Computed Stats (Only fully registered teams & participants, exclude forming)
   // -------------------------------------------------------------
   const isTeamSubmitted = (t: RegisteredTeam) => {
@@ -715,14 +704,14 @@ export default function ScannerConsole() {
         </div>
 
         {/* Event Selector Dropdown */}
-        <div className="flex items-center gap-3 self-start md:self-auto">
-          <div className="flex items-center gap-2 rounded-2xl border border-white/15 bg-[#16161d] px-3.5 py-2 text-xs">
-            <Calendar className="h-4 w-4 text-neutral-400" />
+        <div className="flex items-center gap-2 sm:gap-3 w-full sm:w-auto">
+          <div className="flex-1 sm:flex-initial flex items-center gap-2 rounded-2xl border border-white/15 bg-[#16161d] px-3 sm:px-3.5 py-2 text-xs min-w-0">
+            <Calendar className="h-4 w-4 text-neutral-400 shrink-0" />
             <select
               value={selectedEventId}
               onChange={(e) => setSelectedEventId(e.target.value)}
               disabled={loadingEvents}
-              className="bg-transparent text-white font-semibold text-xs focus:outline-none cursor-pointer max-w-[220px] sm:max-w-xs truncate"
+              className="bg-transparent text-white font-semibold text-xs focus:outline-none cursor-pointer w-full sm:max-w-xs truncate"
             >
               {events.map((ev) => (
                 <option key={ev._id} value={ev._id} className="bg-[#16161d] text-white">
@@ -735,7 +724,7 @@ export default function ScannerConsole() {
           <button
             onClick={() => fetchTeams(selectedEventId)}
             disabled={loadingTeams || !selectedEventId}
-            className="flex items-center gap-1.5 rounded-2xl border border-white/15 bg-[#16161d] hover:bg-[#202028] px-3.5 py-2 text-xs font-medium text-white transition-all cursor-pointer"
+            className="flex items-center gap-1.5 rounded-2xl border border-white/15 bg-[#16161d] hover:bg-[#202028] px-3 sm:px-3.5 py-2 text-xs font-medium text-white transition-all cursor-pointer shrink-0"
             title="Refresh teams"
           >
             <RefreshCw className={`h-3.5 w-3.5 ${loadingTeams ? "animate-spin" : ""}`} />
@@ -745,47 +734,47 @@ export default function ScannerConsole() {
       </div>
 
       {/* Attendance Stats HUD Cards */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
-        <div className="rounded-2xl border border-white/10 bg-[#0e0e12] p-4 sm:p-5 shadow-lg space-y-1">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-2.5 sm:gap-4">
+        <div className="rounded-2xl border border-white/10 bg-[#0e0e12] p-3.5 sm:p-5 shadow-lg space-y-1">
           <div className="flex items-center justify-between text-neutral-400 text-xs">
-            <span>Total Registered</span>
-            <Users className="h-4 w-4 text-neutral-400" />
+            <span className="text-[11px] sm:text-xs">Total Registered</span>
+            <Users className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-neutral-400 shrink-0" />
           </div>
-          <div className="text-2xl sm:text-3xl font-black text-white">{totalRegistered}</div>
-          <p className="text-[10px] text-sky-400/80 font-mono">{totalParticipants} participants enrolled</p>
+          <div className="text-xl sm:text-3xl font-black text-white">{totalRegistered}</div>
+          <p className="text-[10px] text-sky-400/80 font-mono truncate">{totalParticipants} participants</p>
         </div>
 
-        <div className="rounded-2xl border border-emerald-500/20 bg-emerald-950/20 p-4 sm:p-5 shadow-lg space-y-1">
+        <div className="rounded-2xl border border-emerald-500/20 bg-emerald-950/20 p-3.5 sm:p-5 shadow-lg space-y-1">
           <div className="flex items-center justify-between text-emerald-300 text-xs">
-            <span>Checked In</span>
-            <CheckCircle2 className="h-4 w-4 text-emerald-400" />
+            <span className="text-[11px] sm:text-xs">Checked In</span>
+            <CheckCircle2 className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-emerald-400 shrink-0" />
           </div>
-          <div className="text-2xl sm:text-3xl font-black text-emerald-300">{checkedInCount}</div>
+          <div className="text-xl sm:text-3xl font-black text-emerald-300">{checkedInCount}</div>
           <div className="w-full bg-white/10 h-1.5 rounded-full overflow-hidden mt-1.5">
             <div
               className="bg-emerald-400 h-full rounded-full transition-all duration-500"
               style={{ width: `${participantRate}%` }}
             />
           </div>
-          <p className="text-[10px] text-emerald-300/80 font-mono">{checkedInParticipants} participants verified</p>
+          <p className="text-[10px] text-emerald-300/80 font-mono truncate">{checkedInParticipants} verified</p>
         </div>
 
-        <div className="rounded-2xl border border-white/10 bg-[#0e0e12] p-4 sm:p-5 shadow-lg space-y-1">
+        <div className="rounded-2xl border border-white/10 bg-[#0e0e12] p-3.5 sm:p-5 shadow-lg space-y-1">
           <div className="flex items-center justify-between text-neutral-400 text-xs">
-            <span>Awaiting Arrival</span>
-            <ScanLine className="h-4 w-4 text-amber-400" />
+            <span className="text-[11px] sm:text-xs">Awaiting Arrival</span>
+            <ScanLine className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-amber-400 shrink-0" />
           </div>
-          <div className="text-2xl sm:text-3xl font-black text-amber-300">{remainingCount}</div>
-          <p className="text-[10px] text-amber-400/80 font-mono">{remainingParticipants} participants pending ({participantRate}% arrived)</p>
+          <div className="text-xl sm:text-3xl font-black text-amber-300">{remainingCount}</div>
+          <p className="text-[10px] text-amber-400/80 font-mono truncate">{remainingParticipants} pending ({participantRate}%)</p>
         </div>
 
-        <div className="rounded-2xl border border-white/10 bg-[#0e0e12] p-4 sm:p-5 shadow-lg space-y-1">
+        <div className="rounded-2xl border border-white/10 bg-[#0e0e12] p-3.5 sm:p-5 shadow-lg space-y-1">
           <div className="flex items-center justify-between text-neutral-400 text-xs">
-            <span>Session Scans</span>
-            <Camera className="h-4 w-4 text-pink-400" />
+            <span className="text-[11px] sm:text-xs">Session Scans</span>
+            <Camera className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-pink-400 shrink-0" />
           </div>
-          <div className="text-2xl sm:text-3xl font-black text-white">{sessionLogs.length}</div>
-          <p className="text-[10px] text-neutral-400 font-mono">Verified this session</p>
+          <div className="text-xl sm:text-3xl font-black text-white">{sessionLogs.length}</div>
+          <p className="text-[10px] text-neutral-400 font-mono truncate">This session</p>
         </div>
       </div>
 
@@ -793,32 +782,44 @@ export default function ScannerConsole() {
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
         {/* Left Column: Camera Viewfinder & Controls (7 Cols) */}
         <div className="lg:col-span-7 space-y-4">
-          <div className="relative overflow-hidden rounded-[2.5rem] border border-white/15 bg-[#0e0e12] p-5 sm:p-7 shadow-2xl space-y-5">
+          <div className="relative overflow-hidden rounded-3xl sm:rounded-[2.5rem] border border-white/15 bg-[#0e0e12] p-4 sm:p-7 shadow-2xl space-y-4 sm:space-y-5">
             {/* Header with Prominent Scan Button */}
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-white/10">
-              <div className="flex items-center gap-3">
-                <div className="h-10 w-10 rounded-2xl bg-emerald-500/20 border border-emerald-500/40 flex items-center justify-center text-emerald-300 shadow-inner">
-                  <Camera className="h-5 w-5" />
+            <div className="flex items-center justify-between gap-3 pb-3 border-b border-white/10">
+              <div className="flex items-center gap-2.5 sm:gap-3 min-w-0">
+                <div className="h-9 w-9 sm:h-10 sm:w-10 rounded-2xl bg-emerald-500/20 border border-emerald-500/40 flex items-center justify-center text-emerald-300 shadow-inner shrink-0">
+                  <Camera className="h-4 w-4 sm:h-5 sm:w-5" />
                 </div>
-                <div>
-                  <h2 className="text-lg font-bold text-white tracking-tight">Camera Scanner</h2>
-                  <p className="text-[11px] text-neutral-400">Position attendee pass in center reticle</p>
+                <div className="min-w-0">
+                  <h2 className="text-base sm:text-lg font-bold text-white tracking-tight truncate">Camera Scanner</h2>
+                  <p className="text-[10px] sm:text-[11px] text-neutral-400 truncate">Position attendee pass in reticle</p>
                 </div>
               </div>
 
-              {/* Exact Emerald Rounded Pill Button from user's request */}
-              <button
-                type="button"
-                onClick={toggleCamera}
-                className="rounded-full bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-400 hover:to-teal-500 px-5 py-2.5 text-xs sm:text-sm font-bold text-white shadow-lg shadow-emerald-600/30 transition-all hover:scale-105 flex items-center justify-center gap-2 cursor-pointer font-[family-name:var(--font-google-sans)] shrink-0"
-              >
-                <Camera className="h-4 w-4" />
-                <span>{isCameraActive ? "Pause Scanner" : "Scan Participant QR"}</span>
-              </button>
+              {/* Responsive Camera Toggle Button */}
+              {isCameraActive ? (
+                <button
+                  type="button"
+                  onClick={toggleCamera}
+                  className="rounded-full bg-rose-500/20 hover:bg-rose-500/30 border border-rose-500/40 px-3.5 sm:px-5 py-2 text-xs font-bold text-rose-300 transition-all flex items-center gap-1.5 cursor-pointer shrink-0"
+                  title="Pause Camera"
+                >
+                  <Pause className="h-3.5 w-3.5" />
+                  <span>Pause</span>
+                </button>
+              ) : (
+                <button
+                  type="button"
+                  onClick={toggleCamera}
+                  className="hidden sm:inline-flex rounded-full bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-400 hover:to-teal-500 px-4 sm:px-5 py-2 text-xs font-bold text-white shadow-lg shadow-emerald-600/30 transition-all hover:scale-105 items-center gap-1.5 cursor-pointer shrink-0"
+                >
+                  <Camera className="h-3.5 w-3.5" />
+                  <span>Scan QR</span>
+                </button>
+              )}
             </div>
 
             {/* Viewfinder Canvas Stage */}
-            <div className="relative rounded-3xl overflow-hidden border border-white/15 bg-black aspect-video flex items-center justify-center">
+            <div className="relative rounded-2xl sm:rounded-3xl overflow-hidden border border-white/15 bg-black min-h-[240px] sm:min-h-[280px] aspect-[4/3] sm:aspect-video flex items-center justify-center">
               {isCameraActive ? (
                 <>
                   <video
@@ -831,7 +832,7 @@ export default function ScannerConsole() {
 
                   {/* Laser Reticle HUD */}
                   <div className="absolute inset-0 pointer-events-none flex items-center justify-center">
-                    <div className="relative w-48 h-48 sm:w-56 sm:h-56 rounded-3xl border-2 border-emerald-400/80 shadow-[0_0_40px_rgba(16,185,129,0.35)] flex items-center justify-center">
+                    <div className="relative w-44 h-44 sm:w-56 sm:h-56 rounded-3xl border-2 border-emerald-400/80 shadow-[0_0_40px_rgba(16,185,129,0.35)] flex items-center justify-center">
                       <div className="absolute -top-1 -left-1 w-6 h-6 border-t-4 border-l-4 border-emerald-300 rounded-tl-xl" />
                       <div className="absolute -top-1 -right-1 w-6 h-6 border-t-4 border-r-4 border-emerald-300 rounded-tr-xl" />
                       <div className="absolute -bottom-1 -left-1 w-6 h-6 border-b-4 border-l-4 border-emerald-300 rounded-bl-xl" />
@@ -892,16 +893,16 @@ export default function ScannerConsole() {
                   </div>
                 </>
               ) : (
-                <div className="p-8 text-center space-y-4 max-w-sm">
+                <div className="p-4 sm:p-8 text-center space-y-3 sm:space-y-4 max-w-xs sm:max-w-sm">
                   {cameraError ? (
                     <>
-                      <AlertCircle className="h-10 w-10 text-rose-400 mx-auto" />
-                      <h3 className="text-sm font-bold text-white">Camera Access Error</h3>
-                      <p className="text-xs text-neutral-400 leading-relaxed">{cameraError}</p>
+                      <AlertCircle className="h-8 w-8 sm:h-10 sm:w-10 text-rose-400 mx-auto" />
+                      <h3 className="text-xs sm:text-sm font-bold text-white">Camera Access Error</h3>
+                      <p className="text-[11px] sm:text-xs text-neutral-400 leading-relaxed">{cameraError}</p>
                       <button
                         type="button"
                         onClick={startCamera}
-                        className="rounded-xl bg-white/10 hover:bg-white/20 border border-white/20 px-4 py-2 text-xs font-bold text-white transition-all cursor-pointer inline-flex items-center gap-1.5"
+                        className="rounded-xl bg-white/10 hover:bg-white/20 border border-white/20 px-3.5 py-1.5 text-xs font-bold text-white transition-all cursor-pointer inline-flex items-center gap-1.5"
                       >
                         <RefreshCw className="h-3.5 w-3.5" />
                         <span>Retry Camera</span>
@@ -909,19 +910,19 @@ export default function ScannerConsole() {
                     </>
                   ) : (
                     <>
-                      <div className="h-14 w-14 rounded-2xl bg-white/5 border border-white/15 flex items-center justify-center text-neutral-400 mx-auto">
-                        <Camera className="h-7 w-7" />
+                      <div className="h-12 w-12 sm:h-14 sm:w-14 rounded-2xl bg-white/5 border border-white/15 flex items-center justify-center text-neutral-400 mx-auto">
+                        <Camera className="h-6 w-6 sm:h-7 sm:w-7" />
                       </div>
                       <div>
-                        <h3 className="text-sm font-bold text-white">Camera Viewfinder Paused</h3>
-                        <p className="text-xs text-neutral-400 mt-1">
-                          Click below to start the high-speed QR pass detector.
+                        <h3 className="text-xs sm:text-sm font-bold text-white">Camera Viewfinder Paused</h3>
+                        <p className="text-[11px] sm:text-xs text-neutral-400 mt-0.5">
+                          Click below to start high-speed QR pass detector.
                         </p>
                       </div>
                       <button
                         type="button"
                         onClick={startCamera}
-                        className="rounded-full bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-400 hover:to-teal-500 px-6 py-2.5 text-xs font-bold text-white shadow-lg shadow-emerald-600/30 transition-all hover:scale-105 inline-flex items-center gap-2 cursor-pointer font-[family-name:var(--font-google-sans)]"
+                        className="rounded-full bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-400 hover:to-teal-500 px-5 sm:px-6 py-2 sm:py-2.5 text-xs font-bold text-white shadow-lg shadow-emerald-600/30 transition-all hover:scale-105 inline-flex items-center gap-2 cursor-pointer font-[family-name:var(--font-google-sans)]"
                       >
                         <Camera className="h-4 w-4" />
                         <span>Scan Participant QR</span>
@@ -1005,42 +1006,12 @@ export default function ScannerConsole() {
                 </div>
               )}
             </div>
-
-            {/* Manual Code Input & USB Gun Scanner Support */}
-            <form onSubmit={handleManualSubmit} className="space-y-2 pt-2">
-              <div className="flex items-center justify-between text-xs text-neutral-400">
-                <span className="flex items-center gap-1.5 font-mono text-[11px] uppercase tracking-wider">
-                  <Keyboard className="h-3.5 w-3.5 text-pink-400" />
-                  <span>Manual Entry or USB Gun Scanner:</span>
-                </span>
-                <span className="text-[10px] font-mono text-neutral-400">Press ENTER to submit</span>
-              </div>
-
-              <div className="flex items-center gap-2">
-                <input
-                  type="text"
-                  value={manualCode}
-                  onChange={(e) => setManualCode(e.target.value)}
-                  placeholder="e.g. HULT-2026-X9K2 or scan barcode..."
-                  disabled={isProcessing}
-                  className="flex-1 rounded-2xl border border-white/15 bg-[#16161d] hover:bg-[#202028] px-4 py-2.5 text-xs text-white placeholder:text-neutral-500 focus:border-emerald-400 focus:outline-none focus:ring-1 focus:ring-emerald-400 font-mono tracking-wider transition-all"
-                />
-                <button
-                  type="submit"
-                  disabled={isProcessing || !manualCode.trim()}
-                  className="rounded-2xl bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-400 hover:to-teal-500 disabled:opacity-40 disabled:pointer-events-none px-5 py-2.5 text-xs font-bold text-white shadow-lg shadow-emerald-600/30 transition-all cursor-pointer flex items-center gap-1.5 font-mono shrink-0"
-                >
-                  <Check className="h-3.5 w-3.5" />
-                  <span>Check In</span>
-                </button>
-              </div>
-            </form>
           </div>
         </div>
 
         {/* Right Column: Live Session Activity Feed (5 Cols) */}
         <div className="lg:col-span-5 space-y-4">
-          <div className="rounded-[2.5rem] border border-white/15 bg-[#0e0e12] p-5 sm:p-6 shadow-2xl space-y-4">
+          <div className="rounded-3xl sm:rounded-[2.5rem] border border-white/15 bg-[#0e0e12] p-4 sm:p-6 shadow-2xl space-y-4">
             <div className="flex items-center justify-between pb-3 border-b border-white/10">
               <div className="flex items-center gap-2.5">
                 <span className="h-2 w-2 rounded-full bg-emerald-400" />
@@ -1120,26 +1091,26 @@ export default function ScannerConsole() {
       </div>
 
       {/* Event Roster Fast-Check Table */}
-      <div className="rounded-[2.5rem] border border-white/15 bg-[#0e0e12] p-6 sm:p-8 shadow-2xl space-y-4">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-white/10">
+      <div className="rounded-3xl sm:rounded-[2.5rem] border border-white/15 bg-[#0e0e12] p-4 sm:p-8 shadow-2xl space-y-4">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-white/10">
           <div>
-            <h3 className="text-lg font-bold text-white">Event Roster Quick-Check</h3>
-            <p className="text-xs text-neutral-400">
+            <h3 className="text-base sm:text-lg font-bold text-white">Event Roster Quick-Check</h3>
+            <p className="text-[11px] sm:text-xs text-neutral-400">
               Manual attendance toggle and backup lookup for participants without passes.
             </p>
           </div>
 
           {/* Roster Filter Buttons */}
-          <div className="flex items-center gap-2 overflow-x-auto no-scrollbar">
+          <div className="flex items-center gap-1.5 sm:gap-2 overflow-x-auto no-scrollbar pb-1">
             <button
               onClick={() => setRosterFilter("all")}
-              className={`rounded-xl px-3 py-1.5 text-xs font-semibold transition-all cursor-pointer border flex items-center gap-2 ${
+              className={`rounded-xl px-2.5 sm:px-3 py-1.5 text-xs font-semibold transition-all cursor-pointer border flex items-center gap-1.5 shrink-0 ${
                 rosterFilter === "all"
                   ? "bg-white text-black border-white shadow-md shadow-white/10"
                   : "bg-[#16161d] text-neutral-400 border-white/10 hover:text-white hover:bg-[#202028]"
               }`}
             >
-              <span>All Teams ({totalRegistered})</span>
+              <span>All ({totalRegistered})</span>
               <span className={`px-1.5 py-0.5 rounded text-[10px] font-mono ${
                 rosterFilter === "all" ? "bg-black/10 text-neutral-900" : "bg-white/10 text-neutral-400"
               }`}>
@@ -1149,7 +1120,7 @@ export default function ScannerConsole() {
 
             <button
               onClick={() => setRosterFilter("checked_in")}
-              className={`rounded-xl px-3 py-1.5 text-xs font-semibold transition-all cursor-pointer border flex items-center gap-2 ${
+              className={`rounded-xl px-2.5 sm:px-3 py-1.5 text-xs font-semibold transition-all cursor-pointer border flex items-center gap-1.5 shrink-0 ${
                 rosterFilter === "checked_in"
                   ? "bg-emerald-500 text-black border-emerald-500 shadow-md shadow-emerald-500/20 font-bold"
                   : "bg-[#16161d] text-neutral-400 border-white/10 hover:text-white hover:bg-[#202028]"
@@ -1165,13 +1136,13 @@ export default function ScannerConsole() {
 
             <button
               onClick={() => setRosterFilter("not_checked_in")}
-              className={`rounded-xl px-3 py-1.5 text-xs font-semibold transition-all cursor-pointer border flex items-center gap-2 ${
+              className={`rounded-xl px-2.5 sm:px-3 py-1.5 text-xs font-semibold transition-all cursor-pointer border flex items-center gap-1.5 shrink-0 ${
                 rosterFilter === "not_checked_in"
                   ? "bg-amber-500 text-black border-amber-500 shadow-md shadow-amber-500/20 font-bold"
                   : "bg-[#16161d] text-neutral-400 border-white/10 hover:text-white hover:bg-[#202028]"
               }`}
             >
-              <span>Not Checked In ({remainingCount})</span>
+              <span>Pending ({remainingCount})</span>
               <span className={`px-1.5 py-0.5 rounded text-[10px] font-mono ${
                 rosterFilter === "not_checked_in" ? "bg-black/15 text-neutral-900 font-bold" : "bg-amber-500/20 text-amber-300"
               }`}>
