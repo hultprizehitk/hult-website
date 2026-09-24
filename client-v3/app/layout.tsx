@@ -97,58 +97,68 @@ const geistMono = Geist_Mono({
 });
 
 import SessionProvider from "@/components/providers/SessionProvider";
+import { headers } from "next/headers";
 import AnnouncementBanner from "@/components/ui/AnnouncementBanner";
 
-export const metadata: Metadata = {
-  metadataBase: new URL("https://www.hultprizehitk.live"),
-  title: {
-    default: "Hult Prize | Heritage Institute of Technology",
-    template: "%s | Hult Prize HITK",
-  },
-  description: "Official portal for Hult Prize OnCampus at Heritage Institute of Technology, Kolkata. Changing the world through social entrepreneurship.",
-  keywords: [
-    "Hult Prize",
-    "Heritage Institute of Technology",
-    "HITK",
-    "Social Entrepreneurship",
-    "OnCampus",
-    "Startup Competition",
-    "Kolkata",
-  ],
-  authors: [{ name: "Hult Prize HITK Team" }],
-  openGraph: {
-    title: "Hult Prize | Heritage Institute of Technology",
-    description: "Official portal for Hult Prize OnCampus at Heritage Institute of Technology, Kolkata.",
-    url: "https://www.hultprizehitk.live",
-    siteName: "Hult Prize HITK",
-    images: [
-      {
-        url: "/Hult-Prize.png",
-        width: 1200,
-        height: 630,
-        alt: "Hult Prize HITK",
-      },
+export async function generateMetadata(): Promise<Metadata> {
+  const headersList = await headers();
+  const host = headersList.get("x-forwarded-host") || headersList.get("host");
+  const proto = headersList.get("x-forwarded-proto") || (host?.includes("localhost") ? "http" : "https");
+  const baseUrl = host ? `${proto}://${host}` : "https://www.hultprizehitk.live";
+
+  return {
+    metadataBase: new URL(baseUrl),
+    title: {
+      default: "Hult Prize | Heritage Institute of Technology",
+      template: "%s | Hult Prize HITK",
+    },
+    description: "Official portal for Hult Prize OnCampus at Heritage Institute of Technology, Kolkata. Changing the world through social entrepreneurship.",
+    keywords: [
+      "Hult Prize",
+      "Heritage Institute of Technology",
+      "HITK",
+      "Social Entrepreneurship",
+      "OnCampus",
+      "Startup Competition",
+      "Kolkata",
     ],
-    locale: "en_US",
-    type: "website",
-  },
-  twitter: {
-    card: "summary_large_image",
-    title: "Hult Prize | Heritage Institute of Technology",
-    description: "Official portal for Hult Prize OnCampus at Heritage Institute of Technology, Kolkata.",
-    images: ["/Hult-Prize.png"],
-  },
-  alternates: {
-    canonical: "https://www.hultprizehitk.live",
-  },
-  icons: {
-    icon: [
-      { url: "/ef-hult-prize-logo.png", type: "image/png" },
-    ],
-    shortcut: "/ef-hult-prize-logo.png",
-    apple: "/ef-hult-prize-logo.png",
-  },
-};
+    authors: [{ name: "Hult Prize HITK Team" }],
+    openGraph: {
+      title: "Hult Prize | Heritage Institute of Technology",
+      description: "Official portal for Hult Prize OnCampus at Heritage Institute of Technology, Kolkata.",
+      url: baseUrl,
+      siteName: "Hult Prize HITK",
+      images: [
+        {
+          url: `${baseUrl}/og-landing.png`,
+          secureUrl: `${baseUrl}/og-landing.png`,
+          width: 1200,
+          height: 630,
+          type: "image/png",
+          alt: "Hult Prize HITK",
+        },
+      ],
+      locale: "en_US",
+      type: "website",
+    },
+    twitter: {
+      card: "summary_large_image",
+      title: "Hult Prize | Heritage Institute of Technology",
+      description: "Official portal for Hult Prize OnCampus at Heritage Institute of Technology, Kolkata.",
+      images: [`${baseUrl}/og-landing.png`],
+    },
+    alternates: {
+      canonical: baseUrl,
+    },
+    icons: {
+      icon: [
+        { url: "/ef-hult-prize-logo.png", type: "image/png" },
+      ],
+      shortcut: "/ef-hult-prize-logo.png",
+      apple: "/ef-hult-prize-logo.png",
+    },
+  };
+}
 
 export default function RootLayout({
   children,
@@ -158,10 +168,11 @@ export default function RootLayout({
   return (
     <html
       lang="en"
+      suppressHydrationWarning
       data-scroll-behavior="smooth"
       className={`${playfair.variable} ${cinzel.variable} ${blubly.variable} ${montserrat.variable} ${anton.variable} ${googleSans.variable} ${pirataOne.variable} ${cinzelDecorative.variable} ${rye.variable} ${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
-      <body className="min-h-full flex flex-col font-sans">
+      <body className="min-h-full flex flex-col font-sans" suppressHydrationWarning>
         <SessionProvider>
           <AnnouncementBanner />
           {children}
