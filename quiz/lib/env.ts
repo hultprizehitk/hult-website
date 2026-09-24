@@ -1,5 +1,8 @@
 export function isDevLoginEnabled(): boolean {
-  return process.env.QUIZ_DEV_LOGIN === "true" && process.env.NODE_ENV !== "production";
+  if (process.env.QUIZ_DEV_LOGIN !== "true") return false;
+  // Production builds refuse dev identity unless this deliberately scary flag is set in the shell for a
+  // local load test against `next start`. Never set it on a deployed server (docs/quiz-runbook.md).
+  return process.env.NODE_ENV !== "production" || process.env.QUIZ_UNSAFE_LOADTEST_DEV_LOGIN === "true";
 }
 
 export function adminEmailsFromEnv(): string[] {

@@ -66,6 +66,13 @@ describe("engine.applyAction", () => {
     expect(applyAction(s, { type: "close_now" }, questions, at(1_000)).patch).toEqual({ questionClosesAt: at(LEAD_IN_MS) });
   });
 
+  it("close_now after the question already closed is a no-op, not an error", () => {
+    const s = liveAtQuestion(0);
+    expect(applyAction(s, { type: "close_now" }, questions, at(LEAD_IN_MS + 20_500)).patch).toEqual({});
+    const revealed = merge(s, { phase: "reveal" });
+    expect(() => applyAction(revealed, { type: "close_now" }, questions, T0)).toThrow("invalid_state");
+  });
+
   it("reveal closes an open question and switches phase", () => {
     const s = liveAtQuestion(0);
     expect(applyAction(s, { type: "reveal" }, questions, at(10_000)).patch).toEqual({ phase: "reveal", questionClosesAt: at(10_000) });

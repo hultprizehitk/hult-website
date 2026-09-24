@@ -58,7 +58,9 @@ export function applyAction(s: SessionState, a: ControlAction, questions: Questi
     }
 
     case "close_now":
-      requireState(inQuestion && t < ms(s.questionClosesAt));
+      requireState(inQuestion);
+      // Idempotent: the host may click just as the timer runs out; an already-closed question stays closed.
+      if (t >= ms(s.questionClosesAt)) return { patch: {} };
       return { patch: { questionClosesAt: new Date(Math.max(t, ms(s.questionOpenedAt))) } };
 
     case "extend":
