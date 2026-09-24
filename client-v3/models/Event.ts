@@ -7,6 +7,8 @@ export interface ITeamMember {
   phone?: string;
   roll?: string;
   joinedAt?: Date;
+  checkedIn?: boolean;
+  checkedInAt?: Date;
 }
 
 export interface IRegisteredTeam {
@@ -26,6 +28,8 @@ export interface IRegisteredTeam {
   status: "confirmed" | "disqualified";
   submissionStatus?: "forming" | "ready" | "submitted";
   submittedAt?: Date;
+  leadCheckedIn?: boolean;
+  leadCheckedInAt?: Date;
   checkedIn?: boolean;
   checkedInAt?: Date;
 }
@@ -162,6 +166,8 @@ const EventSchema = new Schema<IEvent>(
             phone: { type: String, default: "" },
             roll: { type: String, default: "" },
             joinedAt: { type: Date, default: Date.now },
+            checkedIn: { type: Boolean, default: false },
+            checkedInAt: { type: Date },
           },
         ],
         registeredAt: { type: Date, default: Date.now },
@@ -170,6 +176,8 @@ const EventSchema = new Schema<IEvent>(
         pitchDeckUrl: { type: String, default: "" },
         submissionStatus: { type: String, enum: ["forming", "ready", "submitted"], default: "forming" },
         submittedAt: { type: Date },
+        leadCheckedIn: { type: Boolean, default: false },
+        leadCheckedInAt: { type: Date },
         checkedIn: { type: Boolean, default: false },
         checkedInAt: { type: Date },
       },

@@ -32,6 +32,8 @@ interface TeamMember {
   department?: string;
   roll?: string;
   joinedAt?: string | Date;
+  checkedIn?: boolean;
+  checkedInAt?: string | Date | null;
 }
 
 interface TeamLead {
@@ -40,6 +42,8 @@ interface TeamLead {
   phone?: string;
   department?: string;
   roll?: string;
+  checkedIn?: boolean;
+  checkedInAt?: string | Date | null;
 }
 
 interface RegisteredTeam {
@@ -241,21 +245,49 @@ export default function LiveEventManager() {
 
     // Optimistic UI update
     setTeams((prev) =>
-      prev.map((t) =>
-        t.id === team.id
-          ? {
-              ...t,
-              checkedIn: nextCheckIn,
-              checkedInAt: nextCheckIn ? new Date().toISOString() : null,
-            }
-          : t
-      )
+      prev.map((t) => {
+        if (t.id !== team.id) return t;
+        const nowIso = nextCheckIn ? new Date().toISOString() : null;
+        const updatedLead = {
+          ...t.lead,
+          checkedIn: nextCheckIn,
+          checkedInAt: nowIso,
+        };
+        const updatedMembers = (t.members || []).map((m) => ({
+          ...m,
+          checkedIn: nextCheckIn,
+          checkedInAt: nowIso,
+        }));
+        return {
+          ...t,
+          checkedIn: nextCheckIn,
+          checkedInAt: nowIso,
+          lead: updatedLead,
+          members: updatedMembers,
+        };
+      })
     );
     if (inspectingTeam && inspectingTeam.id === team.id) {
-      setInspectingTeam({
-        ...inspectingTeam,
-        checkedIn: nextCheckIn,
-        checkedInAt: nextCheckIn ? new Date().toISOString() : null,
+      setInspectingTeam((prev) => {
+        if (!prev) return null;
+        const nowIso = nextCheckIn ? new Date().toISOString() : null;
+        const updatedLead = {
+          ...prev.lead,
+          checkedIn: nextCheckIn,
+          checkedInAt: nowIso,
+        };
+        const updatedMembers = (prev.members || []).map((m) => ({
+          ...m,
+          checkedIn: nextCheckIn,
+          checkedInAt: nowIso,
+        }));
+        return {
+          ...prev,
+          checkedIn: nextCheckIn,
+          checkedInAt: nowIso,
+          lead: updatedLead,
+          members: updatedMembers,
+        };
       });
     }
 
@@ -275,9 +307,10 @@ export default function LiveEventManager() {
       if (res.ok) {
         showToast(
           nextCheckIn
-            ? `✓ Team "${team.teamName}" marked as Checked In!`
+            ? `Team "${team.teamName}" marked as Checked In!`
             : `Check-in reverted for "${team.teamName}".`
         );
+        fetchTeamsForEvent(selectedEventId);
       } else {
         fetchTeamsForEvent(selectedEventId);
         showToast("Failed to update check-in status.", "error");
@@ -286,6 +319,127 @@ export default function LiveEventManager() {
       console.error(err);
       fetchTeamsForEvent(selectedEventId);
       showToast("Network error updating check-in.", "error");
+    } finally {
+      setActionLoadingId(null);
+    }
+  };
+
+  const handleToggleParticipantCheckIn = async (p: FlatParticipant) => {
+    if (!selectedEventId) return;
+    if (!isTeamSubmitted(p.team)) {
+      showToast("Forming teams cannot check in until registration is submitted.", "error");
+      return;
+    }
+    setActionLoadingId(p.id);
+    const nextCheckIn = !p.checkedIn;
+    const nowIso = nextCheckIn ? new Date().toISOString() : null;
+
+    // Optimistically update teams state
+    setTeams((prev) =>
+      prev.map((t) => {
+        if (t.id !== p.teamId) return t;
+
+        const isLead = p.role === "Team Leader";
+        const updatedLead = isLead
+          ? { ...t.lead, checkedIn: nextCheckIn, checkedInAt: nowIso }
+          : t.lead;
+
+        const updatedMembers = (t.members || []).map((m) => {
+          if (
+            !isLead &&
+            ((p.email && m.email && m.email.toLowerCase() === p.email.toLowerCase()) ||
+              (p.roll && m.roll && m.roll.toLowerCase() === p.roll.toLowerCase()) ||
+              m.name.toLowerCase() === p.name.toLowerCase())
+          ) {
+            return { ...m, checkedIn: nextCheckIn, checkedInAt: nowIso };
+          }
+          return m;
+        });
+
+        const totalRoster = 1 + updatedMembers.length;
+        const leadChecked = updatedLead.checkedIn ? 1 : 0;
+        const membersChecked = updatedMembers.filter((m) => m.checkedIn).length;
+        const allChecked = leadChecked + membersChecked >= totalRoster;
+
+        return {
+          ...t,
+          lead: updatedLead,
+          members: updatedMembers,
+          checkedIn: allChecked,
+          checkedInAt: allChecked ? (t.checkedInAt || nowIso) : null,
+        };
+      })
+    );
+
+    if (inspectingTeam && inspectingTeam.id === p.teamId) {
+      setInspectingTeam((prev) => {
+        if (!prev) return null;
+        const isLead = p.role === "Team Leader";
+        const updatedLead = isLead
+          ? { ...prev.lead, checkedIn: nextCheckIn, checkedInAt: nowIso }
+          : prev.lead;
+
+        const updatedMembers = (prev.members || []).map((m) => {
+          if (
+            !isLead &&
+            ((p.email && m.email && m.email.toLowerCase() === p.email.toLowerCase()) ||
+              (p.roll && m.roll && m.roll.toLowerCase() === p.roll.toLowerCase()) ||
+              m.name.toLowerCase() === p.name.toLowerCase())
+          ) {
+            return { ...m, checkedIn: nextCheckIn, checkedInAt: nowIso };
+          }
+          return m;
+        });
+
+        const totalRoster = 1 + updatedMembers.length;
+        const leadChecked = updatedLead.checkedIn ? 1 : 0;
+        const membersChecked = updatedMembers.filter((m) => m.checkedIn).length;
+        const allChecked = leadChecked + membersChecked >= totalRoster;
+
+        return {
+          ...prev,
+          lead: updatedLead,
+          members: updatedMembers,
+          checkedIn: allChecked,
+          checkedInAt: allChecked ? (prev.checkedInAt || nowIso) : null,
+        };
+      });
+    }
+
+    try {
+      const res = await fetch("/api/admin/teams", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          action: "toggle_participant_check_in",
+          teamId: p.teamId,
+          teamCode: p.teamCode,
+          participantEmail: p.email,
+          checkedIn: nextCheckIn,
+          eventId: selectedEventId,
+        }),
+      });
+
+      const data = await res.json();
+      if (res.ok && data.success) {
+        if (data.allCheckedIn && nextCheckIn) {
+          showToast(`All members present! Team "${p.teamName}" auto-checked in.`);
+        } else {
+          showToast(
+            nextCheckIn
+              ? `Participant ${p.name} marked as Present.`
+              : `Participant ${p.name} check-in reverted.`
+          );
+        }
+        fetchTeamsForEvent(selectedEventId);
+      } else {
+        fetchTeamsForEvent(selectedEventId);
+        showToast(data.error || "Failed to update participant check-in.", "error");
+      }
+    } catch (err) {
+      console.error(err);
+      fetchTeamsForEvent(selectedEventId);
+      showToast("Network error updating participant check-in.", "error");
     } finally {
       setActionLoadingId(null);
     }
@@ -509,6 +663,9 @@ export default function LiveEventManager() {
   const allParticipants = useMemo<FlatParticipant[]>(() => {
     const list: FlatParticipant[] = [];
     for (const t of teams) {
+      const isLeadChecked = Boolean(t.lead?.checkedIn || (t.checkedIn && t.lead?.checkedIn !== false));
+      const leadCheckedInAt = t.lead?.checkedInAt || (isLeadChecked ? t.checkedInAt : null);
+
       list.push({
         id: `${t.id}_lead`,
         teamId: t.id,
@@ -520,14 +677,17 @@ export default function LiveEventManager() {
         department: t.lead.department || t.department || "General",
         roll: t.lead.roll,
         role: "Team Leader",
-        checkedIn: t.checkedIn,
-        checkedInAt: t.checkedInAt,
+        checkedIn: isLeadChecked,
+        checkedInAt: leadCheckedInAt,
         registeredAt: t.registeredAt,
         team: t,
       });
 
       if (Array.isArray(t.members)) {
         t.members.forEach((m, idx) => {
+          const isMemChecked = Boolean(m.checkedIn !== undefined ? m.checkedIn : t.checkedIn);
+          const memCheckedInAt = m.checkedInAt || (isMemChecked ? t.checkedInAt : null);
+
           list.push({
             id: `${t.id}_mem_${idx}`,
             teamId: t.id,
@@ -539,8 +699,8 @@ export default function LiveEventManager() {
             department: m.department || t.department || "General",
             roll: m.roll || "",
             role: "Member",
-            checkedIn: t.checkedIn,
-            checkedInAt: t.checkedInAt,
+            checkedIn: isMemChecked,
+            checkedInAt: memCheckedInAt,
             registeredAt: t.registeredAt,
             team: t,
           });
@@ -592,9 +752,13 @@ export default function LiveEventManager() {
       1 + (Array.isArray(t.members) ? t.members.length : 0);
 
     const totalParticipants = eligibleTeams.reduce((acc, t) => acc + getParticipantCount(t), 0);
-    const checkedInParticipants = eligibleTeams
-      .filter((t) => t.checkedIn)
-      .reduce((acc, t) => acc + getParticipantCount(t), 0);
+    const checkedInParticipants = eligibleTeams.reduce((acc, t) => {
+      const leadPresent = Boolean(t.lead?.checkedIn || (t.checkedIn && t.lead?.checkedIn !== false));
+      const membersPresent = Array.isArray(t.members)
+        ? t.members.filter((m) => Boolean(m.checkedIn !== undefined ? m.checkedIn : t.checkedIn)).length
+        : 0;
+      return acc + (leadPresent ? 1 : 0) + membersPresent;
+    }, 0);
     const remainingParticipants = totalParticipants - checkedInParticipants;
     const participantRate =
       totalParticipants > 0 ? Math.round((checkedInParticipants / totalParticipants) * 100) : 0;
@@ -1432,20 +1596,20 @@ export default function LiveEventManager() {
                                 {isTeamSubmitted(p.team) && (
                                   <button
                                     type="button"
-                                    onClick={() => handleToggleCheckIn(p.team)}
-                                    disabled={actionLoadingId === p.team.id}
+                                    onClick={() => handleToggleParticipantCheckIn(p)}
+                                    disabled={actionLoadingId === p.id}
                                     className={`rounded-xl px-3 py-1.5 text-xs font-semibold transition-all cursor-pointer flex items-center gap-1.5 ${
                                       p.checkedIn
                                         ? "bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 hover:bg-emerald-500/30"
                                         : "bg-white text-black hover:bg-neutral-200 shadow-sm"
                                     }`}
                                   >
-                                    {actionLoadingId === p.team.id ? (
+                                    {actionLoadingId === p.id ? (
                                       <RefreshCw className="h-3 w-3 animate-spin" />
                                     ) : p.checkedIn ? (
                                       <>
                                         <Check className="h-3 w-3 text-emerald-400" />
-                                        <span>Checked In</span>
+                                        <span>Present</span>
                                       </>
                                     ) : (
                                       <span>Check In</span>
@@ -1540,22 +1704,48 @@ export default function LiveEventManager() {
 
                             {/* Attendance Status */}
                             <td className="py-3.5 px-4">
-                              {!isSubmitted ? (
-                                <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-mono text-neutral-400 bg-white/[0.04] border border-white/10 whitespace-nowrap">
-                                  <span className="w-1.5 h-1.5 rounded-full bg-neutral-500" />
-                                  <span>Ineligible (Forming)</span>
-                                </div>
-                              ) : team.checkedIn ? (
-                                <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-bold font-mono bg-emerald-500/15 border border-emerald-500/30 text-emerald-300 shadow-sm whitespace-nowrap">
-                                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-                                  <span>Checked In ({rosterCount} Pax)</span>
-                                </div>
-                              ) : (
-                                <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-medium font-mono bg-amber-500/15 border border-amber-500/30 text-amber-300 whitespace-nowrap">
-                                  <span className="w-1.5 h-1.5 rounded-full bg-amber-400" />
-                                  <span>Not Checked In ({rosterCount} Pax)</span>
-                                </div>
-                              )}
+                              {(() => {
+                                const leadPresent = Boolean(team.lead?.checkedIn || (team.checkedIn && team.lead?.checkedIn !== false));
+                                const membersPresent = Array.isArray(team.members)
+                                  ? team.members.filter((m) => Boolean(m.checkedIn !== undefined ? m.checkedIn : team.checkedIn)).length
+                                  : 0;
+                                const presentCount = (leadPresent ? 1 : 0) + membersPresent;
+                                const isAllPresent = team.checkedIn || (rosterCount > 0 && presentCount >= rosterCount);
+
+                                if (!isSubmitted) {
+                                  return (
+                                    <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-mono text-neutral-400 bg-white/[0.04] border border-white/10 whitespace-nowrap">
+                                      <span className="w-1.5 h-1.5 rounded-full bg-neutral-500" />
+                                      <span>Ineligible (Forming)</span>
+                                    </div>
+                                  );
+                                }
+
+                                if (isAllPresent) {
+                                  return (
+                                    <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-bold font-mono bg-emerald-500/15 border border-emerald-500/30 text-emerald-300 shadow-sm whitespace-nowrap">
+                                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                                      <span>Checked In ({rosterCount}/{rosterCount} Pax)</span>
+                                    </div>
+                                  );
+                                }
+
+                                if (presentCount > 0) {
+                                  return (
+                                    <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-semibold font-mono bg-sky-500/15 border border-sky-500/30 text-sky-300 whitespace-nowrap">
+                                      <span className="w-1.5 h-1.5 rounded-full bg-sky-400 animate-pulse" />
+                                      <span>In Progress ({presentCount}/{rosterCount} Pax)</span>
+                                    </div>
+                                  );
+                                }
+
+                                return (
+                                  <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-medium font-mono bg-amber-500/15 border border-amber-500/30 text-amber-300 whitespace-nowrap">
+                                    <span className="w-1.5 h-1.5 rounded-full bg-amber-400" />
+                                    <span>Not Checked In (0/{rosterCount} Pax)</span>
+                                  </div>
+                                );
+                              })()}
                               {isSubmitted && team.checkedInAt && (
                                 <div className="text-[10px] font-mono text-white/40 mt-0.5">
                                   {new Date(team.checkedInAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
@@ -1731,17 +1921,35 @@ export default function LiveEventManager() {
                     <span className="font-mono text-xs font-bold rounded-xl bg-white/10 border border-white/20 text-white px-3 py-1">
                       {inspectingTeam.teamCode}
                     </span>
-                    {isTeamSubmitted(inspectingTeam) ? (
-                      <span
-                        className={`rounded-full px-3 py-0.5 text-xs font-bold uppercase tracking-wider border ${
-                          inspectingTeam.checkedIn
-                            ? "bg-emerald-500/20 border-emerald-500/40 text-emerald-300"
-                            : "bg-white/10 border-white/20 text-white/60"
-                        }`}
-                      >
-                        {inspectingTeam.checkedIn ? "Verified Check-In" : "Pending Check-In"}
-                      </span>
-                    ) : (
+                    {isTeamSubmitted(inspectingTeam) ? (() => {
+                      const rosterTotal = 1 + (inspectingTeam.members?.length || 0);
+                      const leadPresent = Boolean(inspectingTeam.lead?.checkedIn || (inspectingTeam.checkedIn && inspectingTeam.lead?.checkedIn !== false));
+                      const membersPresent = (inspectingTeam.members || []).filter((m) => Boolean(m.checkedIn !== undefined ? m.checkedIn : inspectingTeam.checkedIn)).length;
+                      const presentCount = (leadPresent ? 1 : 0) + membersPresent;
+                      const isComplete = inspectingTeam.checkedIn || (rosterTotal > 0 && presentCount >= rosterTotal);
+
+                      if (isComplete) {
+                        return (
+                          <span className="rounded-full px-3 py-0.5 text-xs font-bold uppercase tracking-wider border bg-emerald-500/20 border-emerald-500/40 text-emerald-300">
+                            Verified Check-In ({rosterTotal}/{rosterTotal} Pax)
+                          </span>
+                        );
+                      }
+
+                      if (presentCount > 0) {
+                        return (
+                          <span className="rounded-full px-3 py-0.5 text-xs font-bold uppercase tracking-wider border bg-sky-500/20 border-sky-500/40 text-sky-300">
+                            In Progress ({presentCount}/{rosterTotal} Pax)
+                          </span>
+                        );
+                      }
+
+                      return (
+                        <span className="rounded-full px-3 py-0.5 text-xs font-bold uppercase tracking-wider border bg-amber-500/20 border-amber-500/30 text-amber-300">
+                          Pending Check-In (0/{rosterTotal} Pax)
+                        </span>
+                      );
+                    })() : (
                       <span className="rounded-full px-3 py-0.5 text-xs font-mono font-medium border bg-white/[0.04] border-white/10 text-neutral-400">
                         Ineligible (Forming)
                       </span>
@@ -1764,6 +1972,28 @@ export default function LiveEventManager() {
                     <div>
                       <span className="text-white/40 block">Full Name:</span>
                       <strong className="text-white text-sm font-sans">{inspectingTeam.lead.name}</strong>
+                    </div>
+                    <div>
+                      <span className="text-white/40 block">Attendance:</span>
+                      {(() => {
+                        const leadChecked = Boolean(inspectingTeam.lead?.checkedIn || (inspectingTeam.checkedIn && inspectingTeam.lead?.checkedIn !== false));
+                        return leadChecked ? (
+                          <span className="inline-flex items-center gap-1.5 text-emerald-300 font-bold font-mono">
+                            <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
+                            <span>Present</span>
+                            {inspectingTeam.lead?.checkedInAt && (
+                              <span className="text-white/40 text-[10px] font-normal">
+                                ({new Date(inspectingTeam.lead.checkedInAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })})
+                              </span>
+                            )}
+                          </span>
+                        ) : (
+                          <span className="inline-flex items-center gap-1.5 text-amber-300 font-medium font-mono">
+                            <span className="w-1.5 h-1.5 rounded-full bg-amber-400" />
+                            <span>Not Checked In</span>
+                          </span>
+                        );
+                      })()}
                     </div>
                     <div>
                       <span className="text-white/40 block">Email Address:</span>
@@ -1812,7 +2042,25 @@ export default function LiveEventManager() {
                               <div className="text-[11px] text-white/40">{member.department}</div>
                             )}
                           </div>
-                          <div className="text-right sm:text-right text-white/50 text-[11px]">
+                          <div className="text-right sm:text-right text-white/50 text-[11px] flex flex-col items-end gap-1.5">
+                            {(() => {
+                              const memChecked = Boolean(member.checkedIn !== undefined ? member.checkedIn : inspectingTeam.checkedIn);
+                              return memChecked ? (
+                                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 font-mono">
+                                  <Check className="h-2.5 w-2.5 text-emerald-400" />
+                                  <span>Present</span>
+                                  {member.checkedInAt && (
+                                    <span className="text-white/40 text-[9px] font-normal">
+                                      ({new Date(member.checkedInAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })})
+                                    </span>
+                                  )}
+                                </span>
+                              ) : (
+                                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium bg-amber-500/15 text-amber-300 border border-amber-500/20 font-mono">
+                                  <span>Not Checked In</span>
+                                </span>
+                              );
+                            })()}
                             {member.phone && (
                               <div className="flex items-center gap-1 justify-end">
                                 <Phone className="h-3 w-3 text-emerald-400" />
@@ -2040,47 +2288,32 @@ export default function LiveEventManager() {
               eventTitle={eventMeta?.title || selectedEvent?.title}
               onClose={() => setShowCameraScanner(false)}
               onCheckInTeam={async (scannedCode) => {
-                const matchedTeam = teams.find(
-                  (t) => t.teamCode.toUpperCase() === scannedCode.toUpperCase()
-                );
-
                 try {
                   const res = await fetch("/api/admin/teams", {
                     method: "PUT",
                     headers: { "Content-Type": "application/json" },
                     body: JSON.stringify({
-                      action: "toggle_check_in",
-                      teamId: matchedTeam?.id,
+                      action: "scan_check_in",
+                      rawCode: scannedCode,
                       eventId: selectedEventId,
-                      teamCode: scannedCode,
-                      checkedIn: true,
                     }),
                   });
 
                   const data = await res.json();
-                  if (res.ok) {
-                    // Update local teams list
-                    if (matchedTeam) {
-                      setTeams((prev) =>
-                        prev.map((t) =>
-                          t.id === matchedTeam.id
-                            ? { ...t, checkedIn: true, checkedInAt: new Date().toISOString() }
-                            : t
-                        )
-                      );
-                    } else {
-                      fetchTeamsForEvent(selectedEventId);
-                    }
-
+                  if (res.ok && data.success) {
+                    fetchTeamsForEvent(selectedEventId);
                     return {
                       success: true,
-                      message: `Team "${matchedTeam?.teamName || scannedCode}" marked present!`,
-                      teamName: matchedTeam?.teamName || data.team?.teamName,
+                      message:
+                        data.message ||
+                        `Check-in recorded for ${data.participant?.name || data.team?.teamName || scannedCode}!`,
+                      teamName: data.team?.teamName,
+                      teamCode: data.team?.teamCode,
                     };
                   } else {
                     return {
                       success: false,
-                      message: data.error || `Failed to check in team (${scannedCode}).`,
+                      message: data.error || `Failed to check in (${scannedCode}).`,
                     };
                   }
                 } catch (err: unknown) {

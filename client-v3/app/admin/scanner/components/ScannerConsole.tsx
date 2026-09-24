@@ -25,6 +25,8 @@ interface TeamMember {
   email?: string;
   department?: string;
   roll?: string;
+  checkedIn?: boolean;
+  checkedInAt?: string | null;
 }
 
 interface TeamLead {
@@ -33,6 +35,8 @@ interface TeamLead {
   phone?: string;
   department?: string;
   roll?: string;
+  checkedIn?: boolean;
+  checkedInAt?: string | null;
 }
 
 interface RegisteredTeam {
@@ -68,9 +72,14 @@ interface SessionScanLog {
   teamCode: string;
   teamName: string;
   leadName?: string;
+  participantName?: string;
+  participantRole?: string;
   timestamp: string;
   status: "success" | "duplicate" | "error";
   message: string;
+  checkedInCount?: number;
+  totalMembers?: number;
+  allCheckedIn?: boolean;
 }
 
 export default function ScannerConsole() {
@@ -98,6 +107,7 @@ export default function ScannerConsole() {
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
+  const lastScannedCodeRef = useRef<{ code: string; time: number } | null>(null);
 
   // -------------------------------------------------------------
   // Feedback & Session Logs
@@ -108,7 +118,12 @@ export default function ScannerConsole() {
     teamCode: string;
     teamName?: string;
     leadName?: string;
+    participantName?: string;
+    participantRole?: string;
     membersCount?: number;
+    checkedInCount?: number;
+    totalMembers?: number;
+    allCheckedIn?: boolean;
   } | null>(null);
 
   const [manualCode, setManualCode] = useState<string>("");
@@ -275,103 +290,95 @@ export default function ScannerConsole() {
   }, [selectedEventId, fetchTeams]);
 
   // -------------------------------------------------------------
-  // 3. Process Check-in Submission
+  // 3. Process Check-in Submission (Handles Participant QR & Team QR)
   // -------------------------------------------------------------
   const handleCheckInCode = useCallback(
     async (rawCode: string) => {
-      const code = parseTeamCode(rawCode);
+      const code = String(rawCode || "").trim();
       if (!code) return;
 
-      setIsProcessing(true);
-
-      const matchedTeam = teams.find(
-        (t) => t.teamCode.toUpperCase() === code.toUpperCase()
-      );
-
-      // Check if already checked in
-      if (matchedTeam && matchedTeam.checkedIn) {
-        playAudioChime("duplicate");
-        const logEntry: SessionScanLog = {
-          id: `${code}_${Date.now()}`,
-          teamCode: code,
-          teamName: matchedTeam.teamName,
-          leadName: matchedTeam.lead.name,
-          timestamp: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", second: "2-digit" }),
-          status: "duplicate",
-          message: `Already checked in at ${matchedTeam.checkedInAt ? new Date(matchedTeam.checkedInAt).toLocaleTimeString() : "earlier"}`,
-        };
-
-        setSessionLogs((prev) => [logEntry, ...prev.slice(0, 49)]);
-        setLastScanResult({
-          status: "duplicate",
-          message: logEntry.message,
-          teamCode: code,
-          teamName: matchedTeam.teamName,
-          leadName: matchedTeam.lead.name,
-          membersCount: matchedTeam.membersCount,
-        });
-
-        setTimeout(() => setIsProcessing(false), 1600);
+      // Prevent duplicate scan of the same exact code within 2 seconds
+      const now = Date.now();
+      if (
+        lastScannedCodeRef.current &&
+        lastScannedCodeRef.current.code === code &&
+        now - lastScannedCodeRef.current.time < 2000
+      ) {
         return;
       }
+      lastScannedCodeRef.current = { code, time: now };
+
+      setIsProcessing(true);
 
       try {
         const res = await fetch("/api/admin/teams", {
           method: "PUT",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
-            action: "toggle_check_in",
-            teamId: matchedTeam?.id,
+            action: "scan_check_in",
+            payload: code,
             eventId: selectedEventId,
-            teamCode: code,
-            checkedIn: true,
           }),
         });
 
         const data = await res.json();
 
         if (res.ok) {
-          playAudioChime("success");
-          const teamName = matchedTeam?.teamName || data.team?.teamName || code;
-          const leadName = matchedTeam?.lead.name || data.team?.lead?.name || "Participant";
-          const membersCount = matchedTeam?.membersCount || data.team?.membersCount || 4;
+          const isDup = Boolean(data.duplicate);
+          playAudioChime(isDup ? "duplicate" : "success");
 
-          // Optimistically update local teams list
-          setTeams((prev) =>
-            prev.map((t) =>
-              t.teamCode.toUpperCase() === code.toUpperCase() || (matchedTeam && t.id === matchedTeam.id)
-                ? { ...t, checkedIn: true, checkedInAt: new Date().toISOString() }
-                : t
-            )
-          );
+          const teamCode = data.team?.teamCode || code;
+          const teamName = data.team?.teamName || "Team";
+          const participantName = data.participant?.name;
+          const participantRole = data.participant?.role;
+          const checkedInCount = data.checkedInCount ?? 1;
+          const totalMembers = data.totalMembers ?? (data.team ? 1 + (data.team.members?.length || 0) : 4);
+          const allCheckedIn = Boolean(data.allCheckedIn);
+
+          // Optimistically update local teams list with full updated team document
+          if (data.team) {
+            setTeams((prev) =>
+              prev.map((t) => (t.id === data.team.id || t.teamCode === data.team.teamCode ? data.team : t))
+            );
+          }
 
           const logEntry: SessionScanLog = {
             id: `${code}_${Date.now()}`,
-            teamCode: code,
+            teamCode,
             teamName,
-            leadName,
+            leadName: data.team?.lead?.name,
+            participantName,
+            participantRole,
             timestamp: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", second: "2-digit" }),
-            status: "success",
-            message: "Attendance confirmed",
+            status: isDup ? "duplicate" : "success",
+            message: data.message || (isDup ? "Already checked in" : "Verified"),
+            checkedInCount,
+            totalMembers,
+            allCheckedIn,
           };
 
           setSessionLogs((prev) => [logEntry, ...prev.slice(0, 49)]);
           setLastScanResult({
-            status: "success",
-            message: "Attendance confirmed",
-            teamCode: code,
+            status: isDup ? "duplicate" : "success",
+            message: data.message,
+            teamCode,
             teamName,
-            leadName,
-            membersCount,
+            leadName: data.team?.lead?.name,
+            participantName,
+            participantRole,
+            membersCount: totalMembers,
+            checkedInCount,
+            totalMembers,
+            allCheckedIn,
           });
         } else {
           playAudioChime("error");
-          const errorMsg = data.error || `Team not found (${code})`;
+          const errorMsg = data.error || `Verification failed (${code})`;
 
           const logEntry: SessionScanLog = {
             id: `${code}_${Date.now()}`,
             teamCode: code,
-            teamName: "Unregistered / Unknown",
+            teamName: "Verification Blocked",
             timestamp: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", second: "2-digit" }),
             status: "error",
             message: errorMsg,
@@ -386,7 +393,7 @@ export default function ScannerConsole() {
         }
       } catch (err: unknown) {
         playAudioChime("error");
-        const errMsg = err instanceof Error ? err.message : "Network error submitting check-in.";
+        const errMsg = err instanceof Error ? err.message : "Network error processing check-in.";
         setLastScanResult({
           status: "error",
           message: errMsg,
@@ -396,7 +403,7 @@ export default function ScannerConsole() {
         setTimeout(() => setIsProcessing(false), 1800);
       }
     },
-    [teams, selectedEventId, playAudioChime]
+    [selectedEventId, playAudioChime]
   );
 
   // -------------------------------------------------------------
@@ -929,10 +936,10 @@ export default function ScannerConsole() {
                 <div
                   className={`absolute inset-0 flex flex-col items-center justify-center p-6 text-center backdrop-blur-xl animate-fadeIn ${
                     lastScanResult.status === "success"
-                      ? "bg-emerald-950/90 text-emerald-200"
+                      ? "bg-emerald-950/95 text-emerald-200"
                       : lastScanResult.status === "duplicate"
-                      ? "bg-amber-950/90 text-amber-200"
-                      : "bg-rose-950/90 text-rose-200"
+                      ? "bg-amber-950/95 text-amber-200"
+                      : "bg-rose-950/95 text-rose-200"
                   }`}
                 >
                   <div
@@ -953,25 +960,44 @@ export default function ScannerConsole() {
 
                   <h3 className="text-xl font-black font-[family-name:var(--font-google-sans)] mb-1">
                     {lastScanResult.status === "success"
-                      ? "Check-In Confirmed!"
+                      ? lastScanResult.allCheckedIn
+                        ? "All Team Members Verified!"
+                        : "Participant Verified!"
                       : lastScanResult.status === "duplicate"
                       ? "Already Checked In"
-                      : "Check-In Error"}
+                      : "Check-In Blocked"}
                   </h3>
+
+                  {lastScanResult.participantName && (
+                    <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/10 text-white font-mono text-xs font-bold mb-1">
+                      <span>{lastScanResult.participantName}</span>
+                      {lastScanResult.participantRole && (
+                        <span className="opacity-70 font-normal">({lastScanResult.participantRole})</span>
+                      )}
+                    </div>
+                  )}
 
                   {lastScanResult.teamName && (
                     <p className="text-sm font-bold text-white mb-0.5">
-                      {lastScanResult.teamName}
+                      Team: {lastScanResult.teamName}
                     </p>
                   )}
 
-                  {lastScanResult.leadName && (
-                    <p className="text-xs text-white/80 mb-1">
-                      Lead: {lastScanResult.leadName}
-                    </p>
+                  {lastScanResult.totalMembers && (
+                    <div className="mt-2 mb-2 px-3 py-1.5 rounded-xl bg-black/40 border border-white/15 text-xs font-mono">
+                      <span>Team Attendance: </span>
+                      <strong className="text-white font-bold">
+                        {lastScanResult.checkedInCount || 0} of {lastScanResult.totalMembers} Present
+                      </strong>
+                      {lastScanResult.allCheckedIn && (
+                        <span className="block text-[11px] text-emerald-300 font-bold mt-0.5">
+                          Full team verified — Team marked Checked In!
+                        </span>
+                      )}
+                    </div>
                   )}
 
-                  <p className="text-xs font-mono font-bold tracking-wider opacity-90 mb-2">
+                  <p className="text-xs font-mono font-bold tracking-wider opacity-90 mb-1">
                     Code: {lastScanResult.teamCode}
                   </p>
 
@@ -1045,10 +1071,24 @@ export default function ScannerConsole() {
                           {log.teamCode}
                         </span>
                       </div>
-                      <div className="text-[11px] text-neutral-400 flex items-center gap-2">
-                        {log.leadName && <span>Lead: {log.leadName}</span>}
+                      <div className="text-[11px] text-neutral-400 flex items-center gap-2 flex-wrap">
+                        {log.participantName ? (
+                          <span className="text-white/90 font-medium">
+                            {log.participantName} {log.participantRole ? `(${log.participantRole})` : ""}
+                          </span>
+                        ) : log.leadName ? (
+                          <span>Lead: {log.leadName}</span>
+                        ) : null}
                         <span>•</span>
                         <span className="font-mono">{log.timestamp}</span>
+                        {log.checkedInCount && log.totalMembers ? (
+                          <>
+                            <span>•</span>
+                            <span className="font-mono text-emerald-400 font-semibold">
+                              {log.checkedInCount}/{log.totalMembers} Pax
+                            </span>
+                          </>
+                        ) : null}
                       </div>
                     </div>
 

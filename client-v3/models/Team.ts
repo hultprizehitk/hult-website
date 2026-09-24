@@ -7,6 +7,8 @@ export interface ITeamMember {
   department?: string;
   roll?: string;
   joinedAt: Date;
+  checkedIn?: boolean;
+  checkedInAt?: Date;
 }
 
 export interface ITeamLead {
@@ -15,6 +17,8 @@ export interface ITeamLead {
   phone?: string;
   department?: string;
   roll?: string;
+  checkedIn?: boolean;
+  checkedInAt?: Date;
 }
 
 export interface ITeam extends Document {
@@ -48,6 +52,8 @@ const TeamMemberSchema = new Schema<ITeamMember>(
     department: { type: String, default: "General", trim: true },
     roll: { type: String, default: "", trim: true },
     joinedAt: { type: Date, default: Date.now },
+    checkedIn: { type: Boolean, default: false },
+    checkedInAt: { type: Date },
   },
   { _id: false }
 );
@@ -59,6 +65,8 @@ const TeamLeadSchema = new Schema<ITeamLead>(
     phone: { type: String, default: "", trim: true },
     department: { type: String, default: "General", trim: true },
     roll: { type: String, default: "", trim: true },
+    checkedIn: { type: Boolean, default: false },
+    checkedInAt: { type: Date },
   },
   { _id: false }
 );
