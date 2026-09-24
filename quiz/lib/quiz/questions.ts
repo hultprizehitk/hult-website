@@ -60,6 +60,21 @@ export async function deleteQuestion(session: QuizSessionDoc, id: string): Promi
   invalidateSnapshot(session.code);
 }
 
+/** Bulk insert (CSV import). "replace" deletes the session's existing questions first. */
+export async function importQuestions(
+  session: QuizSessionDoc,
+  inputs: QuestionInput[],
+  mode: "append" | "replace",
+): Promise<QuestionLite[]> {
+  assertEditable(session);
+  if (mode === "replace") await QuizQuestion.deleteMany({ sessionId: session._id });
+  const last = mode === "append" ? await QuizQuestion.findOne({ sessionId: session._id }).sort({ order: -1 }).lean<QuizQuestionDoc>() : null;
+  const start = (last?.order ?? -1) + 1;
+  await QuizQuestion.insertMany(inputs.map((q, i) => ({ sessionId: session._id, order: start + i, ...q })));
+  invalidateSnapshot(session.code);
+  return listQuestions(session._id);
+}
+
 export async function reorderQuestions(session: QuizSessionDoc, ids: string[]): Promise<QuestionLite[]> {
   assertEditable(session);
   const existing = await listQuestions(session._id);

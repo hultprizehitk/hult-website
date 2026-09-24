@@ -110,8 +110,20 @@ export function ParticipantApp({ code }: { code: string }) {
       />,
     );
   }
-  if (me.role === "unregistered") return shell(<StateMessage icon={UserX} title="No team found" subtitle="Register a team on the Hult Prize site" />);
-  if (me.role === "ineligible") return shell(<StateMessage icon={ShieldAlert} title="Team not eligible" subtitle="Team must be confirmed and submitted" />);
+  const switchAccount = (
+    <Link
+      href={`/signin?callbackUrl=${encodeURIComponent(`/s/${code}`)}`}
+      className={buttonVariants({ variant: "outline", className: "rounded-full" })}
+    >
+      Switch account
+    </Link>
+  );
+  if (me.role === "unregistered") {
+    return shell(<StateMessage icon={UserX} title="No team found" subtitle={`${me.email} is not on a registered team for this event`} action={switchAccount} />);
+  }
+  if (me.role === "ineligible") {
+    return shell(<StateMessage icon={ShieldAlert} title="Team not eligible" subtitle="Team must be confirmed and submitted" action={switchAccount} />);
+  }
   if (!me.checkedIn) {
     if (joinError) return shell(<StateMessage icon={ShieldAlert} title={joinError} />);
     if (!s.checkinOpen) return shell(<StateMessage icon={Lock} title="Check-in closed" subtitle="See an organizer" />);

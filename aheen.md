@@ -100,7 +100,7 @@ Other top-level files:
 | `/s/<code>` | Phone: sign in, auto check-in, lobby with taker picker (lead), 3-2-1 lead-in, question with countdown, answer lock, reveal with result bars, leaderboard, final rank. Plus screens for "no team", "not eligible", "check-in closed", and "active on another device" |
 | `/present/<code>` | Projector: QR + code + check-in counter, question + timer + answered bar, result bars, top 10, podium |
 | `/admin` | Session list and create (admins only: `ADMIN_EMAILS` or DB admin role) |
-| `/admin/s/<code>` | Console. **Live**: open lobby, start, +15s, close, reveal, leaderboard, next, restart question, end, CSV. **Questions**: add, edit, reorder, delete. **Teams**: check-in board, manual check-in, change taker, reset device |
+| `/admin/s/<code>` | Console. **Live**: open lobby, start, +15s, close, reveal, leaderboard, next, restart question, end, CSV. **Questions**: add, edit, reorder, delete, or **import a CSV** (format in the runbook). **Teams**: check-in board, manual check-in, change taker, reset device |
 
 Verification:
 - 84 unit and service tests.

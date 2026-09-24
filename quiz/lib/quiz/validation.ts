@@ -61,4 +61,10 @@ export const teamAdminSchema = z.discriminatedUnion("action", [
 ]);
 export type TeamAdminInput = z.infer<typeof teamAdminSchema>;
 
-export const reorderSchema = z.object({ ids: z.array(objectIdSchema).min(1) });
+export const importSchema = z.object({
+  csv: z.string().max(300_000, "File too large"),
+  mode: z.enum(["append", "replace"]).default("append"),
+  dryRun: z.boolean().default(true),
+});
+
+export const reorderSchema =z.object({ ids: z.array(objectIdSchema).min(1) });

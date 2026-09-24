@@ -3,7 +3,7 @@ import { Types } from "mongoose";
 import { startDb, clearDb, stopDb } from "../helpers/db";
 import { addQuestions, makeEvent, makeSession } from "../helpers/fixtures";
 import { applyControl, createSession, deleteSession, getSessionByCode } from "@/lib/quiz/sessions";
-import { addQuestion, deleteQuestion, listQuestions, reorderQuestions } from "@/lib/quiz/questions";
+import { addQuestion, deleteQuestion, importQuestions, listQuestions, reorderQuestions } from "@/lib/quiz/questions";
 import { QuizAnswer } from "@/models/quiz";
 
 beforeAll(startDb);
@@ -95,6 +95,22 @@ describe("questions", () => {
     const a = await addQuestion(s, q("A"));
     await addQuestion(s, q("B"));
     await expect(reorderQuestions(s, [a.id, a.id])).rejects.toMatchObject({ code: "invalid_input" });
+  });
+
+  it("imports questions by appending or replacing", async () => {
+    const ev = await makeEvent();
+    const s = await makeSession(ev._id);
+    await addQuestion(s, q("Existing"));
+    const appended = await importQuestions(s, [q("I1"), q("I2")], "append");
+    expect(appended.map((x) => [x.text, x.order])).toEqual([["Existing", 0], ["I1", 1], ["I2", 2]]);
+    const replaced = await importQuestions(s, [q("R1")], "replace");
+    expect(replaced.map((x) => [x.text, x.order])).toEqual([["R1", 0]]);
+  });
+
+  it("refuses imports once live", async () => {
+    const ev = await makeEvent();
+    const s = await makeSession(ev._id, { status: "live" });
+    await expect(importQuestions(s, [q("X")], "append")).rejects.toMatchObject({ code: "invalid_state" });
   });
 
   it("locks questions once live", async () => {

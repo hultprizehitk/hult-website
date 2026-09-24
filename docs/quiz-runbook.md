@@ -64,9 +64,27 @@ Scores for all 47 teams matched the simulator's own tally exactly, and there wer
 
 1. `/admin`, then **New session**. Pick the real event and keep "Submitted teams only" on.
 2. **Questions** tab: add questions (2–6 options, points 1–1000, 5–120 s). Tap a letter to mark the answer. Questions lock at Start.
+   Or use **Import CSV** to load many at once (see below).
 3. **Teams** tab: check the eligible count matches the registrations.
 4. Open `/present/<code>` on the projector laptop (full screen).
 5. Dry run on venue wifi with 3+ real phones.
+
+## Importing questions from CSV
+
+Go to **Console → Questions → Import CSV** and choose a file. The dialog's **Template** button downloads a blank one. Google Sheets or Excel work fine: use File → Download → CSV.
+
+| Column | Required | Notes |
+|---|---|---|
+| `question` | yes | 1–300 characters |
+| `a`, `b` | yes | Options, 1–120 characters each |
+| `c` … `f` | no | Fill left to right with no gaps; up to 6 options |
+| `answer` | yes | A letter (`B`) **or** the exact option text (`Kolkata`, `17`). A number is read as option text, not a position |
+| `points` | no | 1–1000, default 100 |
+| `seconds` | no | 5–120, default 20 |
+
+Header variants also work: `Option A`, `Correct`, `Time`, `Text`, and so on. Commas inside a cell need the cell in quotes, which spreadsheets do automatically.
+
+The file is checked first, and the dialog shows either a preview or **row-numbered errors**. **Nothing is imported unless every row is valid.** Choose **Add to existing** or **Replace all**. You can import only before the quiz starts, and at most 200 questions per file.
 
 ## Event-day flow
 

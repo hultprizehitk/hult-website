@@ -9,6 +9,7 @@ import { optionLetter } from "@/lib/format";
 import { cn } from "@/lib/utils";
 import type { AdminSessionView, QuestionLite } from "@/lib/quiz/types";
 import { ConfirmButton } from "./ConfirmButton";
+import { ImportCsvDialog } from "./ImportCsvDialog";
 import { QuestionForm } from "./QuestionForm";
 
 export function QuestionsPanel({
@@ -56,10 +57,13 @@ export function QuestionsPanel({
           )}
         </p>
         {editable && (
-          <Button className="rounded-xl" onClick={() => setEditing("new")}>
-            <Plus />
-            Add question
-          </Button>
+          <div className="flex flex-wrap gap-2">
+            <ImportCsvDialog code={code} existingCount={qs.length} onImported={() => void onChanged()} />
+            <Button className="rounded-xl" onClick={() => setEditing("new")}>
+              <Plus />
+              Add question
+            </Button>
+          </div>
         )}
       </div>
 
