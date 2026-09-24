@@ -1,6 +1,6 @@
 import { QuizAnswer, QuizSession, QuizTeam, type QuizAnswerDoc, type QuizSessionDoc, type QuizTeamDoc } from "@/models/quiz";
 import type { MirrorTeam } from "@/models/mirror";
-import { SNAPSHOT_TTL_MS, snapshotCache } from "./cache";
+import { SNAPSHOT_TTL_MS, sessionIdCache, snapshotCache, type CacheEntry } from "./cache";
 import { closedQuestionCount } from "./engine";
 import { QuizError } from "./errors";
 import { standingsCsv } from "./export";
@@ -29,26 +29,79 @@ export interface Snapshot {
   eligibleCount: number;
 }
 
+const ELIGIBLE_TTL_MS = 10_000;
+const eligibleCache = new Map<string, { at: number; key: string; value: number }>();
+
+/** Eligible-team count changes rarely (teams register on the main site), so it is cached for 10s. */
+async function cachedEligibleCount(session: QuizSessionDoc): Promise<number> {
+  const key = `${session.eventId}:${session.requireSubmitted}`;
+  const hit = eligibleCache.get(session.code);
+  if (hit && hit.key === key && Date.now() - hit.at < ELIGIBLE_TTL_MS) return hit.value;
+  const value = await countEligibleTeams(session);
+  eligibleCache.set(session.code, { at: Date.now(), key, value });
+  return value;
+}
+
 async function loadSnapshot(code: string): Promise<Snapshot | null> {
+  const load = (id: QuizSessionDoc["_id"]) =>
+    Promise.all([
+      listQuestions(id),
+      QuizTeam.find({ sessionId: id }).lean<QuizTeamDoc[]>(),
+      QuizAnswer.find({ sessionId: id }).lean<QuizAnswerDoc[]>(),
+    ]);
+
+  // Known session id: one parallel round trip. The id check guards against a deleted code being reused.
+  const knownId = sessionIdCache.get(code);
+  if (knownId) {
+    const [session, [questions, teams, answers]] = await Promise.all([QuizSession.findOne({ code }).lean<QuizSessionDoc>(), load(knownId)]);
+    if (session && String(session._id) === String(knownId)) {
+      return { session, state: toState(session), questions, teams, answers, eligibleCount: await cachedEligibleCount(session) };
+    }
+    sessionIdCache.delete(code);
+  }
+
   const session = await QuizSession.findOne({ code }).lean<QuizSessionDoc>();
   if (!session) return null;
-  const [questions, teams, answers, eligibleCount] = await Promise.all([
-    listQuestions(session._id),
-    QuizTeam.find({ sessionId: session._id }).lean<QuizTeamDoc[]>(),
-    QuizAnswer.find({ sessionId: session._id }).lean<QuizAnswerDoc[]>(),
-    countEligibleTeams(session),
-  ]);
+  sessionIdCache.set(code, session._id);
+  const [[questions, teams, answers], eligibleCount] = await Promise.all([load(session._id), cachedEligibleCount(session)]);
   return { session, state: toState(session), questions, teams, answers, eligibleCount };
 }
 
-/** At most one DB load per code per SNAPSHOT_TTL_MS per process; concurrent callers share the promise. */
+/**
+ * Per-process snapshot cache with stale-while-revalidate:
+ * - fresh (< SNAPSHOT_TTL_MS): shared promise, no DB work;
+ * - expired or soft-invalidated with a value: serve it now, refresh once in the background;
+ * - hard-invalidated (deleted) or never loaded: wait for a load (concurrent callers share it).
+ */
 export function getSnapshot(code: string): Promise<Snapshot | null> {
   const now = Date.now();
   const hit = snapshotCache.get(code);
-  if (hit && now - hit.at < SNAPSHOT_TTL_MS) return hit.promise as Promise<Snapshot | null>;
+  if (hit) {
+    if (now - hit.at < SNAPSHOT_TTL_MS || hit.value === undefined) return hit.promise as Promise<Snapshot | null>;
+    if (!hit.refreshing) {
+      hit.refreshing = true;
+      loadSnapshot(code).then(
+        (value) => {
+          if (snapshotCache.get(code) === hit) snapshotCache.set(code, { at: Date.now(), promise: Promise.resolve(value), value });
+        },
+        () => {
+          hit.refreshing = false;
+        },
+      );
+    }
+    return Promise.resolve(hit.value as Snapshot | null);
+  }
   const promise = loadSnapshot(code);
-  snapshotCache.set(code, { at: now, promise });
-  promise.catch(() => snapshotCache.delete(code));
+  const entry: CacheEntry = { at: now, promise };
+  snapshotCache.set(code, entry);
+  promise.then(
+    (value) => {
+      entry.value = value;
+    },
+    () => {
+      if (snapshotCache.get(code) === entry) snapshotCache.delete(code);
+    },
+  );
   return promise;
 }
 

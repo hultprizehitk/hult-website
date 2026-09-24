@@ -15,6 +15,16 @@ beforeEach(clearDb);
 
 const DEV = "device-aaaaaaaa";
 
+async function eventually<T>(fn: () => Promise<T | null>, timeoutMs = 3000): Promise<T> {
+  const until = Date.now() + timeoutMs;
+  while (Date.now() < until) {
+    const v = await fn();
+    if (v !== null) return v;
+    await new Promise((r) => setTimeout(r, 25));
+  }
+  throw new Error("condition not met in time");
+}
+
 async function lobby() {
   const ev = await makeEvent();
   await makeTeam(ev._id, 1);
@@ -50,8 +60,15 @@ describe("getState", () => {
     const open = new Date(t0.getTime() + LEAD_IN_MS + 1000);
     const session = await getSessionByCode(s.code);
     const qs = await listQuestions(session._id);
+    await getState(s.code, null, null, open); // warm the cache so the answer's soft invalidation is exercised
     await submitAnswer(session, qs, mail("lead1"), { questionId: qs[0].id, optionIndex: 1, deviceId: DEV }, open);
-    const mid = (await getState(s.code, { email: mail("lead1") }, DEV, open))!;
+    // Answers soft-invalidate: the first read may still be the old snapshot; the background refresh lands shortly.
+    const stale = (await getState(s.code, null, null, open))!;
+    expect(stale.counts.answered).toBe(0);
+    const mid = await eventually(async () => {
+      const v = (await getState(s.code, { email: mail("lead1") }, DEV, open))!;
+      return v.counts.answered === 1 ? v : null;
+    });
     expect(mid.question!.text).toBe("Question 1");
     expect(mid.question!.correctIndex).toBeNull();
     expect(mid.counts.answered).toBe(1);

@@ -1,7 +1,7 @@
 import { Types } from "mongoose";
 import { QuizAnswer, type QuizAnswerDoc, type QuizSessionDoc } from "@/models/quiz";
 import { QuizError } from "./errors";
-import { invalidateSnapshot } from "./cache";
+import { markSnapshotStale } from "./cache";
 import { findQuizTeamForEmail } from "./teams";
 import { ANSWER_GRACE_MS, type QuestionLite } from "./types";
 import type { AnswerInput } from "./validation";
@@ -51,7 +51,8 @@ export async function submitAnswer(
   };
   try {
     const created = await QuizAnswer.create(doc);
-    invalidateSnapshot(session.code);
+    // Soft: pollers keep the current snapshot while it refreshes; the answering phone shows its answer optimistically.
+    markSnapshotStale(session.code);
     return { answer: created.toObject(), duplicate: false };
   } catch (err) {
     if ((err as { code?: number }).code !== 11000) throw err;

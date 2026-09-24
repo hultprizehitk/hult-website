@@ -4,8 +4,8 @@
   "private": true,
   "scripts": {
     "dev": "next dev --webpack -p 3001",
-    "build": "next build --webpack",
-    "start": "next start -p 3001",
+    "build": "node scripts/next-exfat.cjs build --webpack",
+    "start": "node scripts/next-exfat.cjs start -p 3001",
     "lint": "eslint",
     "test": "vitest run",
     "test:watch": "vitest",

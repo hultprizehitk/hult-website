@@ -4,9 +4,9 @@ import { Event } from "@/models/mirror";
 import { QuizAnswer, QuizQuestion, QuizSession, QuizTeam, type QuizSessionDoc } from "@/models/quiz";
 import { applyAction } from "./engine";
 import { QuizError } from "./errors";
-import { invalidateSnapshot } from "./cache";
+import { invalidateSnapshot, sessionIdCache } from "./cache";
 import { listQuestions } from "./questions";
-import type { ControlAction, SessionState } from "./types";
+import type { ControlAction, QuestionLite, SessionState } from "./types";
 
 export function toState(s: QuizSessionDoc): SessionState {
   return {
@@ -73,6 +73,20 @@ export async function deleteSession(code: string): Promise<void> {
   ]);
   await QuizSession.deleteOne({ _id: s._id });
   invalidateSnapshot(code);
+  sessionIdCache.delete(code);
+}
+
+/** Fresh session + its questions; one parallel round trip once the code's session id is known. */
+export async function getSessionWithQuestions(code: string): Promise<{ session: QuizSessionDoc; questions: QuestionLite[] }> {
+  const knownId = sessionIdCache.get(code);
+  if (knownId) {
+    const [session, questions] = await Promise.all([getSessionByCode(code), listQuestions(knownId)]);
+    if (String(session._id) === String(knownId)) return { session, questions };
+    sessionIdCache.delete(code);
+  }
+  const session = await getSessionByCode(code);
+  sessionIdCache.set(code, session._id);
+  return { session, questions: await listQuestions(session._id) };
 }
 
 /** Runs one state-machine action with optimistic concurrency on stateVersion. */
