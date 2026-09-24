@@ -150,6 +150,8 @@ export async function sendEmail(options: SendEmailOptions): Promise<SendEmailRes
   const gUser = process.env.GOOGLE_WORKSPACE_EMAIL || DEFAULT_SENDER.email;
   const gPass = process.env.GOOGLE_WORKSPACE_APP_PASSWORD;
 
+  console.log(`[Email Dispatch] gUser="${gUser}", gPass set=${!!gPass}, gPass length=${gPass?.length || 0}, to=${toFormatted.map(r => r.email).join(",")}`);
+
   if (!gPass || !gPass.trim()) {
     const errorMsg = "[Email Dispatch] GOOGLE_WORKSPACE_APP_PASSWORD is not configured in environment variables.";
     console.error(errorMsg);
@@ -161,6 +163,8 @@ export async function sendEmail(options: SendEmailOptions): Promise<SendEmailRes
     const replyTo = options.replyTo?.email || DEFAULT_REPLY_TO.email;
     const toAddresses = toFormatted.map((r) => r.email);
 
+    console.log(`[Email Dispatch] Starting SMTP send to ${toAddresses.join(", ")}...`);
+    const startTime = Date.now();
     const res = await sendGoogleWorkspaceSmtp(
       gUser,
       gPass,
@@ -170,7 +174,7 @@ export async function sendEmail(options: SendEmailOptions): Promise<SendEmailRes
       options.subject,
       options.htmlContent
     );
-    console.log(`[Google Workspace SMTP Success] Sent to ${toAddresses.join(", ")}`);
+    console.log(`[Google Workspace SMTP Success] Sent to ${toAddresses.join(", ")} in ${Date.now() - startTime}ms`);
     return res;
   } catch (err: unknown) {
     const errorMsg = err instanceof Error ? err.message : "Unknown SMTP transmission error";

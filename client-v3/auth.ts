@@ -88,27 +88,26 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
               welcomeEmailSent: true,
             });
 
-            // Asynchronously dispatch official welcome email (non-blocking)
-            // Keep welcomeEmailSent only on success; reset the flag on failure so the next login retries.
-            const createdUserId = dbUser._id;
-            sendWelcomeEmail({
-              name: dbUser.name,
-              email: dbUser.email,
-              department: dbUser.department,
-              year: dbUser.year,
-              role: dbUser.role,
-            })
-              .then((emailResult) => {
-                if (!emailResult.success) {
-                  console.error("[Google Workspace SMTP] Welcome email failed on account creation — flag reset for retry:", emailResult.error);
-                  return User.updateOne({ _id: createdUserId }, { welcomeEmailSent: false });
-                }
-                return null;
-              })
-              .catch((emailErr) => {
-                console.error("[Google Workspace SMTP] Failed to send welcome email on account creation:", emailErr);
-                return User.updateOne({ _id: createdUserId }, { welcomeEmailSent: false });
+            // Send welcome email — MUST be awaited, otherwise Next.js terminates
+            // the TLS socket before SMTP delivery completes.
+            try {
+              console.log("[Welcome Email] Sending for NEW account:", dbUser.email);
+              const emailResult = await sendWelcomeEmail({
+                name: dbUser.name,
+                email: dbUser.email,
+                department: dbUser.department,
+                year: dbUser.year,
+                role: dbUser.role,
               });
+              console.log("[Welcome Email] Result:", JSON.stringify(emailResult));
+              if (!emailResult.success) {
+                console.error("[Welcome Email] Failed — resetting flag for retry:", emailResult.error);
+                await User.updateOne({ _id: dbUser._id }, { welcomeEmailSent: false });
+              }
+            } catch (emailErr) {
+              console.error("[Welcome Email] Exception — resetting flag for retry:", emailErr);
+              await User.updateOne({ _id: dbUser._id }, { welcomeEmailSent: false });
+            }
           } else {
             const updates: Record<string, unknown> = {
               department: parsed.branchName,
@@ -121,26 +120,26 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
             if (!dbUser.welcomeEmailSent) {
               updates.welcomeEmailSent = true;
               const welcomeName = dbUser.name || parsed.fullName || user.name || "HITK Innovator";
-              // Keep welcomeEmailSent only on success; reset on failure so the next login retries.
-              const existingUserId = dbUser._id;
-              sendWelcomeEmail({
-                name: welcomeName,
-                email: dbUser.email,
-                department: dbUser.department || parsed.branchName,
-                year: dbUser.year || parsed.academicYear,
-                role: dbUser.role,
-              })
-                .then((emailResult) => {
-                  if (!emailResult.success) {
-                    console.error("[Google Workspace SMTP] Welcome email failed on first login — flag reset for retry:", emailResult.error);
-                    return User.updateOne({ _id: existingUserId }, { welcomeEmailSent: false });
-                  }
-                  return null;
-                })
-                .catch((emailErr) => {
-                  console.error("[Google Workspace SMTP] Failed to send welcome email on first login:", emailErr);
-                  return User.updateOne({ _id: existingUserId }, { welcomeEmailSent: false });
+
+              // Send welcome email — MUST be awaited (see above).
+              try {
+                console.log("[Welcome Email] Sending for EXISTING account (retry):", dbUser.email);
+                const emailResult = await sendWelcomeEmail({
+                  name: welcomeName,
+                  email: dbUser.email,
+                  department: dbUser.department || parsed.branchName,
+                  year: dbUser.year || parsed.academicYear,
+                  role: dbUser.role,
                 });
+                console.log("[Welcome Email] Result:", JSON.stringify(emailResult));
+                if (!emailResult.success) {
+                  console.error("[Welcome Email] Failed — resetting flag for retry:", emailResult.error);
+                  updates.welcomeEmailSent = false;
+                }
+              } catch (emailErr) {
+                console.error("[Welcome Email] Exception — resetting flag for retry:", emailErr);
+                updates.welcomeEmailSent = false;
+              }
             }
 
             await User.updateOne({ _id: dbUser._id }, updates);
