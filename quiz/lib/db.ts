@@ -3,7 +3,6 @@ import mongoose from "mongoose";
 type Cache = { conn: typeof mongoose | null; promise: Promise<typeof mongoose> | null };
 
 declare global {
-  // eslint-disable-next-line no-var
   var quizMongoose: Cache | undefined;
 }
 

@@ -13,7 +13,9 @@ export interface Polling<T> {
   refresh: () => Promise<void>;
 }
 
-/** Polls `url` while the tab is visible; exponential backoff (max 8s) on failure; tracks server clock offset. */
+const HIDDEN_POLL_MS = 10_000;
+
+/** Polls `url` (every intervalMs when visible, 10s when hidden); exponential backoff (max 8s) on failure; tracks server clock offset. */
 export function usePolling<T extends { serverNow: number }>(url: string | null, intervalMs: number = POLL_MS): Polling<T> {
   const [data, setData] = useState<T | null>(null);
   const [error, setError] = useState<ApiError | null>(null);
@@ -44,9 +46,12 @@ export function usePolling<T extends { serverNow: number }>(url: string | null, 
     let timer: ReturnType<typeof setTimeout> | null = null;
     const loop = async () => {
       if (stopped) return;
-      if (document.visibilityState === "visible") await refresh();
+      await refresh();
       if (stopped) return;
-      const delay = failRef.current === 0 ? intervalMs : Math.min(intervalMs * 2 ** failRef.current, 8000);
+      // Hidden tabs (locked phone, background tab) keep a slow heartbeat instead of stopping, so a tab opened
+      // in the background still loads; visibilitychange snaps back to full rate immediately.
+      const base = document.visibilityState === "visible" ? intervalMs : HIDDEN_POLL_MS;
+      const delay = failRef.current === 0 ? base : Math.min(base * 2 ** failRef.current, 8000);
       timer = setTimeout(loop, delay);
     };
     const onVisible = () => {
