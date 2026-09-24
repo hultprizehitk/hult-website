@@ -45,6 +45,8 @@ interface RegisteredTeam {
   department?: string;
   members: TeamMember[];
   status: "confirmed" | "disqualified";
+  submissionStatus?: "forming" | "ready" | "submitted";
+  submittedAt?: string | Date | null;
   checkedIn: boolean;
   checkedInAt?: string | null;
   registeredAt: string | Date;
@@ -637,16 +639,33 @@ export default function ScannerConsole() {
   };
 
   // -------------------------------------------------------------
-  // Computed Stats
+  // Computed Stats (Only fully registered teams & participants, exclude forming)
   // -------------------------------------------------------------
-  const totalRegistered = teams.length;
-  const checkedInCount = teams.filter((t) => t.checkedIn).length;
+  const isTeamSubmitted = (t: RegisteredTeam) => {
+    return t.submissionStatus === "submitted" || Boolean(t.submittedAt);
+  };
+
+  const eligibleTeams = teams.filter((t) => isTeamSubmitted(t));
+  const totalRegistered = eligibleTeams.length;
+  const checkedInCount = eligibleTeams.filter((t) => t.checkedIn).length;
   const remainingCount = totalRegistered - checkedInCount;
   const attendanceRate = totalRegistered > 0 ? Math.round((checkedInCount / totalRegistered) * 100) : 0;
 
+  const getParticipantCount = (t: RegisteredTeam) =>
+    1 + (Array.isArray(t.members) ? t.members.length : 0);
+  const totalParticipants = eligibleTeams.reduce((acc, t) => acc + getParticipantCount(t), 0);
+  const checkedInParticipants = eligibleTeams
+    .filter((t) => t.checkedIn)
+    .reduce((acc, t) => acc + getParticipantCount(t), 0);
+  const remainingParticipants = totalParticipants - checkedInParticipants;
+  const participantRate =
+    totalParticipants > 0 ? Math.round((checkedInParticipants / totalParticipants) * 100) : 0;
+
   const filteredTeams = teams.filter((t) => {
-    if (rosterFilter === "checked_in" && !t.checkedIn) return false;
-    if (rosterFilter === "not_checked_in" && t.checkedIn) return false;
+    const isSubmitted = isTeamSubmitted(t);
+    if (rosterFilter === "checked_in" && (!t.checkedIn || !isSubmitted)) return false;
+    if (rosterFilter === "not_checked_in" && (t.checkedIn || !isSubmitted)) return false;
+    if (rosterFilter === "all" && !isSubmitted) return false;
     if (!rosterSearch.trim()) return true;
     const q = rosterSearch.toLowerCase();
     return (
@@ -726,7 +745,7 @@ export default function ScannerConsole() {
             <Users className="h-4 w-4 text-neutral-400" />
           </div>
           <div className="text-2xl sm:text-3xl font-black text-white">{totalRegistered}</div>
-          <p className="text-[10px] text-neutral-400 font-mono">Teams enrolled for event</p>
+          <p className="text-[10px] text-sky-400/80 font-mono">{totalParticipants} participants enrolled</p>
         </div>
 
         <div className="rounded-2xl border border-emerald-500/20 bg-emerald-950/20 p-4 sm:p-5 shadow-lg space-y-1">
@@ -738,9 +757,10 @@ export default function ScannerConsole() {
           <div className="w-full bg-white/10 h-1.5 rounded-full overflow-hidden mt-1.5">
             <div
               className="bg-emerald-400 h-full rounded-full transition-all duration-500"
-              style={{ width: `${attendanceRate}%` }}
+              style={{ width: `${participantRate}%` }}
             />
           </div>
+          <p className="text-[10px] text-emerald-300/80 font-mono">{checkedInParticipants} participants verified</p>
         </div>
 
         <div className="rounded-2xl border border-white/10 bg-[#0e0e12] p-4 sm:p-5 shadow-lg space-y-1">
@@ -749,7 +769,7 @@ export default function ScannerConsole() {
             <ScanLine className="h-4 w-4 text-amber-400" />
           </div>
           <div className="text-2xl sm:text-3xl font-black text-amber-300">{remainingCount}</div>
-          <p className="text-[10px] text-neutral-400 font-mono">{attendanceRate}% arrived</p>
+          <p className="text-[10px] text-amber-400/80 font-mono">{remainingParticipants} participants pending ({participantRate}% arrived)</p>
         </div>
 
         <div className="rounded-2xl border border-white/10 bg-[#0e0e12] p-4 sm:p-5 shadow-lg space-y-1">
@@ -1070,20 +1090,54 @@ export default function ScannerConsole() {
           </div>
 
           {/* Roster Filter Buttons */}
-          <div className="flex items-center gap-2">
-            {(["all", "checked_in", "not_checked_in"] as const).map((filter) => (
-              <button
-                key={filter}
-                onClick={() => setRosterFilter(filter)}
-                className={`rounded-xl px-3 py-1.5 text-xs font-semibold transition-all cursor-pointer border ${
-                  rosterFilter === filter
-                    ? "bg-white text-black border-white shadow-md shadow-white/10"
-                    : "bg-[#16161d] text-neutral-400 border-white/10 hover:text-white hover:bg-[#202028]"
-                }`}
-              >
-                {filter === "checked_in" ? "Checked In" : filter === "not_checked_in" ? "Not Checked In" : "All Teams"}
-              </button>
-            ))}
+          <div className="flex items-center gap-2 overflow-x-auto no-scrollbar">
+            <button
+              onClick={() => setRosterFilter("all")}
+              className={`rounded-xl px-3 py-1.5 text-xs font-semibold transition-all cursor-pointer border flex items-center gap-2 ${
+                rosterFilter === "all"
+                  ? "bg-white text-black border-white shadow-md shadow-white/10"
+                  : "bg-[#16161d] text-neutral-400 border-white/10 hover:text-white hover:bg-[#202028]"
+              }`}
+            >
+              <span>All Teams ({totalRegistered})</span>
+              <span className={`px-1.5 py-0.5 rounded text-[10px] font-mono ${
+                rosterFilter === "all" ? "bg-black/10 text-neutral-900" : "bg-white/10 text-neutral-400"
+              }`}>
+                {totalParticipants} Pax
+              </span>
+            </button>
+
+            <button
+              onClick={() => setRosterFilter("checked_in")}
+              className={`rounded-xl px-3 py-1.5 text-xs font-semibold transition-all cursor-pointer border flex items-center gap-2 ${
+                rosterFilter === "checked_in"
+                  ? "bg-emerald-500 text-black border-emerald-500 shadow-md shadow-emerald-500/20 font-bold"
+                  : "bg-[#16161d] text-neutral-400 border-white/10 hover:text-white hover:bg-[#202028]"
+              }`}
+            >
+              <span>Checked In ({checkedInCount})</span>
+              <span className={`px-1.5 py-0.5 rounded text-[10px] font-mono ${
+                rosterFilter === "checked_in" ? "bg-black/15 text-neutral-900 font-bold" : "bg-emerald-500/20 text-emerald-300"
+              }`}>
+                {checkedInParticipants} Pax
+              </span>
+            </button>
+
+            <button
+              onClick={() => setRosterFilter("not_checked_in")}
+              className={`rounded-xl px-3 py-1.5 text-xs font-semibold transition-all cursor-pointer border flex items-center gap-2 ${
+                rosterFilter === "not_checked_in"
+                  ? "bg-amber-500 text-black border-amber-500 shadow-md shadow-amber-500/20 font-bold"
+                  : "bg-[#16161d] text-neutral-400 border-white/10 hover:text-white hover:bg-[#202028]"
+              }`}
+            >
+              <span>Not Checked In ({remainingCount})</span>
+              <span className={`px-1.5 py-0.5 rounded text-[10px] font-mono ${
+                rosterFilter === "not_checked_in" ? "bg-black/15 text-neutral-900 font-bold" : "bg-amber-500/20 text-amber-300"
+              }`}>
+                {remainingParticipants} Pax
+              </span>
+            </button>
           </div>
         </div>
 

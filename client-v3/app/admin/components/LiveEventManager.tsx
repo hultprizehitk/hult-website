@@ -16,9 +16,14 @@ import {
   Camera,
   AlertTriangle,
   ArrowRight,
+  CheckCircle2,
+  Clock,
+  UserCheck,
+  UserX,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import LiveCameraScannerModal from "./LiveCameraScannerModal";
+import { parseHeritageEmail } from "@/lib/heritage-parser";
 
 interface TeamMember {
   name: string;
@@ -55,6 +60,23 @@ interface RegisteredTeam {
   registeredAt: string | Date;
 }
 
+interface FlatParticipant {
+  id: string;
+  teamId: string;
+  teamName: string;
+  teamCode: string;
+  name: string;
+  email: string;
+  phone?: string;
+  department: string;
+  roll?: string;
+  role: "Team Leader" | "Member";
+  checkedIn: boolean;
+  checkedInAt?: string | Date | null;
+  registeredAt: string | Date;
+  team: RegisteredTeam;
+}
+
 interface EventItem {
   _id: string;
   title: string;
@@ -83,10 +105,12 @@ export default function LiveEventManager() {
 
   // Filter & Search
   const [searchQuery, setSearchQuery] = useState("");
-  const [statusFilter, setStatusFilter] = useState<"submitted" | "forming" | "all">("submitted");
+  const [filterDomain, setFilterDomain] = useState<"registration" | "attendance">("registration");
+  const [statusFilter, setStatusFilter] = useState<"submitted" | "forming" | "all">("all");
   const [activeFilter, setActiveFilter] = useState<
     "all" | "checked_in" | "not_checked_in"
   >("all");
+  const [viewMode, setViewMode] = useState<"teams" | "participants">("teams");
   const [eventSearch, setEventSearch] = useState("");
 
   // Modals & Inspection
@@ -201,8 +225,17 @@ export default function LiveEventManager() {
   // -------------------------------------------------------------
   // 3. Team Actions
   // -------------------------------------------------------------
+  // Helper to determine if team is fully registered and submitted
+  const isTeamSubmitted = (t: RegisteredTeam) => {
+    return t.submissionStatus === "submitted" || Boolean(t.submittedAt);
+  };
+
   const handleToggleCheckIn = async (team: RegisteredTeam) => {
     if (!selectedEventId) return;
+    if (!isTeamSubmitted(team)) {
+      showToast("Forming teams cannot check in until registration is submitted.", "error");
+      return;
+    }
     setActionLoadingId(team.id);
     const nextCheckIn = !team.checkedIn;
 
@@ -323,7 +356,49 @@ export default function LiveEventManager() {
   // -------------------------------------------------------------
   const handleExportCSV = () => {
     if (!teams.length) {
-      showToast("No teams to export.", "error");
+      showToast("No data to export.", "error");
+      return;
+    }
+
+    if (viewMode === "participants") {
+      const headers = [
+        "Participant Name",
+        "Role",
+        "Team Code",
+        "Team Name",
+        "Email",
+        "Phone",
+        "Department",
+        "Roll No",
+        "Checked In",
+        "Check-In Time",
+        "Registered At",
+      ];
+      const rows = allParticipants.map((p) => [
+        `"${p.name.replace(/"/g, '""')}"`,
+        `"${p.role}"`,
+        `"${p.teamCode}"`,
+        `"${p.teamName.replace(/"/g, '""')}"`,
+        `"${p.email}"`,
+        `"${p.phone || ""}"`,
+        `"${p.department.replace(/"/g, '""')}"`,
+        `"${p.roll || ""}"`,
+        `"${p.checkedIn ? "CHECKED_IN" : "ABSENT"}"`,
+        `"${p.checkedInAt ? new Date(p.checkedInAt).toLocaleString() : "No"}"`,
+        `"${new Date(p.registeredAt).toLocaleString()}"`,
+      ]);
+      const csvContent =
+        "data:text/csv;charset=utf-8," +
+        [headers.join(","), ...rows.map((r) => r.join(","))].join("\n");
+      const encodedUri = encodeURI(csvContent);
+      const link = document.createElement("a");
+      link.setAttribute("href", encodedUri);
+      const filename = `${(eventMeta?.title || "event").toLowerCase().replace(/\s+/g, "_")}_participants_attendance.csv`;
+      link.setAttribute("download", filename);
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      showToast(`Exported ${allParticipants.length} participants to ${filename}`);
       return;
     }
 
@@ -383,11 +458,6 @@ export default function LiveEventManager() {
     showToast(`Exported ${teams.length} teams to ${filename}`);
   };
 
-  // Helper to determine if team is fully registered and submitted
-  const isTeamSubmitted = (t: RegisteredTeam) => {
-    return t.submissionStatus === "submitted" || Boolean(t.submittedAt);
-  };
-
   const submittedCount = useMemo(
     () => teams.filter((t) => isTeamSubmitted(t)).length,
     [teams]
@@ -399,24 +469,30 @@ export default function LiveEventManager() {
 
   // -------------------------------------------------------------
   // Filtered Teams Computation
-  // -------------------------------------------------------------
   const filteredTeams = useMemo(() => {
     return teams.filter((t) => {
-      // 1. Registration Status Filter
       const isSubmitted = isTeamSubmitted(t);
-      if (statusFilter === "submitted" && !isSubmitted) return false;
-      if (statusFilter === "forming" && isSubmitted) return false;
 
-      // 2. Attendance Check-In Filter
-      if (activeFilter === "checked_in" && !t.checkedIn) return false;
-      if (activeFilter === "not_checked_in" && t.checkedIn) return false;
+      // Independent Domain Filtering
+      if (filterDomain === "registration") {
+        if (statusFilter === "submitted" && !isSubmitted) return false;
+        if (statusFilter === "forming" && isSubmitted) return false;
+        // "all" allows all teams
+      } else {
+        // Attendance domain: live event attendance evaluates confirmed submitted teams
+        if (!isSubmitted) return false;
+        if (activeFilter === "checked_in" && !t.checkedIn) return false;
+        if (activeFilter === "not_checked_in" && t.checkedIn) return false;
+        // "all" allows all submitted teams
+      }
 
-      // 3. Search Query
+      // Search Query
       if (!searchQuery.trim()) return true;
       const q = searchQuery.toLowerCase().trim();
       const matchName = t.teamName.toLowerCase().includes(q);
       const matchCode = t.teamCode.toLowerCase().includes(q);
-      const matchLead = t.lead.name.toLowerCase().includes(q) || t.lead.email.toLowerCase().includes(q);
+      const matchLead =
+        t.lead.name.toLowerCase().includes(q) || t.lead.email.toLowerCase().includes(q);
       const matchDept = (t.department || "").toLowerCase().includes(q);
       const matchMembers = t.members.some(
         (m) =>
@@ -427,14 +503,112 @@ export default function LiveEventManager() {
 
       return matchName || matchCode || matchLead || matchDept || matchMembers;
     });
-  }, [teams, statusFilter, activeFilter, searchQuery]);
+  }, [teams, filterDomain, statusFilter, activeFilter, searchQuery]);
+
+  // Flattened Participants for Participants View across all registered teams
+  const allParticipants = useMemo<FlatParticipant[]>(() => {
+    const list: FlatParticipant[] = [];
+    for (const t of teams) {
+      list.push({
+        id: `${t.id}_lead`,
+        teamId: t.id,
+        teamName: t.teamName,
+        teamCode: t.teamCode,
+        name: t.lead.name,
+        email: t.lead.email,
+        phone: t.lead.phone,
+        department: t.lead.department || t.department || "General",
+        roll: t.lead.roll,
+        role: "Team Leader",
+        checkedIn: t.checkedIn,
+        checkedInAt: t.checkedInAt,
+        registeredAt: t.registeredAt,
+        team: t,
+      });
+
+      if (Array.isArray(t.members)) {
+        t.members.forEach((m, idx) => {
+          list.push({
+            id: `${t.id}_mem_${idx}`,
+            teamId: t.id,
+            teamName: t.teamName,
+            teamCode: t.teamCode,
+            name: m.name,
+            email: m.email || "",
+            phone: m.phone || "",
+            department: m.department || t.department || "General",
+            roll: m.roll || "",
+            role: "Member",
+            checkedIn: t.checkedIn,
+            checkedInAt: t.checkedInAt,
+            registeredAt: t.registeredAt,
+            team: t,
+          });
+        });
+      }
+    }
+    return list;
+  }, [teams]);
+
+  const filteredParticipants = useMemo(() => {
+    return allParticipants.filter((p) => {
+      const isSubmitted = isTeamSubmitted(p.team);
+
+      // Independent Domain Filtering
+      if (filterDomain === "registration") {
+        if (statusFilter === "submitted" && !isSubmitted) return false;
+        if (statusFilter === "forming" && isSubmitted) return false;
+      } else {
+        // Attendance domain: live event attendance evaluates confirmed submitted participants
+        if (!isSubmitted) return false;
+        if (activeFilter === "checked_in" && !p.checkedIn) return false;
+        if (activeFilter === "not_checked_in" && p.checkedIn) return false;
+      }
+
+      // Search Query
+      if (!searchQuery.trim()) return true;
+      const q = searchQuery.toLowerCase().trim();
+      return (
+        p.name.toLowerCase().includes(q) ||
+        p.email.toLowerCase().includes(q) ||
+        (p.phone || "").includes(q) ||
+        (p.roll || "").toLowerCase().includes(q) ||
+        p.teamName.toLowerCase().includes(q) ||
+        p.teamCode.toLowerCase().includes(q) ||
+        p.department.toLowerCase().includes(q)
+      );
+    });
+  }, [allParticipants, filterDomain, statusFilter, activeFilter, searchQuery]);
 
   const stats = useMemo(() => {
-    const total = teams.length;
-    const checkedIn = teams.filter((t) => t.checkedIn).length;
+    // Only count fully registered (submitted) teams and participants, exclude forming teams
+    const eligibleTeams = teams.filter((t) => isTeamSubmitted(t));
+    const total = eligibleTeams.length;
+    const checkedIn = eligibleTeams.filter((t) => t.checkedIn).length;
     const remaining = total - checkedIn;
     const checkInRate = total > 0 ? Math.round((checkedIn / total) * 100) : 0;
-    return { total, checkedIn, remaining, checkInRate };
+
+    const getParticipantCount = (t: RegisteredTeam) =>
+      1 + (Array.isArray(t.members) ? t.members.length : 0);
+
+    const totalParticipants = eligibleTeams.reduce((acc, t) => acc + getParticipantCount(t), 0);
+    const checkedInParticipants = eligibleTeams
+      .filter((t) => t.checkedIn)
+      .reduce((acc, t) => acc + getParticipantCount(t), 0);
+    const remainingParticipants = totalParticipants - checkedInParticipants;
+    const participantRate =
+      totalParticipants > 0 ? Math.round((checkedInParticipants / totalParticipants) * 100) : 0;
+
+    return {
+      total,
+      checkedIn,
+      remaining,
+      checkInRate,
+      totalParticipants,
+      checkedInParticipants,
+      remainingParticipants,
+      participantRate,
+    };
   }, [teams]);
 
   const selectedEvent = useMemo(() => {
@@ -700,25 +874,6 @@ export default function LiveEventManager() {
                 <Download className="h-3.5 w-3.5" />
                 <span>Export CSV</span>
               </button>
-
-              <button
-                type="button"
-                onClick={() => setShowCameraScanner(true)}
-                className="rounded-xl bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-400 hover:to-teal-500 px-3.5 py-2 text-xs font-bold text-white shadow-md shadow-emerald-600/30 transition-all hover:scale-105 flex items-center gap-1.5 cursor-pointer font-[family-name:var(--font-google-sans)]"
-                title="Open camera to scan participant attendance passes"
-              >
-                <Camera className="h-3.5 w-3.5" />
-                <span>Scan Participant QR</span>
-              </button>
-
-              <button
-                type="button"
-                onClick={() => setShowAddTeamModal(true)}
-                className="rounded-xl bg-white/[0.1] hover:bg-white/20 border border-white/20 px-4 py-2 text-xs font-bold text-white transition-all hover:scale-105 flex items-center gap-1.5 cursor-pointer font-[family-name:var(--font-google-sans)]"
-              >
-                <span>+</span>
-                <span>Register Team</span>
-              </button>
             </div>
           </div>
 
@@ -752,9 +907,21 @@ export default function LiveEventManager() {
                 </p>
               </div>
 
-              <div className="flex items-center gap-3">
-                <span className="rounded-2xl border border-white/15 bg-[#16161d] px-4 py-2 text-xs font-mono text-white shadow-sm">
-                  Total Teams: <strong className="text-emerald-300">{stats.total}</strong>
+              <div className="flex flex-wrap items-center gap-2">
+                <span className="rounded-2xl border border-white/15 bg-[#16161d] px-3.5 py-1.5 text-xs font-mono text-white shadow-sm flex items-center gap-2">
+                  <span>Teams: <strong className="text-white">{stats.total}</strong></span>
+                  <span className="text-white/20">•</span>
+                  <span>Checked In: <strong className="text-emerald-300">{stats.checkedIn}</strong></span>
+                  <span className="text-white/20">•</span>
+                  <span>Pending: <strong className="text-amber-300">{stats.remaining}</strong></span>
+                </span>
+                <span className="rounded-2xl border border-sky-500/30 bg-sky-950/25 px-3.5 py-1.5 text-xs font-mono text-sky-200 shadow-sm flex items-center gap-2">
+                  <Users className="w-3.5 h-3.5 text-sky-400" />
+                  <span>Participants: <strong className="text-white">{stats.totalParticipants}</strong></span>
+                  <span className="text-sky-500/40">•</span>
+                  <span className="text-emerald-300 font-semibold">{stats.checkedInParticipants} Checked</span>
+                  <span className="text-sky-500/40">•</span>
+                  <span className="text-amber-300 font-semibold">{stats.remainingParticipants} Pending</span>
                 </span>
               </div>
             </div>
@@ -771,9 +938,10 @@ export default function LiveEventManager() {
               <div className="text-2xl sm:text-3xl font-black text-white font-[family-name:var(--font-google-sans)] mb-1">
                 {stats.total}
               </div>
-              <p className="text-[11px] text-white/50">
-                Total teams registered
-              </p>
+              <div className="flex items-center gap-1.5 text-[11px] text-sky-300/80 font-mono mt-1">
+                <span className="h-1.5 w-1.5 rounded-full bg-sky-400" />
+                <span>{stats.totalParticipants} total participants</span>
+              </div>
             </div>
 
             {/* Stat 2: Venue Checked-In */}
@@ -785,9 +953,10 @@ export default function LiveEventManager() {
               <div className="text-2xl sm:text-3xl font-black text-emerald-300 font-[family-name:var(--font-google-sans)] mb-1">
                 {stats.checkedIn}
               </div>
-              <p className="text-[11px] text-emerald-300/70">
-                Arrived and verified on-site
-              </p>
+              <div className="flex items-center gap-1.5 text-[11px] text-emerald-300/90 font-mono mt-1">
+                <span className="h-1.5 w-1.5 rounded-full bg-emerald-400" />
+                <span>{stats.checkedInParticipants} participants checked in</span>
+              </div>
             </div>
 
             {/* Stat 3: Awaiting Arrival */}
@@ -799,9 +968,10 @@ export default function LiveEventManager() {
               <div className="text-2xl sm:text-3xl font-black text-amber-300 font-[family-name:var(--font-google-sans)] mb-1">
                 {stats.remaining}
               </div>
-              <p className="text-[11px] text-amber-300/70">
-                Teams yet to check in
-              </p>
+              <div className="flex items-center gap-1.5 text-[11px] text-amber-300/90 font-mono mt-1">
+                <span className="h-1.5 w-1.5 rounded-full bg-amber-400" />
+                <span>{stats.remainingParticipants} participants pending</span>
+              </div>
             </div>
 
             {/* Stat 4: Check-in Attendance Rate */}
@@ -811,356 +981,736 @@ export default function LiveEventManager() {
                 <span className="font-mono text-[10px] font-bold">% RATE</span>
               </div>
               <div className="text-2xl sm:text-3xl font-black text-sky-300 font-[family-name:var(--font-google-sans)] mb-1">
-                {stats.checkInRate}%
+                {stats.participantRate}%
               </div>
               <div className="w-full bg-white/10 rounded-full h-1.5 mt-2 overflow-hidden">
                 <div
                   className="bg-sky-400 h-full rounded-full transition-all duration-500"
-                  style={{ width: `${stats.checkInRate}%` }}
+                  style={{ width: `${stats.participantRate}%` }}
                 />
               </div>
               <p className="text-[11px] text-sky-300/70 mt-1">
-                {stats.checkedIn} of {stats.total} present
+                {stats.checkedInParticipants} of {stats.totalParticipants} participants ({stats.checkInRate}% teams)
               </p>
             </div>
           </div>
 
           {/* Search Bar & Filter Tabs */}
           <div className="space-y-4">
-            <div className="flex flex-col sm:flex-row items-center justify-between gap-3">
-              <div className="relative w-full sm:w-96">
-                <Search className="absolute left-3.5 top-3 h-4 w-4 text-white/40" />
+            {/* Search and View Mode Row */}
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+              <div className="relative flex-1 max-w-md">
+                <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-white/40" />
                 <input
                   type="text"
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  placeholder="Search by Team, Code, Leader, Member email..."
-                  className="w-full rounded-2xl border border-white/15 bg-[#16161d] pl-9 pr-8 py-2.5 text-xs text-white placeholder:text-white/40 focus:border-white/50 focus:outline-none focus:ring-1 focus:ring-white/20 shadow-inner transition-all"
+                  placeholder={
+                    viewMode === "teams"
+                      ? "Search by team name, code, leader, roll no..."
+                      : "Search by student name, email, roll no, team..."
+                  }
+                  className="w-full rounded-xl border border-white/15 bg-[#16161d] pl-9 pr-8 py-2.5 text-xs text-white placeholder:text-neutral-500 focus:border-rose-500/50 focus:outline-none shadow-inner transition-all"
                 />
                 {searchQuery && (
                   <button
                     type="button"
                     onClick={() => setSearchQuery("")}
-                    className="absolute right-3 top-2.5 text-xs text-white/50 hover:text-white cursor-pointer"
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-white/50 hover:text-white cursor-pointer"
                   >
                     ✕
                   </button>
                 )}
               </div>
 
-              <div className="text-xs text-white/60 font-mono self-end sm:self-auto">
-                Showing <strong className="text-white">{filteredTeams.length}</strong> of{" "}
-                <strong className="text-white">{teams.length}</strong> teams
+              {/* Right: View Mode Toggle (By Teams / By Participants) & Showing Count */}
+              <div className="flex items-center gap-3 self-end sm:self-auto flex-wrap">
+                <div className="inline-flex items-center p-1 rounded-xl bg-white/[0.04] border border-white/10">
+                  <button
+                    type="button"
+                    onClick={() => setViewMode("teams")}
+                    className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all cursor-pointer inline-flex items-center gap-1.5 ${
+                      viewMode === "teams"
+                        ? "bg-white text-black font-semibold shadow-sm"
+                        : "text-white/60 hover:text-white hover:bg-white/[0.04]"
+                    }`}
+                  >
+                    <Users className="w-3.5 h-3.5" />
+                    <span>By Teams</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => setViewMode("participants")}
+                    className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all cursor-pointer inline-flex items-center gap-1.5 ${
+                      viewMode === "participants"
+                        ? "bg-white text-black font-semibold shadow-sm"
+                        : "text-white/60 hover:text-white hover:bg-white/[0.04]"
+                    }`}
+                  >
+                    <UserCheck className="w-3.5 h-3.5" />
+                    <span>By Participants</span>
+                  </button>
+                </div>
+
+                <div className="text-xs text-white/50 font-mono hidden md:block">
+                  {viewMode === "teams" ? (
+                    <>
+                      <strong className="text-white font-sans">{filteredTeams.length}</strong> of{" "}
+                      <strong className="text-white font-sans">{teams.length}</strong> teams
+                    </>
+                  ) : (
+                    <>
+                      <strong className="text-white font-sans">{filteredParticipants.length}</strong> of{" "}
+                      <strong className="text-white font-sans">{allParticipants.length}</strong> participants
+                    </>
+                  )}
+                </div>
               </div>
             </div>
 
-            {/* View Tabs & Live Counts Bar */}
-            <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 pt-1">
-              {/* Sleek Segmented Control for Registration Status (Matching Teams & Rosters) */}
-              <div className="inline-flex items-center p-1 rounded-full bg-black/70 border border-white/10 w-fit backdrop-blur-md shadow-inner">
+            {/* Filter Tabs Bar (Registration Status on Left & Attendance Status on Right) */}
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-0.5">
+              {/* Left: Registration Status (Fully Registered / Forming / All) */}
+              <div className="inline-flex items-center p-1 rounded-xl bg-white/[0.04] border border-white/10 w-fit overflow-x-auto no-scrollbar">
                 <button
                   type="button"
-                  onClick={() => setStatusFilter("submitted")}
-                  className={`px-4 py-1.5 rounded-full text-xs font-medium transition-all cursor-pointer inline-flex items-center gap-2 ${
-                    statusFilter === "submitted"
+                  onClick={() => {
+                    setFilterDomain("registration");
+                    setStatusFilter("submitted");
+                  }}
+                  className={`px-3.5 py-1.5 rounded-lg text-xs font-medium transition-all cursor-pointer inline-flex items-center gap-2 whitespace-nowrap ${
+                    filterDomain === "registration" && statusFilter === "submitted"
                       ? "bg-white text-black font-semibold shadow-sm"
                       : "text-white/60 hover:text-white hover:bg-white/[0.04]"
                   }`}
                 >
                   <span>Fully Registered</span>
                   <span
-                    className={`px-2 py-0.5 rounded-full text-[10px] font-mono leading-none ${
-                      statusFilter === "submitted"
-                        ? "bg-neutral-200 text-black font-bold"
+                    className={`px-1.5 py-0.5 rounded text-[10px] font-mono leading-none ${
+                      filterDomain === "registration" && statusFilter === "submitted"
+                        ? "bg-black/10 text-black font-bold"
                         : "bg-white/10 text-white/70"
                     }`}
                   >
-                    {submittedCount}
+                    {viewMode === "teams" ? submittedCount : stats.totalParticipants}
                   </span>
                 </button>
 
                 <button
                   type="button"
-                  onClick={() => setStatusFilter("forming")}
-                  className={`px-4 py-1.5 rounded-full text-xs font-medium transition-all cursor-pointer inline-flex items-center gap-2 ${
-                    statusFilter === "forming"
+                  onClick={() => {
+                    setFilterDomain("registration");
+                    setStatusFilter("forming");
+                  }}
+                  className={`px-3.5 py-1.5 rounded-lg text-xs font-medium transition-all cursor-pointer inline-flex items-center gap-2 whitespace-nowrap ${
+                    filterDomain === "registration" && statusFilter === "forming"
                       ? "bg-white text-black font-semibold shadow-sm"
                       : "text-white/60 hover:text-white hover:bg-white/[0.04]"
                   }`}
                 >
                   <span>Forming</span>
                   <span
-                    className={`px-2 py-0.5 rounded-full text-[10px] font-mono leading-none ${
-                      statusFilter === "forming"
-                        ? "bg-neutral-200 text-black font-bold"
+                    className={`px-1.5 py-0.5 rounded text-[10px] font-mono leading-none ${
+                      filterDomain === "registration" && statusFilter === "forming"
+                        ? "bg-black/10 text-black font-bold"
                         : "bg-white/10 text-white/70"
                     }`}
                   >
-                    {formingCount}
+                    {viewMode === "teams"
+                      ? formingCount
+                      : Math.max(0, allParticipants.length - stats.totalParticipants)}
                   </span>
                 </button>
 
                 <button
                   type="button"
-                  onClick={() => setStatusFilter("all")}
-                  className={`px-4 py-1.5 rounded-full text-xs font-medium transition-all cursor-pointer inline-flex items-center gap-2 ${
-                    statusFilter === "all"
+                  onClick={() => {
+                    setFilterDomain("registration");
+                    setStatusFilter("all");
+                  }}
+                  className={`px-3.5 py-1.5 rounded-lg text-xs font-medium transition-all cursor-pointer inline-flex items-center gap-2 whitespace-nowrap ${
+                    filterDomain === "registration" && statusFilter === "all"
                       ? "bg-white text-black font-semibold shadow-sm"
                       : "text-white/60 hover:text-white hover:bg-white/[0.04]"
                   }`}
                 >
-                  <span>All Teams</span>
+                  <span>{viewMode === "teams" ? "All Teams" : "All Participants"}</span>
                   <span
-                    className={`px-2 py-0.5 rounded-full text-[10px] font-mono leading-none ${
-                      statusFilter === "all"
-                        ? "bg-neutral-200 text-black font-bold"
+                    className={`px-1.5 py-0.5 rounded text-[10px] font-mono leading-none ${
+                      filterDomain === "registration" && statusFilter === "all"
+                        ? "bg-black/10 text-black font-bold"
                         : "bg-white/10 text-white/70"
                     }`}
                   >
-                    {teams.length}
+                    {viewMode === "teams" ? teams.length : allParticipants.length}
                   </span>
                 </button>
               </div>
 
-              {/* Attendance Check-In Filter Pills */}
-              <div className="flex items-center gap-2 overflow-x-auto no-scrollbar pb-1">
+              {/* Right: Attendance Filter (All / Checked In / Not Checked In) */}
+              <div className="inline-flex items-center p-1 rounded-xl bg-white/[0.04] border border-white/10 w-fit overflow-x-auto no-scrollbar">
                 <button
                   type="button"
-                  onClick={() => setActiveFilter("all")}
-                  className={`rounded-xl px-4 py-2 text-xs font-bold uppercase tracking-wider transition-all whitespace-nowrap cursor-pointer font-[family-name:var(--font-google-sans)] ${
-                    activeFilter === "all"
-                      ? "bg-white text-black font-bold shadow-md shadow-white/10 scale-105"
-                      : "bg-white/[0.06] text-white/70 hover:text-white hover:bg-white/15 border border-white/10"
+                  onClick={() => {
+                    setFilterDomain("attendance");
+                    setActiveFilter("all");
+                  }}
+                  className={`px-3.5 py-1.5 rounded-lg text-xs font-medium transition-all cursor-pointer inline-flex items-center gap-2 whitespace-nowrap ${
+                    filterDomain === "attendance" && activeFilter === "all"
+                      ? "bg-white text-black font-semibold shadow-sm"
+                      : "text-white/60 hover:text-white hover:bg-white/[0.04]"
                   }`}
                 >
-                  All Teams ({stats.total})
+                  <span>All</span>
+                  <span
+                    className={`px-1.5 py-0.5 rounded text-[10px] font-mono leading-none ${
+                      filterDomain === "attendance" && activeFilter === "all"
+                        ? "bg-black/10 text-black font-bold"
+                        : "bg-white/10 text-white/70"
+                    }`}
+                  >
+                    {viewMode === "teams" ? stats.total : stats.totalParticipants}
+                  </span>
                 </button>
 
                 <button
                   type="button"
-                  onClick={() => setActiveFilter("checked_in")}
-                  className={`rounded-xl px-4 py-2 text-xs font-bold uppercase tracking-wider transition-all whitespace-nowrap cursor-pointer font-[family-name:var(--font-google-sans)] ${
-                    activeFilter === "checked_in"
-                      ? "bg-sky-500 text-white shadow-lg shadow-sky-500/30 scale-105"
-                      : "bg-white/[0.06] text-white/70 hover:text-white hover:bg-white/15 border border-white/10"
+                  onClick={() => {
+                    setFilterDomain("attendance");
+                    setActiveFilter("checked_in");
+                  }}
+                  className={`px-3.5 py-1.5 rounded-lg text-xs font-medium transition-all cursor-pointer inline-flex items-center gap-2 whitespace-nowrap ${
+                    filterDomain === "attendance" && activeFilter === "checked_in"
+                      ? "bg-white text-black font-semibold shadow-sm"
+                      : "text-white/60 hover:text-white hover:bg-white/[0.04]"
                   }`}
                 >
-                  Checked In ({stats.checkedIn})
+                  <span className="flex items-center gap-1.5">
+                    <span
+                      className={`w-1.5 h-1.5 rounded-full ${
+                        filterDomain === "attendance" && activeFilter === "checked_in"
+                          ? "bg-emerald-600"
+                          : "bg-emerald-400"
+                      }`}
+                    />
+                    <span>Checked In</span>
+                  </span>
+                  <span
+                    className={`px-1.5 py-0.5 rounded text-[10px] font-mono leading-none ${
+                      filterDomain === "attendance" && activeFilter === "checked_in"
+                        ? "bg-black/10 text-black font-bold"
+                        : "bg-emerald-500/20 text-emerald-300 font-semibold"
+                    }`}
+                  >
+                    {viewMode === "teams" ? stats.checkedIn : stats.checkedInParticipants}
+                  </span>
                 </button>
 
                 <button
                   type="button"
-                  onClick={() => setActiveFilter("not_checked_in")}
-                  className={`rounded-xl px-4 py-2 text-xs font-bold uppercase tracking-wider transition-all whitespace-nowrap cursor-pointer font-[family-name:var(--font-google-sans)] ${
-                    activeFilter === "not_checked_in"
-                      ? "bg-amber-500 text-black shadow-lg shadow-amber-500/30 scale-105"
-                      : "bg-white/[0.06] text-white/70 hover:text-white hover:bg-white/15 border border-white/10"
+                  onClick={() => {
+                    setFilterDomain("attendance");
+                    setActiveFilter("not_checked_in");
+                  }}
+                  className={`px-3.5 py-1.5 rounded-lg text-xs font-medium transition-all cursor-pointer inline-flex items-center gap-2 whitespace-nowrap ${
+                    filterDomain === "attendance" && activeFilter === "not_checked_in"
+                      ? "bg-white text-black font-semibold shadow-sm"
+                      : "text-white/60 hover:text-white hover:bg-white/[0.04]"
                   }`}
                 >
-                  Not Checked In ({stats.remaining})
+                  <span className="flex items-center gap-1.5">
+                    <span
+                      className={`w-1.5 h-1.5 rounded-full ${
+                        filterDomain === "attendance" && activeFilter === "not_checked_in"
+                          ? "bg-amber-600"
+                          : "bg-amber-400"
+                      }`}
+                    />
+                    <span>Not Checked In</span>
+                  </span>
+                  <span
+                    className={`px-1.5 py-0.5 rounded text-[10px] font-mono leading-none ${
+                      filterDomain === "attendance" && activeFilter === "not_checked_in"
+                        ? "bg-black/10 text-black font-bold"
+                        : "bg-amber-500/20 text-amber-300 font-semibold"
+                    }`}
+                  >
+                    {viewMode === "teams" ? stats.remaining : stats.remainingParticipants}
+                  </span>
                 </button>
+              </div>
+            </div>
+
+            {/* Live Participants Attendance Overview Strip */}
+            <div className="rounded-2xl border border-white/10 bg-[#0e0e12]/90 backdrop-blur-xl p-3.5 flex flex-wrap items-center justify-between gap-3 shadow-xl">
+              <div className="flex items-center gap-2.5">
+                <div className="p-2 rounded-xl bg-sky-500/10 border border-sky-500/20 text-sky-400">
+                  <Users className="h-4 w-4" />
+                </div>
+                <div>
+                  <div className="text-xs font-bold text-white font-[family-name:var(--font-google-sans)] flex items-center gap-2">
+                    <span>Participant Attendance Tracking</span>
+                    <span className="px-2 py-0.5 rounded-full bg-white/10 text-[10px] font-mono text-white/80">
+                      {stats.totalParticipants} Confirmed Students
+                    </span>
+                  </div>
+                  <p className="text-[11px] text-white/50">
+                    Live verification count of confirmed participants across all {stats.total} submitted teams (excluding forming)
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex flex-wrap items-center gap-2 font-mono text-xs">
+                <div className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-300">
+                  <CheckCircle2 className="h-3.5 w-3.5 text-emerald-400" />
+                  <span className="text-white/60">Checked In:</span>
+                  <strong className="text-emerald-200">{stats.checkedInParticipants}</strong>
+                </div>
+                <div className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-amber-500/10 border border-amber-500/20 text-amber-300">
+                  <Clock className="h-3.5 w-3.5 text-amber-400" />
+                  <span className="text-white/60">Not Checked In:</span>
+                  <strong className="text-amber-200">{stats.remainingParticipants}</strong>
+                </div>
+                <div className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-sky-500/10 border border-sky-500/20 text-sky-300">
+                  <span className="text-white/60">Turnout:</span>
+                  <strong className="text-sky-200">{stats.participantRate}%</strong>
+                </div>
               </div>
             </div>
           </div>
 
-          {/* Registered Teams Grid */}
+          {/* Teams / Participants Table View (Matching Teams & Rosters Design) */}
           {loadingTeams ? (
-            <div className="py-20 text-center">
+            <div className="rounded-2xl border border-white/15 bg-[#0e0e12] p-20 text-center shadow-2xl">
               <div className="inline-block h-8 w-8 animate-spin rounded-full border-2 border-white border-t-transparent mb-4" />
-              <p className="text-sm text-white/50 font-mono">Loading registered teams for this event...</p>
+              <p className="text-xs text-neutral-400 font-mono">Loading registered teams for this event...</p>
             </div>
-          ) : filteredTeams.length === 0 ? (
-            <div className="rounded-3xl border border-white/15 bg-[#0e0e12] p-12 text-center shadow-2xl">
-              <Users className="h-10 w-10 text-neutral-400 mx-auto mb-3" />
-              <h3 className="text-lg font-bold text-white font-[family-name:var(--font-google-sans)] mb-2">
-                {statusFilter === "submitted" && submittedCount === 0
-                  ? "No Fully Registered Teams"
-                  : "No Teams in this View"}
-              </h3>
-              <p className="text-xs text-white/60 max-w-md mx-auto mb-6">
-                {searchQuery
-                  ? `No teams match "${searchQuery}".`
-                  : teams.length === 0
-                  ? "No teams have registered for this event yet. You can add walk-in teams using the 'Register Team' button."
-                  : statusFilter === "submitted" && formingCount > 0
-                  ? `There are currently ${formingCount} team(s) forming rosters. Switch to 'Forming' or 'All Teams' to view them.`
-                  : "No teams match the selected filter tab."}
-              </p>
-              <div className="flex flex-wrap items-center justify-center gap-3">
-                {statusFilter === "submitted" && formingCount > 0 && (
-                  <button
-                    type="button"
-                    onClick={() => setStatusFilter("forming")}
-                    className="rounded-xl bg-white/10 hover:bg-white/20 text-white text-xs font-semibold px-4 py-2.5 transition-all cursor-pointer border border-white/15 font-[family-name:var(--font-google-sans)]"
-                  >
-                    View Forming Teams ({formingCount})
-                  </button>
-                )}
-                <Button
-                  type="button"
-                  variant="default"
-                  size="default"
-                  className="font-[family-name:var(--font-google-sans)]"
-                  onClick={() => setShowAddTeamModal(true)}
-                >
-                  + Register First Walk-In Team
-                </Button>
-              </div>
-            </div>
-          ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              {filteredTeams.map((team) => (
-                <div
-                  key={team.id}
-                  className="group relative overflow-hidden rounded-3xl border border-white/15 bg-[#0e0e12] hover:bg-[#15151c] p-6 hover:border-white/40 hover:shadow-[0_20px_45px_rgba(0,0,0,0.8)] transition-all duration-300 flex flex-col justify-between shadow-2xl"
-                >
-                  <div
-                    className={`pointer-events-none absolute inset-x-0 top-0 h-[2px] ${
-                      team.checkedIn
-                        ? "bg-gradient-to-r from-transparent via-emerald-400 to-transparent"
-                        : "bg-gradient-to-r from-transparent via-white/40 to-transparent"
-                    }`}
-                  />
-
-                  <div>
-                    {/* Header: Team Code, Status Dropdown, Check-In Pill */}
-                    <div className="flex flex-wrap items-center justify-between gap-2 mb-4">
-                      {/* Code Badge & Submission Status */}
-                      <div className="flex items-center gap-2">
-                        <span className="font-mono text-xs font-bold tracking-wider rounded-xl bg-white/10 border border-white/20 text-white px-3 py-1 shadow-sm">
-                          {team.teamCode}
-                        </span>
-                        <button
-                          type="button"
-                          onClick={() => {
-                            navigator.clipboard.writeText(team.teamCode);
-                            showToast(`Copied code "${team.teamCode}" to clipboard!`);
-                          }}
-                          className="h-7 w-7 rounded-lg bg-white/[0.08] hover:bg-white/15 flex items-center justify-center text-white/60 hover:text-white transition-colors text-xs cursor-pointer"
-                          title="Copy Team Code"
-                        >
-                          <Clipboard className="h-3.5 w-3.5" />
-                        </button>
-                        {isTeamSubmitted(team) ? (
-                          <span className="px-2.5 py-0.5 rounded-full text-[10px] font-mono bg-emerald-500/15 border border-emerald-500/30 text-emerald-300 font-semibold">
-                            • Submitted
-                          </span>
-                        ) : (
-                          <span className="px-2.5 py-0.5 rounded-full text-[10px] font-mono bg-amber-500/15 border border-amber-500/30 text-amber-300 font-semibold">
-                            • Forming
-                          </span>
-                        )}
-                      </div>
-                    </div>
-
-                    {/* Team Name */}
-                    <div className="mb-4">
-                      <h3 className="text-xl sm:text-2xl font-black text-white font-[family-name:var(--font-google-sans)] mb-2">
-                        {team.teamName}
-                      </h3>
-
-                      <span className="inline-block rounded-lg bg-white/[0.05] border border-white/10 px-2.5 py-0.5 text-[10px] text-white/80 font-mono">
-                        {team.department || team.lead.department || "Heritage Institute of Technology"}
-                      </span>
-                    </div>
-
-                    {/* Leader Details Card */}
-                    <div className="rounded-2xl border border-white/10 bg-[#16161d] p-4 mb-4 shadow-inner">
-                      <div className="flex items-center justify-between mb-2">
-                        <span className="text-[10px] uppercase font-bold text-white/60 tracking-wider font-mono">
-                          Team Leader
-                        </span>
-                        {team.lead.roll && (
-                          <span className="text-[10px] font-mono text-white/50">
-                            Roll: {team.lead.roll}
-                          </span>
-                        )}
-                      </div>
-
-                      <div className="text-sm font-bold text-white font-[family-name:var(--font-google-sans)] mb-1">
-                        {team.lead.name}
-                      </div>
-
-                      <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-white/70 font-mono">
-                        <a
-                          href={`mailto:${team.lead.email}`}
-                          className="hover:text-white transition-colors flex items-center gap-1"
-                        >
-                          <Mail className="h-3.5 w-3.5 text-neutral-400" />
-                          <span className="truncate max-w-[180px]">{team.lead.email}</span>
-                        </a>
-                        {team.lead.phone && (
-                          <a
-                            href={`tel:${team.lead.phone}`}
-                            className="hover:text-emerald-400 transition-colors flex items-center gap-1"
-                          >
-                            <Phone className="h-3.5 w-3.5 text-emerald-400" />
-                            <span>{team.lead.phone}</span>
-                          </a>
-                        )}
-                      </div>
-                    </div>
-
-                    {/* Team Members Roster */}
-                    <div className="mb-4">
-                      <div className="flex items-center justify-between text-xs font-mono text-white/60 mb-2">
-                        <span>Team Members:</span>
-                        <span>Total Roster: {team.members.length + 1}</span>
-                      </div>
-
-                      {team.members.length > 0 ? (
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                          {team.members.map((member, idx) => (
-                            <div
-                              key={idx}
-                              className="rounded-xl border border-white/10 bg-[#16161d] p-2.5 text-xs flex flex-col justify-between shadow-inner"
-                            >
-                              <div className="font-semibold text-white truncate font-[family-name:var(--font-google-sans)]">
-                                {member.name || "Team Member"}
+          ) : viewMode === "participants" ? (
+            <div className="rounded-2xl border border-white/15 bg-[#0e0e12] shadow-2xl overflow-hidden">
+              {filteredParticipants.length > 0 ? (
+                <div className="overflow-x-auto">
+                  <table className="w-full text-left text-xs">
+                    <thead>
+                      <tr className="border-b border-white/10 text-neutral-400 bg-white/[0.02] text-[11px] font-mono uppercase tracking-wider">
+                        <th className="py-3.5 px-4 font-medium">Participant</th>
+                        <th className="py-3.5 px-4 font-medium">Attendance</th>
+                        <th className="py-3.5 px-4 font-medium">Team & Code</th>
+                        <th className="py-3.5 px-4 font-medium">College Email</th>
+                        <th className="py-3.5 px-4 font-medium">Roll No</th>
+                        <th className="py-3.5 px-4 font-medium">Contact</th>
+                        <th className="py-3.5 px-4 font-medium">Department</th>
+                        <th className="py-3.5 px-4 font-medium">Academic Year</th>
+                        <th className="py-3.5 px-4 font-medium text-right">Actions</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-white/5">
+                      {filteredParticipants.map((p) => {
+                        const parsed = parseHeritageEmail(p.email || "", p.name);
+                        return (
+                          <tr key={p.id} className="hover:bg-white/[0.02] transition-colors">
+                            {/* Participant Name & Role */}
+                            <td className="py-3.5 px-4">
+                              <div className="font-semibold text-white text-sm tracking-tight">{p.name}</div>
+                              <div className="inline-flex items-center gap-1 mt-0.5">
+                                <span
+                                  className={`font-mono text-[10px] font-bold rounded px-1.5 py-0.5 ${
+                                    p.role === "Team Leader"
+                                      ? "bg-sky-500/20 text-sky-300 border border-sky-500/30"
+                                      : "bg-white/10 text-white/80 border border-white/15"
+                                  }`}
+                                >
+                                  {p.role}
+                                </span>
                               </div>
-                              <div className="text-[11px] text-white/60 truncate font-mono">
-                                {member.email || "No email"}
-                              </div>
-                              {member.department && (
-                                <div className="text-[10px] text-white/45 truncate">
-                                  {member.department}
+                            </td>
+
+                            {/* Attendance Status */}
+                            <td className="py-3.5 px-4">
+                              {!isTeamSubmitted(p.team) ? (
+                                <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-mono text-neutral-400 bg-white/[0.04] border border-white/10 whitespace-nowrap">
+                                  <span className="w-1.5 h-1.5 rounded-full bg-neutral-500" />
+                                  <span>Ineligible (Forming)</span>
+                                </div>
+                              ) : p.checkedIn ? (
+                                <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-bold font-mono bg-emerald-500/15 border border-emerald-500/30 text-emerald-300 shadow-sm whitespace-nowrap">
+                                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                                  <span>Checked In</span>
+                                </div>
+                              ) : (
+                                <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-medium font-mono bg-amber-500/15 border border-amber-500/30 text-amber-300 whitespace-nowrap">
+                                  <span className="w-1.5 h-1.5 rounded-full bg-amber-400" />
+                                  <span>Not Checked In</span>
                                 </div>
                               )}
-                            </div>
-                          ))}
-                        </div>
-                      ) : (
-                        <div className="rounded-xl border border-white/10 bg-[#16161d] p-3 text-xs text-white/50 italic">
-                          No additional team members joined yet.
-                        </div>
-                      )}
-                    </div>
-                  </div>
+                              {isTeamSubmitted(p.team) && p.checkedInAt && (
+                                <div className="text-[10px] font-mono text-white/40 mt-0.5">
+                                  {new Date(p.checkedInAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
+                                </div>
+                              )}
+                            </td>
 
-                  {/* Footer & Actions */}
-                  <div className="pt-4 border-t border-white/10 flex flex-wrap items-center justify-between gap-3">
-                    <div className="text-[11px] text-white/50 font-mono">
-                      {team.checkedInAt
-                        ? `Checked in at ${new Date(team.checkedInAt).toLocaleTimeString([], {
-                            hour: "2-digit",
-                            minute: "2-digit",
-                          })}`
-                        : `Registered ${new Date(team.registeredAt).toLocaleDateString()}`}
-                    </div>
+                            {/* Team & Code */}
+                            <td className="py-3.5 px-4">
+                              <div className="font-medium text-white">{p.teamName}</div>
+                              <div className="flex items-center gap-1 mt-0.5">
+                                <span className="font-mono text-[11px] text-rose-400 font-bold">{p.teamCode}</span>
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    navigator.clipboard.writeText(p.teamCode);
+                                    showToast(`Copied code "${p.teamCode}" to clipboard!`);
+                                  }}
+                                  className="h-4 w-4 rounded bg-white/[0.05] hover:bg-white/15 flex items-center justify-center text-white/50 hover:text-white transition-colors cursor-pointer"
+                                  title="Copy Team Code"
+                                >
+                                  <Clipboard className="h-2.5 w-2.5" />
+                                </button>
+                              </div>
+                            </td>
 
-                    <div className="flex items-center gap-2">
-                      <button
-                        type="button"
-                        onClick={() => setInspectingTeam(team)}
-                        className="rounded-xl bg-white/[0.08] hover:bg-white/15 border border-white/20 px-3 py-1.5 text-xs font-semibold text-white transition-all cursor-pointer"
-                        title="View complete dossier"
-                      >
-                        Details
-                      </button>
-                    </div>
-                  </div>
+                            {/* College Email */}
+                            <td className="py-3.5 px-4 font-mono text-[11px]">
+                              {p.email ? (
+                                <a
+                                  href={`mailto:${p.email}`}
+                                  className="text-neutral-300 hover:text-white truncate block max-w-[170px] transition-colors"
+                                >
+                                  {p.email}
+                                </a>
+                              ) : (
+                                <span className="text-white/30">N/A</span>
+                              )}
+                            </td>
+
+                            {/* Roll No */}
+                            <td className="py-3.5 px-4 font-mono text-[11px] whitespace-nowrap">
+                              {p.roll ? (
+                                <span className="text-white/90 font-semibold">{p.roll}</span>
+                              ) : (
+                                <span className="text-white/30 font-normal">N/A</span>
+                              )}
+                            </td>
+
+                            {/* Contact */}
+                            <td className="py-3.5 px-4 font-mono text-[11px] whitespace-nowrap">
+                              {p.phone ? (
+                                <a
+                                  href={`tel:${p.phone}`}
+                                  className="text-emerald-400 font-medium hover:underline"
+                                >
+                                  +91 {p.phone}
+                                </a>
+                              ) : (
+                                <span className="text-white/30 font-normal">N/A</span>
+                              )}
+                            </td>
+
+                            {/* Department */}
+                            <td className="py-3.5 px-4">
+                              <span className="block text-xs font-semibold text-white whitespace-nowrap">
+                                {p.department || parsed.branchName}
+                              </span>
+                              <span className="inline-block mt-0.5 rounded bg-white/5 border border-white/10 px-1.5 py-0.5 text-[9px] font-bold text-white/70 uppercase font-mono">
+                                {parsed.branchCode}
+                              </span>
+                            </td>
+
+                            {/* Academic Year */}
+                            <td className="py-3.5 px-4 whitespace-nowrap">
+                              <span className="block text-xs font-bold text-white">
+                                {parsed.academicYear}
+                              </span>
+                              <span className="text-[10px] text-purple-300 font-mono font-medium">
+                                Class of {parsed.passingYear}
+                              </span>
+                            </td>
+
+                            {/* Actions */}
+                            <td className="py-3.5 px-4 text-right">
+                              <div className="flex items-center justify-end gap-2 whitespace-nowrap">
+                                {isTeamSubmitted(p.team) && (
+                                  <button
+                                    type="button"
+                                    onClick={() => handleToggleCheckIn(p.team)}
+                                    disabled={actionLoadingId === p.team.id}
+                                    className={`rounded-xl px-3 py-1.5 text-xs font-semibold transition-all cursor-pointer flex items-center gap-1.5 ${
+                                      p.checkedIn
+                                        ? "bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 hover:bg-emerald-500/30"
+                                        : "bg-white text-black hover:bg-neutral-200 shadow-sm"
+                                    }`}
+                                  >
+                                    {actionLoadingId === p.team.id ? (
+                                      <RefreshCw className="h-3 w-3 animate-spin" />
+                                    ) : p.checkedIn ? (
+                                      <>
+                                        <Check className="h-3 w-3 text-emerald-400" />
+                                        <span>Checked In</span>
+                                      </>
+                                    ) : (
+                                      <span>Check In</span>
+                                    )}
+                                  </button>
+                                )}
+
+                                <button
+                                  type="button"
+                                  onClick={() => setInspectingTeam(p.team)}
+                                  className="rounded-xl bg-white/[0.08] hover:bg-white/15 border border-white/20 px-2.5 py-1.5 text-xs font-semibold text-white transition-all cursor-pointer"
+                                  title="View full team dossier"
+                                >
+                                  Details
+                                </button>
+                              </div>
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
                 </div>
-              ))}
+              ) : (
+                <div className="py-16 text-center text-xs text-neutral-400 font-mono space-y-3">
+                  <Users className="h-8 w-8 text-neutral-500 mx-auto" />
+                  <p>
+                    {searchQuery
+                      ? `No participants match "${searchQuery}".`
+                      : "No participants match the selected attendance filter."}
+                  </p>
+                </div>
+              )}
+            </div>
+          ) : (
+            <div className="rounded-2xl border border-white/15 bg-[#0e0e12] shadow-2xl overflow-hidden">
+              {filteredTeams.length > 0 ? (
+                <div className="overflow-x-auto">
+                  <table className="w-full text-left text-xs">
+                    <thead>
+                      <tr className="border-b border-white/10 text-neutral-400 bg-white/[0.02] text-[11px] font-mono uppercase tracking-wider">
+                        <th className="py-3.5 px-4 font-medium">Team & Code</th>
+                        <th className="py-3.5 px-4 font-medium">Attendance</th>
+                        <th className="py-3.5 px-4 font-medium">Team Leader</th>
+                        <th className="py-3.5 px-4 font-medium">Roll No</th>
+                        <th className="py-3.5 px-4 font-medium">Contact</th>
+                        <th className="py-3.5 px-4 font-medium">Department</th>
+                        <th className="py-3.5 px-4 font-medium">Academic Year</th>
+                        <th className="py-3.5 px-4 font-medium text-center">Roster</th>
+                        <th className="py-3.5 px-4 font-medium text-right">Actions</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-white/5">
+                      {filteredTeams.map((team) => {
+                        const parsed = parseHeritageEmail(team.lead?.email || "", team.lead?.name);
+                        const isSubmitted = isTeamSubmitted(team);
+                        const rosterCount = 1 + (team.members?.length || 0);
+
+                        return (
+                          <tr key={team.id} className="hover:bg-white/[0.02] transition-colors">
+                            {/* Team & Code */}
+                            <td className="py-3.5 px-4">
+                              <div className="font-semibold text-white text-sm tracking-tight">{team.teamName}</div>
+                              <div className="flex items-center gap-1.5 mt-0.5 flex-wrap">
+                                <span className="font-mono text-[11px] text-rose-400 font-bold">
+                                  {team.teamCode}
+                                </span>
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    navigator.clipboard.writeText(team.teamCode);
+                                    showToast(`Copied code "${team.teamCode}" to clipboard!`);
+                                  }}
+                                  className="h-4 w-4 rounded bg-white/[0.05] hover:bg-white/15 flex items-center justify-center text-white/50 hover:text-white transition-colors cursor-pointer"
+                                  title="Copy Team Code"
+                                >
+                                  <Clipboard className="h-2.5 w-2.5" />
+                                </button>
+                                {isSubmitted ? (
+                                  <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-mono font-medium bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+                                    <span className="w-1 h-1 rounded-full bg-emerald-400" />
+                                    <span>Submitted</span>
+                                  </span>
+                                ) : (
+                                  <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-mono font-medium bg-amber-500/10 text-amber-300 border border-amber-500/20">
+                                    <span className="w-1 h-1 rounded-full bg-amber-400" />
+                                    <span>Forming</span>
+                                  </span>
+                                )}
+                              </div>
+                            </td>
+
+                            {/* Attendance Status */}
+                            <td className="py-3.5 px-4">
+                              {!isSubmitted ? (
+                                <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-mono text-neutral-400 bg-white/[0.04] border border-white/10 whitespace-nowrap">
+                                  <span className="w-1.5 h-1.5 rounded-full bg-neutral-500" />
+                                  <span>Ineligible (Forming)</span>
+                                </div>
+                              ) : team.checkedIn ? (
+                                <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-bold font-mono bg-emerald-500/15 border border-emerald-500/30 text-emerald-300 shadow-sm whitespace-nowrap">
+                                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                                  <span>Checked In ({rosterCount} Pax)</span>
+                                </div>
+                              ) : (
+                                <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-medium font-mono bg-amber-500/15 border border-amber-500/30 text-amber-300 whitespace-nowrap">
+                                  <span className="w-1.5 h-1.5 rounded-full bg-amber-400" />
+                                  <span>Not Checked In ({rosterCount} Pax)</span>
+                                </div>
+                              )}
+                              {isSubmitted && team.checkedInAt && (
+                                <div className="text-[10px] font-mono text-white/40 mt-0.5">
+                                  {new Date(team.checkedInAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
+                                </div>
+                              )}
+                            </td>
+
+                            {/* Team Leader */}
+                            <td className="py-3.5 px-4">
+                              <div className="font-medium text-white">{team.lead.name}</div>
+                              <div className="font-mono text-[10px] text-neutral-400 truncate max-w-[160px] mt-0.5">
+                                <a href={`mailto:${team.lead.email}`} className="hover:text-white transition-colors">
+                                  {team.lead.email}
+                                </a>
+                              </div>
+                            </td>
+
+                            {/* Roll No */}
+                            <td className="py-3.5 px-4 font-mono text-[11px] whitespace-nowrap">
+                              {team.lead?.roll ? (
+                                <span className="text-white/90 font-semibold">{team.lead.roll}</span>
+                              ) : (
+                                <span className="text-white/30 font-normal">N/A</span>
+                              )}
+                            </td>
+
+                            {/* Contact */}
+                            <td className="py-3.5 px-4 font-mono text-[11px] whitespace-nowrap">
+                              {team.lead?.phone ? (
+                                <a
+                                  href={`tel:${team.lead.phone}`}
+                                  className="text-emerald-400 font-medium hover:underline"
+                                >
+                                  +91 {team.lead.phone}
+                                </a>
+                              ) : (
+                                <span className="text-white/30 font-normal">N/A</span>
+                              )}
+                            </td>
+
+                            {/* Department */}
+                            <td className="py-3.5 px-4">
+                              <span className="block text-xs font-semibold text-white whitespace-nowrap">
+                                {team.lead?.department || team.department || parsed.branchName}
+                              </span>
+                              <span className="inline-block mt-0.5 rounded bg-white/5 border border-white/10 px-1.5 py-0.5 text-[9px] font-bold text-white/70 uppercase font-mono">
+                                {parsed.branchCode}
+                              </span>
+                            </td>
+
+                            {/* Academic Year */}
+                            <td className="py-3.5 px-4 whitespace-nowrap">
+                              <span className="block text-xs font-bold text-white">
+                                {parsed.academicYear}
+                              </span>
+                              <span className="text-[10px] text-purple-300 font-mono font-medium">
+                                Class of {parsed.passingYear}
+                              </span>
+                            </td>
+
+                            {/* Roster */}
+                            <td className="py-3.5 px-4 font-mono text-neutral-300 text-center">
+                              <button
+                                type="button"
+                                onClick={() => setInspectingTeam(team)}
+                                className="inline-flex items-center gap-1.5 text-xs text-neutral-300 hover:text-white px-2.5 py-1 rounded-lg bg-white/[0.04] hover:bg-white/10 border border-white/10 transition-colors cursor-pointer"
+                                title="View full team roster"
+                              >
+                                <Users className="h-3.5 w-3.5 text-neutral-400" />
+                                <span>{rosterCount}</span>
+                              </button>
+                            </td>
+
+                            {/* Actions */}
+                            <td className="py-3.5 px-4 text-right">
+                              <div className="flex items-center justify-end gap-2 whitespace-nowrap">
+                                {isSubmitted && (
+                                  <button
+                                    type="button"
+                                    onClick={() => handleToggleCheckIn(team)}
+                                    disabled={actionLoadingId === team.id}
+                                    className={`rounded-xl px-3 py-1.5 text-xs font-semibold transition-all cursor-pointer flex items-center gap-1.5 ${
+                                      team.checkedIn
+                                        ? "bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 hover:bg-emerald-500/30"
+                                        : "bg-white text-black hover:bg-neutral-200 shadow-sm"
+                                    }`}
+                                  >
+                                    {actionLoadingId === team.id ? (
+                                      <RefreshCw className="h-3 w-3 animate-spin" />
+                                    ) : team.checkedIn ? (
+                                      <>
+                                        <Check className="h-3 w-3 text-emerald-400" />
+                                        <span>Checked In</span>
+                                      </>
+                                    ) : (
+                                      <span>Check In</span>
+                                    )}
+                                  </button>
+                                )}
+
+                                <button
+                                  type="button"
+                                  onClick={() => setInspectingTeam(team)}
+                                  className="rounded-xl bg-white/[0.08] hover:bg-white/15 border border-white/20 px-2.5 py-1.5 text-xs font-semibold text-white transition-all cursor-pointer"
+                                  title="View complete dossier"
+                                >
+                                  Details
+                                </button>
+                              </div>
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+              ) : (
+                <div className="py-16 text-center text-xs text-neutral-400 font-mono space-y-3">
+                  <Users className="h-8 w-8 text-neutral-500 mx-auto" />
+                  <p>
+                    {statusFilter === "submitted" && submittedCount === 0
+                      ? "No fully registered teams submitted yet for current filters."
+                      : statusFilter === "forming"
+                      ? "No forming teams found."
+                      : searchQuery
+                      ? `No teams match "${searchQuery}".`
+                      : "No teams found matching current filters."}
+                  </p>
+                  {statusFilter === "submitted" && formingCount > 0 && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setFilterDomain("registration");
+                        setStatusFilter("forming");
+                      }}
+                      className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-white/10 bg-white/5 hover:bg-white/10 text-white font-sans text-xs transition-colors cursor-pointer"
+                    >
+                      <span>View Forming Teams ({formingCount})</span>
+                    </button>
+                  )}
+                  {teams.length === 0 && (
+                    <div className="pt-2">
+                      <Button
+                        type="button"
+                        variant="default"
+                        size="sm"
+                        className="font-[family-name:var(--font-google-sans)] text-xs rounded-xl"
+                        onClick={() => setShowAddTeamModal(true)}
+                      >
+                        + Register First Walk-In Team
+                      </Button>
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
           )}
 
@@ -1181,22 +1731,28 @@ export default function LiveEventManager() {
                     <span className="font-mono text-xs font-bold rounded-xl bg-white/10 border border-white/20 text-white px-3 py-1">
                       {inspectingTeam.teamCode}
                     </span>
-                    <span
-                      className={`rounded-full px-3 py-0.5 text-xs font-bold uppercase tracking-wider border ${
-                        inspectingTeam.checkedIn
-                          ? "bg-emerald-500/20 border-emerald-500/40 text-emerald-300"
-                          : "bg-white/10 border-white/20 text-white/60"
-                      }`}
-                    >
-                      {inspectingTeam.checkedIn ? "✓ Verified Check-In" : "Pending Check-In"}
-                    </span>
+                    {isTeamSubmitted(inspectingTeam) ? (
+                      <span
+                        className={`rounded-full px-3 py-0.5 text-xs font-bold uppercase tracking-wider border ${
+                          inspectingTeam.checkedIn
+                            ? "bg-emerald-500/20 border-emerald-500/40 text-emerald-300"
+                            : "bg-white/10 border-white/20 text-white/60"
+                        }`}
+                      >
+                        {inspectingTeam.checkedIn ? "Verified Check-In" : "Pending Check-In"}
+                      </span>
+                    ) : (
+                      <span className="rounded-full px-3 py-0.5 text-xs font-mono font-medium border bg-white/[0.04] border-white/10 text-neutral-400">
+                        Ineligible (Forming)
+                      </span>
+                    )}
                   </div>
 
                   <h2 className="text-2xl sm:text-3xl font-black text-white font-[family-name:var(--font-google-sans)]">
                     {inspectingTeam.teamName}
                   </h2>
                   <p className="text-xs text-white/50 font-mono mt-1">
-                    Event: {eventMeta?.title || "OnCampus"} • Department: {inspectingTeam.department}
+                    Event: {eventMeta?.title || "OnCampus"} • Department: {inspectingTeam.department} • Total Participants: {inspectingTeam.members.length + 1}
                   </p>
                 </div>
 
@@ -1235,9 +1791,10 @@ export default function LiveEventManager() {
                 </div>
 
                 <div className="mb-6">
-                  <h4 className="text-xs font-mono font-bold uppercase tracking-wider text-white/60 mb-3">
-                    Team Members ({inspectingTeam.members.length})
-                  </h4>
+                  <div className="flex items-center justify-between text-xs font-mono font-bold uppercase tracking-wider text-white/60 mb-3">
+                    <span>Team Members ({inspectingTeam.members.length})</span>
+                    <span className="text-white/80">Total Roster: {inspectingTeam.members.length + 1} Participants</span>
+                  </div>
 
                   {inspectingTeam.members.length > 0 ? (
                     <div className="space-y-3">
@@ -1275,24 +1832,30 @@ export default function LiveEventManager() {
                 </div>
 
                 <div className="pt-6 border-t border-white/10 flex flex-wrap items-center justify-between gap-3">
-                  <button
-                    type="button"
-                    disabled={actionLoadingId === inspectingTeam.id}
-                    onClick={() => handleToggleCheckIn(inspectingTeam)}
-                    className={`rounded-xl px-5 py-2.5 text-xs font-bold transition-all cursor-pointer ${
-                      actionLoadingId === inspectingTeam.id
-                        ? "opacity-50 cursor-not-allowed bg-white/10 text-white/50"
+                  {isTeamSubmitted(inspectingTeam) ? (
+                    <button
+                      type="button"
+                      disabled={actionLoadingId === inspectingTeam.id}
+                      onClick={() => handleToggleCheckIn(inspectingTeam)}
+                      className={`rounded-xl px-5 py-2.5 text-xs font-bold transition-all cursor-pointer ${
+                        actionLoadingId === inspectingTeam.id
+                          ? "opacity-50 cursor-not-allowed bg-white/10 text-white/50"
+                          : inspectingTeam.checkedIn
+                          ? "bg-white/10 hover:bg-rose-500/20 text-white/80 hover:text-rose-300"
+                          : "bg-emerald-500 hover:bg-emerald-400 text-black shadow-lg shadow-emerald-500/30"
+                      }`}
+                    >
+                      {actionLoadingId === inspectingTeam.id
+                        ? "Updating..."
                         : inspectingTeam.checkedIn
-                        ? "bg-white/10 hover:bg-rose-500/20 text-white/80 hover:text-rose-300"
-                        : "bg-emerald-500 hover:bg-emerald-400 text-black shadow-lg shadow-emerald-500/30"
-                    }`}
-                  >
-                    {actionLoadingId === inspectingTeam.id
-                      ? "Updating..."
-                      : inspectingTeam.checkedIn
-                      ? "Undo Check-In"
-                      : "✓ Mark Verified Check-In"}
-                  </button>
+                        ? "Undo Check-In"
+                        : "Mark Verified Check-In"}
+                    </button>
+                  ) : (
+                    <div className="text-xs font-mono text-white/40 italic py-1">
+                      Forming team: registration must be submitted before check-in.
+                    </div>
+                  )}
 
                   <div className="flex items-center gap-2">
                     <button
