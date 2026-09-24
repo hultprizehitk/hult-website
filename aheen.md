@@ -67,7 +67,7 @@ Other top-level files:
 | Database | **MongoDB**, not Firebase. The PRD's Firestore concepts map to Mongo collections, and real-time comes from polling or streaming (the choice is still open). |
 | Where the code lives | **`quiz/`**, the standalone Next.js app. Not inside `client-v3`. |
 | UI/UX | **A Slido clone**: join with an event code, a big single question card, tap-to-answer option bars, a live results/leaderboard screen for the projector, and a presenter/admin console. |
-| Theme | Hult **pink + black**. The existing site uses magenta `#f20089` on black, with purple `#a855f7` as an accent. |
+| Theme | **Same UI components and design theme as the admin dashboard** (`client-v3/app/admin`): black background with dots, `#0e0e12` cards, white primary buttons, emerald/rose/amber status colours. Hult pink `#f20089` is kept as the brand accent. (Updated from the original "pink + black" instruction.) |
 | Test data | 10–20 random MCQs for testing edge cases. They are seeded into the DB (never hardcoded in UI code, per team rule). |
 
 ### Quiz design and plan (written 2026-09-24, not yet built)

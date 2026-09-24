@@ -28,6 +28,7 @@
   --color-hult: var(--hult);
   --color-hult-accent: var(--hult-accent);
   --color-success: var(--success);
+  --color-warning: var(--warning);
   --color-opt-0: var(--opt-0);
   --color-opt-1: var(--opt-1);
   --color-opt-2: var(--opt-2);
@@ -42,34 +43,36 @@
 }
 
 :root {
-  --radius: 0.875rem;
+  /* Admin dashboard design system (client-v3/app/admin): black, neutral surfaces, white primary. */
+  --radius: 0.75rem;
   --background: #000000;
   --foreground: #ffffff;
-  --card: #09090b;
+  --card: #0e0e12;
   --card-foreground: #ffffff;
-  --popover: #09090b;
+  --popover: #0e0e12;
   --popover-foreground: #ffffff;
-  --primary: #f20089;
-  --primary-foreground: #ffffff;
-  --secondary: #18181b;
-  --secondary-foreground: #ffffff;
-  --muted: #18181b;
-  --muted-foreground: #a1a1aa;
-  --accent: #1f0a17;
+  --primary: #ffffff;
+  --primary-foreground: #171717;
+  --secondary: #16161d;
+  --secondary-foreground: #f5f5f5;
+  --muted: #16161d;
+  --muted-foreground: #a3a3a3;
+  --accent: #202028;
   --accent-foreground: #ffffff;
-  --destructive: #ef4444;
+  --destructive: #f43f5e;
   --border: rgb(255 255 255 / 0.1);
   --input: rgb(255 255 255 / 0.15);
-  --ring: #f20089;
+  --ring: rgb(255 255 255 / 0.4);
   --hult: #f20089;
   --hult-accent: #a855f7;
-  --success: #22c55e;
+  --success: #34d399;
+  --warning: #fbbf24;
   --opt-0: #f20089;
   --opt-1: #a855f7;
-  --opt-2: #db2777;
-  --opt-3: #7c3aed;
-  --opt-4: #e879f9;
-  --opt-5: #be185d;
+  --opt-2: #0ea5e9;
+  --opt-3: #f59e0b;
+  --opt-4: #6366f1;
+  --opt-5: #d946ef;
 }
 
 @layer base {
@@ -77,8 +80,6 @@
     @apply border-border outline-ring/50;
   }
   body {
-    @apply bg-background text-foreground;
-    background-image: radial-gradient(60rem 30rem at 50% -10%, rgb(242 0 137 / 0.18), transparent 70%);
-    background-attachment: fixed;
+    @apply bg-background text-foreground selection:bg-white/25 selection:text-white;
   }
 }

@@ -7,29 +7,17 @@ export type AnimatedNumberProps = {
   value: number;
   className?: string;
   springOptions?: SpringOptions;
-  as?: React.ElementType;
 };
 
-export function AnimatedNumber({
-  value,
-  className,
-  springOptions,
-  as = 'span',
-}: AnimatedNumberProps) {
-  const MotionComponent = motion.create(as as keyof JSX.IntrinsicElements);
-
+// motion-primitives AnimatedNumber, fixed to a stable motion.span: the upstream version
+// called motion.create() during render, which remounts the node and resets the spring.
+export function AnimatedNumber({ value, className, springOptions }: AnimatedNumberProps) {
   const spring = useSpring(value, springOptions);
-  const display = useTransform(spring, (current) =>
-    Math.round(current).toLocaleString()
-  );
+  const display = useTransform(spring, (current) => Math.round(current).toLocaleString());
 
   useEffect(() => {
     spring.set(value);
   }, [spring, value]);
 
-  return (
-    <MotionComponent className={cn('tabular-nums', className)}>
-      {display}
-    </MotionComponent>
-  );
+  return <motion.span className={cn('tabular-nums', className)}>{display}</motion.span>;
 }
