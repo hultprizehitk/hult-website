@@ -20,6 +20,9 @@ import {
   Clock,
   UserCheck,
   UserX,
+  X,
+  AlertCircle,
+  Undo2,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import LiveCameraScannerModal from "./LiveCameraScannerModal";
@@ -123,6 +126,12 @@ export default function LiveEventManager() {
   const [showCameraScanner, setShowCameraScanner] = useState(false);
   const [actionLoadingId, setActionLoadingId] = useState<string | null>(null);
   const [toast, setToast] = useState<{ message: string; type: "success" | "error" } | null>(null);
+  const [checkInConfirmTarget, setCheckInConfirmTarget] = useState<{
+    type: "team" | "participant";
+    team?: RegisteredTeam;
+    participant?: FlatParticipant;
+    nextCheckIn: boolean;
+  } | null>(null);
 
   // New Team Form State
   const [newTeam, setNewTeam] = useState({
@@ -234,14 +243,44 @@ export default function LiveEventManager() {
     return t.submissionStatus === "submitted" || Boolean(t.submittedAt);
   };
 
-  const handleToggleCheckIn = async (team: RegisteredTeam) => {
+  const formatCheckInDateTime = (dateVal: string | Date | undefined | null) => {
+    if (!dateVal) return null;
+    const d = new Date(dateVal);
+    if (isNaN(d.getTime())) return null;
+    const dateStr = d.toLocaleDateString("en-IN", {
+      day: "numeric",
+      month: "short",
+      year: "numeric",
+    });
+    const timeStr = d.toLocaleTimeString("en-IN", {
+      hour: "2-digit",
+      minute: "2-digit",
+      hour12: true,
+    }).toUpperCase();
+    return { dateStr, timeStr, full: `${dateStr}, ${timeStr}` };
+  };
+
+  const handleToggleCheckIn = (team: RegisteredTeam) => {
+    if (!selectedEventId) return;
+    if (!isTeamSubmitted(team)) {
+      showToast("Forming teams cannot check in until registration is submitted.", "error");
+      return;
+    }
+    setCheckInConfirmTarget({
+      type: "team",
+      team,
+      nextCheckIn: !team.checkedIn,
+    });
+  };
+
+  const executeToggleCheckIn = async (team: RegisteredTeam, targetState?: boolean) => {
     if (!selectedEventId) return;
     if (!isTeamSubmitted(team)) {
       showToast("Forming teams cannot check in until registration is submitted.", "error");
       return;
     }
     setActionLoadingId(team.id);
-    const nextCheckIn = !team.checkedIn;
+    const nextCheckIn = typeof targetState === "boolean" ? targetState : !team.checkedIn;
 
     // Optimistic UI update
     setTeams((prev) =>
@@ -324,14 +363,27 @@ export default function LiveEventManager() {
     }
   };
 
-  const handleToggleParticipantCheckIn = async (p: FlatParticipant) => {
+  const handleToggleParticipantCheckIn = (p: FlatParticipant) => {
+    if (!selectedEventId) return;
+    if (!isTeamSubmitted(p.team)) {
+      showToast("Forming teams cannot check in until registration is submitted.", "error");
+      return;
+    }
+    setCheckInConfirmTarget({
+      type: "participant",
+      participant: p,
+      nextCheckIn: !p.checkedIn,
+    });
+  };
+
+  const executeToggleParticipantCheckIn = async (p: FlatParticipant, targetState?: boolean) => {
     if (!selectedEventId) return;
     if (!isTeamSubmitted(p.team)) {
       showToast("Forming teams cannot check in until registration is submitted.", "error");
       return;
     }
     setActionLoadingId(p.id);
-    const nextCheckIn = !p.checkedIn;
+    const nextCheckIn = typeof targetState === "boolean" ? targetState : !p.checkedIn;
     const nowIso = nextCheckIn ? new Date().toISOString() : null;
 
     // Optimistically update teams state
@@ -1507,10 +1559,17 @@ export default function LiveEventManager() {
                                   <span>Not Checked In</span>
                                 </div>
                               )}
-                              {isTeamSubmitted(p.team) && p.checkedInAt && (
-                                <div className="text-[10px] font-mono text-white/40 mt-0.5">
-                                  {new Date(p.checkedInAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
-                                </div>
+                              {isTeamSubmitted(p.team) && p.checkedIn && (
+                                (() => {
+                                  const formatted = formatCheckInDateTime(p.checkedInAt || p.team.checkedInAt);
+                                  if (!formatted) return null;
+                                  return (
+                                    <div className="flex items-center gap-1 text-[10px] font-mono text-emerald-400/90 mt-1 whitespace-nowrap">
+                                      <Clock className="h-2.5 w-2.5 shrink-0 opacity-70" />
+                                      <span>{formatted.dateStr}, {formatted.timeStr}</span>
+                                    </div>
+                                  );
+                                })()
                               )}
                             </td>
 
@@ -1746,10 +1805,19 @@ export default function LiveEventManager() {
                                   </div>
                                 );
                               })()}
-                              {isSubmitted && team.checkedInAt && (
-                                <div className="text-[10px] font-mono text-white/40 mt-0.5">
-                                  {new Date(team.checkedInAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
-                                </div>
+                              {isSubmitted && (team.checkedIn || team.checkedInAt) && (
+                                (() => {
+                                  const allAts = [team.checkedInAt, team.lead?.checkedInAt, ...(team.members || []).map((m) => m.checkedInAt)].filter(Boolean) as (string | Date)[];
+                                  const targetAt = team.checkedInAt || (allAts.length > 0 ? allAts.sort((a, b) => new Date(b).getTime() - new Date(a).getTime())[0] : null);
+                                  const formatted = formatCheckInDateTime(targetAt);
+                                  if (!formatted) return null;
+                                  return (
+                                    <div className="flex items-center gap-1 text-[10px] font-mono text-emerald-400/90 mt-1 whitespace-nowrap">
+                                      <Clock className="h-2.5 w-2.5 shrink-0 opacity-70" />
+                                      <span>{formatted.dateStr}, {formatted.timeStr}</span>
+                                    </div>
+                                  );
+                                })()
                               )}
                             </td>
 
@@ -1929,10 +1997,19 @@ export default function LiveEventManager() {
                       const isComplete = inspectingTeam.checkedIn || (rosterTotal > 0 && presentCount >= rosterTotal);
 
                       if (isComplete) {
+                        const formatted = formatCheckInDateTime(inspectingTeam.checkedInAt || inspectingTeam.lead?.checkedInAt);
                         return (
-                          <span className="rounded-full px-3 py-0.5 text-xs font-bold uppercase tracking-wider border bg-emerald-500/20 border-emerald-500/40 text-emerald-300">
-                            Verified Check-In ({rosterTotal}/{rosterTotal} Pax)
-                          </span>
+                          <div className="flex flex-col items-start gap-1">
+                            <span className="rounded-full px-3 py-0.5 text-xs font-bold uppercase tracking-wider border bg-emerald-500/20 border-emerald-500/40 text-emerald-300">
+                              Verified Check-In ({rosterTotal}/{rosterTotal} Pax)
+                            </span>
+                            {formatted && (
+                              <span className="inline-flex items-center gap-1 text-[11px] font-mono text-emerald-400/90">
+                                <Clock className="h-3 w-3 opacity-70" />
+                                <span>Checked In: {formatted.dateStr}, {formatted.timeStr}</span>
+                              </span>
+                            )}
+                          </div>
                         );
                       }
 
@@ -1977,16 +2054,20 @@ export default function LiveEventManager() {
                       <span className="text-white/40 block">Attendance:</span>
                       {(() => {
                         const leadChecked = Boolean(inspectingTeam.lead?.checkedIn || (inspectingTeam.checkedIn && inspectingTeam.lead?.checkedIn !== false));
+                        const formatted = formatCheckInDateTime(inspectingTeam.lead?.checkedInAt || (leadChecked ? inspectingTeam.checkedInAt : null));
                         return leadChecked ? (
-                          <span className="inline-flex items-center gap-1.5 text-emerald-300 font-bold font-mono">
-                            <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
-                            <span>Present</span>
-                            {inspectingTeam.lead?.checkedInAt && (
-                              <span className="text-white/40 text-[10px] font-normal">
-                                ({new Date(inspectingTeam.lead.checkedInAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })})
-                              </span>
+                          <div className="space-y-0.5">
+                            <span className="inline-flex items-center gap-1.5 text-emerald-300 font-bold font-mono">
+                              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
+                              <span>Present</span>
+                            </span>
+                            {formatted && (
+                              <div className="text-emerald-400/80 text-[10px] font-mono flex items-center gap-1">
+                                <Clock className="h-2.5 w-2.5 opacity-70" />
+                                <span>{formatted.dateStr}, {formatted.timeStr}</span>
+                              </div>
                             )}
-                          </span>
+                          </div>
                         ) : (
                           <span className="inline-flex items-center gap-1.5 text-amber-300 font-medium font-mono">
                             <span className="w-1.5 h-1.5 rounded-full bg-amber-400" />
@@ -2045,16 +2126,20 @@ export default function LiveEventManager() {
                           <div className="text-right sm:text-right text-white/50 text-[11px] flex flex-col items-end gap-1.5">
                             {(() => {
                               const memChecked = Boolean(member.checkedIn !== undefined ? member.checkedIn : inspectingTeam.checkedIn);
+                              const formatted = formatCheckInDateTime(member.checkedInAt || (memChecked ? inspectingTeam.checkedInAt : null));
                               return memChecked ? (
-                                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 font-mono">
-                                  <Check className="h-2.5 w-2.5 text-emerald-400" />
-                                  <span>Present</span>
-                                  {member.checkedInAt && (
-                                    <span className="text-white/40 text-[9px] font-normal">
-                                      ({new Date(member.checkedInAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })})
+                                <div className="flex flex-col items-end gap-0.5">
+                                  <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 font-mono">
+                                    <Check className="h-2.5 w-2.5 text-emerald-400" />
+                                    <span>Present</span>
+                                  </span>
+                                  {formatted && (
+                                    <span className="text-emerald-400/80 text-[9px] font-mono flex items-center gap-1">
+                                      <Clock className="h-2 w-2 opacity-70" />
+                                      <span>{formatted.dateStr}, {formatted.timeStr}</span>
                                     </span>
                                   )}
-                                </span>
+                                </div>
                               ) : (
                                 <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium bg-amber-500/15 text-amber-300 border border-amber-500/20 font-mono">
                                   <span>Not Checked In</span>
@@ -2325,6 +2410,214 @@ export default function LiveEventManager() {
                 }
               }}
             />
+          )}
+
+          {/* ========================================================================= */}
+          {/* MODAL 3: CHECK-IN / ATTENDANCE CONFIRMATION MODAL                         */}
+          {/* ========================================================================= */}
+          {checkInConfirmTarget && (
+            <div
+              className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-in fade-in duration-200"
+              onClick={(e) => {
+                if (e.target === e.currentTarget && !actionLoadingId) {
+                  setCheckInConfirmTarget(null);
+                }
+              }}
+            >
+              <div className="relative w-full max-w-md rounded-3xl border border-white/20 bg-[#0e0e12] p-6 sm:p-7 shadow-2xl overflow-hidden">
+                {/* Close Button */}
+                <button
+                  type="button"
+                  disabled={Boolean(actionLoadingId)}
+                  onClick={() => setCheckInConfirmTarget(null)}
+                  className="absolute right-5 top-5 h-8 w-8 rounded-full bg-white/10 hover:bg-white/20 text-white/70 hover:text-white flex items-center justify-center transition-colors cursor-pointer disabled:opacity-40"
+                >
+                  <X className="h-4 w-4" />
+                </button>
+
+                {/* Header Icon + Title */}
+                <div className="flex items-start gap-3.5 mb-5">
+                  <div
+                    className={`h-11 w-11 rounded-2xl flex items-center justify-center shrink-0 border ${
+                      checkInConfirmTarget.nextCheckIn
+                        ? "bg-emerald-500/15 border-emerald-500/30 text-emerald-400"
+                        : "bg-amber-500/15 border-amber-500/30 text-amber-400"
+                    }`}
+                  >
+                    {checkInConfirmTarget.nextCheckIn ? (
+                      <CheckCircle2 className="h-6 w-6" />
+                    ) : (
+                      <Undo2 className="h-6 w-6" />
+                    )}
+                  </div>
+                  <div>
+                    <span
+                      className={`inline-block text-[10px] font-mono font-bold uppercase tracking-wider px-2 py-0.5 rounded-full border mb-1.5 ${
+                        checkInConfirmTarget.nextCheckIn
+                          ? "bg-emerald-500/10 border-emerald-500/30 text-emerald-300"
+                          : "bg-amber-500/10 border-amber-500/30 text-amber-300"
+                      }`}
+                    >
+                      {checkInConfirmTarget.nextCheckIn ? "Check-In Confirmation" : "Revert Confirmation"}
+                    </span>
+                    <h3 className="text-lg font-black text-white font-[family-name:var(--font-google-sans)] leading-snug">
+                      {checkInConfirmTarget.nextCheckIn
+                        ? checkInConfirmTarget.type === "team"
+                          ? "Confirm Team Check-In"
+                          : "Confirm Participant Check-In"
+                        : checkInConfirmTarget.type === "team"
+                        ? "Revert Team Check-In"
+                        : "Revert Participant Check-In"}
+                    </h3>
+                    <p className="text-xs text-white/60 mt-0.5">
+                      {checkInConfirmTarget.nextCheckIn
+                        ? "Verify and mark official attendance for this session."
+                        : "Reset attendance status back to pending."}
+                    </p>
+                  </div>
+                </div>
+
+                {/* Target Details Box */}
+                <div className="rounded-2xl border border-white/10 bg-[#16161d] p-4 space-y-3 mb-6">
+                  {checkInConfirmTarget.type === "team" && checkInConfirmTarget.team && (
+                    <>
+                      <div className="flex items-center justify-between gap-2 border-b border-white/10 pb-2.5">
+                        <div className="min-w-0 flex-1">
+                          <span className="text-[10px] uppercase font-mono tracking-wider text-white/40 block">
+                            Team Name
+                          </span>
+                          <span className="text-sm font-bold text-white block truncate">
+                            {checkInConfirmTarget.team.teamName}
+                          </span>
+                        </div>
+                        <span className="text-xs font-mono font-bold bg-white/10 text-neutral-300 px-2.5 py-1 rounded-lg border border-white/15 shrink-0">
+                          {checkInConfirmTarget.team.teamCode}
+                        </span>
+                      </div>
+
+                      <div className="grid grid-cols-2 gap-2 text-xs">
+                        <div>
+                          <span className="text-[10px] uppercase font-mono text-white/40 block">Team Leader</span>
+                          <span className="text-white font-medium truncate block">
+                            {checkInConfirmTarget.team.lead?.name || "N/A"}
+                          </span>
+                        </div>
+                        <div>
+                          <span className="text-[10px] uppercase font-mono text-white/40 block">Roster Size</span>
+                          <span className="text-white font-medium block">
+                            {1 + (checkInConfirmTarget.team.members?.length || 0)} Members
+                          </span>
+                        </div>
+                      </div>
+
+                      {checkInConfirmTarget.team.department && (
+                        <div className="pt-2 border-t border-white/5 text-[11px] text-white/60 truncate">
+                          {checkInConfirmTarget.team.department}
+                        </div>
+                      )}
+                    </>
+                  )}
+
+                  {checkInConfirmTarget.type === "participant" && checkInConfirmTarget.participant && (
+                    <>
+                      <div className="flex items-center justify-between gap-2 border-b border-white/10 pb-2.5">
+                        <div className="min-w-0 flex-1">
+                          <span className="text-[10px] uppercase font-mono tracking-wider text-white/40 block">
+                            Participant
+                          </span>
+                          <span className="text-sm font-bold text-white block truncate">
+                            {checkInConfirmTarget.participant.name}
+                          </span>
+                        </div>
+                        <span
+                          className={`text-[10px] font-mono font-bold px-2 py-0.5 rounded-full border shrink-0 ${
+                            checkInConfirmTarget.participant.role === "Team Leader"
+                              ? "bg-purple-500/20 text-purple-300 border-purple-500/30"
+                              : "bg-white/10 text-white/70 border-white/15"
+                          }`}
+                        >
+                          {checkInConfirmTarget.participant.role}
+                        </span>
+                      </div>
+
+                      <div className="grid grid-cols-2 gap-2 text-xs">
+                        <div>
+                          <span className="text-[10px] uppercase font-mono text-white/40 block">Team</span>
+                          <span className="text-white font-medium truncate block">
+                            {checkInConfirmTarget.participant.teamName}
+                          </span>
+                        </div>
+                        <div>
+                          <span className="text-[10px] uppercase font-mono text-white/40 block">Team Code</span>
+                          <span className="text-white font-mono font-medium block">
+                            {checkInConfirmTarget.participant.teamCode}
+                          </span>
+                        </div>
+                      </div>
+
+                      {(checkInConfirmTarget.participant.email || checkInConfirmTarget.participant.roll) && (
+                        <div className="pt-2 border-t border-white/5 text-[11px] font-mono text-white/50 truncate">
+                          {checkInConfirmTarget.participant.email}
+                          {checkInConfirmTarget.participant.roll ? ` • Roll: ${checkInConfirmTarget.participant.roll}` : ""}
+                        </div>
+                      )}
+                    </>
+                  )}
+                </div>
+
+                {/* Action Buttons */}
+                <div className="flex items-center justify-end gap-3">
+                  <button
+                    type="button"
+                    disabled={Boolean(actionLoadingId)}
+                    onClick={() => setCheckInConfirmTarget(null)}
+                    className="rounded-xl border border-white/20 bg-white/[0.08] hover:bg-white/15 px-4 py-2.5 text-xs font-semibold text-white transition-all cursor-pointer disabled:opacity-40"
+                  >
+                    Cancel
+                  </button>
+
+                  <button
+                    type="button"
+                    disabled={Boolean(actionLoadingId)}
+                    onClick={async () => {
+                      if (checkInConfirmTarget.type === "team" && checkInConfirmTarget.team) {
+                        const target = checkInConfirmTarget.team;
+                        const nextState = checkInConfirmTarget.nextCheckIn;
+                        setCheckInConfirmTarget(null);
+                        await executeToggleCheckIn(target, nextState);
+                      } else if (checkInConfirmTarget.type === "participant" && checkInConfirmTarget.participant) {
+                        const target = checkInConfirmTarget.participant;
+                        const nextState = checkInConfirmTarget.nextCheckIn;
+                        setCheckInConfirmTarget(null);
+                        await executeToggleParticipantCheckIn(target, nextState);
+                      }
+                    }}
+                    className={`rounded-xl px-5 py-2.5 text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 shadow-md ${
+                      checkInConfirmTarget.nextCheckIn
+                        ? "bg-emerald-500 hover:bg-emerald-400 text-black shadow-emerald-500/20"
+                        : "bg-rose-500 hover:bg-rose-400 text-white shadow-rose-500/20"
+                    } ${actionLoadingId ? "opacity-50 cursor-not-allowed" : ""}`}
+                  >
+                    {actionLoadingId ? (
+                      <>
+                        <RefreshCw className="h-3.5 w-3.5 animate-spin" />
+                        <span>Processing...</span>
+                      </>
+                    ) : checkInConfirmTarget.nextCheckIn ? (
+                      <>
+                        <Check className="h-3.5 w-3.5" />
+                        <span>Confirm Check-In</span>
+                      </>
+                    ) : (
+                      <>
+                        <Undo2 className="h-3.5 w-3.5" />
+                        <span>Confirm Revert</span>
+                      </>
+                    )}
+                  </button>
+                </div>
+              </div>
+            </div>
           )}
         </div>
       )}

@@ -20,6 +20,8 @@ import {
   Pause,
   UserCheck,
   User,
+  X,
+  Clock,
 } from "lucide-react";
 
 interface FlatParticipant {
@@ -148,6 +150,12 @@ export default function ScannerConsole() {
   const [viewMode, setViewMode] = useState<"teams" | "participants">("teams");
   const [actionLoadingId, setActionLoadingId] = useState<string | null>(null);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
+  const [checkInConfirmTarget, setCheckInConfirmTarget] = useState<{
+    type: "team" | "participant";
+    team?: RegisteredTeam;
+    participant?: FlatParticipant;
+    nextCheckIn: boolean;
+  } | null>(null);
 
   const triggerToast = (msg: string) => {
     setToastMessage(msg);
@@ -205,6 +213,26 @@ export default function ScannerConsole() {
     },
     [soundEnabled]
   );
+
+  // -------------------------------------------------------------
+  // Helpers
+  // -------------------------------------------------------------
+  const formatCheckInDateTime = (dateVal: string | Date | undefined | null) => {
+    if (!dateVal) return null;
+    const d = new Date(dateVal);
+    if (isNaN(d.getTime())) return null;
+    const dateStr = d.toLocaleDateString("en-IN", {
+      day: "numeric",
+      month: "short",
+      year: "numeric",
+    });
+    const timeStr = d.toLocaleTimeString("en-IN", {
+      hour: "2-digit",
+      minute: "2-digit",
+      hour12: true,
+    }).toUpperCase();
+    return { dateStr, timeStr, full: `${dateStr}, ${timeStr}` };
+  };
 
   // -------------------------------------------------------------
   // QR Content Parser
@@ -460,8 +488,16 @@ export default function ScannerConsole() {
   // -------------------------------------------------------------
   // 5. Toggle Team Check-in Manually from Roster
   // -------------------------------------------------------------
-  const handleToggleRosterCheckIn = async (team: RegisteredTeam) => {
-    const nextCheckIn = !team.checkedIn;
+  const handleToggleRosterCheckIn = (team: RegisteredTeam) => {
+    setCheckInConfirmTarget({
+      type: "team",
+      team,
+      nextCheckIn: !team.checkedIn,
+    });
+  };
+
+  const executeToggleRosterCheckIn = async (team: RegisteredTeam, targetState?: boolean) => {
+    const nextCheckIn = typeof targetState === "boolean" ? targetState : !team.checkedIn;
     try {
       const res = await fetch("/api/admin/teams", {
         method: "PUT",
@@ -497,8 +533,16 @@ export default function ScannerConsole() {
   // -------------------------------------------------------------
   // 5b. Toggle Individual Participant Check-in
   // -------------------------------------------------------------
-  const handleToggleParticipantCheckIn = async (p: FlatParticipant) => {
-    const nextCheckIn = !p.checkedIn;
+  const handleToggleParticipantCheckIn = (p: FlatParticipant) => {
+    setCheckInConfirmTarget({
+      type: "participant",
+      participant: p,
+      nextCheckIn: !p.checkedIn,
+    });
+  };
+
+  const executeToggleParticipantCheckIn = async (p: FlatParticipant, targetState?: boolean) => {
+    const nextCheckIn = typeof targetState === "boolean" ? targetState : !p.checkedIn;
     setActionLoadingId(p.id);
 
     // Optimistic update
@@ -1346,10 +1390,22 @@ export default function ScannerConsole() {
 
                       <td className="py-3 px-4">
                         {team.checkedIn ? (
-                          <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-mono font-bold bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">
-                            <CheckCircle2 className="h-3 w-3" />
-                            <span>Checked In</span>
-                          </span>
+                          <div className="space-y-0.5">
+                            <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-mono font-bold bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">
+                              <CheckCircle2 className="h-3 w-3" />
+                              <span>Checked In</span>
+                            </span>
+                            {(() => {
+                              const formatted = formatCheckInDateTime(team.checkedInAt || team.lead?.checkedInAt);
+                              if (!formatted) return null;
+                              return (
+                                <div className="flex items-center gap-1 text-[10px] font-mono text-emerald-400/90 whitespace-nowrap">
+                                  <Clock className="h-2.5 w-2.5 opacity-70" />
+                                  <span>{formatted.dateStr}, {formatted.timeStr}</span>
+                                </div>
+                              );
+                            })()}
+                          </div>
                         ) : (
                           <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-mono font-bold bg-[#16161d] text-neutral-400 border border-white/10">
                             <span>Pending</span>
@@ -1445,10 +1501,22 @@ export default function ScannerConsole() {
 
                         <td className="py-3 px-4">
                           {p.checkedIn ? (
-                            <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-mono font-bold bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">
-                              <CheckCircle2 className="h-3 w-3" />
-                              <span>Checked In</span>
-                            </span>
+                            <div className="space-y-0.5">
+                              <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-mono font-bold bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">
+                                <CheckCircle2 className="h-3 w-3" />
+                                <span>Checked In</span>
+                              </span>
+                              {(() => {
+                                const formatted = formatCheckInDateTime(p.checkedInAt);
+                                if (!formatted) return null;
+                                return (
+                                  <div className="flex items-center gap-1 text-[10px] font-mono text-emerald-400/90 whitespace-nowrap">
+                                    <Clock className="h-2.5 w-2.5 opacity-70" />
+                                    <span>{formatted.dateStr}, {formatted.timeStr}</span>
+                                  </div>
+                                );
+                              })()}
+                            </div>
                           ) : (
                             <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-mono font-bold bg-[#16161d] text-neutral-400 border border-white/10">
                               <span>Pending</span>
@@ -1495,6 +1563,208 @@ export default function ScannerConsole() {
           </div>
         )}
       </div>
+
+      {/* Check-In / Revert Confirmation Modal */}
+      {checkInConfirmTarget && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-in fade-in duration-200"
+          onClick={(e) => {
+            if (e.target === e.currentTarget && !actionLoadingId) {
+              setCheckInConfirmTarget(null);
+            }
+          }}
+        >
+          <div className="relative w-full max-w-md rounded-3xl border border-white/20 bg-[#0e0e12] p-6 sm:p-7 shadow-2xl overflow-hidden">
+            <button
+              type="button"
+              disabled={Boolean(actionLoadingId)}
+              onClick={() => setCheckInConfirmTarget(null)}
+              className="absolute right-5 top-5 h-8 w-8 rounded-full bg-white/10 hover:bg-white/20 text-white/70 hover:text-white flex items-center justify-center transition-colors cursor-pointer disabled:opacity-40"
+            >
+              <X className="h-4 w-4" />
+            </button>
+
+            <div className="flex items-start gap-3.5 mb-5">
+              <div
+                className={`h-11 w-11 rounded-2xl flex items-center justify-center shrink-0 border ${
+                  checkInConfirmTarget.nextCheckIn
+                    ? "bg-emerald-500/15 border-emerald-500/30 text-emerald-400"
+                    : "bg-amber-500/15 border-amber-500/30 text-amber-400"
+                }`}
+              >
+                {checkInConfirmTarget.nextCheckIn ? (
+                  <CheckCircle2 className="h-6 w-6" />
+                ) : (
+                  <Undo2 className="h-6 w-6" />
+                )}
+              </div>
+              <div>
+                <span
+                  className={`inline-block text-[10px] font-mono font-bold uppercase tracking-wider px-2 py-0.5 rounded-full border mb-1.5 ${
+                    checkInConfirmTarget.nextCheckIn
+                      ? "bg-emerald-500/10 border-emerald-500/30 text-emerald-300"
+                      : "bg-amber-500/10 border-amber-500/30 text-amber-300"
+                  }`}
+                >
+                  {checkInConfirmTarget.nextCheckIn ? "Check-In Confirmation" : "Revert Confirmation"}
+                </span>
+                <h3 className="text-lg font-black text-white font-[family-name:var(--font-google-sans)] leading-snug">
+                  {checkInConfirmTarget.nextCheckIn
+                    ? checkInConfirmTarget.type === "team"
+                      ? "Confirm Team Check-In"
+                      : "Confirm Participant Check-In"
+                    : checkInConfirmTarget.type === "team"
+                    ? "Revert Team Check-In"
+                    : "Revert Participant Check-In"}
+                </h3>
+                <p className="text-xs text-white/60 mt-0.5">
+                  {checkInConfirmTarget.nextCheckIn
+                    ? "Verify and mark official attendance for this session."
+                    : "Reset attendance status back to pending."}
+                </p>
+              </div>
+            </div>
+
+            <div className="rounded-2xl border border-white/10 bg-[#16161d] p-4 space-y-3 mb-6">
+              {checkInConfirmTarget.type === "team" && checkInConfirmTarget.team && (
+                <>
+                  <div className="flex items-center justify-between gap-2 border-b border-white/10 pb-2.5">
+                    <div className="min-w-0 flex-1">
+                      <span className="text-[10px] uppercase font-mono tracking-wider text-white/40 block">
+                        Team Name
+                      </span>
+                      <span className="text-sm font-bold text-white block truncate">
+                        {checkInConfirmTarget.team.teamName}
+                      </span>
+                    </div>
+                    <span className="text-xs font-mono font-bold bg-white/10 text-neutral-300 px-2.5 py-1 rounded-lg border border-white/15 shrink-0">
+                      {checkInConfirmTarget.team.teamCode}
+                    </span>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-2 text-xs">
+                    <div>
+                      <span className="text-[10px] uppercase font-mono text-white/40 block">Team Leader</span>
+                      <span className="text-white font-medium truncate block">
+                        {checkInConfirmTarget.team.lead?.name || "N/A"}
+                      </span>
+                    </div>
+                    <div>
+                      <span className="text-[10px] uppercase font-mono text-white/40 block">Roster Size</span>
+                      <span className="text-white font-medium block">
+                        {1 + (checkInConfirmTarget.team.members?.length || 0)} Members
+                      </span>
+                    </div>
+                  </div>
+
+                  {checkInConfirmTarget.team.department && (
+                    <div className="pt-2 border-t border-white/5 text-[11px] text-white/60 truncate">
+                      {checkInConfirmTarget.team.department}
+                    </div>
+                  )}
+                </>
+              )}
+
+              {checkInConfirmTarget.type === "participant" && checkInConfirmTarget.participant && (
+                <>
+                  <div className="flex items-center justify-between gap-2 border-b border-white/10 pb-2.5">
+                    <div className="min-w-0 flex-1">
+                      <span className="text-[10px] uppercase font-mono tracking-wider text-white/40 block">
+                        Participant
+                      </span>
+                      <span className="text-sm font-bold text-white block truncate">
+                        {checkInConfirmTarget.participant.name}
+                      </span>
+                    </div>
+                    <span
+                      className={`text-[10px] font-mono font-bold px-2 py-0.5 rounded-full border shrink-0 ${
+                        checkInConfirmTarget.participant.role === "Team Leader"
+                          ? "bg-purple-500/20 text-purple-300 border-purple-500/30"
+                          : "bg-white/10 text-white/70 border-white/15"
+                      }`}
+                    >
+                      {checkInConfirmTarget.participant.role}
+                    </span>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-2 text-xs">
+                    <div>
+                      <span className="text-[10px] uppercase font-mono text-white/40 block">Team</span>
+                      <span className="text-white font-medium truncate block">
+                        {checkInConfirmTarget.participant.teamName}
+                      </span>
+                    </div>
+                    <div>
+                      <span className="text-[10px] uppercase font-mono text-white/40 block">Team Code</span>
+                      <span className="text-white font-mono font-medium block">
+                        {checkInConfirmTarget.participant.teamCode}
+                      </span>
+                    </div>
+                  </div>
+
+                  {(checkInConfirmTarget.participant.email || checkInConfirmTarget.participant.roll) && (
+                    <div className="pt-2 border-t border-white/5 text-[11px] font-mono text-white/50 truncate">
+                      {checkInConfirmTarget.participant.email}
+                      {checkInConfirmTarget.participant.roll ? ` • Roll: ${checkInConfirmTarget.participant.roll}` : ""}
+                    </div>
+                  )}
+                </>
+              )}
+            </div>
+
+            <div className="flex items-center justify-end gap-3">
+              <button
+                type="button"
+                disabled={Boolean(actionLoadingId)}
+                onClick={() => setCheckInConfirmTarget(null)}
+                className="rounded-xl border border-white/20 bg-white/[0.08] hover:bg-white/15 px-4 py-2.5 text-xs font-semibold text-white transition-all cursor-pointer disabled:opacity-40"
+              >
+                Cancel
+              </button>
+
+              <button
+                type="button"
+                disabled={Boolean(actionLoadingId)}
+                onClick={async () => {
+                  if (checkInConfirmTarget.type === "team" && checkInConfirmTarget.team) {
+                    const target = checkInConfirmTarget.team;
+                    const nextState = checkInConfirmTarget.nextCheckIn;
+                    setCheckInConfirmTarget(null);
+                    await executeToggleRosterCheckIn(target, nextState);
+                  } else if (checkInConfirmTarget.type === "participant" && checkInConfirmTarget.participant) {
+                    const target = checkInConfirmTarget.participant;
+                    const nextState = checkInConfirmTarget.nextCheckIn;
+                    setCheckInConfirmTarget(null);
+                    await executeToggleParticipantCheckIn(target, nextState);
+                  }
+                }}
+                className={`rounded-xl px-5 py-2.5 text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 shadow-md ${
+                  checkInConfirmTarget.nextCheckIn
+                    ? "bg-emerald-500 hover:bg-emerald-400 text-black shadow-emerald-500/20"
+                    : "bg-rose-500 hover:bg-rose-400 text-white shadow-rose-500/20"
+                } ${actionLoadingId ? "opacity-50 cursor-not-allowed" : ""}`}
+              >
+                {actionLoadingId ? (
+                  <>
+                    <RefreshCw className="h-3.5 w-3.5 animate-spin" />
+                    <span>Processing...</span>
+                  </>
+                ) : checkInConfirmTarget.nextCheckIn ? (
+                  <>
+                    <Check className="h-3.5 w-3.5" />
+                    <span>Confirm Check-In</span>
+                  </>
+                ) : (
+                  <>
+                    <Undo2 className="h-3.5 w-3.5" />
+                    <span>Confirm Revert</span>
+                  </>
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

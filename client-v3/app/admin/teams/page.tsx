@@ -42,11 +42,13 @@ interface TeamRecord {
     phone?: string;
     roll?: string;
     year?: string;
+    checkedInAt?: string | Date | null;
   };
   membersCount: number;
   members: TeamMember[];
   status: "confirmed" | "disqualified";
   checkedIn: boolean;
+  checkedInAt?: string | Date | null;
   pitchDeckUrl?: string;
   eventId?: {
     _id: string;
@@ -403,6 +405,20 @@ export default function AdminTeamsPage() {
                                 <span className="italic">Pending</span>
                               </div>
                             )}
+                            {team.checkedIn && (
+                              (() => {
+                                const checkInInfo = formatTeamDateTime(team.checkedInAt || team.lead?.checkedInAt);
+                                if (!checkInInfo) return null;
+                                return (
+                                  <div className="text-emerald-400 flex items-center gap-1 whitespace-nowrap">
+                                    <span className="text-emerald-500/60 font-semibold">Check-In:</span>
+                                    <span>
+                                      {checkInInfo.dateStr}, {checkInInfo.timeStr}
+                                    </span>
+                                  </div>
+                                );
+                              })()
+                            )}
                           </div>
                         </div>
                       </td>
@@ -561,6 +577,20 @@ export default function AdminTeamsPage() {
                       <span className="text-amber-400/80 italic block">Pending (Still Forming)</span>
                     )}
                   </div>
+
+                  {selectedTeam.checkedIn && (
+                    <div className="p-2.5 rounded-lg bg-black/30 border border-white/5 space-y-1 sm:col-span-2">
+                      <span className="text-[10px] text-white/40 uppercase block font-semibold">Event Check-In</span>
+                      {selectedTeam.checkedInAt || selectedTeam.lead?.checkedInAt ? (
+                        <span className="text-emerald-400 font-medium block">
+                          {formatTeamDateTime(selectedTeam.checkedInAt || selectedTeam.lead?.checkedInAt)?.dateStr} •{" "}
+                          {formatTeamDateTime(selectedTeam.checkedInAt || selectedTeam.lead?.checkedInAt)?.timeStr}
+                        </span>
+                      ) : (
+                        <span className="text-emerald-400 font-medium block">Verified Present</span>
+                      )}
+                    </div>
+                  )}
                 </div>
               </div>
 
