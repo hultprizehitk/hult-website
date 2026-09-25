@@ -90,6 +90,7 @@ export async function GET(req: Request) {
           checkedIn: Boolean(anyT.checkedIn),
           checkedInAt: anyT.checkedInAt || null,
           registeredAt: anyT.registeredAt || anyT.createdAt || new Date(),
+          createdAt: anyT.createdAt || anyT.registeredAt || null,
         });
       }
 

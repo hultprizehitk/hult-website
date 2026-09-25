@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useRef, useCallback } from "react";
+import React, { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import jsQR from "jsqr";
 import {
   Camera,
@@ -18,7 +18,23 @@ import {
   Users,
   Check,
   Pause,
+  UserCheck,
+  User,
 } from "lucide-react";
+
+interface FlatParticipant {
+  id: string;
+  teamId: string;
+  teamName: string;
+  teamCode: string;
+  name: string;
+  email: string;
+  role: "Team Leader" | "Member";
+  department?: string;
+  roll?: string;
+  checkedIn: boolean;
+  checkedInAt?: string | null;
+}
 
 interface TeamMember {
   name: string;
@@ -129,6 +145,8 @@ export default function ScannerConsole() {
   const [sessionLogs, setSessionLogs] = useState<SessionScanLog[]>([]);
   const [rosterSearch, setRosterSearch] = useState<string>("");
   const [rosterFilter, setRosterFilter] = useState<"all" | "checked_in" | "not_checked_in">("all");
+  const [viewMode, setViewMode] = useState<"teams" | "participants">("teams");
+  const [actionLoadingId, setActionLoadingId] = useState<string | null>(null);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
 
   const triggerToast = (msg: string) => {
@@ -477,6 +495,90 @@ export default function ScannerConsole() {
   };
 
   // -------------------------------------------------------------
+  // 5b. Toggle Individual Participant Check-in
+  // -------------------------------------------------------------
+  const handleToggleParticipantCheckIn = async (p: FlatParticipant) => {
+    const nextCheckIn = !p.checkedIn;
+    setActionLoadingId(p.id);
+
+    // Optimistic update
+    setTeams((prev) =>
+      prev.map((t) => {
+        if (t.id !== p.teamId && t.teamCode.toUpperCase() !== p.teamCode.toUpperCase()) {
+          return t;
+        }
+        const nowIso = new Date().toISOString();
+        const isLead = p.role === "Team Leader";
+        const updatedLead = isLead
+          ? { ...t.lead, checkedIn: nextCheckIn, checkedInAt: nextCheckIn ? nowIso : null }
+          : t.lead;
+
+        const updatedMembers = (t.members || []).map((m) => {
+          if (
+            !isLead &&
+            ((p.email && m.email?.toLowerCase() === p.email.toLowerCase()) ||
+              (p.roll && m.roll?.toLowerCase() === p.roll.toLowerCase()) ||
+              m.name.toLowerCase() === p.name.toLowerCase())
+          ) {
+            return { ...m, checkedIn: nextCheckIn, checkedInAt: nextCheckIn ? nowIso : null };
+          }
+          return m;
+        });
+
+        const totalRoster = 1 + updatedMembers.length;
+        const leadChecked = updatedLead.checkedIn ? 1 : 0;
+        const membersChecked = updatedMembers.filter((m) => m.checkedIn).length;
+        const allChecked = leadChecked + membersChecked >= totalRoster;
+
+        return {
+          ...t,
+          lead: updatedLead,
+          members: updatedMembers,
+          checkedIn: allChecked,
+          checkedInAt: allChecked ? (t.checkedInAt || nowIso) : null,
+        };
+      })
+    );
+
+    try {
+      const res = await fetch("/api/admin/teams", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          action: "toggle_participant_check_in",
+          teamId: p.teamId,
+          teamCode: p.teamCode,
+          participantEmail: p.email,
+          checkedIn: nextCheckIn,
+          eventId: selectedEventId,
+        }),
+      });
+
+      const data = await res.json();
+      if (res.ok && data.success) {
+        if (data.team) {
+          setTeams((prev) =>
+            prev.map((t) => (t.id === data.team.id || t.teamCode === data.team.teamCode ? data.team : t))
+          );
+        }
+        triggerToast(
+          nextCheckIn
+            ? `${p.name} marked Present.`
+            : `Reverted check-in for ${p.name}.`
+        );
+      } else {
+        fetchTeams(selectedEventId);
+        triggerToast(data.error || "Failed to update participant check-in.");
+      }
+    } catch {
+      fetchTeams(selectedEventId);
+      triggerToast("Network error updating participant.");
+    } finally {
+      setActionLoadingId(null);
+    }
+  };
+
+  // -------------------------------------------------------------
   // 6. Camera Lifecycle & Frame Scanner
   // -------------------------------------------------------------
   const startCamera = useCallback(async () => {
@@ -673,6 +775,71 @@ export default function ScannerConsole() {
     );
   });
 
+  // Flattened Participants for Participants View across eligible teams
+  const allFlattenedParticipants = useMemo<FlatParticipant[]>(() => {
+    const list: FlatParticipant[] = [];
+    for (const t of eligibleTeams) {
+      const isLeadChecked = Boolean(t.lead?.checkedIn || (t.checkedIn && t.lead?.checkedIn !== false));
+      const leadCheckedInAt = t.lead?.checkedInAt || (isLeadChecked ? t.checkedInAt : null);
+
+      list.push({
+        id: `${t.id}_lead`,
+        teamId: t.id,
+        teamName: t.teamName,
+        teamCode: t.teamCode,
+        name: t.lead.name,
+        email: t.lead.email,
+        role: "Team Leader",
+        department: t.lead.department || t.department || "General",
+        roll: t.lead.roll || "",
+        checkedIn: isLeadChecked,
+        checkedInAt: leadCheckedInAt,
+      });
+
+      if (Array.isArray(t.members)) {
+        t.members.forEach((m, idx) => {
+          const isMemChecked = Boolean(m.checkedIn !== undefined ? m.checkedIn : t.checkedIn);
+          const memCheckedInAt = m.checkedInAt || (isMemChecked ? t.checkedInAt : null);
+
+          list.push({
+            id: `${t.id}_mem_${idx}`,
+            teamId: t.id,
+            teamName: t.teamName,
+            teamCode: t.teamCode,
+            name: m.name,
+            email: m.email || "",
+            role: "Member",
+            department: m.department || t.department || "General",
+            roll: m.roll || "",
+            checkedIn: isMemChecked,
+            checkedInAt: memCheckedInAt,
+          });
+        });
+      }
+    }
+    return list;
+  }, [eligibleTeams]);
+
+  const filteredParticipants = useMemo(() => {
+    return allFlattenedParticipants.filter((p) => {
+      if (rosterFilter === "checked_in" && !p.checkedIn) return false;
+      if (rosterFilter === "not_checked_in" && p.checkedIn) return false;
+      if (!rosterSearch.trim()) return true;
+      const q = rosterSearch.toLowerCase().trim();
+      return (
+        p.name.toLowerCase().includes(q) ||
+        p.email.toLowerCase().includes(q) ||
+        p.teamName.toLowerCase().includes(q) ||
+        p.teamCode.toLowerCase().includes(q) ||
+        (p.roll && p.roll.toLowerCase().includes(q)) ||
+        (p.department && p.department.toLowerCase().includes(q))
+      );
+    });
+  }, [allFlattenedParticipants, rosterFilter, rosterSearch]);
+
+  const checkedInParticipantCount = allFlattenedParticipants.filter((p) => p.checkedIn).length;
+  const remainingParticipantCount = allFlattenedParticipants.length - checkedInParticipantCount;
+
   return (
     <div className="space-y-6 font-[family-name:var(--font-google-sans)] pb-12">
       {/* Toast Notification */}
@@ -778,10 +945,8 @@ export default function ScannerConsole() {
         </div>
       </div>
 
-      {/* Main Scanner Section Grid */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
-        {/* Left Column: Camera Viewfinder & Controls (7 Cols) */}
-        <div className="lg:col-span-7 space-y-4">
+      {/* Main Camera Scanner Section */}
+      <div className="max-w-4xl mx-auto space-y-4">
           <div className="relative overflow-hidden rounded-3xl sm:rounded-[2.5rem] border border-white/15 bg-[#0e0e12] p-4 sm:p-7 shadow-2xl space-y-4 sm:space-y-5">
             {/* Header with Prominent Scan Button */}
             <div className="flex items-center justify-between gap-3 pb-3 border-b border-white/10">
@@ -1003,152 +1168,127 @@ export default function ScannerConsole() {
                   </p>
 
                   <p className="text-xs opacity-80 max-w-sm">{lastScanResult.message}</p>
+
+                  {lastScanResult.status === "success" && (
+                    <button
+                      type="button"
+                      onClick={() => handleUndoCheckIn(lastScanResult.teamCode)}
+                      className="mt-3 inline-flex items-center gap-1.5 rounded-xl border border-white/20 bg-white/10 hover:bg-white/20 px-3.5 py-1.5 text-xs font-semibold text-white transition-all cursor-pointer"
+                    >
+                      <Undo2 className="h-3.5 w-3.5" />
+                      <span>Undo Scan</span>
+                    </button>
+                  )}
                 </div>
               )}
             </div>
           </div>
         </div>
 
-        {/* Right Column: Live Session Activity Feed (5 Cols) */}
-        <div className="lg:col-span-5 space-y-4">
-          <div className="rounded-3xl sm:rounded-[2.5rem] border border-white/15 bg-[#0e0e12] p-4 sm:p-6 shadow-2xl space-y-4">
-            <div className="flex items-center justify-between pb-3 border-b border-white/10">
-              <div className="flex items-center gap-2.5">
-                <span className="h-2 w-2 rounded-full bg-emerald-400" />
-                <h3 className="text-base font-bold text-white">Live Session Feed</h3>
-              </div>
-              <span className="text-[10px] font-mono text-neutral-400">
-                {sessionLogs.length} verified
-              </span>
-            </div>
-
-            {sessionLogs.length > 0 ? (
-              <div className="space-y-2.5 max-h-[460px] overflow-y-auto pr-1">
-                {sessionLogs.map((log) => (
-                  <div
-                    key={log.id}
-                    className={`rounded-2xl p-3 border transition-all text-xs flex items-center justify-between gap-3 ${
-                      log.status === "success"
-                        ? "bg-[#16161d] border-emerald-500/25"
-                        : log.status === "duplicate"
-                        ? "bg-[#16161d] border-amber-500/25"
-                        : "bg-[#16161d] border-rose-500/25"
-                    }`}
-                  >
-                    <div className="space-y-0.5 min-w-0 flex-1">
-                      <div className="flex items-center gap-2">
-                        <span className="font-bold text-white truncate">{log.teamName}</span>
-                        <span className="font-mono text-[10px] text-rose-400 font-bold">
-                          {log.teamCode}
-                        </span>
-                      </div>
-                      <div className="text-[11px] text-neutral-400 flex items-center gap-2 flex-wrap">
-                        {log.participantName ? (
-                          <span className="text-white/90 font-medium">
-                            {log.participantName} {log.participantRole ? `(${log.participantRole})` : ""}
-                          </span>
-                        ) : log.leadName ? (
-                          <span>Lead: {log.leadName}</span>
-                        ) : null}
-                        <span>•</span>
-                        <span className="font-mono">{log.timestamp}</span>
-                        {log.checkedInCount && log.totalMembers ? (
-                          <>
-                            <span>•</span>
-                            <span className="font-mono text-emerald-400 font-semibold">
-                              {log.checkedInCount}/{log.totalMembers} Pax
-                            </span>
-                          </>
-                        ) : null}
-                      </div>
-                    </div>
-
-                    {log.status === "success" && (
-                      <button
-                        type="button"
-                        onClick={() => handleUndoCheckIn(log.teamCode)}
-                        className="rounded-xl border border-white/10 bg-white/5 hover:bg-white/15 px-2.5 py-1 text-[10px] font-mono font-semibold text-neutral-300 hover:text-white transition-all cursor-pointer flex items-center gap-1 shrink-0"
-                        title="Revert check in"
-                      >
-                        <Undo2 className="h-3 w-3" />
-                        <span>Undo</span>
-                      </button>
-                    )}
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <div className="py-16 text-center text-xs text-neutral-500 font-mono space-y-1">
-                <ScanLine className="h-8 w-8 mx-auto text-neutral-600 mb-2" />
-                <p>No scans recorded this session yet.</p>
-                <p className="text-[10px] text-neutral-600">
-                  Scanned passes will appear here in real-time.
-                </p>
-              </div>
-            )}
-          </div>
-        </div>
-      </div>
-
       {/* Event Roster Fast-Check Table */}
       <div className="rounded-3xl sm:rounded-[2.5rem] border border-white/15 bg-[#0e0e12] p-4 sm:p-8 shadow-2xl space-y-4">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-white/10">
+        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 pb-3 border-b border-white/10">
           <div>
             <h3 className="text-base sm:text-lg font-bold text-white">Event Roster Quick-Check</h3>
             <p className="text-[11px] sm:text-xs text-neutral-400">
-              Manual attendance toggle and backup lookup for participants without passes.
+              Manual attendance toggle and backup lookup for attendees without passes.
             </p>
           </div>
 
-          {/* Roster Filter Buttons */}
-          <div className="flex items-center gap-1.5 sm:gap-2 overflow-x-auto no-scrollbar pb-1">
-            <button
-              onClick={() => setRosterFilter("all")}
-              className={`rounded-xl px-2.5 sm:px-3 py-1.5 text-xs font-semibold transition-all cursor-pointer border flex items-center gap-1.5 shrink-0 ${
-                rosterFilter === "all"
-                  ? "bg-white text-black border-white shadow-md shadow-white/10"
-                  : "bg-[#16161d] text-neutral-400 border-white/10 hover:text-white hover:bg-[#202028]"
-              }`}
-            >
-              <span>All ({totalRegistered})</span>
-              <span className={`px-1.5 py-0.5 rounded text-[10px] font-mono ${
-                rosterFilter === "all" ? "bg-black/10 text-neutral-900" : "bg-white/10 text-neutral-400"
-              }`}>
-                {totalParticipants} Pax
-              </span>
-            </button>
+          <div className="flex flex-wrap items-center gap-2 sm:gap-3">
+            {/* View Mode Filter: By Teams vs By Participants */}
+            <div className="flex items-center rounded-xl bg-[#16161d] p-1 border border-white/10 shrink-0">
+              <button
+                type="button"
+                onClick={() => setViewMode("teams")}
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
+                  viewMode === "teams"
+                    ? "bg-white text-black shadow-sm"
+                    : "text-neutral-400 hover:text-white"
+                }`}
+              >
+                <Users className="h-3.5 w-3.5" />
+                <span>By Teams</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setViewMode("participants")}
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
+                  viewMode === "participants"
+                    ? "bg-white text-black shadow-sm"
+                    : "text-neutral-400 hover:text-white"
+                }`}
+              >
+                <UserCheck className="h-3.5 w-3.5" />
+                <span>By Participants</span>
+              </button>
+            </div>
 
-            <button
-              onClick={() => setRosterFilter("checked_in")}
-              className={`rounded-xl px-2.5 sm:px-3 py-1.5 text-xs font-semibold transition-all cursor-pointer border flex items-center gap-1.5 shrink-0 ${
-                rosterFilter === "checked_in"
-                  ? "bg-emerald-500 text-black border-emerald-500 shadow-md shadow-emerald-500/20 font-bold"
-                  : "bg-[#16161d] text-neutral-400 border-white/10 hover:text-white hover:bg-[#202028]"
-              }`}
-            >
-              <span>Checked In ({checkedInCount})</span>
-              <span className={`px-1.5 py-0.5 rounded text-[10px] font-mono ${
-                rosterFilter === "checked_in" ? "bg-black/15 text-neutral-900 font-bold" : "bg-emerald-500/20 text-emerald-300"
-              }`}>
-                {checkedInParticipants} Pax
-              </span>
-            </button>
+            {/* Attendance Status Filters */}
+            <div className="flex items-center gap-1.5 sm:gap-2 overflow-x-auto no-scrollbar">
+              <button
+                type="button"
+                onClick={() => setRosterFilter("all")}
+                className={`rounded-xl px-2.5 sm:px-3 py-1.5 text-xs font-semibold transition-all cursor-pointer border flex items-center gap-1.5 shrink-0 ${
+                  rosterFilter === "all"
+                    ? "bg-white text-black border-white shadow-md shadow-white/10"
+                    : "bg-[#16161d] text-neutral-400 border-white/10 hover:text-white hover:bg-[#202028]"
+                }`}
+              >
+                <span>All ({viewMode === "teams" ? totalRegistered : allFlattenedParticipants.length})</span>
+                {viewMode === "teams" && (
+                  <span
+                    className={`px-1.5 py-0.5 rounded text-[10px] font-mono ${
+                      rosterFilter === "all" ? "bg-black/10 text-neutral-900 font-bold" : "bg-white/10 text-neutral-400"
+                    }`}
+                  >
+                    {totalParticipants} Pax
+                  </span>
+                )}
+              </button>
 
-            <button
-              onClick={() => setRosterFilter("not_checked_in")}
-              className={`rounded-xl px-2.5 sm:px-3 py-1.5 text-xs font-semibold transition-all cursor-pointer border flex items-center gap-1.5 shrink-0 ${
-                rosterFilter === "not_checked_in"
-                  ? "bg-amber-500 text-black border-amber-500 shadow-md shadow-amber-500/20 font-bold"
-                  : "bg-[#16161d] text-neutral-400 border-white/10 hover:text-white hover:bg-[#202028]"
-              }`}
-            >
-              <span>Pending ({remainingCount})</span>
-              <span className={`px-1.5 py-0.5 rounded text-[10px] font-mono ${
-                rosterFilter === "not_checked_in" ? "bg-black/15 text-neutral-900 font-bold" : "bg-amber-500/20 text-amber-300"
-              }`}>
-                {remainingParticipants} Pax
-              </span>
-            </button>
+              <button
+                type="button"
+                onClick={() => setRosterFilter("checked_in")}
+                className={`rounded-xl px-2.5 sm:px-3 py-1.5 text-xs font-semibold transition-all cursor-pointer border flex items-center gap-1.5 shrink-0 ${
+                  rosterFilter === "checked_in"
+                    ? "bg-emerald-500 text-black border-emerald-500 shadow-md shadow-emerald-500/20 font-bold"
+                    : "bg-[#16161d] text-neutral-400 border-white/10 hover:text-white hover:bg-[#202028]"
+                }`}
+              >
+                <span>Checked In ({viewMode === "teams" ? checkedInCount : checkedInParticipantCount})</span>
+                {viewMode === "teams" && (
+                  <span
+                    className={`px-1.5 py-0.5 rounded text-[10px] font-mono ${
+                      rosterFilter === "checked_in" ? "bg-black/15 text-neutral-900 font-bold" : "bg-emerald-500/20 text-emerald-300"
+                    }`}
+                  >
+                    {checkedInParticipants} Pax
+                  </span>
+                )}
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setRosterFilter("not_checked_in")}
+                className={`rounded-xl px-2.5 sm:px-3 py-1.5 text-xs font-semibold transition-all cursor-pointer border flex items-center gap-1.5 shrink-0 ${
+                  rosterFilter === "not_checked_in"
+                    ? "bg-amber-500 text-black border-amber-500 shadow-md shadow-amber-500/20 font-bold"
+                    : "bg-[#16161d] text-neutral-400 border-white/10 hover:text-white hover:bg-[#202028]"
+                }`}
+              >
+                <span>Pending ({viewMode === "teams" ? remainingCount : remainingParticipantCount})</span>
+                {viewMode === "teams" && (
+                  <span
+                    className={`px-1.5 py-0.5 rounded text-[10px] font-mono ${
+                      rosterFilter === "not_checked_in" ? "bg-black/15 text-neutral-900 font-bold" : "bg-amber-500/20 text-amber-300"
+                    }`}
+                  >
+                    {remainingParticipants} Pax
+                  </span>
+                )}
+              </button>
+            </div>
           </div>
         </div>
 
@@ -1157,97 +1297,203 @@ export default function ScannerConsole() {
           <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-neutral-400" />
           <input
             type="text"
-            placeholder="Search by team name, team code, leader name, email..."
+            placeholder={
+              viewMode === "teams"
+                ? "Search by team name, leader name, email..."
+                : "Search by participant name, team, email, roll, department..."
+            }
             value={rosterSearch}
             onChange={(e) => setRosterSearch(e.target.value)}
             className="w-full pl-10 pr-4 py-2.5 text-xs bg-[#16161d] border border-white/15 rounded-xl text-white placeholder-neutral-500 focus:outline-none focus:border-emerald-400"
           />
         </div>
 
-        {/* Teams Table */}
-        <div className="overflow-x-auto rounded-2xl border border-white/10">
-          {loadingTeams ? (
-            <div className="py-16 text-center text-xs text-neutral-500 font-mono">
-              Loading event roster...
-            </div>
-          ) : filteredTeams.length > 0 ? (
-            <table className="w-full text-left text-xs">
-              <thead>
-                <tr className="border-b border-white/10 text-neutral-400 bg-[#16161d]">
-                  <th className="py-3 px-4 font-semibold">Team & Code</th>
-                  <th className="py-3 px-4 font-semibold">Leader</th>
-                  <th className="py-3 px-4 font-semibold">Members</th>
-                  <th className="py-3 px-4 font-semibold">Status</th>
-                  <th className="py-3 px-4 font-semibold text-right">Attendance Action</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-white/5">
-                {filteredTeams.map((team) => (
-                  <tr key={team.id} className="hover:bg-[#16161d]/60 transition-colors">
-                    <td className="py-3 px-4">
-                      <div className="font-semibold text-white">{team.teamName}</div>
-                      <div className="font-mono text-[10px] text-rose-400 font-bold">
-                        {team.teamCode}
-                      </div>
-                    </td>
-
-                    <td className="py-3 px-4">
-                      <div className="text-white font-medium">{team.lead.name}</div>
-                      <div className="font-mono text-[10px] text-neutral-400 truncate max-w-[160px]">
-                        {team.lead.email}
-                      </div>
-                    </td>
-
-                    <td className="py-3 px-4 font-mono text-neutral-400">
-                      {1 + (team.members?.length || 0)} members
-                    </td>
-
-                    <td className="py-3 px-4">
-                      {team.checkedIn ? (
-                        <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-mono font-bold bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">
-                          <CheckCircle2 className="h-3 w-3" />
-                          <span>Checked In</span>
-                        </span>
-                      ) : (
-                        <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-mono font-bold bg-[#16161d] text-neutral-400 border border-white/10">
-                          <span>Pending</span>
-                        </span>
-                      )}
-                    </td>
-
-                    <td className="py-3 px-4 text-right">
-                      <button
-                        type="button"
-                        onClick={() => handleToggleRosterCheckIn(team)}
-                        className={`inline-flex items-center gap-1.5 rounded-xl px-3 py-1.5 text-xs font-semibold cursor-pointer transition-all ${
-                          team.checkedIn
-                            ? "border border-rose-500/30 bg-rose-500/10 text-rose-300 hover:bg-rose-500/20"
-                            : "border border-emerald-500/30 bg-emerald-500/20 text-emerald-300 hover:bg-emerald-500/30"
-                        }`}
-                      >
-                        {team.checkedIn ? (
-                          <>
-                            <Undo2 className="h-3 w-3" />
-                            <span>Undo Check-In</span>
-                          </>
-                        ) : (
-                          <>
-                            <Check className="h-3 w-3" />
-                            <span>Mark Present</span>
-                          </>
-                        )}
-                      </button>
-                    </td>
+        {/* Conditional Table Display: By Teams or By Participants */}
+        {viewMode === "teams" ? (
+          <div className="overflow-x-auto rounded-2xl border border-white/10">
+            {loadingTeams ? (
+              <div className="py-16 text-center text-xs text-neutral-500 font-mono">
+                Loading event roster...
+              </div>
+            ) : filteredTeams.length > 0 ? (
+              <table className="w-full text-left text-xs">
+                <thead>
+                  <tr className="border-b border-white/10 text-neutral-400 bg-[#16161d]">
+                    <th className="py-3 px-4 font-semibold">Team</th>
+                    <th className="py-3 px-4 font-semibold">Leader</th>
+                    <th className="py-3 px-4 font-semibold">Members</th>
+                    <th className="py-3 px-4 font-semibold">Status</th>
+                    <th className="py-3 px-4 font-semibold text-right">Attendance Action</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
-          ) : (
-            <div className="py-12 text-center text-xs text-neutral-500 font-mono">
-              No registered teams found matching filters.
-            </div>
-          )}
-        </div>
+                </thead>
+                <tbody className="divide-y divide-white/5">
+                  {filteredTeams.map((team) => (
+                    <tr key={team.id} className="hover:bg-[#16161d]/60 transition-colors">
+                      <td className="py-3 px-4">
+                        <div className="font-semibold text-white">{team.teamName}</div>
+                      </td>
+
+                      <td className="py-3 px-4">
+                        <div className="text-white font-medium">{team.lead.name}</div>
+                        <div className="font-mono text-[10px] text-neutral-400 truncate max-w-[160px]">
+                          {team.lead.email}
+                        </div>
+                      </td>
+
+                      <td className="py-3 px-4 font-mono text-neutral-400">
+                        {1 + (team.members?.length || 0)} members
+                      </td>
+
+                      <td className="py-3 px-4">
+                        {team.checkedIn ? (
+                          <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-mono font-bold bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">
+                            <CheckCircle2 className="h-3 w-3" />
+                            <span>Checked In</span>
+                          </span>
+                        ) : (
+                          <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-mono font-bold bg-[#16161d] text-neutral-400 border border-white/10">
+                            <span>Pending</span>
+                          </span>
+                        )}
+                      </td>
+
+                      <td className="py-3 px-4 text-right">
+                        <button
+                          type="button"
+                          onClick={() => handleToggleRosterCheckIn(team)}
+                          className={`inline-flex items-center gap-1.5 rounded-xl px-3 py-1.5 text-xs font-semibold cursor-pointer transition-all ${
+                            team.checkedIn
+                              ? "border border-rose-500/30 bg-rose-500/10 text-rose-300 hover:bg-rose-500/20"
+                              : "border border-emerald-500/30 bg-emerald-500/20 text-emerald-300 hover:bg-emerald-500/30"
+                          }`}
+                        >
+                          {team.checkedIn ? (
+                            <>
+                              <Undo2 className="h-3 w-3" />
+                              <span>Undo Check-In</span>
+                            </>
+                          ) : (
+                            <>
+                              <Check className="h-3 w-3" />
+                              <span>Mark Present</span>
+                            </>
+                          )}
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            ) : (
+              <div className="py-12 text-center text-xs text-neutral-500 font-mono">
+                No registered teams found matching filters.
+              </div>
+            )}
+          </div>
+        ) : (
+          <div className="overflow-x-auto rounded-2xl border border-white/10">
+            {loadingTeams ? (
+              <div className="py-16 text-center text-xs text-neutral-500 font-mono">
+                Loading event roster...
+              </div>
+            ) : filteredParticipants.length > 0 ? (
+              <table className="w-full text-left text-xs">
+                <thead>
+                  <tr className="border-b border-white/10 text-neutral-400 bg-[#16161d]">
+                    <th className="py-3 px-4 font-semibold">Participant</th>
+                    <th className="py-3 px-4 font-semibold">Team</th>
+                    <th className="py-3 px-4 font-semibold">Department & Roll</th>
+                    <th className="py-3 px-4 font-semibold">Status</th>
+                    <th className="py-3 px-4 font-semibold text-right">Attendance Action</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-white/5">
+                  {filteredParticipants.map((p) => {
+                    const isLoading = actionLoadingId === p.id;
+                    return (
+                      <tr key={p.id} className="hover:bg-[#16161d]/60 transition-colors">
+                        <td className="py-3 px-4">
+                          <div className="flex items-center gap-2">
+                            <span className="font-semibold text-white">{p.name}</span>
+                            <span
+                              className={`text-[9px] px-2 py-0.5 rounded-full font-mono font-bold uppercase tracking-wider ${
+                                p.role === "Team Leader"
+                                  ? "bg-pink-500/20 text-pink-300 border border-pink-500/30"
+                                  : "bg-white/10 text-neutral-300 border border-white/10"
+                              }`}
+                            >
+                              {p.role === "Team Leader" ? "Leader" : "Member"}
+                            </span>
+                          </div>
+                          <div className="font-mono text-[10px] text-neutral-400 truncate max-w-[200px]">
+                            {p.email || "No email"}
+                          </div>
+                        </td>
+
+                        <td className="py-3 px-4">
+                          <div className="text-white font-medium">{p.teamName}</div>
+                        </td>
+
+                        <td className="py-3 px-4">
+                          <div className="text-neutral-300">{p.department || "General"}</div>
+                          {p.roll && (
+                            <div className="font-mono text-[10px] text-neutral-500 truncate">
+                              {p.roll}
+                            </div>
+                          )}
+                        </td>
+
+                        <td className="py-3 px-4">
+                          {p.checkedIn ? (
+                            <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-mono font-bold bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">
+                              <CheckCircle2 className="h-3 w-3" />
+                              <span>Checked In</span>
+                            </span>
+                          ) : (
+                            <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-mono font-bold bg-[#16161d] text-neutral-400 border border-white/10">
+                              <span>Pending</span>
+                            </span>
+                          )}
+                        </td>
+
+                        <td className="py-3 px-4 text-right">
+                          <button
+                            type="button"
+                            disabled={isLoading}
+                            onClick={() => handleToggleParticipantCheckIn(p)}
+                            className={`inline-flex items-center gap-1.5 rounded-xl px-3 py-1.5 text-xs font-semibold cursor-pointer transition-all ${
+                              p.checkedIn
+                                ? "border border-rose-500/30 bg-rose-500/10 text-rose-300 hover:bg-rose-500/20"
+                                : "border border-emerald-500/30 bg-emerald-500/20 text-emerald-300 hover:bg-emerald-500/30"
+                            } ${isLoading ? "opacity-50 cursor-not-allowed" : ""}`}
+                          >
+                            {isLoading ? (
+                              <RefreshCw className="h-3 w-3 animate-spin" />
+                            ) : p.checkedIn ? (
+                              <>
+                                <Undo2 className="h-3 w-3" />
+                                <span>Undo</span>
+                              </>
+                            ) : (
+                              <>
+                                <Check className="h-3 w-3" />
+                                <span>Mark Present</span>
+                              </>
+                            )}
+                          </button>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            ) : (
+              <div className="py-12 text-center text-xs text-neutral-500 font-mono">
+                No participants found matching filters.
+              </div>
+            )}
+          </div>
+        )}
       </div>
     </div>
   );

@@ -6,6 +6,7 @@ import {
   Search,
   RefreshCw,
   Calendar,
+  Clock,
 } from "lucide-react";
 
 import { parseHeritageEmail } from "@/lib/heritage-parser";
@@ -33,6 +34,7 @@ interface TeamRecord {
   teamName: string;
   submissionStatus?: "forming" | "ready" | "submitted";
   submittedAt?: string;
+  createdAt?: string;
   lead: {
     name: string;
     email: string;
@@ -54,6 +56,23 @@ interface TeamRecord {
   };
   registeredAt: string;
 }
+
+const formatTeamDateTime = (dateVal: string | Date | undefined | null) => {
+  if (!dateVal) return null;
+  const d = new Date(dateVal);
+  if (isNaN(d.getTime())) return null;
+  const dateStr = d.toLocaleDateString("en-IN", {
+    day: "numeric",
+    month: "short",
+    year: "numeric",
+  });
+  const timeStr = d.toLocaleTimeString("en-IN", {
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: true,
+  }).toUpperCase();
+  return { dateStr, timeStr };
+};
 
 export default function AdminTeamsPage() {
   const [teams, setTeams] = useState<TeamRecord[]>([]);
@@ -311,7 +330,7 @@ export default function AdminTeamsPage() {
               <thead>
                 <tr className="border-b border-white/10 text-neutral-400 bg-white/[0.02] text-[11px] font-mono uppercase tracking-wider">
                   <th className="py-3.5 px-4 font-medium">Team & Code</th>
-                  <th className="py-3.5 px-4 font-medium">Status</th>
+                  <th className="py-3.5 px-4 font-medium">Status & Timeline</th>
                   <th className="py-3.5 px-4 font-medium">Team Leader</th>
                   <th className="py-3.5 px-4 font-medium">Roll No</th>
                   <th className="py-3.5 px-4 font-medium">Contact</th>
@@ -324,6 +343,8 @@ export default function AdminTeamsPage() {
                 {filteredTeams.map((team) => {
                   const parsed = parseHeritageEmail(team.lead?.email || "", team.lead?.name);
                   const isSubmitted = isTeamSubmitted(team);
+                  const formedInfo = formatTeamDateTime(team.registeredAt || team.createdAt);
+                  const submittedInfo = formatTeamDateTime(team.submittedAt);
                   return (
                     <tr key={team._id} className="hover:bg-white/[0.02] transition-colors">
                       <td className="py-3.5 px-4">
@@ -341,17 +362,49 @@ export default function AdminTeamsPage() {
                       </td>
 
                       <td className="py-3.5 px-4">
-                        {isSubmitted ? (
-                          <div className="inline-flex items-center gap-1.5 text-xs text-emerald-400 font-medium">
-                            <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 shadow-[0_0_8px_rgba(52,211,153,0.6)]" />
-                            <span>Submitted</span>
+                        <div className="space-y-1.5 min-w-[140px]">
+                          {isSubmitted ? (
+                            <div className="inline-flex items-center gap-1.5 text-xs text-emerald-400 font-medium">
+                              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 shadow-[0_0_8px_rgba(52,211,153,0.6)]" />
+                              <span>Submitted</span>
+                            </div>
+                          ) : (
+                            <div className="inline-flex items-center gap-1.5 text-xs text-amber-300/90 font-medium">
+                              <span className="w-1.5 h-1.5 rounded-full bg-amber-400" />
+                              <span>Forming</span>
+                            </div>
+                          )}
+
+                          <div className="space-y-0.5 font-mono text-[10px] leading-tight">
+                            {formedInfo && (
+                              <div className="text-white/50 flex items-center gap-1 whitespace-nowrap">
+                                <span className="text-white/35 font-semibold">Formed:</span>
+                                <span className="text-white/80">
+                                  {formedInfo.dateStr}, {formedInfo.timeStr}
+                                </span>
+                              </div>
+                            )}
+                            {isSubmitted ? (
+                              submittedInfo ? (
+                                <div className="text-emerald-400/90 flex items-center gap-1 whitespace-nowrap">
+                                  <span className="text-emerald-500/60 font-semibold">Reg:</span>
+                                  <span>
+                                    {submittedInfo.dateStr}, {submittedInfo.timeStr}
+                                  </span>
+                                </div>
+                              ) : (
+                                <div className="text-emerald-400/70 text-[9px]">
+                                  <span>Reg: Verified</span>
+                                </div>
+                              )
+                            ) : (
+                              <div className="text-amber-400/70 flex items-center gap-1 whitespace-nowrap">
+                                <span className="text-amber-500/50 font-semibold">Reg:</span>
+                                <span className="italic">Pending</span>
+                              </div>
+                            )}
                           </div>
-                        ) : (
-                          <div className="inline-flex items-center gap-1.5 text-xs text-amber-300/90 font-medium">
-                            <span className="w-1.5 h-1.5 rounded-full bg-amber-400" />
-                            <span>Forming</span>
-                          </div>
-                        )}
+                        </div>
                       </td>
 
                       <td className="py-3.5 px-4">
@@ -478,6 +531,39 @@ export default function AdminTeamsPage() {
             </div>
 
             <div className="space-y-3 text-xs max-h-[70vh] overflow-y-auto pr-1">
+              {/* Team Timeline Card */}
+              <div className="p-3.5 rounded-xl bg-[#16161d] border border-white/10 space-y-2">
+                <div className="flex items-center gap-2 text-xs font-semibold text-white">
+                  <Clock className="h-3.5 w-3.5 text-neutral-400" />
+                  <span>Registration & Formation Timeline</span>
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 font-mono text-[11px]">
+                  <div className="p-2.5 rounded-lg bg-black/30 border border-white/5 space-y-1">
+                    <span className="text-[10px] text-white/40 uppercase block font-semibold">Forming Started</span>
+                    {selectedTeam.registeredAt || selectedTeam.createdAt ? (
+                      <span className="text-white font-medium block">
+                        {formatTeamDateTime(selectedTeam.registeredAt || selectedTeam.createdAt)?.dateStr} •{" "}
+                        {formatTeamDateTime(selectedTeam.registeredAt || selectedTeam.createdAt)?.timeStr}
+                      </span>
+                    ) : (
+                      <span className="text-white/30 block">N/A</span>
+                    )}
+                  </div>
+
+                  <div className="p-2.5 rounded-lg bg-black/30 border border-white/5 space-y-1">
+                    <span className="text-[10px] text-white/40 uppercase block font-semibold">Application Submitted</span>
+                    {selectedTeam.submittedAt ? (
+                      <span className="text-emerald-400 font-medium block">
+                        {formatTeamDateTime(selectedTeam.submittedAt)?.dateStr} •{" "}
+                        {formatTeamDateTime(selectedTeam.submittedAt)?.timeStr}
+                      </span>
+                    ) : (
+                      <span className="text-amber-400/80 italic block">Pending (Still Forming)</span>
+                    )}
+                  </div>
+                </div>
+              </div>
+
               <div>
                 <div className="font-semibold text-white mb-2">Team Leader:</div>
                 <div className="p-3 rounded-xl bg-[#16161d] border border-white/10 space-y-1.5">
