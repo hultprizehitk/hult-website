@@ -43,98 +43,69 @@ export async function GET(req: Request) {
         .sort({ registeredAt: -1, createdAt: -1 })
         .lean();
 
-      // 2. Fetch legacy teams from event.registeredTeams
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const legacyTeams = Array.isArray(event.registeredTeams) ? (event.registeredTeams as any[]) : [];
+      // Enrich missing lead phone/roll/department/year from User records
+      const leadEmails = (normalizedTeams as Array<{ leadEmail?: string; lead?: { email?: string } }>)
+        .map((t) => (t.leadEmail || t.lead?.email || "").toLowerCase().trim())
+        .filter(Boolean);
 
-      // Unified map by teamCode or id
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const teamMap = new Map<string, any>();
+      let userMap = new Map<string, any>();
+      if (leadEmails.length > 0) {
+        const users = await User.find({ email: { $in: leadEmails } })
+          .select("email phone roll department year")
+          .lean();
+        userMap = new Map(users.map((u) => [u.email.toLowerCase(), u]));
+      }
 
-      for (const t of normalizedTeams) {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const anyT = t as any;
-        const key = (anyT.teamCode || anyT._id.toString()).toUpperCase();
-        teamMap.set(key, {
-          id: anyT._id.toString(),
-          teamCode: anyT.teamCode,
-          teamName: anyT.teamName,
-          ventureName: anyT.ventureName || "",
-          ventureDescription: anyT.ventureDescription || "",
-          pitchDeckUrl: anyT.pitchDeckUrl || "",
-          submissionStatus: anyT.submissionStatus || "forming",
-          submittedAt: anyT.submittedAt || null,
+      // Format teams with both `id` and `_id` for universal frontend compatibility
+      const allTeams = normalizedTeams.map((t: any) => {
+        const u = userMap.get((t.leadEmail || t.lead?.email || "").toLowerCase());
+        const leadPhone = t.lead?.phone || u?.phone || "";
+        const leadRoll = t.lead?.roll || u?.roll || "";
+        const leadDept = t.lead?.department || u?.department || t.department || "General";
+        const leadYear = t.lead?.year || u?.year || "";
+
+        return {
+          id: t._id.toString(),
+          _id: t._id.toString(),
+          teamCode: t.teamCode,
+          teamName: t.teamName,
+          ventureName: t.ventureName || "",
+          ventureDescription: t.ventureDescription || "",
+          pitchDeckUrl: t.pitchDeckUrl || "",
+          submissionStatus: t.submissionStatus || "forming",
+          submittedAt: t.submittedAt || null,
           lead: {
-            name: anyT.lead?.name || "Team Leader",
-            email: anyT.lead?.email || anyT.leadEmail || "",
-            phone: anyT.lead?.phone || "",
-            department: anyT.lead?.department || anyT.department || "General",
-            roll: anyT.lead?.roll || "",
-            checkedIn: Boolean(anyT.lead?.checkedIn || anyT.checkedIn),
-            checkedInAt: anyT.lead?.checkedInAt || (anyT.checkedIn ? anyT.checkedInAt : null),
+            name: t.lead?.name || "Team Leader",
+            email: t.lead?.email || t.leadEmail || "",
+            phone: leadPhone,
+            department: leadDept,
+            roll: leadRoll,
+            year: leadYear,
+            checkedIn: Boolean(t.lead?.checkedIn || t.checkedIn),
+            checkedInAt: t.lead?.checkedInAt || (t.checkedIn ? t.checkedInAt : null),
           },
-          membersCount: anyT.membersCount || 4,
-          department: anyT.department || anyT.lead?.department || "General",
-          members: Array.isArray(anyT.members)
-            ? anyT.members.map((m: any) => ({
+          membersCount: t.membersCount || (1 + (Array.isArray(t.members) ? t.members.length : 0)),
+          department: t.department || leadDept,
+          members: Array.isArray(t.members)
+            ? t.members.map((m: any) => ({
                 name: m.name || "",
                 email: m.email || "",
                 phone: m.phone || "",
-                department: m.department || anyT.department || "General",
+                department: m.department || t.department || "General",
                 roll: m.roll || "",
-                checkedIn: Boolean(m.checkedIn !== undefined ? m.checkedIn : anyT.checkedIn),
-                checkedInAt: m.checkedInAt || (anyT.checkedIn ? anyT.checkedInAt : null),
+                checkedIn: Boolean(m.checkedIn !== undefined ? m.checkedIn : t.checkedIn),
+                checkedInAt: m.checkedInAt || (t.checkedIn ? t.checkedInAt : null),
               }))
             : [],
-          status: anyT.status || "confirmed",
-          checkedIn: Boolean(anyT.checkedIn),
-          checkedInAt: anyT.checkedInAt || null,
-          registeredAt: anyT.registeredAt || anyT.createdAt || new Date(),
-          createdAt: anyT.createdAt || anyT.registeredAt || null,
-        });
-      }
+          status: t.status || "confirmed",
+          checkedIn: Boolean(t.checkedIn),
+          checkedInAt: t.checkedInAt || null,
+          registeredAt: t.registeredAt || t.createdAt || new Date(),
+          createdAt: t.createdAt || t.registeredAt || null,
+        };
+      });
 
-      for (const lt of legacyTeams) {
-        const key = (lt.teamCode || lt.id || "").toUpperCase();
-        if (key && !teamMap.has(key)) {
-          teamMap.set(key, {
-            id: lt.id || `legacy_${Date.now()}`,
-            teamCode: lt.teamCode || "HULT-AUTO",
-            teamName: lt.teamName,
-            ventureName: lt.ventureName || "",
-            lead: {
-              name: lt.leadName || "Team Leader",
-              email: lt.leadEmail || "",
-              phone: lt.leadPhone || "",
-              department: lt.department || "General",
-              roll: "",
-              checkedIn: Boolean(lt.leadCheckedIn !== undefined ? lt.leadCheckedIn : lt.checkedIn),
-              checkedInAt: lt.leadCheckedInAt || (lt.checkedIn ? lt.checkedInAt : null),
-            },
-            membersCount: lt.membersCount || 4,
-            department: lt.department || "General",
-            members: Array.isArray(lt.members)
-              ? lt.members.map((m: any) => ({
-                  name: m.name || "",
-                  email: m.email || "",
-                  phone: m.phone || "",
-                  department: m.department || lt.department || "General",
-                  roll: m.roll || "",
-                  checkedIn: Boolean(m.checkedIn !== undefined ? m.checkedIn : lt.checkedIn),
-                  checkedInAt: m.checkedInAt || (lt.checkedIn ? lt.checkedInAt : null),
-                }))
-              : [],
-            status: lt.status || "confirmed",
-            submissionStatus: lt.submissionStatus || "submitted",
-            submittedAt: lt.submittedAt || null,
-            checkedIn: Boolean(lt.checkedIn),
-            checkedInAt: lt.checkedInAt || null,
-            registeredAt: lt.registeredAt || new Date(),
-          });
-        }
-      }
-
-      const allTeams = Array.from(teamMap.values());
+      const totalTeamsCount = await Team.countDocuments({ eventId: event._id });
 
       return NextResponse.json(
         {
@@ -147,7 +118,7 @@ export async function GET(req: Request) {
             venue: event.venue,
             registrationStatus: event.registrationStatus,
             maxTeams: event.maxTeams,
-            registeredTeamsCount: allTeams.length,
+            registeredTeamsCount: totalTeamsCount,
           },
           teams: allTeams,
         },
@@ -963,18 +934,32 @@ export async function DELETE(req: Request) {
 
     await connectDB();
 
+    let targetTeam: any = null;
     if (teamId && mongoose.Types.ObjectId.isValid(teamId)) {
-      await Team.findByIdAndDelete(teamId);
+      targetTeam = await Team.findById(teamId);
     } else if (teamCode) {
-      await Team.findOneAndDelete({ teamCode: teamCode.toUpperCase() });
+      targetTeam = await Team.findOne({ teamCode: teamCode.toUpperCase() });
     }
 
-    if (eventId && mongoose.Types.ObjectId.isValid(eventId)) {
-      const ev = await Event.findById(eventId);
-      if (ev && Array.isArray(ev.registeredTeams)) {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        ev.registeredTeams = ev.registeredTeams.filter((t: any) => t.id !== teamId && t.teamCode !== teamCode);
-        ev.registeredTeamsCount = ev.registeredTeams.length;
+    if (targetTeam) {
+      await Team.findByIdAndDelete(targetTeam._id);
+    }
+
+    const effEventId = eventId || targetTeam?.eventId?.toString();
+    if (effEventId && mongoose.Types.ObjectId.isValid(effEventId)) {
+      const ev = await Event.findById(effEventId);
+      if (ev) {
+        const tIdStr = (teamId || targetTeam?._id?.toString() || "");
+        const tCodeStr = (teamCode || targetTeam?.teamCode || "").toUpperCase();
+        if (Array.isArray(ev.registeredTeams)) {
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          ev.registeredTeams = ev.registeredTeams.filter((t: any) => {
+            const matchesId = tIdStr && (t.id === tIdStr || t._id?.toString() === tIdStr);
+            const matchesCode = tCodeStr && t.teamCode?.toUpperCase() === tCodeStr;
+            return !matchesId && !matchesCode;
+          });
+        }
+        ev.registeredTeamsCount = await Team.countDocuments({ eventId: ev._id });
         await ev.save();
       }
     }
