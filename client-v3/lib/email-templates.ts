@@ -188,6 +188,9 @@ export interface TeamCreatedEmailParams {
 }
 
 export interface TeamSubmittedEmailParams {
+  recipientName?: string;
+  recipientEmail?: string;
+  isLead?: boolean;
   leadName: string;
   leadEmail: string;
   teamName: string;
@@ -361,15 +364,17 @@ export function getTeamCreatedEmailHtml(params: TeamCreatedEmailParams): string 
 }
 
 /**
- * HTML for the Team Submitted confirmation email (sent to the Team Lead only).
+ * HTML for the Team Submitted confirmation email (sent to both Team Lead and Members).
  */
 export function getTeamSubmittedEmailHtml(params: TeamSubmittedEmailParams): string {
   const teamName = escapeHtml(params.teamName);
   const leadName = escapeHtml(params.leadName);
+  const recipientName = escapeHtml(params.recipientName || params.leadName);
   const eventTitle = escapeHtml(params.eventTitle);
-  const eventVenue = escapeHtml(params.eventVenue);
+  const eventVenue = escapeHtml(params.eventVenue || "Heritage Institute of Technology");
   const eventDate = formatEventDate(params.eventDate);
   const ventureName = escapeHtml(params.ventureName);
+  const isLead = params.isLead ?? (params.recipientEmail ? params.recipientEmail.toLowerCase() === params.leadEmail.toLowerCase() : true);
 
   const rows = [
     ["Team", teamName],
@@ -392,11 +397,11 @@ export function getTeamSubmittedEmailHtml(params: TeamSubmittedEmailParams): str
 
   const contentHtml = `
                 <h1 style="margin: 0 0 18px 0; font-size: 22px; font-weight: 700; color: #ffffff; letter-spacing: -0.2px;">
-                  Registration confirmed, ${leadName}
+                  Registration confirmed, ${recipientName}
                 </h1>
 
                 <p style="margin: 0 0 24px 0; font-size: 15px; line-height: 1.65; color: #a1a1aa;">
-                  <strong style="color: #ffffff;">${teamName}</strong> &mdash; ${eventTitle}
+                  ${isLead ? `Your team <strong style="color: #ffffff;">${teamName}</strong> has been officially confirmed for ${eventTitle}.` : `You are officially registered with team <strong style="color: #ffffff;">${teamName}</strong> for ${eventTitle}.`}
                 </p>
 
                 <table role="presentation" width="100%" border="0" cellspacing="0" cellpadding="0" style="background-color: #1a1a20; border: 1px solid #2e2e36; border-radius: 10px; margin-bottom: 24px;">
@@ -410,7 +415,7 @@ export function getTeamSubmittedEmailHtml(params: TeamSubmittedEmailParams): str
                 </table>
 
                 <p style="margin: 0 0 24px 0; font-size: 14px; line-height: 1.6; color: #a1a1aa;">
-                  Your official registration is locked in. Show up with your team on the event date.
+                  Your official team registration is locked in. Show up with your team on the event date.
                 </p>
 
                 <table role="presentation" width="100%" border="0" cellspacing="0" cellpadding="0" style="margin-bottom: 32px;">
@@ -440,12 +445,14 @@ export async function sendTeamCreatedEmail(params: TeamCreatedEmailParams): Prom
 }
 
 /**
- * Dispatches the Team Submitted confirmation email to the Team Lead only.
+ * Dispatches the Team Submitted confirmation email to a recipient (leader or member).
  */
 export async function sendTeamSubmittedEmail(params: TeamSubmittedEmailParams): Promise<SendEmailResult> {
   const htmlContent = getTeamSubmittedEmailHtml(params);
+  const toEmail = params.recipientEmail || params.leadEmail;
+  const toName = params.recipientName || params.leadName;
   return sendEmail({
-    to: [{ email: params.leadEmail, name: params.leadName }],
+    to: [{ email: toEmail, name: toName }],
     replyTo: { email: "hultprize.heritage@gmail.com", name: "Hult Prize HITK Support" },
     subject: `Registration confirmed — ${params.teamName} · ${params.eventTitle}`,
     htmlContent,
