@@ -630,4 +630,144 @@ export async function sendEventQrPassEmail(params: EventQrPassEmailParams): Prom
     htmlContent,
   });
 }
+export interface HultAscendWhatsAppEmailParams {
+  name?: string;
+  email: string;
+  whatsappLink?: string;
+  isRegistered?: boolean;
+  isForming?: boolean;
+  teamName?: string;
+}
 
+/**
+ * Returns a high-conversion branded HTML email inviting registered students
+ * to join the official HULT ASCEND WhatsApp group and prompting incomplete/unregistered
+ * participants to finalize team registration.
+ */
+export function getHultAscendWhatsAppEmailHtml(params: HultAscendWhatsAppEmailParams): string {
+  const origin = "https://www.hultprizehitk.live";
+  const whatsappUrl = params.whatsappLink || "https://chat.whatsapp.com/Id32WrxaYB81PactlzQXxl";
+  const recipientName = params.name ? escapeHtml(params.name.trim()) : "Heritage Innovator";
+
+  const contentHtml = `
+                <div style="font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 1.5px; color: #10b981; margin-bottom: 10px;">
+                  Official Community Announcement
+                </div>
+
+                <h1 style="margin: 0 0 16px 0; font-size: 22px; font-weight: 800; color: #ffffff; letter-spacing: -0.3px; line-height: 1.3;">
+                  Join the Official HULT ASCEND WhatsApp Community
+                </h1>
+
+                <p style="margin: 0 0 18px 0; font-size: 15px; line-height: 1.65; color: #e4e4e7;">
+                  Hello <strong>${recipientName}</strong>,
+                </p>
+
+                <p style="margin: 0 0 18px 0; font-size: 15px; line-height: 1.65; color: #d4d4d8;">
+                  We are gearing up for the on-campus event - <strong style="color: #ffffff;">HULT ASCEND : The Rise Begins</strong>. To ensure all participants, leaders, and registered students stay informed with real-time updates, schedule releases, mentoring sessions, and venue guidance, we have launched the official WhatsApp community group.
+                </p>
+
+                <!-- WhatsApp CTA Card -->
+                <table role="presentation" width="100%" border="0" cellspacing="0" cellpadding="0" style="background-color: #161f1a; border: 1px solid #1e3a29; border-radius: 12px; margin: 24px 0; text-align: center;">
+                  <tr>
+                    <td style="padding: 24px 20px;" align="center">
+                      <div style="font-size: 17px; font-weight: 700; color: #ffffff; margin-bottom: 16px;">
+                        HULT ASCEND Official WhatsApp Group
+                      </div>
+                      <div>
+                        <a href="${whatsappUrl}" target="_blank" style="display: inline-block; background-color: #25D366; color: #000000; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; font-size: 14px; font-weight: 700; text-decoration: none; padding: 13px 28px; border-radius: 28px; box-shadow: 0 4px 14px rgba(37, 211, 102, 0.4);">
+                          Join WhatsApp Group
+                        </a>
+                      </div>
+                      <p style="margin: 14px 0 0 0; font-size: 11px; font-family: monospace; color: #a1a1aa; word-break: break-all;">
+                        Direct Link: <a href="${whatsappUrl}" target="_blank" style="color: #34d399; text-decoration: underline;">${whatsappUrl}</a>
+                      </p>
+                    </td>
+                  </tr>
+                </table>
+
+                <!-- Registration Notice Box -->
+                <table role="presentation" width="100%" border="0" cellspacing="0" cellpadding="0" style="background-color: #1a1618; border: 1px solid #3f2229; border-radius: 12px; margin-bottom: 24px;">
+                  <tr>
+                    <td style="padding: 20px 22px;">
+                      <div style="font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; color: #f20089; margin-bottom: 8px;">
+                        Important: Team Registration Status
+                      </div>
+                      <p style="margin: 0 0 12px 0; font-size: 14px; line-height: 1.6; color: #e4e4e7;">
+                        <strong>Haven't completed your registration yet, or is your team still forming?</strong>
+                      </p>
+                      <p style="margin: 0 0 16px 0; font-size: 13px; line-height: 1.6; color: #a1a1aa;">
+                        If you have not registered your team for <strong style="color: #ffffff;">HULT ASCEND : The Rise Begins</strong>, or if your team is currently in the <em>Forming</em> status, you must finalize your roster and submit your team registration on the portal right away. Only verified, submitted teams are granted official digital entry passes.
+                      </p>
+                      <div>
+                        <a href="${origin}/events" target="_blank" style="display: inline-block; background-color: #f20089; color: #ffffff; font-size: 13px; font-weight: 700; text-decoration: none; padding: 10px 20px; border-radius: 8px;">
+                          Register / Complete Team Submission
+                        </a>
+                      </div>
+                    </td>
+                  </tr>
+                </table>
+
+                <!-- Event Details Summary -->
+                <table role="presentation" width="100%" border="0" cellspacing="0" cellpadding="0" style="background-color: #18181d; border: 1px solid #27272a; border-radius: 10px; margin-bottom: 28px;">
+                  <tr>
+                    <td style="padding: 16px 20px;">
+                      <table role="presentation" width="100%" border="0" cellspacing="0" cellpadding="0" style="font-size: 13px; line-height: 1.6;">
+                        <tr>
+                          <td style="color: #71717a; padding: 4px 0; width: 34%;">Event:</td>
+                          <td style="color: #ffffff; font-weight: 600; padding: 4px 0;">HULT ASCEND : The Rise Begins</td>
+                        </tr>
+                        <tr>
+                          <td style="color: #71717a; padding: 4px 0;">Institution:</td>
+                          <td style="color: #ffffff; font-weight: 600; padding: 4px 0;">Heritage Institute of Technology, Kolkata</td>
+                        </tr>
+                        <tr>
+                          <td style="color: #71717a; padding: 4px 0;">Official Portal:</td>
+                          <td style="color: #ffffff; font-weight: 600; padding: 4px 0;">
+                            <a href="${origin}" target="_blank" style="color: #f20089; text-decoration: none;">www.hultprizehitk.live</a>
+                          </td>
+                        </tr>
+                      </table>
+                    </td>
+                  </tr>
+                </table>
+
+                <p style="margin: 0 0 24px 0; font-size: 13px; line-height: 1.6; color: #71717a;">
+                  For any questions regarding team formation, registration status, or technical assistance, reply directly to this email or reach us at <a href="mailto:hultprize.heritage@gmail.com" style="color: #a1a1aa; text-decoration: underline;">hultprize.heritage@gmail.com</a>.
+                </p>
+
+                <!-- Sign-off -->
+                <table role="presentation" width="100%" border="0" cellspacing="0" cellpadding="0">
+                  <tr>
+                    <td style="border-top: 1px solid #27272a; padding-top: 18px;">
+                      <p style="margin: 0 0 4px 0; font-size: 14px; color: #a1a1aa;">
+                        Warm regards,
+                      </p>
+                      <p style="margin: 0; font-size: 14px; font-weight: 700; color: #ffffff;">
+                        Hult Prize HITK Organizing Committee
+                      </p>
+                      <p style="margin: 2px 0 0 0; font-size: 12px; color: #71717a;">
+                        Heritage Institute of Technology, Kolkata
+                      </p>
+                    </td>
+                  </tr>
+                </table>`;
+
+  return getHultMailShell(contentHtml);
+}
+
+/**
+ * Dispatches the HULT ASCEND WhatsApp Community & Registration Update email to a recipient.
+ */
+export async function sendHultAscendWhatsAppEmail(
+  params: HultAscendWhatsAppEmailParams,
+  subjectPrefix?: string
+): Promise<SendEmailResult> {
+  const htmlContent = getHultAscendWhatsAppEmailHtml(params);
+  const prefix = subjectPrefix ? `${subjectPrefix} ` : "";
+  return sendEmail({
+    to: [{ email: params.email, name: params.name }],
+    replyTo: { email: "hultprize.heritage@gmail.com", name: "Hult Prize HITK Support" },
+    subject: `${prefix}Join the Official HULT ASCEND WhatsApp Community | Hult Prize HITK`,
+    htmlContent,
+  });
+}

@@ -12,6 +12,8 @@ export interface IUser extends Document {
   roll?: string;
   role: UserRole;
   welcomeEmailSent?: boolean;
+  whatsappInviteSent?: boolean;
+  whatsappInviteSentAt?: Date;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -63,6 +65,14 @@ const UserSchema = new Schema<IUser>(
     welcomeEmailSent: {
       type: Boolean,
       default: false,
+    },
+    whatsappInviteSent: {
+      type: Boolean,
+      default: false,
+    },
+    whatsappInviteSentAt: {
+      type: Date,
+      default: null,
     },
   },
   {
