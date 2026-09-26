@@ -22,7 +22,7 @@ The quiz app (`quiz/`) works today on MongoDB, with phones polling the server ev
 1. The quiz runs with **no MongoDB dependency during a live quiz**.
 2. Real-time: the gap between a host action and phones seeing it should be under 1 s, driven by Firestore rather than polling.
 3. Same features, screens and rules as today (see §4), plus an **always-on leaderboard screen**.
-4. It stays on the **free Firebase Spark plan** for a 50-team event (see §9).
+4. It stays **comfortably inside the free Firebase Spark plan** (and Vercel's free tier) for a 50-team event, including worst-case device counts, by design rules (see §9).
 5. The full automated test suite is rewritten against the **Firebase emulators**, plus a 50-team load test and a manual checklist (see §11).
 6. A plain-language **"what is built" document** at the end (`docs/quiz-system.md`).
 
@@ -103,42 +103,70 @@ The session document ID **is** the 6-digit code, which makes lookups trivial and
 | `quizSessions/{code}` | **anyone** (projector is public) | `title`, `eventId`, `eventTitle`, `status`, `phase`, `currentIndex`, `questionCount`, `checkinOpen`, `requireSubmitted`, `questionOpenedAt`, `questionClosesAt`, `stateVersion`, `current` (the current question's public fields: `id`, `index`, `text`, `options`, `points`, `timeLimitSec`, plus `correctIndex` and `distribution` **only after reveal**), `leaderboard` (top 10, set at reveal and end), `gradedThrough` |
 | `quizSessions/{code}/live/counts` | admin + anyone (projector) | `checkedIn`, `eligible`, `answeredCurrent` (incremented per answer). This is split out so answer bursts don't re-send the session document to every phone (§9). |
 | `quizSessions/{code}/questions/{qid}` | **admin only** | Full question including `correctIndex`, `order` |
-| `quizSessions/{code}/teams/{teamId}` | the team's members + admin | Roster snapshot from sync: `teamName`, `teamCode`, `leadEmail`, `members[]`, `memberEmails[]`, `eligible`, `syncedAt`. Quiz state: `checkedInAt`, `checkedInBy`, `takerEmail`, `deviceId`. Scores, updated at reveal: `score`, `totalTimeMs`, `answeredCount`, `correctCount`, `rank`, `perQuestion{qid: {optionIndex, correct, points, ms}}` |
-| `quizSessions/{code}/answers/{teamId}_{qid}` | the team's members + admin | `optionIndex`, `takerEmail`, `answeredAt`, `responseMs`. **No correctness here.** The ID format enforces one answer per team per question. |
+| `quizSessions/{code}/teams/{teamId}` | the team's members + admin | Roster snapshot from sync: `teamName`, `teamCode`, `leadEmail`, `members[]`, `memberEmails[]`, `eligible`, `syncedAt`. Quiz state: `checkedInAt`, `checkedInBy`, `takerEmail`, `deviceId`. **`currentAnswer {qid, optionIndex}`**, set at answer time (no correctness); this is how teammates see "Answer locked" without an extra listener. Scores, updated at reveal: `score`, `totalTimeMs`, `answeredCount`, `correctCount`, `rank`, `lastResult {qid, correct, points}`, `perQuestion{qid: {optionIndex, correct, points, ms}}` |
+| `quizSessions/{code}/answers/{teamId}_{qid}` | **admin only** (audit trail, never listened to) | `optionIndex`, `takerEmail`, `answeredAt`, `responseMs`. The ID format enforces one answer per team per question. |
 | `quizAdmins/{email}` | admin only | Admin emails copied from MongoDB `users` roles during sync, plus manual additions |
 
 **Security rules (summary):**
 - `allow write: if false` everywhere.
 - The session and counts documents are readable by anyone.
 - Questions are readable by admins only.
-- Team and answer documents are readable if `request.auth.token.email in resource.data.memberEmails`, or by admins. Answer documents carry a copy of `memberEmails` for this purpose.
+- Team documents are readable if `request.auth.token.email in resource.data.memberEmails`, or by admins. Answer documents are admin-only.
 
 ## 8. Server flows (Admin SDK, all in transactions)
 
 | Flow | Key behaviour |
 |---|---|
 | **Host control** (open lobby, start, next, close, +15s, restart, reveal, leaderboard, end) | Reads the session with `stateVersion`, runs the existing pure `engine.applyAction`, and writes the patch with `stateVersion+1`. A stale version gets a 409 (double-click or two admins). `next`/`start` copy the new question's public fields into `current` and reset `answeredCurrent`. `restart_question` deletes that question's answers. |
-| **Reveal** | Closes the question if it is still open. **Grades** every answer to it and adds a time penalty for teams that didn't answer. Updates each team's score fields and sets `current.correctIndex`, `current.distribution` and the top-10 `leaderboard`. Sets `gradedThrough = currentIndex`. **End** also grades the current question if it isn't graded yet. |
+| **Reveal** | Closes the question if it is still open. Reads the team documents once (their `currentAnswer` already holds each answer, so the answers collection isn't read). **Grades** every answer to it and adds a time penalty for teams that didn't answer. Updates each team's score fields and sets `current.correctIndex`, `current.distribution` and the top-10 `leaderboard`. Sets `gradedThrough = currentIndex`. **End** also grades the current question if it isn't graded yet. |
 | **Join / check-in** | Finds the team whose `memberEmails` contains the email. Checks `eligible` and `checkinOpen`. Sets `checkedInAt` (the first member's check-in wins, idempotently) and binds `deviceId` for the taker. Returns `teamId` so the phone can listen to its team document. |
-| **Answer** | Loads the session and the team, then checks: live, phase = question, correct question ID, time window (+750 ms grace), taker, device. **Creates** `answers/{teamId}_{qid}`; if it already exists, the first answer is kept and the request is treated as a duplicate. Increments `answeredCurrent`. |
+| **Answer** | In one transaction (2 reads: session and team; 3 writes): checks live, phase = question, correct question ID, time window (+750 ms grace), taker, device. **Creates** `answers/{teamId}_{qid}`; if it already exists, the first answer is kept and the request is treated as a duplicate. Sets the team's `currentAnswer`. Increments `answeredCurrent`. |
 | **Team sync** | Admin only. Reads MongoDB `teams` for the session's event and `users` with admin roles. Upserts `teams/{teamId}`, **overwriting roster fields only**; check-in, taker, device and score fields are never touched. Marks teams missing from MongoDB as `eligible: false` rather than deleting them. Refreshes `quizAdmins` and `live/counts.eligible`. Records `lastSyncAt` and returns counts of new, updated and ineligible teams. |
 | **CSV import, question CRUD, export** | Same behaviour as today, backed by Firestore. |
 
-## 9. Cost and quota (Spark free plan)
+## 9. Load, cost and quota (free plans)
 
-Free-plan limits: **50k document reads, 20k writes per day**. Estimate for 50 teams × 4 members (about 200 phones), 15 questions:
+### 9.1 Limits that matter
+| Service | Free limit | Our use |
+|---|---|---|
+| Firestore (Spark) | **50k reads/day, 20k writes/day**, 1 GiB storage, 10 GiB/month egress | See 9.3. Storage and egress are negligible (KBs) |
+| Firestore listeners | 1M concurrent connections per database | ~200 |
+| Firebase Auth (custom tokens) | No charge on Spark (not Identity Platform) | ~200 sign-ins |
+| Vercel (Hobby/Pro) | Function invocations are the only relevant metric | ~2k API calls per quiz (no polling), versus ~180k with the current polling design |
 
-| Source | Estimate |
-|---|---|
-| Session document: about 5 changes per question × 200 listeners × 15 | ~15,000 reads |
-| Team documents: 1 score update per reveal × ~4 members × 47 teams × 15 | ~2,800 reads |
-| Counts document (projector + admin only): 47 answers × 15 × ~3 listeners | ~2,100 reads |
-| Admin console (answers, questions, teams listeners) | ~5,000 reads |
-| **Total per full quiz** | **~25,000 reads, ~3,000 writes** |
+**Firestore's daily quota resets at midnight Pacific time, which is 12:30 IST.** A morning rehearsal and an afternoon event therefore count against different days.
 
-- **One full quiz fits the free plan.** A dry run plus the real event on the **same day** would exceed it, so do rehearsals on a different day, or use the emulators.
-- If more is needed, switching to Blaze costs about **$0.06 per 100k reads**, i.e. cents per event, but it requires a billing card.
-- If answer bursts updated the session document instead of the separate counts document, the total would be about 140k reads. That is why §7 splits them.
+### 9.2 Design rules that keep usage low (enforced in code review and tests)
+1. **No polling anywhere.** Phones, the projector and the admin console use listeners only. The server-clock sync is `GET /api/time` every 30 s, which costs no Firestore reads.
+2. **Phones listen to exactly 2 documents:** `quizSessions/{code}` and their own `teams/{teamId}`. **No collection or query listeners on phones.**
+3. **The session document changes only on host actions** (about 3 per question: next, reveal, leaderboard, plus the occasional +15s or close). Timers tick on the client. Nothing per-answer or per-check-in touches the session document.
+4. **Per-answer and per-check-in counters live in `live/counts`,** which only the projector and admin listen to. The phone lobby does **not** show a live "teams in" count (the projector does).
+5. **Answers fold into the team document** (`currentAnswer`), so one team update reaches that team's phones. The `answers` collection is write-only audit data; nobody listens to it.
+6. **Grading is one batch per reveal:** it reads each team document once and writes each once. The top-10 leaderboard is precomputed into the session document, so no client ever reads all teams.
+7. **The admin console listens per tab.** Live listens to the session, counts and teams. Questions listens to questions only while that tab is open. Teams listens to teams. Listeners are detached when the tab or page closes.
+8. **Offline persistence is on** (`persistentLocalCache`). A phone refresh or short wifi drop resumes from cache, and Firestore bills only for documents that changed while disconnected (under 30 min).
+9. **Server handlers never read more than they need.** An answer is 2 reads and 3 writes in one transaction. A join is a single `array-contains` query (1 read).
+
+### 9.3 Budget per full quiz (15 questions, 47 teams)
+Worst case: **4 phones per team (about 200 devices)**, plus the projector, a board screen and 2 admin consoles.
+
+| Source | Reads | Writes |
+|---|---|---|
+| Session document: about 4 changes per question x 15, plus about 10 in lobby/start, x 200 devices | ~14,000 | ~75 |
+| Team documents: 2 changes per question (answer, grade) x 15 x 47 teams x ~4 phones | ~5,600 | ~1,400 |
+| Counts document: (47 answers per question x 15 + 47 check-ins) x ~4 screens | ~3,000 | ~750 |
+| Admin consoles (2): teams listener (2 updates per question x 47 x 15) plus initial loads | ~3,000 | - |
+| Server: answers (2 reads each), joins, grading (47 per reveal) | ~2,300 | ~800 |
+| Initial listener loads (devices joining, refreshes) | ~1,000 | - |
+| **Total, worst case** | **~29,000 (58% of daily)** | **~3,000 (15%)** |
+| Realistic (about 2 phones per team) | ~17,000 (34%) | ~3,000 |
+
+**Headroom:** one full event plus spare margin. A full rehearsal on the same quiz-day (by Pacific-midnight reset) would take the worst case over 50k. So rehearse on the emulators, on another day, or before 12:30 IST if the event is after it.
+
+**If the quota is hit**, Firestore rejects reads and the quiz stalls. Mitigations:
+- (a) Check usage in the Firebase console before going live.
+- (b) The simulator reports how many listener events it received per run (about the number of reads), and the load test (section 11.2) fails if the projected full-event total exceeds 35k.
+- (c) Emergency fallback: upgrade the project to Blaze in the console (about 2 minutes, needs a card; this event would cost well under $0.10).
 
 ## 10. Environment and secrets
 
@@ -185,7 +213,9 @@ Free-plan limits: **50k document reads, 20k writes per day**. Estimate for 50 te
 - [ ] **Scores for every team match** the simulator's own tally after the end.
 - [ ] **Propagation:** p95 time from a host action to a simulated phone's listener firing is under **1 s**.
 - [ ] Answer latency p95 is under **1 s**. There are 0 server errors.
-- [ ] The Firestore usage for the run (from the console) is recorded and within the §9 estimate.
+- [ ] The simulator counts listener events received (about the number of reads) and extrapolates to the worst case (200 devices). **It fails if the projection exceeds 35k reads or 10k writes.**
+- [ ] The actual Firestore usage from the console after the real-project run is recorded and within the §9.3 budget.
+- [ ] A test asserts the phone app opens exactly 2 listeners and no collection listeners (design rule 9.2.2).
 
 ### 11.3 Manual browser checklist (3 windows: admin, projector, phone; plus an incognito teammate)
 **Setup**
@@ -195,7 +225,7 @@ Free-plan limits: **50k document reads, 20k writes per day**. Estimate for 50 te
 
 **Lobby**
 - [ ] The projector shows the QR code and join code; the counter starts at 0.
-- [ ] Phone: join by code, sign in, auto check-in. The projector counter goes up **without refreshing**.
+- [ ] Phone: join by code, sign in, auto check-in. The projector counter goes up **without refreshing**. (The phone lobby intentionally shows no live team count.)
 - [ ] The lead changes the taker; the taker badge moves on both phones.
 - [ ] Teammate phone: "Your teammate answers"; no taker picker.
 - [ ] Not-registered, ineligible and check-in-closed screens each appear for the right account.
@@ -245,7 +275,7 @@ The build (tasks 2–11) needs only task 1 from you; the emulators cover everyth
 
 | Risk | Mitigation |
 |---|---|
-| Quota exceeded on the rehearsal day | Rehearse with the emulators or on a different day; Blaze costs cents if needed |
+| Quota exceeded on the rehearsal day | Budget in §9.3 (58% worst case). Rehearse with the emulators, on another day, or before the 12:30 IST reset. The simulator enforces a 35k projection. Blaze upgrade takes about 2 minutes as a fallback |
 | Question text is delivered with the lead-in, so a curious user could peek about 3 s early in devtools | Accepted: the UI hides it, proctors are present, and the correct answer is never sent before reveal. The alternative (a delayed server write) is unreliable on serverless |
 | A read-write MongoDB key sits in Vercel | Sync is isolated to read-only calls with a guard test; swap to a read-only user when available |
 | Team registrations change after sync | "Last synced" is shown in the console; re-sync is safe at any time and preserves quiz state |
