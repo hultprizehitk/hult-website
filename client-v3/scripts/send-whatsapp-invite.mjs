@@ -355,7 +355,19 @@ async function main() {
   }
 
   // Broadcast Mode (Only executed when explicitly requested with --broadcast)
-  console.log("=== BROADCAST MODE: DISPATCHING TO ALL REGISTERED USERS ===");
+  const isForceAll = process.argv.includes("--all") || process.argv.includes("--force-all");
+  const isDryRun = process.argv.includes("--dry-run");
+
+  console.log("=== BROADCAST MODE: DISPATCHING HULT ASCEND WHATSAPP INVITE ===");
+  if (isDryRun) {
+    console.log("[DRY RUN MODE ENABLED - No emails will actually be sent]");
+  }
+  if (isForceAll) {
+    console.log("[FORCE ALL ENABLED - Sending to all users including already-sent]");
+  } else {
+    console.log("[PENDING ONLY - Skipping users who already received the WhatsApp invite]");
+  }
+
   const mongoUri = process.env.MONGODB_URI;
   if (!mongoUri) {
     console.error("Error: MONGODB_URI is required for broadcast mode.");
@@ -364,10 +376,11 @@ async function main() {
 
   await mongoose.connect(mongoUri);
   console.log("Connected to MongoDB.");
+  const db = mongoose.connection.db;
 
-  // Fetch all unique user emails from users and teams collections
-  const userDocs = await mongoose.connection.db.collection("users").find({}).toArray();
-  const teamDocs = await mongoose.connection.db.collection("teams").find({}).toArray();
+  // Fetch all users and teams
+  const userDocs = await db.collection("users").find({}).toArray();
+  const teamDocs = await db.collection("teams").find({}).toArray();
 
   const recipientMap = new Map();
 
@@ -375,7 +388,11 @@ async function main() {
     if (u.email && typeof u.email === "string") {
       const em = u.email.trim().toLowerCase();
       if (!recipientMap.has(em)) {
-        recipientMap.set(em, { name: u.name || "", email: em });
+        recipientMap.set(em, {
+          name: u.name || "",
+          email: em,
+          whatsappInviteSent: Boolean(u.whatsappInviteSent),
+        });
       }
     }
   }
@@ -384,7 +401,11 @@ async function main() {
     if (t.lead && t.lead.email) {
       const em = t.lead.email.trim().toLowerCase();
       if (!recipientMap.has(em)) {
-        recipientMap.set(em, { name: t.lead.name || "", email: em });
+        recipientMap.set(em, {
+          name: t.lead.name || "",
+          email: em,
+          whatsappInviteSent: Boolean(t.lead.whatsappInviteSent),
+        });
       }
     }
     if (Array.isArray(t.members)) {
@@ -392,7 +413,11 @@ async function main() {
         if (m.email) {
           const em = m.email.trim().toLowerCase();
           if (!recipientMap.has(em)) {
-            recipientMap.set(em, { name: m.name || "", email: em });
+            recipientMap.set(em, {
+              name: m.name || "",
+              email: em,
+              whatsappInviteSent: Boolean(m.whatsappInviteSent),
+            });
           }
         }
       }
@@ -402,12 +427,32 @@ async function main() {
   const allRecipients = Array.from(recipientMap.values());
   console.log(`Found ${allRecipients.length} total distinct registered users.`);
 
+  const targets = isForceAll
+    ? allRecipients
+    : allRecipients.filter((r) => !r.whatsappInviteSent);
+
+  const alreadySentCount = allRecipients.filter((r) => r.whatsappInviteSent).length;
+  console.log(`Already marked sent: ${alreadySentCount}`);
+  console.log(`Pending recipients to dispatch: ${targets.length}`);
+
+  if (targets.length === 0) {
+    console.log("No pending recipients found! All registered users have already received the WhatsApp invite.");
+    process.exit(0);
+  }
+
   let successCount = 0;
   let failCount = 0;
 
-  for (let i = 0; i < allRecipients.length; i++) {
-    const r = allRecipients[i];
-    console.log(`[${i + 1}/${allRecipients.length}] Sending to ${r.email}...`);
+  for (let i = 0; i < targets.length; i++) {
+    const r = targets[i];
+    console.log(`[${i + 1}/${targets.length}] Dispatching to ${r.name || "User"} <${r.email}>...`);
+
+    if (isDryRun) {
+      console.log(`[${i + 1}/${targets.length}] DRY-RUN -> Would send to ${r.email}`);
+      successCount++;
+      continue;
+    }
+
     const html = getHultAscendWhatsAppEmailHtml({
       name: r.name,
       email: r.email,
@@ -423,19 +468,55 @@ async function main() {
         subject: "Official Announcement: Join HULT ASCEND WhatsApp Community | Hult Prize HITK",
         htmlContent: html,
       });
-      console.log(`[${i + 1}/${allRecipients.length}] SUCCESS -> ${r.email}`);
+
+      console.log(`[${i + 1}/${targets.length}] SUCCESS -> Sent to ${r.email}`);
+
+      // Immediately mark as sent in MongoDB so progress is preserved even if interrupted
+      const now = new Date();
+      await db.collection("users").updateOne(
+        { email: r.email },
+        {
+          $set: {
+            whatsappInviteSent: true,
+            whatsappInviteSentAt: now,
+          },
+        }
+      );
+
+      // Also mark in teams collection if lead or member
+      await db.collection("teams").updateMany(
+        { "lead.email": r.email },
+        {
+          $set: {
+            "lead.whatsappInviteSent": true,
+            "lead.whatsappInviteSentAt": now,
+          },
+        }
+      );
+      await db.collection("teams").updateMany(
+        { "members.email": r.email },
+        {
+          $set: {
+            "members.$[elem].whatsappInviteSent": true,
+            "members.$[elem].whatsappInviteSentAt": now,
+          },
+        },
+        { arrayFilters: [{ "elem.email": r.email }] }
+      );
+
       successCount++;
     } catch (err) {
-      console.error(`[${i + 1}/${allRecipients.length}] FAILED -> ${r.email}:`, err.message);
+      console.error(`[${i + 1}/${targets.length}] FAILED -> ${r.email}:`, err.message);
       failCount++;
     }
 
-    // Rate-limit pause to ensure high inbox delivery
-    await new Promise((res) => setTimeout(res, 500));
+    // Rate-limit pause to ensure high delivery and prevent SMTP throttles
+    await new Promise((res) => setTimeout(res, 600));
   }
 
   console.log(`\n=== BROADCAST FINISHED ===`);
-  console.log(`Success: ${successCount}`);
+  console.log(`Total Target Users: ${targets.length}`);
+  console.log(`Successfully Sent & Updated in DB: ${successCount}`);
   console.log(`Failed: ${failCount}`);
   process.exit(0);
 }
