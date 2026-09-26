@@ -4,7 +4,7 @@ import { redirect } from "next/navigation";
 import { auth } from "@/auth";
 import AdminAccessDenied from "../components/AdminAccessDenied";
 import LiveEventManager from "../components/LiveEventManager";
-import { isAuthorizedLeadOrMasterAdmin } from "@/lib/admin-check";
+import { isAuthorizedLeadOrMasterAdmin, isAuthorizedSuperAdmin } from "@/lib/admin-check";
 
 export const metadata: Metadata = {
   title: "Live Event Management | Hult Prize HITK Admin",
@@ -23,5 +23,7 @@ export default async function LiveEventDashboardPage() {
     return <AdminAccessDenied userEmail={session.user.email} />;
   }
 
-  return <LiveEventManager />;
+  const isMasterAdmin = await isAuthorizedSuperAdmin();
+
+  return <LiveEventManager isMasterAdmin={isMasterAdmin} />;
 }

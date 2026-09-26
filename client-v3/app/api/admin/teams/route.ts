@@ -4,10 +4,13 @@ import { connectDB } from "@/lib/mongodb";
 import Event, { IRegisteredTeam } from "@/models/Event";
 import Team from "@/models/Team";
 import User from "@/models/User";
-import { isAuthorizedAdmin } from "@/lib/admin-check";
+import { isAuthorizedAdmin, isAuthorizedLeadOrMasterAdmin } from "@/lib/admin-check";
 import { logAdminAction } from "@/lib/audit-logger";
 import { auth } from "@/auth";
 import { generateTeamCode } from "@/lib/teams/team-utils";
+
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
 
 export async function GET(req: Request) {
   const isAdmin = await isAuthorizedAdmin(req);
@@ -31,6 +34,32 @@ export async function GET(req: Request) {
       const event = await Event.findById(eventId).lean();
       if (!event) {
         return NextResponse.json({ error: "Event not found" }, { status: 404 });
+      }
+
+      const isCheckinActive = Boolean(event.checkinEnabled);
+      const isLeadOrMaster = await isAuthorizedLeadOrMasterAdmin(req);
+
+      // Security Guard: When check-in is locked, Junior Admins cannot view teams/registrations
+      if (!isCheckinActive && !isLeadOrMaster) {
+        return NextResponse.json(
+          {
+            success: true,
+            event: {
+              id: event._id.toString(),
+              title: event.title,
+              tag: event.tag,
+              date: event.date,
+              venue: event.venue,
+              registrationStatus: event.registrationStatus,
+              maxTeams: event.maxTeams,
+              registeredTeamsCount: 0,
+              checkinEnabled: false,
+            },
+            teams: [],
+            message: "Check-in is currently locked. Registration roster is restricted to Lead and Master Administrators.",
+          },
+          { status: 200 }
+        );
       }
 
       // 1. Fetch normalized teams
@@ -119,10 +148,20 @@ export async function GET(req: Request) {
             registrationStatus: event.registrationStatus,
             maxTeams: event.maxTeams,
             registeredTeamsCount: totalTeamsCount,
+            checkinEnabled: Boolean(event.checkinEnabled),
           },
           teams: allTeams,
         },
         { status: 200 }
+      );
+    }
+
+    // Global teams fetch: restricted to Lead and Master Admins
+    const isLeadOrMaster = await isAuthorizedLeadOrMasterAdmin(req);
+    if (!isLeadOrMaster) {
+      return NextResponse.json(
+        { error: "Unauthorized access: Lead or Master Admin clearance is required to view global registrations." },
+        { status: 403 }
       );
     }
 
@@ -347,6 +386,29 @@ export async function PUT(req: Request) {
       }
     };
 
+    // Helper: Check if check-in is enabled for an event
+    const isCheckinAllowedForEvent = async (targetEventId?: string) => {
+      if (!targetEventId || !mongoose.Types.ObjectId.isValid(targetEventId)) return true;
+      const ev = await Event.findById(targetEventId).select("checkinEnabled").lean();
+      return ev ? Boolean(ev.checkinEnabled) : false;
+    };
+
+    // -------------------------------------------------------------
+    // GUARD: Check-in must be enabled by Master Admin for the event
+    // Applies when eventId is provided upfront
+    // -------------------------------------------------------------
+    const isCheckInAction = ["scan_check_in", "toggle_participant_check_in", "toggle_check_in"].includes(action);
+    const isTryingToCheckIn = action === "scan_check_in" || body.checkedIn === true || body.checkedIn === undefined;
+    if (isCheckInAction && isTryingToCheckIn && eventId) {
+      const allowed = await isCheckinAllowedForEvent(eventId);
+      if (!allowed) {
+        return NextResponse.json(
+          { error: "Check-in is currently locked. A Master Admin must enable check-in for this event before participants can be checked in." },
+          { status: 403 }
+        );
+      }
+    }
+
     // -------------------------------------------------------------
     // Action: SCAN CHECK-IN (Handles participant QR, email, roll, team)
     // -------------------------------------------------------------
@@ -465,6 +527,18 @@ export async function PUT(req: Request) {
           { error: `Event Mismatch: Team is registered for "${evTitle}", not this event.` },
           { status: 400 }
         );
+      }
+
+      // Edge Case 4: Verify check-in is enabled for the team's event
+      const teamEventId = targetTeam.eventId?.toString() || eventId;
+      if (teamEventId) {
+        const allowed = await isCheckinAllowedForEvent(teamEventId);
+        if (!allowed) {
+          return NextResponse.json(
+            { error: "Check-in is currently locked. A Master Admin must enable check-in for this event before participants can be checked in." },
+            { status: 403 }
+          );
+        }
       }
 
       // Identify Participant (Leader vs Member)
@@ -657,6 +731,19 @@ export async function PUT(req: Request) {
         );
       }
 
+      if (targetCheckedIn) {
+        const effEventId = targetTeam.eventId?.toString() || eventId;
+        if (effEventId) {
+          const allowed = await isCheckinAllowedForEvent(effEventId);
+          if (!allowed) {
+            return NextResponse.json(
+              { error: "Check-in is currently locked. A Master Admin must enable check-in for this event before participants can be checked in." },
+              { status: 403 }
+            );
+          }
+        }
+      }
+
       let updatedPersonName = "Participant";
       if (targetTeam.leadEmail.toLowerCase() === cleanEmail) {
         targetTeam.lead.checkedIn = targetCheckedIn;
@@ -731,6 +818,19 @@ export async function PUT(req: Request) {
           { error: "Check-in blocked: Team is still Forming and has not submitted registration." },
           { status: 400 }
         );
+      }
+
+      if (checkedIn) {
+        const effEventId = targetTeam.eventId?.toString() || eventId;
+        if (effEventId) {
+          const allowed = await isCheckinAllowedForEvent(effEventId);
+          if (!allowed) {
+            return NextResponse.json(
+              { error: "Check-in is currently locked. A Master Admin must enable check-in for this event before participants can be checked in." },
+              { status: 403 }
+            );
+          }
+        }
       }
 
       // Cascade check-in to lead and members

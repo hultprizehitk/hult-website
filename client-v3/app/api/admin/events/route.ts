@@ -6,6 +6,9 @@ import Team from "@/models/Team";
 import { isAuthorizedAdmin, isAuthorizedSuperAdmin } from "@/lib/admin-check";
 import { logAdminAction } from "@/lib/audit-logger";
 
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
+
 function unauthorizedResponse() {
   return NextResponse.json({ error: "Unauthorized access" }, { status: 401 });
 }
@@ -142,6 +145,7 @@ export async function PUT(req: Request) {
       maxTeams,
       minTeamMembers,
       maxTeamMembers,
+      checkinEnabled,
       action,
       team,
       teamId,
@@ -291,8 +295,16 @@ export async function PUT(req: Request) {
     if (maxTeams !== undefined) existing.maxTeams = Number(maxTeams);
     if (minTeamMembers !== undefined) existing.minTeamMembers = Number(minTeamMembers);
     if (maxTeamMembers !== undefined) existing.maxTeamMembers = Number(maxTeamMembers);
+    if (checkinEnabled !== undefined) existing.checkinEnabled = Boolean(checkinEnabled);
 
     await existing.save();
+
+    if (checkinEnabled !== undefined) {
+      await Event.collection.updateOne(
+        { _id: new mongoose.Types.ObjectId(id) },
+        { $set: { checkinEnabled: Boolean(checkinEnabled) } }
+      );
+    }
 
     await logAdminAction({
       adminEmail: "admin",

@@ -23,9 +23,12 @@ import {
   X,
   AlertCircle,
   Undo2,
+  Lock,
+  Unlock,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import LiveCameraScannerModal from "./LiveCameraScannerModal";
+import CheckinMasterSwitch from "./CheckinMasterSwitch";
 import { parseHeritageEmail } from "@/lib/heritage-parser";
 
 interface TeamMember {
@@ -93,12 +96,35 @@ interface EventItem {
   description: string;
   registrationStatus: "open" | "closed" | "extended" | "upcoming";
   isPublished: boolean;
+  checkinEnabled?: boolean;
   maxTeams: number;
   registeredTeamsCount: number;
   registeredTeams?: RegisteredTeam[];
 }
 
-export default function LiveEventManager() {
+interface LiveEventManagerProps {
+  isMasterAdmin?: boolean;
+}
+
+export default function LiveEventManager({ isMasterAdmin: propIsMasterAdmin }: LiveEventManagerProps = {}) {
+  // Master Admin Clearance
+  const [isMasterAdmin, setIsMasterAdmin] = useState<boolean>(propIsMasterAdmin ?? false);
+
+  useEffect(() => {
+    if (propIsMasterAdmin !== undefined) {
+      setIsMasterAdmin(propIsMasterAdmin);
+    } else {
+      fetch("/api/auth/session")
+        .then((res) => res.json())
+        .then((session) => {
+          if (session?.user?.role === "master_admin") {
+            setIsMasterAdmin(true);
+          }
+        })
+        .catch(() => {});
+    }
+  }, [propIsMasterAdmin]);
+
   // -------------------------------------------------------------
   // State
   // -------------------------------------------------------------
@@ -109,6 +135,12 @@ export default function LiveEventManager() {
   const [teams, setTeams] = useState<RegisteredTeam[]>([]);
   const [loadingTeams, setLoadingTeams] = useState(false);
   const [eventMeta, setEventMeta] = useState<EventItem | null>(null);
+
+  const selectedEvent = useMemo(() => {
+    return events.find((e) => e._id === selectedEventId) || null;
+  }, [events, selectedEventId]);
+
+  const isCheckinActive = Boolean(eventMeta?.checkinEnabled ?? selectedEvent?.checkinEnabled);
 
   // Filter & Search
   const [searchQuery, setSearchQuery] = useState("");
@@ -185,7 +217,7 @@ export default function LiveEventManager() {
   const fetchEvents = useCallback(async () => {
     setLoadingEvents(true);
     try {
-      const res = await fetch("/api/admin/events");
+      const res = await fetch("/api/admin/events", { cache: "no-store" });
       if (res.ok) {
         const data = await res.json();
         setEvents(Array.isArray(data.events) ? data.events : []);
@@ -211,11 +243,20 @@ export default function LiveEventManager() {
     async (eventId: string) => {
       setLoadingTeams(true);
       try {
-        const res = await fetch(`/api/admin/teams?eventId=${eventId}`);
+        const res = await fetch(`/api/admin/teams?eventId=${eventId}`, { cache: "no-store" });
         if (res.ok) {
           const data = await res.json();
           setTeams(Array.isArray(data.teams) ? data.teams : []);
           setEventMeta(data.event || null);
+          if (data.event) {
+            setEvents((prev) =>
+              prev.map((e) =>
+                e._id === eventId
+                  ? { ...e, checkinEnabled: Boolean(data.event.checkinEnabled) }
+                  : e
+              )
+            );
+          }
         } else {
           showToast("Failed to fetch registered teams.", "error");
         }
@@ -234,6 +275,19 @@ export default function LiveEventManager() {
       fetchTeamsForEvent(selectedEventId);
     }
   }, [selectedEventId, fetchTeamsForEvent]);
+
+  // Window focus auto-sync
+  useEffect(() => {
+    const handleFocus = () => {
+      if (selectedEventId) {
+        fetchTeamsForEvent(selectedEventId);
+      } else {
+        fetchEvents();
+      }
+    };
+    window.addEventListener("focus", handleFocus);
+    return () => window.removeEventListener("focus", handleFocus);
+  }, [selectedEventId, fetchTeamsForEvent, fetchEvents]);
 
   // -------------------------------------------------------------
   // 3. Team Actions
@@ -266,6 +320,10 @@ export default function LiveEventManager() {
       showToast("Forming teams cannot check in until registration is submitted.", "error");
       return;
     }
+    if (!team.checkedIn && !isCheckinActive) {
+      showToast("Check-in is currently locked for this event. A Master Admin must enable check-in.", "error");
+      return;
+    }
     setCheckInConfirmTarget({
       type: "team",
       team,
@@ -279,8 +337,12 @@ export default function LiveEventManager() {
       showToast("Forming teams cannot check in until registration is submitted.", "error");
       return;
     }
-    setActionLoadingId(team.id);
     const nextCheckIn = typeof targetState === "boolean" ? targetState : !team.checkedIn;
+    if (nextCheckIn && !isCheckinActive) {
+      showToast("Check-in is currently locked for this event. A Master Admin must enable check-in.", "error");
+      return;
+    }
+    setActionLoadingId(team.id);
 
     // Optimistic UI update
     setTeams((prev) =>
@@ -369,6 +431,10 @@ export default function LiveEventManager() {
       showToast("Forming teams cannot check in until registration is submitted.", "error");
       return;
     }
+    if (!p.checkedIn && !isCheckinActive) {
+      showToast("Check-in is currently locked for this event. A Master Admin must enable check-in.", "error");
+      return;
+    }
     setCheckInConfirmTarget({
       type: "participant",
       participant: p,
@@ -382,8 +448,12 @@ export default function LiveEventManager() {
       showToast("Forming teams cannot check in until registration is submitted.", "error");
       return;
     }
-    setActionLoadingId(p.id);
     const nextCheckIn = typeof targetState === "boolean" ? targetState : !p.checkedIn;
+    if (nextCheckIn && !isCheckinActive) {
+      showToast("Check-in is currently locked for this event. A Master Admin must enable check-in.", "error");
+      return;
+    }
+    setActionLoadingId(p.id);
     const nowIso = nextCheckIn ? new Date().toISOString() : null;
 
     // Optimistically update teams state
@@ -827,10 +897,6 @@ export default function LiveEventManager() {
     };
   }, [teams]);
 
-  const selectedEvent = useMemo(() => {
-    return events.find((e) => e._id === selectedEventId) || null;
-  }, [events, selectedEventId]);
-
   const filteredEventsList = useMemo(() => {
     if (!eventSearch.trim()) return events;
     const q = eventSearch.toLowerCase().trim();
@@ -975,6 +1041,25 @@ export default function LiveEventManager() {
                             Closed
                           </span>
                         )}
+
+                        <div onClick={(e) => e.stopPropagation()}>
+                          <CheckinMasterSwitch
+                            eventId={ev._id}
+                            checkinEnabled={Boolean(ev.checkinEnabled)}
+                            isMasterAdmin={isMasterAdmin}
+                            onToggle={(newState) => {
+                              setEvents((prev) =>
+                                prev.map((e) => (e._id === ev._id ? { ...e, checkinEnabled: newState } : e))
+                              );
+                              showToast(
+                                newState
+                                  ? `Check-in is now ACTIVE for "${ev.title}".`
+                                  : `Check-in has been LOCKED for "${ev.title}".`
+                              );
+                            }}
+                            compact={true}
+                          />
+                        </div>
                       </div>
 
                       {/* Event Title */}
@@ -1069,8 +1154,36 @@ export default function LiveEventManager() {
               </div>
             </div>
 
-            {/* Quick Action Buttons */}
-            <div className="flex items-center gap-2 self-end md:self-auto flex-wrap">
+            {/* Quick Action Buttons & Master Admin Switch */}
+            <div className="flex items-center gap-2.5 self-end md:self-auto flex-wrap">
+              {selectedEventId && (
+                <CheckinMasterSwitch
+                  eventId={selectedEventId}
+                  checkinEnabled={isCheckinActive}
+                  isMasterAdmin={isMasterAdmin}
+                  onToggle={(newState) => {
+                    setEvents((prev) =>
+                      prev.map((e) => (e._id === selectedEventId ? { ...e, checkinEnabled: newState } : e))
+                    );
+                    setEventMeta((prev) => (prev ? { ...prev, checkinEnabled: newState } : null));
+                    showToast(
+                      newState
+                        ? "Check-in is now OPEN for this event."
+                        : "Check-in has been LOCKED for this event."
+                    );
+                  }}
+                />
+              )}
+
+              <Link
+                href={`/admin/scanner?eventId=${selectedEventId || ""}`}
+                className="rounded-xl bg-purple-500/15 hover:bg-purple-500/25 border border-purple-500/30 px-3.5 py-2 text-xs font-semibold text-purple-300 hover:text-white transition-all flex items-center gap-1.5 cursor-pointer"
+                title="Open QR Scanner Console"
+              >
+                <Camera className="h-3.5 w-3.5" />
+                <span>Scanner Terminal</span>
+              </Link>
+
               <button
                 type="button"
                 onClick={() => selectedEventId && fetchTeamsForEvent(selectedEventId)}
@@ -1142,6 +1255,21 @@ export default function LiveEventManager() {
               </div>
             </div>
           </div>
+
+          {/* Check-in Locked Banner */}
+          {!isCheckinActive && (
+            <div className="flex items-center gap-3 rounded-2xl border border-red-500/30 bg-red-500/10 p-4 text-red-200 shadow-xl">
+              <div className="flex-shrink-0 w-9 h-9 rounded-xl bg-red-500/20 flex items-center justify-center">
+                <Lock className="h-5 w-5 text-red-400" />
+              </div>
+              <div className="flex-1 text-xs">
+                <div className="font-bold text-red-300 text-sm">Check-in Locked for this Event</div>
+                <div className="text-red-300/80 mt-0.5">
+                  Attendance operations and QR pass scans are locked. {isMasterAdmin ? "Click the Check-in Switch in the top bar to enable check-in." : "A Master Administrator must toggle the check-in switch to allow attendance taking."}
+                </div>
+              </div>
+            </div>
+          )}
 
           {/* 4 Rich Stat Metric Cards */}
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
@@ -2373,6 +2501,12 @@ export default function LiveEventManager() {
               eventTitle={eventMeta?.title || selectedEvent?.title}
               onClose={() => setShowCameraScanner(false)}
               onCheckInTeam={async (scannedCode) => {
+                if (!isCheckinActive) {
+                  return {
+                    success: false,
+                    message: "Check-in is currently locked for this event. A Master Admin must enable check-in.",
+                  };
+                }
                 try {
                   const res = await fetch("/api/admin/teams", {
                     method: "PUT",

@@ -1,13 +1,16 @@
 import { NextResponse } from "next/server";
 import { connectDB } from "@/lib/mongodb";
-import { isAuthorizedAdmin } from "@/lib/admin-check";
+import { isAuthorizedLeadOrMasterAdmin } from "@/lib/admin-check";
 import User from "@/models/User";
+
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
 
 export async function GET(req: Request) {
   try {
-    const isAuth = await isAuthorizedAdmin(req);
+    const isAuth = await isAuthorizedLeadOrMasterAdmin(req);
     if (!isAuth) {
-      return NextResponse.json({ error: "Unauthorized access" }, { status: 401 });
+      return NextResponse.json({ error: "Unauthorized access: Lead or Master Admin clearance required" }, { status: 403 });
     }
 
     const { searchParams } = new URL(req.url);

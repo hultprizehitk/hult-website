@@ -22,7 +22,10 @@ import {
   User,
   X,
   Clock,
+  Lock,
+  Unlock,
 } from "lucide-react";
+import CheckinMasterSwitch from "@/app/admin/components/CheckinMasterSwitch";
 
 interface FlatParticipant {
   id: string;
@@ -83,6 +86,7 @@ interface EventItem {
   registrationStatus: "open" | "closed" | "extended" | "upcoming";
   registeredTeamsCount: number;
   maxTeams: number;
+  checkinEnabled?: boolean;
 }
 
 interface SessionScanLog {
@@ -100,7 +104,44 @@ interface SessionScanLog {
   allCheckedIn?: boolean;
 }
 
-export default function ScannerConsole() {
+interface ScannerConsoleProps {
+  isMasterAdmin?: boolean;
+  isLeadOrMaster?: boolean;
+}
+
+export default function ScannerConsole({
+  isMasterAdmin: propIsMasterAdmin,
+  isLeadOrMaster: propIsLeadOrMaster,
+}: ScannerConsoleProps = {}) {
+  // Admin Clearance
+  const [isMasterAdmin, setIsMasterAdmin] = useState<boolean>(propIsMasterAdmin ?? false);
+  const [isLeadOrMaster, setIsLeadOrMaster] = useState<boolean>(
+    propIsLeadOrMaster ?? propIsMasterAdmin ?? false
+  );
+
+  useEffect(() => {
+    if (propIsMasterAdmin !== undefined) {
+      setIsMasterAdmin(propIsMasterAdmin);
+    }
+    if (propIsLeadOrMaster !== undefined) {
+      setIsLeadOrMaster(propIsLeadOrMaster);
+    }
+    if (propIsMasterAdmin === undefined || propIsLeadOrMaster === undefined) {
+      fetch("/api/auth/session")
+        .then((res) => res.json())
+        .then((session) => {
+          const role = session?.user?.role;
+          if (role === "master_admin") {
+            setIsMasterAdmin(true);
+            setIsLeadOrMaster(true);
+          } else if (role === "lead_admin") {
+            setIsLeadOrMaster(true);
+          }
+        })
+        .catch(() => {});
+    }
+  }, [propIsMasterAdmin, propIsLeadOrMaster]);
+
   // -------------------------------------------------------------
   // Event & Teams Data State
   // -------------------------------------------------------------
@@ -278,7 +319,7 @@ export default function ScannerConsole() {
   const fetchEvents = useCallback(async () => {
     setLoadingEvents(true);
     try {
-      const res = await fetch("/api/admin/events");
+      const res = await fetch("/api/admin/events", { cache: "no-store" });
       if (res.ok) {
         const data = await res.json();
         const evList: EventItem[] = Array.isArray(data.events) ? data.events : [];
@@ -312,10 +353,19 @@ export default function ScannerConsole() {
     if (!eventId) return;
     setLoadingTeams(true);
     try {
-      const res = await fetch(`/api/admin/teams?eventId=${eventId}`);
+      const res = await fetch(`/api/admin/teams?eventId=${eventId}`, { cache: "no-store" });
       if (res.ok) {
         const data = await res.json();
         setTeams(Array.isArray(data.teams) ? data.teams : []);
+        if (data.event) {
+          setEvents((prev) =>
+            prev.map((e) =>
+              e._id === eventId
+                ? { ...e, checkinEnabled: Boolean(data.event.checkinEnabled) }
+                : e
+            )
+          );
+        }
       }
     } catch (err) {
       console.error("Failed to load teams:", err);
@@ -334,6 +384,34 @@ export default function ScannerConsole() {
     }
   }, [selectedEventId, fetchTeams]);
 
+  // Window focus auto-sync
+  useEffect(() => {
+    const handleFocus = () => {
+      if (selectedEventId) {
+        fetchTeams(selectedEventId);
+      }
+    };
+    window.addEventListener("focus", handleFocus);
+    return () => window.removeEventListener("focus", handleFocus);
+  }, [selectedEventId, fetchTeams]);
+
+  const selectedEvent = useMemo(
+    () => events.find((e) => e._id === selectedEventId) || null,
+    [events, selectedEventId]
+  );
+  const isCheckinActive = Boolean(selectedEvent?.checkinEnabled);
+
+  const handleToggleCheckin = (newState: boolean) => {
+    setEvents((prev) =>
+      prev.map((e) => (e._id === selectedEventId ? { ...e, checkinEnabled: newState } : e))
+    );
+    triggerToast(
+      newState
+        ? "Check-in is now ACTIVE for this event."
+        : "Check-in has been LOCKED for this event."
+    );
+  };
+
   // -------------------------------------------------------------
   // 3. Process Check-in Submission (Handles Participant QR & Team QR)
   // -------------------------------------------------------------
@@ -341,6 +419,17 @@ export default function ScannerConsole() {
     async (rawCode: string) => {
       const code = String(rawCode || "").trim();
       if (!code) return;
+
+      if (!isCheckinActive) {
+        playAudioChime("error");
+        setLastScanResult({
+          status: "error",
+          message: "Check-in is currently locked for this event. A Master Admin must activate check-in before attendance can be recorded.",
+          teamCode: code,
+        });
+        setIsProcessing(false);
+        return;
+      }
 
       // Prevent duplicate scan of the same exact code within 2 seconds
       const now = Date.now();
@@ -448,7 +537,7 @@ export default function ScannerConsole() {
         setTimeout(() => setIsProcessing(false), 1800);
       }
     },
-    [selectedEventId, playAudioChime]
+    [selectedEventId, isCheckinActive, playAudioChime]
   );
 
   // -------------------------------------------------------------
@@ -489,6 +578,10 @@ export default function ScannerConsole() {
   // 5. Toggle Team Check-in Manually from Roster
   // -------------------------------------------------------------
   const handleToggleRosterCheckIn = (team: RegisteredTeam) => {
+    if (!team.checkedIn && !isCheckinActive) {
+      triggerToast("Check-in is currently locked for this event. A Master Admin must enable check-in.");
+      return;
+    }
     setCheckInConfirmTarget({
       type: "team",
       team,
@@ -498,6 +591,10 @@ export default function ScannerConsole() {
 
   const executeToggleRosterCheckIn = async (team: RegisteredTeam, targetState?: boolean) => {
     const nextCheckIn = typeof targetState === "boolean" ? targetState : !team.checkedIn;
+    if (nextCheckIn && !isCheckinActive) {
+      triggerToast("Check-in is currently locked for this event. A Master Admin must enable check-in.");
+      return;
+    }
     try {
       const res = await fetch("/api/admin/teams", {
         method: "PUT",
@@ -534,6 +631,10 @@ export default function ScannerConsole() {
   // 5b. Toggle Individual Participant Check-in
   // -------------------------------------------------------------
   const handleToggleParticipantCheckIn = (p: FlatParticipant) => {
+    if (!p.checkedIn && !isCheckinActive) {
+      triggerToast("Check-in is currently locked for this event. A Master Admin must enable check-in.");
+      return;
+    }
     setCheckInConfirmTarget({
       type: "participant",
       participant: p,
@@ -543,6 +644,10 @@ export default function ScannerConsole() {
 
   const executeToggleParticipantCheckIn = async (p: FlatParticipant, targetState?: boolean) => {
     const nextCheckIn = typeof targetState === "boolean" ? targetState : !p.checkedIn;
+    if (nextCheckIn && !isCheckinActive) {
+      triggerToast("Check-in is currently locked for this event. A Master Admin must enable check-in.");
+      return;
+    }
     setActionLoadingId(p.id);
 
     // Optimistic update
@@ -688,6 +793,10 @@ export default function ScannerConsole() {
     if (isCameraActive) {
       stopCamera();
     } else {
+      if (!isCheckinActive) {
+        triggerToast("Check-in is currently locked for this event. A Master Admin must enable check-in.");
+        return;
+      }
       startCamera();
     }
   };
@@ -914,8 +1023,17 @@ export default function ScannerConsole() {
           </p>
         </div>
 
-        {/* Event Selector Dropdown */}
-        <div className="flex items-center gap-2 sm:gap-3 w-full sm:w-auto">
+        {/* Event Selector Dropdown & Master Admin Switch */}
+        <div className="flex items-center gap-2 sm:gap-3 w-full sm:w-auto flex-wrap sm:flex-nowrap">
+          {selectedEventId && (
+            <CheckinMasterSwitch
+              eventId={selectedEventId}
+              checkinEnabled={isCheckinActive}
+              isMasterAdmin={isMasterAdmin}
+              onToggle={handleToggleCheckin}
+            />
+          )}
+
           <div className="flex-1 sm:flex-initial flex items-center gap-2 rounded-2xl border border-white/15 bg-[#16161d] px-3 sm:px-3.5 py-2 text-xs min-w-0">
             <Calendar className="h-4 w-4 text-neutral-400 shrink-0" />
             <select
@@ -944,50 +1062,67 @@ export default function ScannerConsole() {
         </div>
       </div>
 
-      {/* Attendance Stats HUD Cards */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-2.5 sm:gap-4">
-        <div className="rounded-2xl border border-white/10 bg-[#0e0e12] p-3.5 sm:p-5 shadow-lg space-y-1">
-          <div className="flex items-center justify-between text-neutral-400 text-xs">
-            <span className="text-[11px] sm:text-xs">Total Registered</span>
-            <Users className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-neutral-400 shrink-0" />
+      {/* Check-in Locked Banner */}
+      {!isCheckinActive && (
+        <div className="flex items-center gap-3 rounded-2xl border border-red-500/30 bg-red-500/10 p-4 text-red-200 shadow-xl">
+          <div className="flex-shrink-0 w-9 h-9 rounded-xl bg-red-500/20 flex items-center justify-center">
+            <Lock className="h-5 w-5 text-red-400" />
           </div>
-          <div className="text-xl sm:text-3xl font-black text-white">{totalRegistered}</div>
-          <p className="text-[10px] text-sky-400/80 font-mono truncate">{totalParticipants} participants</p>
+          <div className="flex-1 text-xs">
+            <div className="font-bold text-red-300 text-sm">Check-in Locked for this Event</div>
+            <div className="text-red-300/80 mt-0.5">
+              Attendance recording and QR pass scanning are currently closed. {isMasterAdmin ? "Click the Check-in Switch above to start receiving participants." : "A Master Administrator must toggle the check-in switch to enable access."}
+            </div>
+          </div>
         </div>
+      )}
 
-        <div className="rounded-2xl border border-emerald-500/20 bg-emerald-950/20 p-3.5 sm:p-5 shadow-lg space-y-1">
-          <div className="flex items-center justify-between text-emerald-300 text-xs">
-            <span className="text-[11px] sm:text-xs">Checked In</span>
-            <CheckCircle2 className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-emerald-400 shrink-0" />
+      {/* Attendance Stats HUD Cards (Only displayed when toggle button is active) */}
+      {isCheckinActive && (
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-2.5 sm:gap-4">
+          <div className="rounded-2xl border border-white/10 bg-[#0e0e12] p-3.5 sm:p-5 shadow-lg space-y-1">
+            <div className="flex items-center justify-between text-neutral-400 text-xs">
+              <span className="text-[11px] sm:text-xs">Total Registered</span>
+              <Users className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-neutral-400 shrink-0" />
+            </div>
+            <div className="text-xl sm:text-3xl font-black text-white">{totalRegistered}</div>
+            <p className="text-[10px] text-sky-400/80 font-mono truncate">{totalParticipants} participants</p>
           </div>
-          <div className="text-xl sm:text-3xl font-black text-emerald-300">{checkedInCount}</div>
-          <div className="w-full bg-white/10 h-1.5 rounded-full overflow-hidden mt-1.5">
-            <div
-              className="bg-emerald-400 h-full rounded-full transition-all duration-500"
-              style={{ width: `${participantRate}%` }}
-            />
-          </div>
-          <p className="text-[10px] text-emerald-300/80 font-mono truncate">{checkedInParticipants} verified</p>
-        </div>
 
-        <div className="rounded-2xl border border-white/10 bg-[#0e0e12] p-3.5 sm:p-5 shadow-lg space-y-1">
-          <div className="flex items-center justify-between text-neutral-400 text-xs">
-            <span className="text-[11px] sm:text-xs">Awaiting Arrival</span>
-            <ScanLine className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-amber-400 shrink-0" />
+          <div className="rounded-2xl border border-emerald-500/20 bg-emerald-950/20 p-3.5 sm:p-5 shadow-lg space-y-1">
+            <div className="flex items-center justify-between text-emerald-300 text-xs">
+              <span className="text-[11px] sm:text-xs">Checked In</span>
+              <CheckCircle2 className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-emerald-400 shrink-0" />
+            </div>
+            <div className="text-xl sm:text-3xl font-black text-emerald-300">{checkedInCount}</div>
+            <div className="w-full bg-white/10 h-1.5 rounded-full overflow-hidden mt-1.5">
+              <div
+                className="bg-emerald-400 h-full rounded-full transition-all duration-500"
+                style={{ width: `${participantRate}%` }}
+              />
+            </div>
+            <p className="text-[10px] text-emerald-300/80 font-mono truncate">{checkedInParticipants} verified</p>
           </div>
-          <div className="text-xl sm:text-3xl font-black text-amber-300">{remainingCount}</div>
-          <p className="text-[10px] text-amber-400/80 font-mono truncate">{remainingParticipants} pending ({participantRate}%)</p>
-        </div>
 
-        <div className="rounded-2xl border border-white/10 bg-[#0e0e12] p-3.5 sm:p-5 shadow-lg space-y-1">
-          <div className="flex items-center justify-between text-neutral-400 text-xs">
-            <span className="text-[11px] sm:text-xs">Session Scans</span>
-            <Camera className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-pink-400 shrink-0" />
+          <div className="rounded-2xl border border-white/10 bg-[#0e0e12] p-3.5 sm:p-5 shadow-lg space-y-1">
+            <div className="flex items-center justify-between text-neutral-400 text-xs">
+              <span className="text-[11px] sm:text-xs">Awaiting Arrival</span>
+              <ScanLine className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-amber-400 shrink-0" />
+            </div>
+            <div className="text-xl sm:text-3xl font-black text-amber-300">{remainingCount}</div>
+            <p className="text-[10px] text-amber-400/80 font-mono truncate">{remainingParticipants} pending ({participantRate}%)</p>
           </div>
-          <div className="text-xl sm:text-3xl font-black text-white">{sessionLogs.length}</div>
-          <p className="text-[10px] text-neutral-400 font-mono truncate">This session</p>
+
+          <div className="rounded-2xl border border-white/10 bg-[#0e0e12] p-3.5 sm:p-5 shadow-lg space-y-1">
+            <div className="flex items-center justify-between text-neutral-400 text-xs">
+              <span className="text-[11px] sm:text-xs">Session Scans</span>
+              <Camera className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-pink-400 shrink-0" />
+            </div>
+            <div className="text-xl sm:text-3xl font-black text-white">{sessionLogs.length}</div>
+            <p className="text-[10px] text-neutral-400 font-mono truncate">This session</p>
+          </div>
         </div>
-      </div>
+      )}
 
       {/* Main Camera Scanner Section */}
       <div className="max-w-4xl mx-auto space-y-4">
@@ -1019,10 +1154,14 @@ export default function ScannerConsole() {
                 <button
                   type="button"
                   onClick={toggleCamera}
-                  className="hidden sm:inline-flex rounded-full bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-400 hover:to-teal-500 px-4 sm:px-5 py-2 text-xs font-bold text-white shadow-lg shadow-emerald-600/30 transition-all hover:scale-105 items-center gap-1.5 cursor-pointer shrink-0"
+                  className={`hidden sm:inline-flex rounded-full px-4 sm:px-5 py-2 text-xs font-bold text-white transition-all items-center gap-1.5 cursor-pointer shrink-0 ${
+                    isCheckinActive
+                      ? "bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-400 hover:to-teal-500 shadow-lg shadow-emerald-600/30 hover:scale-105"
+                      : "bg-red-500/30 border border-red-500/50 text-red-200 hover:bg-red-500/40"
+                  }`}
                 >
-                  <Camera className="h-3.5 w-3.5" />
-                  <span>Scan QR</span>
+                  {isCheckinActive ? <Camera className="h-3.5 w-3.5" /> : <Lock className="h-3.5 w-3.5" />}
+                  <span>{isCheckinActive ? "Scan QR" : "Check-in Locked"}</span>
                 </button>
               )}
             </div>
@@ -1119,22 +1258,37 @@ export default function ScannerConsole() {
                     </>
                   ) : (
                     <>
-                      <div className="h-12 w-12 sm:h-14 sm:w-14 rounded-2xl bg-white/5 border border-white/15 flex items-center justify-center text-neutral-400 mx-auto">
-                        <Camera className="h-6 w-6 sm:h-7 sm:w-7" />
+                      <div className={`h-12 w-12 sm:h-14 sm:w-14 rounded-2xl flex items-center justify-center mx-auto ${
+                        isCheckinActive
+                          ? "bg-white/5 border border-white/15 text-neutral-400"
+                          : "bg-red-500/10 border border-red-500/30 text-red-400"
+                      }`}>
+                        {isCheckinActive ? <Camera className="h-6 w-6 sm:h-7 sm:w-7" /> : <Lock className="h-6 w-6 sm:h-7 sm:w-7" />}
                       </div>
                       <div>
-                        <h3 className="text-xs sm:text-sm font-bold text-white">Camera Viewfinder Paused</h3>
+                        <h3 className="text-xs sm:text-sm font-bold text-white">
+                          {isCheckinActive ? "Camera Viewfinder Paused" : "Check-in Currently Locked"}
+                        </h3>
                         <p className="text-[11px] sm:text-xs text-neutral-400 mt-0.5">
-                          Click below to start high-speed QR pass detector.
+                          {isCheckinActive
+                            ? "Click below to start high-speed QR pass detector."
+                            : isMasterAdmin
+                              ? "Activate check-in using the switch in the top bar to start scanning passes."
+                              : "Contact a Master Administrator to enable check-in for this event."}
                         </p>
                       </div>
                       <button
                         type="button"
                         onClick={startCamera}
-                        className="rounded-full bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-400 hover:to-teal-500 px-5 sm:px-6 py-2 sm:py-2.5 text-xs font-bold text-white shadow-lg shadow-emerald-600/30 transition-all hover:scale-105 inline-flex items-center gap-2 cursor-pointer font-[family-name:var(--font-google-sans)]"
+                        disabled={!isCheckinActive}
+                        className={`rounded-full px-5 sm:px-6 py-2 sm:py-2.5 text-xs font-bold transition-all inline-flex items-center gap-2 font-[family-name:var(--font-google-sans)] ${
+                          isCheckinActive
+                            ? "bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-400 hover:to-teal-500 text-white shadow-lg shadow-emerald-600/30 hover:scale-105 cursor-pointer"
+                            : "bg-red-500/20 text-red-300 border border-red-500/30 cursor-not-allowed opacity-80"
+                        }`}
                       >
-                        <Camera className="h-4 w-4" />
-                        <span>Scan Participant QR</span>
+                        {isCheckinActive ? <Camera className="h-4 w-4" /> : <Lock className="h-4 w-4" />}
+                        <span>{isCheckinActive ? "Scan Participant QR" : "Check-in Locked"}</span>
                       </button>
                     </>
                   )}
@@ -1229,15 +1383,16 @@ export default function ScannerConsole() {
           </div>
         </div>
 
-      {/* Event Roster Fast-Check Table */}
-      <div className="rounded-3xl sm:rounded-[2.5rem] border border-white/15 bg-[#0e0e12] p-4 sm:p-8 shadow-2xl space-y-4">
-        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 pb-3 border-b border-white/10">
-          <div>
-            <h3 className="text-base sm:text-lg font-bold text-white">Event Roster Quick-Check</h3>
-            <p className="text-[11px] sm:text-xs text-neutral-400">
-              Manual attendance toggle and backup lookup for attendees without passes.
-            </p>
-          </div>
+      {/* Event Roster Quick-Check Table (Only appears automatically when check-in is active) */}
+      {isCheckinActive && (
+        <div className="rounded-3xl sm:rounded-[2.5rem] border border-white/15 bg-[#0e0e12] p-4 sm:p-8 shadow-2xl space-y-4">
+          <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 pb-3 border-b border-white/10">
+            <div>
+              <h3 className="text-base sm:text-lg font-bold text-white">Event Roster Quick-Check</h3>
+              <p className="text-[11px] sm:text-xs text-neutral-400">
+                Manual attendance toggle and backup lookup for attendees without passes.
+              </p>
+            </div>
 
           <div className="flex flex-wrap items-center gap-2 sm:gap-3">
             {/* View Mode Filter: By Teams vs By Participants */}
@@ -1563,6 +1718,7 @@ export default function ScannerConsole() {
           </div>
         )}
       </div>
+      )}
 
       {/* Check-In / Revert Confirmation Modal */}
       {checkInConfirmTarget && (

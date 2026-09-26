@@ -9,8 +9,9 @@ import User from "@/models/User";
 export function getEnvSuperAdmins(): string[] {
   const raw = process.env.ADMIN_EMAILS || "";
   return raw
+    .replace(/^["']|["']$/g, "")
     .split(",")
-    .map((e) => e.toLowerCase().trim())
+    .map((e) => e.replace(/^["']|["']$/g, "").toLowerCase().trim())
     .filter(Boolean);
 }
 

@@ -1,9 +1,13 @@
 import { NextResponse } from "next/server";
+import mongoose from "mongoose";
 import { connectDB } from "@/lib/mongodb";
-import { isAuthorizedAdmin } from "@/lib/admin-check";
+import { isAuthorizedAdmin, isAuthorizedSuperAdmin } from "@/lib/admin-check";
 import { logAdminAction } from "@/lib/audit-logger";
 import { auth } from "@/auth";
 import Event from "@/models/Event";
+
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
 
 interface RouteParams {
   params: Promise<{ id: string }>;
@@ -65,16 +69,39 @@ export async function PUT(req: Request, { params }: RouteParams) {
       "maxTeams",
       "minTeamMembers",
       "maxTeamMembers",
+      "checkinEnabled",
     ];
 
+    // Master admin-only guard for checkinEnabled toggle
+    if (body.checkinEnabled !== undefined) {
+      const isSuperAdmin = await isAuthorizedSuperAdmin(req);
+      if (!isSuperAdmin) {
+        return NextResponse.json(
+          { error: "Only Master Admin can toggle check-in status for events." },
+          { status: 403 }
+        );
+      }
+    }
+
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const updateData: Record<string, any> = {};
     for (const field of updatableFields) {
       if (body[field] !== undefined) {
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         (existing as any)[field] = body[field];
+        updateData[field] = body[field];
       }
     }
 
     await existing.save();
+
+    // Direct MongoDB persistence to guarantee fields like checkinEnabled are updated in Atlas
+    if (Object.keys(updateData).length > 0) {
+      await Event.collection.updateOne(
+        { _id: new mongoose.Types.ObjectId(id) },
+        { $set: updateData }
+      );
+    }
 
     await logAdminAction({
       adminEmail: session?.user?.email || "admin",

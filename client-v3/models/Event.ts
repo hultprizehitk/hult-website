@@ -58,6 +58,7 @@ export interface IEvent extends Document {
   description: string;
   link?: string;
   isPublished: boolean;
+  checkinEnabled: boolean;
   order: number;
   registrationStatus: "open" | "closed" | "extended" | "upcoming";
   registrationDeadline?: string;
@@ -117,6 +118,10 @@ const EventSchema = new Schema<IEvent>(
     isPublished: {
       type: Boolean,
       default: true,
+    },
+    checkinEnabled: {
+      type: Boolean,
+      default: false,
     },
     order: {
       type: Number,
@@ -200,8 +205,13 @@ const EventSchema = new Schema<IEvent>(
   },
   {
     timestamps: true,
+    strict: false,
   }
 );
+
+if (process.env.NODE_ENV !== "production") {
+  delete (mongoose.models as Record<string, unknown>).Event;
+}
 
 const Event: Model<IEvent> =
   mongoose.models.Event || mongoose.model<IEvent>("Event", EventSchema);
