@@ -28,9 +28,12 @@ export interface AdminRecord {
   _id: string;
   name: string;
   email: string;
+  image?: string;
   department?: string;
   year?: string;
   role: UserRole;
+  lastLoginAt?: string | Date | null;
+  invitedAt?: string | Date | null;
   createdAt: string;
   updatedAt?: string;
 }

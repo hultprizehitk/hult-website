@@ -3,11 +3,18 @@ import mongoose from "mongoose";
 import { connectDB } from "@/lib/mongodb";
 import Event from "@/models/Event";
 import Team from "@/models/Team";
-import { isAuthorizedAdmin } from "@/lib/admin-check";
+import { isAuthorizedAdmin, isAuthorizedSuperAdmin } from "@/lib/admin-check";
 import { logAdminAction } from "@/lib/audit-logger";
 
 function unauthorizedResponse() {
   return NextResponse.json({ error: "Unauthorized access" }, { status: 401 });
+}
+
+function forbiddenMasterAdminResponse() {
+  return NextResponse.json(
+    { error: "Unauthorized access: Master Admin clearance is required to modify events." },
+    { status: 403 }
+  );
 }
 
 // GET: Fetch all events
@@ -39,8 +46,8 @@ export async function GET(req: Request) {
 
 // POST: Create a new event
 export async function POST(req: Request) {
-  const isAdmin = await isAuthorizedAdmin(req);
-  if (!isAdmin) return unauthorizedResponse();
+  const isSuper = await isAuthorizedSuperAdmin(req);
+  if (!isSuper) return forbiddenMasterAdminResponse();
 
   try {
     const body = await req.json();
@@ -113,8 +120,8 @@ export async function POST(req: Request) {
 
 // PUT: Update an event / control registration / extend deadline / manage teams
 export async function PUT(req: Request) {
-  const isAdmin = await isAuthorizedAdmin(req);
-  if (!isAdmin) return unauthorizedResponse();
+  const isSuper = await isAuthorizedSuperAdmin(req);
+  if (!isSuper) return forbiddenMasterAdminResponse();
 
   try {
     const body = await req.json();
@@ -308,8 +315,8 @@ export async function PUT(req: Request) {
 
 // DELETE: Remove an event
 export async function DELETE(req: Request) {
-  const isAdmin = await isAuthorizedAdmin(req);
-  if (!isAdmin) return unauthorizedResponse();
+  const isSuper = await isAuthorizedSuperAdmin(req);
+  if (!isSuper) return forbiddenMasterAdminResponse();
 
   try {
     const { searchParams } = new URL(req.url);

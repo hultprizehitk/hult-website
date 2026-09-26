@@ -778,3 +778,167 @@ export async function sendHultAscendWhatsAppEmail(
     htmlContent,
   });
 }
+
+export interface AdminInvitationEmailParams {
+  name: string;
+  email: string;
+  role: "master_admin" | "lead_admin" | "junior_admin";
+  appointedByName?: string;
+  dashboardUrl?: string;
+}
+
+/**
+ * Returns a high-energy, official onboarding email for newly appointed administrators.
+ */
+export function getAdminInvitationEmailHtml(params: AdminInvitationEmailParams): string {
+  const safeName = params.name || "Administrator";
+  const baseUrl = params.dashboardUrl || "https://admin.hultprizehitk.live";
+
+  let roleTitle = "Administrator";
+  let badgeColor = "#a855f7";
+  let badgeBg = "rgba(168, 85, 247, 0.15)";
+  let badgeBorder = "rgba(168, 85, 247, 0.4)";
+  let roleBadge = "JUNIOR ADMINISTRATOR";
+  let targetUrl = `${baseUrl}/scanner`;
+
+  if (params.role === "master_admin") {
+    roleTitle = "Master Administrator";
+    badgeColor = "#f59e0b";
+    badgeBg = "rgba(245, 158, 11, 0.15)";
+    badgeBorder = "rgba(245, 158, 11, 0.4)";
+    roleBadge = "MASTER ADMINISTRATOR";
+    targetUrl = baseUrl;
+  } else if (params.role === "lead_admin") {
+    roleTitle = "Lead Administrator";
+    badgeColor = "#38bdf8";
+    badgeBg = "rgba(56, 189, 248, 0.15)";
+    badgeBorder = "rgba(56, 189, 248, 0.4)";
+    roleBadge = "LEAD ADMINISTRATOR";
+    targetUrl = `${baseUrl}/teams`;
+  } else {
+    // junior_admin
+    roleTitle = "Junior Administrator";
+    badgeColor = "#c084fc";
+    badgeBg = "rgba(192, 132, 252, 0.15)";
+    badgeBorder = "rgba(192, 132, 252, 0.4)";
+    roleBadge = "JUNIOR ADMINISTRATOR";
+    targetUrl = `${baseUrl}/scanner`;
+  }
+
+  const contentHtml = `
+    <!-- Top Alert Badge -->
+    <div style="text-align: center; margin-bottom: 24px;">
+      <span style="display: inline-block; background-color: ${badgeBg}; border: 1px solid ${badgeBorder}; border-radius: 9999px; padding: 6px 18px; font-size: 11px; font-weight: 800; color: ${badgeColor}; letter-spacing: 1.5px; text-transform: uppercase;">
+        ${roleBadge}
+      </span>
+    </div>
+
+    <!-- Main Title -->
+    <h1 style="margin: 0 0 12px 0; font-size: 24px; font-weight: 800; color: #ffffff; text-align: center; line-height: 1.3;">
+      Administrator Clearance Granted
+    </h1>
+
+    <p style="margin: 0 0 24px 0; font-size: 14px; line-height: 1.6; color: #a1a1aa; text-align: center;">
+      Hello <strong style="color: #ffffff;">${safeName}</strong>, you have been appointed as a <strong style="color: ${badgeColor};">${roleTitle}</strong> for the Hult Prize On-Campus Program at Heritage Institute of Technology.
+    </p>
+
+    <!-- Credential Card -->
+    <table role="presentation" width="100%" border="0" cellspacing="0" cellpadding="0" style="background-color: #1a1a22; border: 1px solid #2e2e38; border-radius: 12px; margin-bottom: 28px;">
+      <tr>
+        <td style="padding: 20px 24px;">
+          <table role="presentation" width="100%" border="0" cellspacing="0" cellpadding="0">
+            <tr>
+              <td style="font-size: 12px; color: #71717a; text-transform: uppercase; font-weight: 700; letter-spacing: 1px; padding-bottom: 6px;">
+                Designated College Email
+              </td>
+            </tr>
+            <tr>
+              <td style="font-size: 15px; color: #ffffff; font-weight: 600; font-family: monospace; padding-bottom: 14px;">
+                ${params.email}
+              </td>
+            </tr>
+            <tr>
+              <td style="font-size: 12px; color: #71717a; text-transform: uppercase; font-weight: 700; letter-spacing: 1px; padding-bottom: 6px;">
+                Clearance Tier
+              </td>
+            </tr>
+            <tr>
+              <td style="font-size: 14px; font-weight: 700; color: ${badgeColor};">
+                ${roleTitle}
+              </td>
+            </tr>
+          </table>
+        </td>
+      </tr>
+    </table>
+
+    <!-- CTA Button -->
+    <div style="text-align: center; margin-bottom: 28px;">
+      <a href="${targetUrl}" target="_blank" style="display: inline-block; background: linear-gradient(135deg, #f20089 0%, #d80077 100%); color: #ffffff; font-size: 14px; font-weight: 700; text-decoration: none; padding: 14px 32px; border-radius: 12px; box-shadow: 0 6px 20px rgba(242, 0, 137, 0.35); letter-spacing: 0.5px;">
+        Access Administrator Portal &rarr;
+      </a>
+    </div>
+
+    <!-- Sign-in Instructions -->
+    <table role="presentation" width="100%" border="0" cellspacing="0" cellpadding="0" style="background-color: #101015; border: 1px solid #22222a; border-radius: 10px; margin-bottom: 24px;">
+      <tr>
+        <td style="padding: 16px 20px; font-size: 12px; line-height: 1.6; color: #a1a1aa;">
+          <strong style="color: #ffffff;">Quick Access Guide:</strong>
+          <ol style="margin: 6px 0 0 0; padding-left: 18px;">
+            <li>Click the button above to access the Administrator Portal.</li>
+            <li>Select <strong>Sign in with Google</strong> using your official Heritage email (<code>${params.email}</code>).</li>
+            <li>Your administrative clearance will authenticate automatically.</li>
+          </ol>
+        </td>
+      </tr>
+    </table>
+
+    <!-- Notice -->
+    <p style="margin: 0 0 20px 0; font-size: 11px; line-height: 1.5; color: #71717a; text-align: center;">
+      This email contains privileged administrative credentials. Please do not forward or share this communication.
+    </p>
+
+    <!-- Sign-off -->
+    <table role="presentation" width="100%" border="0" cellspacing="0" cellpadding="0">
+      <tr>
+        <td style="border-top: 1px solid #27272a; padding-top: 18px;">
+          <p style="margin: 0 0 4px 0; font-size: 13px; color: #a1a1aa;">
+            Authorized by:
+          </p>
+          <p style="margin: 0; font-size: 14px; font-weight: 700; color: #ffffff;">
+            Hult Prize HITK Executive Committee
+          </p>
+          <p style="margin: 2px 0 0 0; font-size: 12px; color: #71717a;">
+            Heritage Institute of Technology, Kolkata
+          </p>
+        </td>
+      </tr>
+    </table>
+  `;
+
+  return getHultMailShell(contentHtml);
+}
+
+/**
+ * Dispatches the official Administrator Onboarding & Appointment email.
+ */
+export async function sendAdminInvitationEmail(
+  params: AdminInvitationEmailParams
+): Promise<SendEmailResult> {
+  const roleLabel =
+    params.role === "master_admin"
+      ? "Master Administrator"
+      : params.role === "lead_admin"
+      ? "Lead Administrator"
+      : "Junior Administrator";
+
+  const htmlContent = getAdminInvitationEmailHtml(params);
+
+  return sendEmail({
+    to: [{ email: params.email, name: params.name }],
+    replyTo: { email: "hultprize.heritage@gmail.com", name: "Hult Prize HITK Executive Committee" },
+    subject: `[Official] Administrator Clearance Granted — ${roleLabel} | Hult Prize HITK`,
+    htmlContent,
+  });
+}
+

@@ -14,6 +14,8 @@ export interface IUser extends Document {
   welcomeEmailSent?: boolean;
   whatsappInviteSent?: boolean;
   whatsappInviteSentAt?: Date;
+  lastLoginAt?: Date | null;
+  invitedAt?: Date | null;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -71,6 +73,14 @@ const UserSchema = new Schema<IUser>(
       default: false,
     },
     whatsappInviteSentAt: {
+      type: Date,
+      default: null,
+    },
+    lastLoginAt: {
+      type: Date,
+      default: null,
+    },
+    invitedAt: {
       type: Date,
       default: null,
     },

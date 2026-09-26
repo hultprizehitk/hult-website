@@ -114,3 +114,49 @@ export async function isAuthorizedSuperAdmin(_req?: Request): Promise<boolean> {
 
   return false;
 }
+
+export type AdminRoleType = "master_admin" | "lead_admin" | "junior_admin" | null;
+
+/**
+ * Returns the exact verified administrator tier for the active caller:
+ * "master_admin" | "lead_admin" | "junior_admin" | null
+ */
+export async function getAdminRole(_req?: Request): Promise<AdminRoleType> {
+  void _req;
+  try {
+    const session = await auth();
+    if (!session?.user?.email) return null;
+
+    const email = session.user.email.toLowerCase().trim();
+
+    // 1. Env super admin always has master_admin clearance
+    if (isSuperAdminEmail(email)) {
+      return "master_admin";
+    }
+
+    // 2. Direct database lookup
+    await connectDB();
+    const dbUser = await User.findOne({ email }).select("role").lean();
+    if (dbUser && isAdminRole(dbUser.role)) {
+      return dbUser.role as AdminRoleType;
+    }
+
+    // 3. Fallback JWT session role
+    const sessionRole = (session.user as { role?: string }).role;
+    if (isAdminRole(sessionRole)) {
+      return sessionRole as AdminRoleType;
+    }
+  } catch (error) {
+    console.error("Get admin role error:", error);
+  }
+  return null;
+}
+
+/**
+ * Validates if the active caller holds verified Lead Admin or Master Admin clearance.
+ */
+export async function isAuthorizedLeadOrMasterAdmin(_req?: Request): Promise<boolean> {
+  const role = await getAdminRole(_req);
+  return role === "master_admin" || role === "lead_admin";
+}
+
