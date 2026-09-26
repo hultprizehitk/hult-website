@@ -6,6 +6,7 @@ import { isAuthorizedSuperAdmin, isSuperAdminEmail, ADMIN_ROLES } from "@/lib/ad
 import { logAdminAction } from "@/lib/audit-logger";
 import { auth } from "@/auth";
 import type { UserRole } from "@/types/user";
+import { sendAdminInvitationEmail } from "@/lib/email-templates";
 
 function getRoleLabel(role: string): string {
   switch (role) {
@@ -75,6 +76,7 @@ export async function POST(req: Request) {
     const rawEmail = (body.email || "").toLowerCase().trim();
     const action = body.action || "promote";
     const requestedRole = (body.role || "lead_admin") as UserRole;
+    const isRevoke = action === "demote" || action === "revoke";
 
     if (!rawEmail) {
       return NextResponse.json(
@@ -90,9 +92,9 @@ export async function POST(req: Request) {
       );
     }
 
-    if (isSuperAdminEmail(rawEmail) && action === "demote") {
+    if (isSuperAdminEmail(rawEmail) && isRevoke) {
       return NextResponse.json(
-        { error: "Master Administrator executive accounts are permanent and cannot be demoted" },
+        { error: "Master Administrator executive accounts are permanent and cannot be revoked" },
         { status: 400 }
       );
     }
@@ -105,19 +107,63 @@ export async function POST(req: Request) {
       "junior_admin",
     ];
 
-    const targetRole: UserRole =
-      action === "demote"
-        ? "user"
-        : validRoles.includes(requestedRole)
-        ? requestedRole
-        : "lead_admin";
-
     let user = await User.findOne({ email: rawEmail });
+
+    // Handle RESEND INVITATION
+    if (action === "resend_invite") {
+      if (!user || user.role === "user") {
+        return NextResponse.json(
+          { error: "Administrator account not found for this email address" },
+          { status: 404 }
+        );
+      }
+
+      const adminHost = req.headers.get("host") || "";
+      const isLocal = adminHost.includes("localhost") || adminHost.includes("127.0.0.1");
+      const protocol = isLocal ? "http" : "https";
+      const dashboardUrl = isLocal
+        ? `${protocol}://${adminHost}`
+        : "https://admin.hultprizehitk.live";
+
+      const mailRes = await sendAdminInvitationEmail({
+        name: user.name || "Administrator",
+        email: rawEmail,
+        role: user.role,
+        appointedByName: session?.user?.name || "Master Administrator",
+        dashboardUrl,
+      });
+
+      user.invitedAt = new Date();
+      await user.save();
+
+      return NextResponse.json({
+        success: true,
+        message: mailRes.success
+          ? `Resent invitation email to ${rawEmail}.`
+          : `Failed to deliver email to ${rawEmail}. Please try again later.`,
+        emailSent: mailRes.success,
+      });
+    }
+
+    const targetRole: UserRole = isRevoke
+      ? "user"
+      : validRoles.includes(requestedRole)
+      ? requestedRole
+      : "lead_admin";
 
     if (user) {
       user.role = targetRole;
+      if (!isRevoke) {
+        user.invitedAt = new Date();
+      }
       await user.save();
     } else {
+      if (isRevoke) {
+        return NextResponse.json(
+          { error: "No administrator found with this email" },
+          { status: 404 }
+        );
+      }
       const parsed = parseHeritageEmail(rawEmail);
       user = await User.create({
         name: parsed.fullName || "HITK Appointed Admin",
@@ -125,6 +171,7 @@ export async function POST(req: Request) {
         department: parsed.branchName,
         year: parsed.academicYear,
         role: targetRole,
+        invitedAt: new Date(),
       });
     }
 
@@ -132,25 +179,122 @@ export async function POST(req: Request) {
       adminEmail: session?.user?.email || "admin",
       adminName: session?.user?.name || "Admin",
       adminRole: "master_admin",
-      action: `${action === "demote" ? "Revoked" : "Granted"} ${getRoleLabel(targetRole)} for ${rawEmail}`,
+      action: `${isRevoke ? "Revoked" : "Granted"} ${getRoleLabel(targetRole)} for ${rawEmail}`,
       targetType: "user",
       targetId: user._id.toString(),
       details: { email: rawEmail, role: targetRole, action },
       req,
     });
 
+    let emailSent = false;
+    if (!isRevoke && targetRole !== "user") {
+      try {
+        const adminHost = req.headers.get("host") || "";
+        const isLocal = adminHost.includes("localhost") || adminHost.includes("127.0.0.1");
+        const protocol = isLocal ? "http" : "https";
+        const dashboardUrl = isLocal
+          ? `${protocol}://${adminHost}`
+          : "https://admin.hultprizehitk.live";
+
+        const mailRes = await sendAdminInvitationEmail({
+          name: user.name || "Administrator",
+          email: rawEmail,
+          role: targetRole,
+          appointedByName: session?.user?.name || "Master Administrator",
+          dashboardUrl,
+        });
+        emailSent = mailRes.success;
+      } catch (mailErr) {
+        console.error("Failed to send admin invitation email:", mailErr);
+      }
+    }
+
     return NextResponse.json({
       success: true,
-      message:
-        action === "demote"
-          ? `Revoked admin privileges for ${rawEmail}. Role is now user.`
-          : `Successfully granted ${getRoleLabel(targetRole)} privileges to ${rawEmail}.`,
+      message: isRevoke
+        ? `Successfully revoked administrator access for ${rawEmail}.`
+        : `Successfully granted ${getRoleLabel(targetRole)} privileges to ${rawEmail}${
+            emailSent ? " and sent onboarding email." : "."
+          }`,
       user: JSON.parse(JSON.stringify(user)),
+      emailSent,
     });
   } catch (error) {
     console.error("POST /api/admin/users error:", error);
     return NextResponse.json(
       { error: "Failed to update administrator role" },
+      { status: 500 }
+    );
+  }
+}
+
+// DELETE: Revoke admin privileges directly
+export async function DELETE(req: Request) {
+  try {
+    const isSuper = await isAuthorizedSuperAdmin(req);
+    if (!isSuper) {
+      return NextResponse.json(
+        { error: "Unauthorized: Master Administrator clearance required to revoke accounts" },
+        { status: 403 }
+      );
+    }
+
+    const session = await auth();
+    let rawEmail = "";
+    try {
+      const body = await req.json();
+      rawEmail = (body.email || "").toLowerCase().trim();
+    } catch {
+      const url = new URL(req.url);
+      rawEmail = (url.searchParams.get("email") || "").toLowerCase().trim();
+    }
+
+    if (!rawEmail) {
+      return NextResponse.json(
+        { error: "Please provide the email address to revoke" },
+        { status: 400 }
+      );
+    }
+
+    if (isSuperAdminEmail(rawEmail)) {
+      return NextResponse.json(
+        { error: "Master Administrator executive accounts are permanent and cannot be revoked" },
+        { status: 400 }
+      );
+    }
+
+    await connectDB();
+    const user = await User.findOne({ email: rawEmail });
+    if (!user) {
+      return NextResponse.json(
+        { error: "Administrator account not found" },
+        { status: 404 }
+      );
+    }
+
+    const previousRole = user.role;
+    user.role = "user";
+    await user.save();
+
+    await logAdminAction({
+      adminEmail: session?.user?.email || "admin",
+      adminName: session?.user?.name || "Admin",
+      adminRole: "master_admin",
+      action: `Revoked ${getRoleLabel(previousRole)} privileges for ${rawEmail}`,
+      targetType: "user",
+      targetId: user._id.toString(),
+      details: { email: rawEmail, previousRole, newRole: "user" },
+      req,
+    });
+
+    return NextResponse.json({
+      success: true,
+      message: `Successfully revoked administrator access for ${rawEmail}.`,
+    });
+  } catch (error) {
+    console.error("DELETE /api/admin/users error:", error);
+    return NextResponse.json(
+      { error: "Failed to revoke administrator role" },
       { status: 500 }
     );
   }

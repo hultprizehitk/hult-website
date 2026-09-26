@@ -43,73 +43,69 @@ export async function GET(req: Request) {
         .sort({ registeredAt: -1, createdAt: -1 })
         .lean();
 
-      // 2. Fetch legacy teams from event.registeredTeams
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const legacyTeams = Array.isArray(event.registeredTeams) ? (event.registeredTeams as any[]) : [];
+      // Enrich missing lead phone/roll/department/year from User records
+      const leadEmails = (normalizedTeams as Array<{ leadEmail?: string; lead?: { email?: string } }>)
+        .map((t) => (t.leadEmail || t.lead?.email || "").toLowerCase().trim())
+        .filter(Boolean);
 
-      // Unified map by teamCode or id
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const teamMap = new Map<string, any>();
+      let userMap = new Map<string, any>();
+      if (leadEmails.length > 0) {
+        const users = await User.find({ email: { $in: leadEmails } })
+          .select("email phone roll department year")
+          .lean();
+        userMap = new Map(users.map((u) => [u.email.toLowerCase(), u]));
+      }
 
-      for (const t of normalizedTeams) {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const anyT = t as any;
-        const key = (anyT.teamCode || anyT._id.toString()).toUpperCase();
-        teamMap.set(key, {
-          id: anyT._id.toString(),
-          teamCode: anyT.teamCode,
-          teamName: anyT.teamName,
-          ventureName: anyT.ventureName || "",
-          ventureDescription: anyT.ventureDescription || "",
-          pitchDeckUrl: anyT.pitchDeckUrl || "",
-          submissionStatus: anyT.submissionStatus || "forming",
-          submittedAt: anyT.submittedAt || null,
+      // Format teams with both `id` and `_id` for universal frontend compatibility
+      const allTeams = normalizedTeams.map((t: any) => {
+        const u = userMap.get((t.leadEmail || t.lead?.email || "").toLowerCase());
+        const leadPhone = t.lead?.phone || u?.phone || "";
+        const leadRoll = t.lead?.roll || u?.roll || "";
+        const leadDept = t.lead?.department || u?.department || t.department || "General";
+        const leadYear = t.lead?.year || u?.year || "";
+
+        return {
+          id: t._id.toString(),
+          _id: t._id.toString(),
+          teamCode: t.teamCode,
+          teamName: t.teamName,
+          ventureName: t.ventureName || "",
+          ventureDescription: t.ventureDescription || "",
+          pitchDeckUrl: t.pitchDeckUrl || "",
+          submissionStatus: t.submissionStatus || "forming",
+          submittedAt: t.submittedAt || null,
           lead: {
-            name: anyT.lead?.name || "Team Leader",
-            email: anyT.lead?.email || anyT.leadEmail || "",
-            phone: anyT.lead?.phone || "",
-            department: anyT.lead?.department || anyT.department || "General",
-            roll: anyT.lead?.roll || "",
+            name: t.lead?.name || "Team Leader",
+            email: t.lead?.email || t.leadEmail || "",
+            phone: leadPhone,
+            department: leadDept,
+            roll: leadRoll,
+            year: leadYear,
+            checkedIn: Boolean(t.lead?.checkedIn || t.checkedIn),
+            checkedInAt: t.lead?.checkedInAt || (t.checkedIn ? t.checkedInAt : null),
           },
-          membersCount: anyT.membersCount || 4,
-          department: anyT.department || anyT.lead?.department || "General",
-          members: Array.isArray(anyT.members) ? anyT.members : [],
-          status: anyT.status || "confirmed",
-          checkedIn: Boolean(anyT.checkedIn),
-          checkedInAt: anyT.checkedInAt || null,
-          registeredAt: anyT.registeredAt || anyT.createdAt || new Date(),
-        });
-      }
+          membersCount: t.membersCount || (1 + (Array.isArray(t.members) ? t.members.length : 0)),
+          department: t.department || leadDept,
+          members: Array.isArray(t.members)
+            ? t.members.map((m: any) => ({
+                name: m.name || "",
+                email: m.email || "",
+                phone: m.phone || "",
+                department: m.department || t.department || "General",
+                roll: m.roll || "",
+                checkedIn: Boolean(m.checkedIn !== undefined ? m.checkedIn : t.checkedIn),
+                checkedInAt: m.checkedInAt || (t.checkedIn ? t.checkedInAt : null),
+              }))
+            : [],
+          status: t.status || "confirmed",
+          checkedIn: Boolean(t.checkedIn),
+          checkedInAt: t.checkedInAt || null,
+          registeredAt: t.registeredAt || t.createdAt || new Date(),
+          createdAt: t.createdAt || t.registeredAt || null,
+        };
+      });
 
-      for (const lt of legacyTeams) {
-        const key = (lt.teamCode || lt.id || "").toUpperCase();
-        if (key && !teamMap.has(key)) {
-          teamMap.set(key, {
-            id: lt.id || `legacy_${Date.now()}`,
-            teamCode: lt.teamCode || "HULT-AUTO",
-            teamName: lt.teamName,
-            ventureName: lt.ventureName || "",
-            lead: {
-              name: lt.leadName || "Team Leader",
-              email: lt.leadEmail || "",
-              phone: lt.leadPhone || "",
-              department: lt.department || "General",
-              roll: "",
-            },
-            membersCount: lt.membersCount || 4,
-            department: lt.department || "General",
-            members: Array.isArray(lt.members) ? lt.members : [],
-            status: lt.status || "confirmed",
-            submissionStatus: lt.submissionStatus || "submitted",
-            submittedAt: lt.submittedAt || null,
-            checkedIn: Boolean(lt.checkedIn),
-            checkedInAt: lt.checkedInAt || null,
-            registeredAt: lt.registeredAt || new Date(),
-          });
-        }
-      }
-
-      const allTeams = Array.from(teamMap.values());
+      const totalTeamsCount = await Team.countDocuments({ eventId: event._id });
 
       return NextResponse.json(
         {
@@ -122,7 +118,7 @@ export async function GET(req: Request) {
             venue: event.venue,
             registrationStatus: event.registrationStatus,
             maxTeams: event.maxTeams,
-            registeredTeamsCount: allTeams.length,
+            registeredTeamsCount: totalTeamsCount,
           },
           teams: allTeams,
         },
@@ -309,60 +305,450 @@ export async function PUT(req: Request) {
     const body = await req.json();
     const { teamId, eventId, action, teamCode } = body;
 
-    if (!teamId && !teamCode) {
-      return NextResponse.json({ error: "Team ID or Team Code is required." }, { status: 400 });
+    if (!teamId && !teamCode && !body.payload && !body.rawCode && !body.participantEmail) {
+      return NextResponse.json({ error: "Team ID, Team Code, or Scan Payload is required." }, { status: 400 });
     }
 
     await connectDB();
 
-    if (action === "toggle_check_in") {
-      const checkedIn = Boolean(body.checkedIn);
-      const checkedInAt = checkedIn ? new Date() : undefined;
-      const cleanCode = teamCode ? String(teamCode).trim().toUpperCase() : undefined;
-
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      let updatedTeam: any = null;
-      if (teamId && mongoose.Types.ObjectId.isValid(teamId)) {
-        updatedTeam = await Team.findByIdAndUpdate(
-          teamId,
-          { checkedIn, ...(checkedIn ? { checkedInAt } : { $unset: { checkedInAt: 1 } }) },
-          { new: true }
-        );
-      } else if (cleanCode) {
-        updatedTeam = await Team.findOneAndUpdate(
-          { teamCode: cleanCode },
-          { checkedIn, ...(checkedIn ? { checkedInAt } : { $unset: { checkedInAt: 1 } }) },
-          { new: true }
-        );
-      }
-
-      const effectiveEventId = eventId || updatedTeam?.eventId?.toString();
-
-      if (effectiveEventId && mongoose.Types.ObjectId.isValid(effectiveEventId)) {
-        const ev = await Event.findById(effectiveEventId);
+    // -------------------------------------------------------------
+    // Helper: Sync Team to Event.registeredTeams
+    // -------------------------------------------------------------
+    const syncTeamToEvent = async (tDoc: any, targetEventId?: string) => {
+      const effEventId = targetEventId || tDoc?.eventId?.toString();
+      if (!effEventId || !mongoose.Types.ObjectId.isValid(effEventId)) return;
+      try {
+        const ev = await Event.findById(effEventId);
         if (ev && Array.isArray(ev.registeredTeams)) {
           const match = ev.registeredTeams.find(
-            (t: IRegisteredTeam) =>
-              (teamId && t.id === teamId) ||
-              (cleanCode && t.teamCode?.toUpperCase() === cleanCode) ||
-              (updatedTeam && (t.id === updatedTeam._id.toString() || t.teamCode?.toUpperCase() === updatedTeam.teamCode?.toUpperCase()))
+            (r: IRegisteredTeam) =>
+              (tDoc._id && (r.id === tDoc._id.toString() || r.teamCode?.toUpperCase() === tDoc.teamCode?.toUpperCase())) ||
+              (tDoc.teamCode && r.teamCode?.toUpperCase() === tDoc.teamCode?.toUpperCase())
           );
           if (match) {
-            match.checkedIn = checkedIn;
-            match.checkedInAt = checkedInAt;
+            match.checkedIn = tDoc.checkedIn;
+            match.checkedInAt = tDoc.checkedInAt;
+            match.leadCheckedIn = Boolean(tDoc.lead?.checkedIn);
+            match.leadCheckedInAt = tDoc.lead?.checkedInAt;
+            if (Array.isArray(tDoc.members) && Array.isArray(match.members)) {
+              match.members.forEach((m: any) => {
+                const docMem = tDoc.members.find((tm: any) => tm.email?.toLowerCase() === m.email?.toLowerCase());
+                if (docMem) {
+                  m.checkedIn = Boolean(docMem.checkedIn);
+                  m.checkedInAt = docMem.checkedInAt;
+                }
+              });
+            }
             await ev.save();
           }
         }
+      } catch (err) {
+        console.error("Failed syncing team to event:", err);
+      }
+    };
+
+    // -------------------------------------------------------------
+    // Action: SCAN CHECK-IN (Handles participant QR, email, roll, team)
+    // -------------------------------------------------------------
+    if (action === "scan_check_in") {
+      const rawInput = String(body.payload || body.rawCode || teamCode || "").trim();
+      let extractedEmail: string | null = null;
+      let extractedTeamCode: string | null = null;
+      let extractedRoll: string | null = null;
+
+      // 1. JSON Payload: {"email": "...", "teamCode": "..."}
+      if (rawInput.startsWith("{") && rawInput.endsWith("}")) {
+        try {
+          const parsed = JSON.parse(rawInput);
+          if (parsed.email) extractedEmail = String(parsed.email).trim().toLowerCase();
+          if (parsed.participantEmail) extractedEmail = String(parsed.participantEmail).trim().toLowerCase();
+          if (parsed.teamCode) extractedTeamCode = String(parsed.teamCode).trim().toUpperCase();
+          if (parsed.roll) extractedRoll = String(parsed.roll).trim();
+        } catch {}
       }
 
-      if (!updatedTeam && !effectiveEventId) {
+      // 2. URL Payload: ?email=...&teamCode=...
+      if (!extractedEmail && !extractedTeamCode && (rawInput.startsWith("http://") || rawInput.startsWith("https://"))) {
+        try {
+          const urlObj = new URL(rawInput);
+          extractedEmail = urlObj.searchParams.get("email") || urlObj.searchParams.get("participantEmail");
+          extractedTeamCode = urlObj.searchParams.get("teamCode") || urlObj.searchParams.get("code");
+          extractedRoll = urlObj.searchParams.get("roll");
+          if (extractedEmail) extractedEmail = extractedEmail.trim().toLowerCase();
+          if (extractedTeamCode) extractedTeamCode = extractedTeamCode.trim().toUpperCase();
+        } catch {}
+      }
+
+      // 3. Delimited string: HULT-XXXX:student@heritageit.edu.in
+      if (!extractedEmail && rawInput.includes(":")) {
+        const parts = rawInput.split(":");
+        parts.forEach((p) => {
+          const tp = p.trim();
+          if (/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(tp)) extractedEmail = tp.toLowerCase();
+          else if (/^[A-Za-z0-9_-]{4,32}$/.test(tp)) extractedTeamCode = tp.toUpperCase();
+        });
+      }
+
+      // 4. Direct Email
+      if (!extractedEmail && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(rawInput)) {
+        extractedEmail = rawInput.toLowerCase();
+      }
+
+      // 5. Query string format: teamCode=XYZ or email=XYZ
+      if (!extractedEmail && rawInput.includes("email=")) {
+        const m = rawInput.match(/email=([^&]+)/i);
+        if (m && m[1]) extractedEmail = decodeURIComponent(m[1]).trim().toLowerCase();
+      }
+      if (!extractedTeamCode && rawInput.includes("teamCode=")) {
+        const m = rawInput.match(/teamCode=([a-zA-Z0-9_-]+)/i);
+        if (m && m[1]) extractedTeamCode = m[1].trim().toUpperCase();
+      }
+
+      // 6. Direct Team Code format
+      if (!extractedEmail && !extractedTeamCode && /^[A-Za-z0-9_-]{4,32}$/.test(rawInput)) {
+        extractedTeamCode = rawInput.toUpperCase();
+      }
+
+      // Find the team in MongoDB
+      let targetTeam: any = null;
+
+      if (extractedEmail) {
+        targetTeam = await Team.findOne({
+          $or: [{ leadEmail: extractedEmail }, { "members.email": extractedEmail }],
+        });
+      }
+
+      if (!targetTeam && extractedRoll) {
+        targetTeam = await Team.findOne({
+          $or: [{ "lead.roll": extractedRoll }, { "members.roll": extractedRoll }],
+        });
+      }
+
+      if (!targetTeam && (extractedTeamCode || teamCode)) {
+        const c = (extractedTeamCode || teamCode).toUpperCase();
+        targetTeam = await Team.findOne({ teamCode: c });
+      }
+
+      if (!targetTeam && teamId && mongoose.Types.ObjectId.isValid(teamId)) {
+        targetTeam = await Team.findById(teamId);
+      }
+
+      if (!targetTeam) {
+        return NextResponse.json(
+          { error: `No registered participant or team found for "${rawInput}".` },
+          { status: 404 }
+        );
+      }
+
+      // Edge Case 1: Check forming team
+      const isSubmitted = targetTeam.submissionStatus === "submitted" || Boolean(targetTeam.submittedAt);
+      if (!isSubmitted) {
+        return NextResponse.json(
+          { error: `Check-in blocked: Team "${targetTeam.teamName}" is still Forming and has not submitted registration.` },
+          { status: 400 }
+        );
+      }
+
+      // Edge Case 2: Check disqualified
+      if (targetTeam.status === "disqualified") {
+        return NextResponse.json(
+          { error: `Check-in blocked: Team "${targetTeam.teamName}" is disqualified from event participation.` },
+          { status: 400 }
+        );
+      }
+
+      // Edge Case 3: Check Event ID mismatch
+      if (eventId && targetTeam.eventId && targetTeam.eventId.toString() !== eventId) {
+        const registeredEv = await Event.findById(targetTeam.eventId).lean();
+        const evTitle = registeredEv ? registeredEv.title : "another event";
+        return NextResponse.json(
+          { error: `Event Mismatch: Team is registered for "${evTitle}", not this event.` },
+          { status: 400 }
+        );
+      }
+
+      // Identify Participant (Leader vs Member)
+      let scannedParticipant: { name: string; role: string; email: string } | null = null;
+      let isDuplicate = false;
+      let priorCheckInTime: Date | null = null;
+
+      if (extractedEmail && targetTeam.leadEmail.toLowerCase() === extractedEmail) {
+        // Scanned Team Leader
+        scannedParticipant = {
+          name: targetTeam.lead.name || "Team Leader",
+          role: "Team Leader",
+          email: targetTeam.lead.email,
+        };
+        if (targetTeam.lead.checkedIn) {
+          isDuplicate = true;
+          priorCheckInTime = targetTeam.lead.checkedInAt || null;
+        } else {
+          targetTeam.lead.checkedIn = true;
+          targetTeam.lead.checkedInAt = new Date();
+        }
+      } else if (extractedEmail) {
+        // Scanned Member
+        const memIdx = targetTeam.members.findIndex((m: any) => m.email?.toLowerCase() === extractedEmail);
+        if (memIdx !== -1) {
+          const m = targetTeam.members[memIdx];
+          scannedParticipant = {
+            name: m.name,
+            role: "Member",
+            email: m.email,
+          };
+          if (m.checkedIn) {
+            isDuplicate = true;
+            priorCheckInTime = m.checkedInAt || null;
+          } else {
+            m.checkedIn = true;
+            m.checkedInAt = new Date();
+          }
+        }
+      } else if (extractedRoll && targetTeam.lead.roll === extractedRoll) {
+        scannedParticipant = {
+          name: targetTeam.lead.name || "Team Leader",
+          role: "Team Leader",
+          email: targetTeam.lead.email,
+        };
+        if (targetTeam.lead.checkedIn) {
+          isDuplicate = true;
+          priorCheckInTime = targetTeam.lead.checkedInAt || null;
+        } else {
+          targetTeam.lead.checkedIn = true;
+          targetTeam.lead.checkedInAt = new Date();
+        }
+      } else if (extractedRoll) {
+        const memIdx = targetTeam.members.findIndex((m: any) => m.roll === extractedRoll);
+        if (memIdx !== -1) {
+          const m = targetTeam.members[memIdx];
+          scannedParticipant = {
+            name: m.name,
+            role: "Member",
+            email: m.email,
+          };
+          if (m.checkedIn) {
+            isDuplicate = true;
+            priorCheckInTime = m.checkedInAt || null;
+          } else {
+            m.checkedIn = true;
+            m.checkedInAt = new Date();
+          }
+        }
+      } else {
+        // Scanned Team Code directly -> Check in entire team roster
+        scannedParticipant = {
+          name: `${targetTeam.lead.name} (Full Team)`,
+          role: "Entire Roster",
+          email: targetTeam.lead.email,
+        };
+        if (targetTeam.checkedIn) {
+          isDuplicate = true;
+          priorCheckInTime = targetTeam.checkedInAt || null;
+        } else {
+          targetTeam.lead.checkedIn = true;
+          targetTeam.lead.checkedInAt = targetTeam.lead.checkedInAt || new Date();
+          targetTeam.members.forEach((m: any) => {
+            m.checkedIn = true;
+            m.checkedInAt = m.checkedInAt || new Date();
+          });
+        }
+      }
+
+      // Compute total checked in roster
+      const totalRoster = 1 + (Array.isArray(targetTeam.members) ? targetTeam.members.length : 0);
+      const leadChecked = targetTeam.lead.checkedIn ? 1 : 0;
+      const membersChecked = Array.isArray(targetTeam.members)
+        ? targetTeam.members.filter((m: any) => m.checkedIn).length
+        : 0;
+      const checkedInCount = leadChecked + membersChecked;
+      const allMembersCheckedIn = checkedInCount >= totalRoster;
+
+      // Auto Team Check-In Trigger
+      if (allMembersCheckedIn) {
+        targetTeam.checkedIn = true;
+        targetTeam.checkedInAt = targetTeam.checkedInAt || new Date();
+      } else {
+        targetTeam.checkedIn = false;
+        targetTeam.checkedInAt = null;
+      }
+
+      await targetTeam.save();
+      await syncTeamToEvent(targetTeam, eventId);
+
+      // Audit Log
+      await logAdminAction({
+        adminEmail: session?.user?.email || "admin",
+        adminName: session?.user?.name || "Admin",
+        adminRole: (session?.user as { role?: string })?.role || "admin",
+        action: "participant_checkin",
+        targetType: "team",
+        targetId: targetTeam._id.toString(),
+        details: {
+          teamCode: targetTeam.teamCode,
+          teamName: targetTeam.teamName,
+          participant: scannedParticipant,
+          allMembersCheckedIn,
+          checkedInCount,
+          totalRoster,
+          duplicate: isDuplicate,
+        },
+        req,
+      });
+
+      if (isDuplicate) {
+        return NextResponse.json(
+          {
+            success: true,
+            duplicate: true,
+            message: `${scannedParticipant?.name || "Participant"} is already checked in${priorCheckInTime ? ` (at ${new Date(priorCheckInTime).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })})` : ""}.`,
+            team: targetTeam,
+            participant: scannedParticipant,
+            allCheckedIn: targetTeam.checkedIn,
+            checkedInCount,
+            totalMembers: totalRoster,
+          },
+          { status: 200 }
+        );
+      }
+
+      const successMsg = allMembersCheckedIn
+        ? `All ${totalRoster} members verified! Team "${targetTeam.teamName}" is now fully Checked In!`
+        : `${scannedParticipant?.name} checked in! (${checkedInCount} of ${totalRoster} members verified)`;
+
+      return NextResponse.json(
+        {
+          success: true,
+          duplicate: false,
+          allCheckedIn: targetTeam.checkedIn,
+          checkedInCount,
+          totalMembers: totalRoster,
+          participant: scannedParticipant,
+          team: targetTeam,
+          message: successMsg,
+        },
+        { status: 200 }
+      );
+    }
+
+    // -------------------------------------------------------------
+    // Action: TOGGLE PARTICIPANT CHECK-IN (From LiveEventManager table)
+    // -------------------------------------------------------------
+    if (action === "toggle_participant_check_in") {
+      const { participantEmail, checkedIn } = body;
+      const targetCheckedIn = Boolean(checkedIn);
+      const cleanEmail = String(participantEmail || "").trim().toLowerCase();
+
+      let targetTeam: any = null;
+      if (teamId && mongoose.Types.ObjectId.isValid(teamId)) {
+        targetTeam = await Team.findById(teamId);
+      } else if (teamCode) {
+        targetTeam = await Team.findOne({ teamCode: String(teamCode).trim().toUpperCase() });
+      }
+
+      if (!targetTeam) {
+        return NextResponse.json({ error: "Team not found." }, { status: 404 });
+      }
+
+      const isSubmitted = targetTeam.submissionStatus === "submitted" || Boolean(targetTeam.submittedAt);
+      if (!isSubmitted) {
+        return NextResponse.json(
+          { error: "Cannot check in members of an unsubmitted forming team." },
+          { status: 400 }
+        );
+      }
+
+      let updatedPersonName = "Participant";
+      if (targetTeam.leadEmail.toLowerCase() === cleanEmail) {
+        targetTeam.lead.checkedIn = targetCheckedIn;
+        targetTeam.lead.checkedInAt = targetCheckedIn ? new Date() : undefined;
+        updatedPersonName = targetTeam.lead.name;
+      } else {
+        const memIdx = targetTeam.members.findIndex((m: any) => m.email?.toLowerCase() === cleanEmail);
+        if (memIdx !== -1) {
+          targetTeam.members[memIdx].checkedIn = targetCheckedIn;
+          targetTeam.members[memIdx].checkedInAt = targetCheckedIn ? new Date() : undefined;
+          updatedPersonName = targetTeam.members[memIdx].name;
+        }
+      }
+
+      // Recalculate auto team check-in
+      const totalRoster = 1 + (Array.isArray(targetTeam.members) ? targetTeam.members.length : 0);
+      const leadChecked = targetTeam.lead.checkedIn ? 1 : 0;
+      const membersChecked = Array.isArray(targetTeam.members)
+        ? targetTeam.members.filter((m: any) => m.checkedIn).length
+        : 0;
+      const checkedInCount = leadChecked + membersChecked;
+      const allMembersCheckedIn = checkedInCount >= totalRoster;
+
+      targetTeam.checkedIn = allMembersCheckedIn;
+      targetTeam.checkedInAt = allMembersCheckedIn ? (targetTeam.checkedInAt || new Date()) : null;
+
+      await targetTeam.save();
+      await syncTeamToEvent(targetTeam, eventId);
+
+      return NextResponse.json(
+        {
+          success: true,
+          message: targetCheckedIn
+            ? allMembersCheckedIn
+              ? `All ${totalRoster} members verified! Team marked Checked In!`
+              : `${updatedPersonName} marked Checked In (${checkedInCount}/${totalRoster})`
+            : `Check-in reverted for ${updatedPersonName}.`,
+          allCheckedIn: targetTeam.checkedIn,
+          checkedInCount,
+          totalMembers: totalRoster,
+          team: targetTeam,
+        },
+        { status: 200 }
+      );
+    }
+
+    // -------------------------------------------------------------
+    // Action: TOGGLE TEAM CHECK-IN (Entire Team)
+    // -------------------------------------------------------------
+    if (action === "toggle_check_in") {
+      const checkedIn = Boolean(body.checkedIn);
+      const checkedInAt = checkedIn ? new Date() : null;
+      const cleanCode = teamCode ? String(teamCode).trim().toUpperCase() : undefined;
+
+      let targetTeam: any = null;
+      if (teamId && mongoose.Types.ObjectId.isValid(teamId)) {
+        targetTeam = await Team.findById(teamId);
+      } else if (cleanCode) {
+        targetTeam = await Team.findOne({ teamCode: cleanCode });
+      }
+
+      if (!targetTeam) {
         return NextResponse.json(
           { error: `Team with code "${cleanCode || teamId}" was not found.` },
           { status: 404 }
         );
       }
 
-      const effectiveTargetId = updatedTeam?._id?.toString() || teamId || cleanCode || "unknown";
+      const isSubmitted = targetTeam.submissionStatus === "submitted" || Boolean(targetTeam.submittedAt);
+      if (checkedIn && !isSubmitted) {
+        return NextResponse.json(
+          { error: "Check-in blocked: Team is still Forming and has not submitted registration." },
+          { status: 400 }
+        );
+      }
+
+      // Cascade check-in to lead and members
+      targetTeam.checkedIn = checkedIn;
+      targetTeam.checkedInAt = checkedInAt;
+      targetTeam.lead.checkedIn = checkedIn;
+      targetTeam.lead.checkedInAt = checkedInAt;
+      if (Array.isArray(targetTeam.members)) {
+        targetTeam.members.forEach((m: any) => {
+          m.checkedIn = checkedIn;
+          m.checkedInAt = checkedInAt;
+        });
+      }
+
+      await targetTeam.save();
+      await syncTeamToEvent(targetTeam, eventId);
+
+      const effectiveTargetId = targetTeam._id.toString();
 
       await logAdminAction({
         adminEmail: session?.user?.email || "admin",
@@ -371,17 +757,17 @@ export async function PUT(req: Request) {
         action: checkedIn ? "team_checkin" : "team_uncheckin",
         targetType: "team",
         targetId: effectiveTargetId,
-        details: { checkedIn, eventId: effectiveEventId, teamCode: cleanCode || updatedTeam?.teamCode },
+        details: { checkedIn, eventId, teamCode: targetTeam.teamCode },
         req,
       });
 
       return NextResponse.json(
         {
           success: true,
-          message: checkedIn ? "Team marked as Checked In!" : "Check-in removed.",
+          message: checkedIn ? "All team members marked as Checked In!" : "Check-in removed for all team members.",
           checkedIn,
           checkedInAt,
-          team: updatedTeam,
+          team: targetTeam,
         },
         { status: 200 }
       );
@@ -548,18 +934,32 @@ export async function DELETE(req: Request) {
 
     await connectDB();
 
+    let targetTeam: any = null;
     if (teamId && mongoose.Types.ObjectId.isValid(teamId)) {
-      await Team.findByIdAndDelete(teamId);
+      targetTeam = await Team.findById(teamId);
     } else if (teamCode) {
-      await Team.findOneAndDelete({ teamCode: teamCode.toUpperCase() });
+      targetTeam = await Team.findOne({ teamCode: teamCode.toUpperCase() });
     }
 
-    if (eventId && mongoose.Types.ObjectId.isValid(eventId)) {
-      const ev = await Event.findById(eventId);
-      if (ev && Array.isArray(ev.registeredTeams)) {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        ev.registeredTeams = ev.registeredTeams.filter((t: any) => t.id !== teamId && t.teamCode !== teamCode);
-        ev.registeredTeamsCount = ev.registeredTeams.length;
+    if (targetTeam) {
+      await Team.findByIdAndDelete(targetTeam._id);
+    }
+
+    const effEventId = eventId || targetTeam?.eventId?.toString();
+    if (effEventId && mongoose.Types.ObjectId.isValid(effEventId)) {
+      const ev = await Event.findById(effEventId);
+      if (ev) {
+        const tIdStr = (teamId || targetTeam?._id?.toString() || "");
+        const tCodeStr = (teamCode || targetTeam?.teamCode || "").toUpperCase();
+        if (Array.isArray(ev.registeredTeams)) {
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          ev.registeredTeams = ev.registeredTeams.filter((t: any) => {
+            const matchesId = tIdStr && (t.id === tIdStr || t._id?.toString() === tIdStr);
+            const matchesCode = tCodeStr && t.teamCode?.toUpperCase() === tCodeStr;
+            return !matchesId && !matchesCode;
+          });
+        }
+        ev.registeredTeamsCount = await Team.countDocuments({ eventId: ev._id });
         await ev.save();
       }
     }

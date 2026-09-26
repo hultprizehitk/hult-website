@@ -606,25 +606,49 @@ export async function PATCH(req: Request) {
       }
     }
 
-    // Asynchronously dispatch Team Submitted confirmation email to the Team Lead (non-blocking)
-    const tLeadName = team.lead?.name || team.lead?.email || "";
-    const tLeadEmail = team.lead?.email || team.leadEmail || "";
+    // Dispatch Team Submitted confirmation email to Team Leader AND all Team Members
+    const allRecipients: Array<{ name: string; email: string; isLead: boolean }> = [];
+    const tLeadEmail = (team.lead?.email || team.leadEmail || "").trim().toLowerCase();
+    const tLeadName = (team.lead?.name || team.lead?.email || "Team Leader").trim();
+
     if (tLeadEmail) {
-      sendTeamSubmittedEmail({
-        leadName: tLeadName,
-        leadEmail: tLeadEmail,
-        teamName: team.teamName,
-        ventureName: team.ventureName,
-        eventTitle: event?.title || "Event",
-        eventId: event?._id?.toString?.() || "",
-        eventDate: event?.date,
-        eventVenue: event?.venue,
-        membersCount: 1 + (Array.isArray(team.members) ? team.members.length : 0),
-        minMembers,
-        maxMembers,
-      }).catch((emailErr: unknown) => {
-        console.error("[Google Workspace SMTP] Failed to send team submitted email:", emailErr);
-      });
+      allRecipients.push({ name: tLeadName, email: tLeadEmail, isLead: true });
+    }
+
+    if (Array.isArray(team.members)) {
+      for (const m of team.members) {
+        const memEmail = (m.email || "").trim().toLowerCase();
+        const memName = (m.name || memEmail || "Team Member").trim();
+        if (memEmail && !allRecipients.some((r) => r.email === memEmail)) {
+          allRecipients.push({ name: memName, email: memEmail, isLead: false });
+        }
+      }
+    }
+
+    if (allRecipients.length > 0) {
+      const emailDispatches = allRecipients.map((recipient) =>
+        sendTeamSubmittedEmail({
+          recipientName: recipient.name,
+          recipientEmail: recipient.email,
+          isLead: recipient.isLead,
+          leadName: tLeadName,
+          leadEmail: tLeadEmail,
+          teamName: team.teamName,
+          ventureName: team.ventureName,
+          eventTitle: event?.title || "HULT ASCEND : The Rise Begins",
+          eventId: event?._id?.toString?.() || "",
+          eventDate: event?.date,
+          eventVenue: event?.venue,
+          membersCount: 1 + (Array.isArray(team.members) ? team.members.length : 0),
+          minMembers,
+          maxMembers,
+        }).catch((emailErr: unknown) => {
+          console.error(`[Google Workspace SMTP] Failed to send team submitted email to ${recipient.email}:`, emailErr);
+        })
+      );
+
+      // Must be awaited in Next.js to guarantee TLS delivery before response terminates
+      await Promise.allSettled(emailDispatches);
     }
 
     return NextResponse.json({

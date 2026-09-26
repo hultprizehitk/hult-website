@@ -872,10 +872,10 @@ export default function EventRegistrationModal({
                 </div>
 
                 {/* Team Leader Card */}
-                <div className="rounded-2xl bg-white/[0.04] border border-white/15 p-4 sm:p-5 space-y-2.5">
-                  <div className="flex items-center justify-between gap-3">
-                    <div className="min-w-0">
-                      <div className="flex items-center gap-2">
+                <div className="rounded-2xl bg-white/[0.04] border border-white/15 p-4 sm:p-5 space-y-2.5 overflow-hidden">
+                  <div className="flex items-start justify-between gap-3 flex-wrap sm:flex-nowrap">
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-center gap-2 flex-wrap">
                         <span className="font-[family-name:var(--font-google-sans)] font-bold text-white text-sm sm:text-base truncate">
                           {existingTeam.lead.name}
                         </span>
@@ -883,19 +883,18 @@ export default function EventRegistrationModal({
                           Leader
                         </span>
                       </div>
-                      <div className="text-xs text-white/50 font-mono truncate">
+                      <div className="text-xs text-white/50 font-mono truncate mt-0.5">
                         {existingTeam.lead.email}
                       </div>
                     </div>
-
-                    {existingTeam.lead.roll && (
-                      <span className="text-xs font-mono text-white/70 bg-white/5 border border-white/10 px-2.5 py-1 rounded-lg shrink-0">
-                        Roll: {existingTeam.lead.roll}
-                      </span>
-                    )}
                   </div>
 
                   <div className="flex items-center gap-2 flex-wrap text-xs text-white/60 pt-2 border-t border-white/5 font-mono">
+                    {existingTeam.lead.roll && (
+                      <span className="inline-flex items-center gap-1 rounded-md bg-white/5 border border-white/10 px-2.5 py-1 text-white/80 shrink-0">
+                        <span>Roll: {existingTeam.lead.roll}</span>
+                      </span>
+                    )}
                     {existingTeam.lead.department && (
                       <span className="inline-flex items-center gap-1 rounded-md bg-white/5 px-2.5 py-1">
                         <GraduationCap size={13} className="text-white/40" />
@@ -917,11 +916,11 @@ export default function EventRegistrationModal({
                     {existingTeam.members.map((m, idx) => (
                       <div
                         key={idx}
-                        className="rounded-2xl bg-white/[0.04] border border-white/10 p-4 space-y-2.5"
+                        className="rounded-2xl bg-white/[0.04] border border-white/10 p-4 space-y-2.5 overflow-hidden"
                       >
-                        <div className="flex items-center justify-between gap-3">
-                          <div className="min-w-0">
-                            <div className="flex items-center gap-2">
+                        <div className="flex items-start justify-between gap-3 flex-wrap sm:flex-nowrap">
+                          <div className="min-w-0 flex-1">
+                            <div className="flex items-center gap-2 flex-wrap">
                               <span className="font-[family-name:var(--font-google-sans)] font-semibold text-white text-sm truncate">
                                 {m.name}
                               </span>
@@ -929,33 +928,31 @@ export default function EventRegistrationModal({
                                 Member
                               </span>
                             </div>
-                            <div className="text-xs text-white/50 font-mono truncate">
+                            <div className="text-xs text-white/50 font-mono truncate mt-0.5">
                               {m.email}
                             </div>
                           </div>
 
-                          <div className="flex items-center gap-2 flex-wrap">
-                            {m.roll && (
-                              <span className="text-xs font-mono text-white/60 bg-white/5 border border-white/10 px-2.5 py-1 rounded-lg shrink-0">
-                                Roll: {m.roll}
-                              </span>
-                            )}
-                            {userRole === "lead" && !isSubmitted && (
-                              <button
-                                type="button"
-                                onClick={() => handleRemoveMember(m.email, m.name)}
-                                disabled={actionLoading}
-                                className="inline-flex items-center gap-1 text-[10px] font-mono text-white/60 hover:text-rose-300 bg-white/[0.04] hover:bg-rose-500/10 border border-white/10 hover:border-rose-500/30 px-2.5 py-1 rounded-lg transition-all cursor-pointer shrink-0 disabled:opacity-50"
-                                title={`Remove ${m.name} from team`}
-                              >
-                                <UserMinus size={11} />
-                                <span>Remove</span>
-                              </button>
-                            )}
-                          </div>
+                          {userRole === "lead" && !isSubmitted && (
+                            <button
+                              type="button"
+                              onClick={() => handleRemoveMember(m.email, m.name)}
+                              disabled={actionLoading}
+                              className="inline-flex items-center gap-1 text-[10px] font-mono text-white/60 hover:text-rose-300 bg-white/[0.04] hover:bg-rose-500/10 border border-white/10 hover:border-rose-500/30 px-2.5 py-1 rounded-lg transition-all cursor-pointer shrink-0 disabled:opacity-50"
+                              title={`Remove ${m.name} from team`}
+                            >
+                              <UserMinus size={11} />
+                              <span>Remove</span>
+                            </button>
+                          )}
                         </div>
 
                         <div className="flex items-center gap-2 flex-wrap text-xs text-white/60 pt-2 border-t border-white/5 font-mono">
+                          {m.roll && (
+                            <span className="inline-flex items-center gap-1 rounded-md bg-white/5 border border-white/10 px-2.5 py-1 text-white/80 shrink-0">
+                              <span>Roll: {m.roll}</span>
+                            </span>
+                          )}
                           {m.department && (
                             <span className="inline-flex items-center gap-1 rounded-md bg-white/5 px-2.5 py-1">
                               <GraduationCap size={13} className="text-white/40" />

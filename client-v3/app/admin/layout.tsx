@@ -1,6 +1,6 @@
 import React from "react";
 import { auth } from "@/auth";
-import { isAuthorizedAdmin, isAuthorizedSuperAdmin } from "@/lib/admin-check";
+import { isAuthorizedAdmin, isAuthorizedSuperAdmin, getAdminRole } from "@/lib/admin-check";
 import AdminSignInGate from "./components/AdminSignInGate";
 import AdminAccessDenied from "./components/AdminAccessDenied";
 import DashboardNav from "./components/DashboardNav";
@@ -30,6 +30,7 @@ export default async function AdminLayout({
   }
 
   const isSuperAdmin = await isAuthorizedSuperAdmin();
+  const role = await getAdminRole();
 
   return (
     <div className="relative min-h-screen w-full bg-black font-sans text-white selection:bg-white/25 selection:text-white overflow-x-clip">
@@ -50,6 +51,7 @@ export default async function AdminLayout({
       <DashboardNav
         userEmail={session.user.email}
         isSuperAdmin={isSuperAdmin}
+        role={role}
       />
 
       {/* Main Content Area */}

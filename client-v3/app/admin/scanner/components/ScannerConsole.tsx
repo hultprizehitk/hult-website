@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useRef, useCallback } from "react";
+import React, { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import jsQR from "jsqr";
 import {
   Camera,
@@ -11,20 +11,40 @@ import {
   Zap,
   Volume2,
   VolumeX,
-  Keyboard,
   RefreshCw,
   Search,
   Undo2,
   Calendar,
   Users,
   Check,
+  Pause,
+  UserCheck,
+  User,
+  X,
+  Clock,
 } from "lucide-react";
+
+interface FlatParticipant {
+  id: string;
+  teamId: string;
+  teamName: string;
+  teamCode: string;
+  name: string;
+  email: string;
+  role: "Team Leader" | "Member";
+  department?: string;
+  roll?: string;
+  checkedIn: boolean;
+  checkedInAt?: string | null;
+}
 
 interface TeamMember {
   name: string;
   email?: string;
   department?: string;
   roll?: string;
+  checkedIn?: boolean;
+  checkedInAt?: string | null;
 }
 
 interface TeamLead {
@@ -33,6 +53,8 @@ interface TeamLead {
   phone?: string;
   department?: string;
   roll?: string;
+  checkedIn?: boolean;
+  checkedInAt?: string | null;
 }
 
 interface RegisteredTeam {
@@ -45,6 +67,8 @@ interface RegisteredTeam {
   department?: string;
   members: TeamMember[];
   status: "confirmed" | "disqualified";
+  submissionStatus?: "forming" | "ready" | "submitted";
+  submittedAt?: string | Date | null;
   checkedIn: boolean;
   checkedInAt?: string | null;
   registeredAt: string | Date;
@@ -66,9 +90,14 @@ interface SessionScanLog {
   teamCode: string;
   teamName: string;
   leadName?: string;
+  participantName?: string;
+  participantRole?: string;
   timestamp: string;
   status: "success" | "duplicate" | "error";
   message: string;
+  checkedInCount?: number;
+  totalMembers?: number;
+  allCheckedIn?: boolean;
 }
 
 export default function ScannerConsole() {
@@ -96,6 +125,7 @@ export default function ScannerConsole() {
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
+  const lastScannedCodeRef = useRef<{ code: string; time: number } | null>(null);
 
   // -------------------------------------------------------------
   // Feedback & Session Logs
@@ -106,14 +136,26 @@ export default function ScannerConsole() {
     teamCode: string;
     teamName?: string;
     leadName?: string;
+    participantName?: string;
+    participantRole?: string;
     membersCount?: number;
+    checkedInCount?: number;
+    totalMembers?: number;
+    allCheckedIn?: boolean;
   } | null>(null);
 
-  const [manualCode, setManualCode] = useState<string>("");
   const [sessionLogs, setSessionLogs] = useState<SessionScanLog[]>([]);
   const [rosterSearch, setRosterSearch] = useState<string>("");
   const [rosterFilter, setRosterFilter] = useState<"all" | "checked_in" | "not_checked_in">("all");
+  const [viewMode, setViewMode] = useState<"teams" | "participants">("teams");
+  const [actionLoadingId, setActionLoadingId] = useState<string | null>(null);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
+  const [checkInConfirmTarget, setCheckInConfirmTarget] = useState<{
+    type: "team" | "participant";
+    team?: RegisteredTeam;
+    participant?: FlatParticipant;
+    nextCheckIn: boolean;
+  } | null>(null);
 
   const triggerToast = (msg: string) => {
     setToastMessage(msg);
@@ -171,6 +213,26 @@ export default function ScannerConsole() {
     },
     [soundEnabled]
   );
+
+  // -------------------------------------------------------------
+  // Helpers
+  // -------------------------------------------------------------
+  const formatCheckInDateTime = (dateVal: string | Date | undefined | null) => {
+    if (!dateVal) return null;
+    const d = new Date(dateVal);
+    if (isNaN(d.getTime())) return null;
+    const dateStr = d.toLocaleDateString("en-IN", {
+      day: "numeric",
+      month: "short",
+      year: "numeric",
+    });
+    const timeStr = d.toLocaleTimeString("en-IN", {
+      hour: "2-digit",
+      minute: "2-digit",
+      hour12: true,
+    }).toUpperCase();
+    return { dateStr, timeStr, full: `${dateStr}, ${timeStr}` };
+  };
 
   // -------------------------------------------------------------
   // QR Content Parser
@@ -273,103 +335,95 @@ export default function ScannerConsole() {
   }, [selectedEventId, fetchTeams]);
 
   // -------------------------------------------------------------
-  // 3. Process Check-in Submission
+  // 3. Process Check-in Submission (Handles Participant QR & Team QR)
   // -------------------------------------------------------------
   const handleCheckInCode = useCallback(
     async (rawCode: string) => {
-      const code = parseTeamCode(rawCode);
+      const code = String(rawCode || "").trim();
       if (!code) return;
 
-      setIsProcessing(true);
-
-      const matchedTeam = teams.find(
-        (t) => t.teamCode.toUpperCase() === code.toUpperCase()
-      );
-
-      // Check if already checked in
-      if (matchedTeam && matchedTeam.checkedIn) {
-        playAudioChime("duplicate");
-        const logEntry: SessionScanLog = {
-          id: `${code}_${Date.now()}`,
-          teamCode: code,
-          teamName: matchedTeam.teamName,
-          leadName: matchedTeam.lead.name,
-          timestamp: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", second: "2-digit" }),
-          status: "duplicate",
-          message: `Already checked in at ${matchedTeam.checkedInAt ? new Date(matchedTeam.checkedInAt).toLocaleTimeString() : "earlier"}`,
-        };
-
-        setSessionLogs((prev) => [logEntry, ...prev.slice(0, 49)]);
-        setLastScanResult({
-          status: "duplicate",
-          message: logEntry.message,
-          teamCode: code,
-          teamName: matchedTeam.teamName,
-          leadName: matchedTeam.lead.name,
-          membersCount: matchedTeam.membersCount,
-        });
-
-        setTimeout(() => setIsProcessing(false), 1600);
+      // Prevent duplicate scan of the same exact code within 2 seconds
+      const now = Date.now();
+      if (
+        lastScannedCodeRef.current &&
+        lastScannedCodeRef.current.code === code &&
+        now - lastScannedCodeRef.current.time < 2000
+      ) {
         return;
       }
+      lastScannedCodeRef.current = { code, time: now };
+
+      setIsProcessing(true);
 
       try {
         const res = await fetch("/api/admin/teams", {
           method: "PUT",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
-            action: "toggle_check_in",
-            teamId: matchedTeam?.id,
+            action: "scan_check_in",
+            payload: code,
             eventId: selectedEventId,
-            teamCode: code,
-            checkedIn: true,
           }),
         });
 
         const data = await res.json();
 
         if (res.ok) {
-          playAudioChime("success");
-          const teamName = matchedTeam?.teamName || data.team?.teamName || code;
-          const leadName = matchedTeam?.lead.name || data.team?.lead?.name || "Participant";
-          const membersCount = matchedTeam?.membersCount || data.team?.membersCount || 4;
+          const isDup = Boolean(data.duplicate);
+          playAudioChime(isDup ? "duplicate" : "success");
 
-          // Optimistically update local teams list
-          setTeams((prev) =>
-            prev.map((t) =>
-              t.teamCode.toUpperCase() === code.toUpperCase() || (matchedTeam && t.id === matchedTeam.id)
-                ? { ...t, checkedIn: true, checkedInAt: new Date().toISOString() }
-                : t
-            )
-          );
+          const teamCode = data.team?.teamCode || code;
+          const teamName = data.team?.teamName || "Team";
+          const participantName = data.participant?.name;
+          const participantRole = data.participant?.role;
+          const checkedInCount = data.checkedInCount ?? 1;
+          const totalMembers = data.totalMembers ?? (data.team ? 1 + (data.team.members?.length || 0) : 4);
+          const allCheckedIn = Boolean(data.allCheckedIn);
+
+          // Optimistically update local teams list with full updated team document
+          if (data.team) {
+            setTeams((prev) =>
+              prev.map((t) => (t.id === data.team.id || t.teamCode === data.team.teamCode ? data.team : t))
+            );
+          }
 
           const logEntry: SessionScanLog = {
             id: `${code}_${Date.now()}`,
-            teamCode: code,
+            teamCode,
             teamName,
-            leadName,
+            leadName: data.team?.lead?.name,
+            participantName,
+            participantRole,
             timestamp: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", second: "2-digit" }),
-            status: "success",
-            message: "Attendance confirmed",
+            status: isDup ? "duplicate" : "success",
+            message: data.message || (isDup ? "Already checked in" : "Verified"),
+            checkedInCount,
+            totalMembers,
+            allCheckedIn,
           };
 
           setSessionLogs((prev) => [logEntry, ...prev.slice(0, 49)]);
           setLastScanResult({
-            status: "success",
-            message: "Attendance confirmed",
-            teamCode: code,
+            status: isDup ? "duplicate" : "success",
+            message: data.message,
+            teamCode,
             teamName,
-            leadName,
-            membersCount,
+            leadName: data.team?.lead?.name,
+            participantName,
+            participantRole,
+            membersCount: totalMembers,
+            checkedInCount,
+            totalMembers,
+            allCheckedIn,
           });
         } else {
           playAudioChime("error");
-          const errorMsg = data.error || `Team not found (${code})`;
+          const errorMsg = data.error || `Verification failed (${code})`;
 
           const logEntry: SessionScanLog = {
             id: `${code}_${Date.now()}`,
             teamCode: code,
-            teamName: "Unregistered / Unknown",
+            teamName: "Verification Blocked",
             timestamp: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", second: "2-digit" }),
             status: "error",
             message: errorMsg,
@@ -384,7 +438,7 @@ export default function ScannerConsole() {
         }
       } catch (err: unknown) {
         playAudioChime("error");
-        const errMsg = err instanceof Error ? err.message : "Network error submitting check-in.";
+        const errMsg = err instanceof Error ? err.message : "Network error processing check-in.";
         setLastScanResult({
           status: "error",
           message: errMsg,
@@ -394,7 +448,7 @@ export default function ScannerConsole() {
         setTimeout(() => setIsProcessing(false), 1800);
       }
     },
-    [teams, selectedEventId, playAudioChime]
+    [selectedEventId, playAudioChime]
   );
 
   // -------------------------------------------------------------
@@ -434,8 +488,16 @@ export default function ScannerConsole() {
   // -------------------------------------------------------------
   // 5. Toggle Team Check-in Manually from Roster
   // -------------------------------------------------------------
-  const handleToggleRosterCheckIn = async (team: RegisteredTeam) => {
-    const nextCheckIn = !team.checkedIn;
+  const handleToggleRosterCheckIn = (team: RegisteredTeam) => {
+    setCheckInConfirmTarget({
+      type: "team",
+      team,
+      nextCheckIn: !team.checkedIn,
+    });
+  };
+
+  const executeToggleRosterCheckIn = async (team: RegisteredTeam, targetState?: boolean) => {
+    const nextCheckIn = typeof targetState === "boolean" ? targetState : !team.checkedIn;
     try {
       const res = await fetch("/api/admin/teams", {
         method: "PUT",
@@ -465,6 +527,98 @@ export default function ScannerConsole() {
       }
     } catch {
       triggerToast("Error updating check-in status.");
+    }
+  };
+
+  // -------------------------------------------------------------
+  // 5b. Toggle Individual Participant Check-in
+  // -------------------------------------------------------------
+  const handleToggleParticipantCheckIn = (p: FlatParticipant) => {
+    setCheckInConfirmTarget({
+      type: "participant",
+      participant: p,
+      nextCheckIn: !p.checkedIn,
+    });
+  };
+
+  const executeToggleParticipantCheckIn = async (p: FlatParticipant, targetState?: boolean) => {
+    const nextCheckIn = typeof targetState === "boolean" ? targetState : !p.checkedIn;
+    setActionLoadingId(p.id);
+
+    // Optimistic update
+    setTeams((prev) =>
+      prev.map((t) => {
+        if (t.id !== p.teamId && t.teamCode.toUpperCase() !== p.teamCode.toUpperCase()) {
+          return t;
+        }
+        const nowIso = new Date().toISOString();
+        const isLead = p.role === "Team Leader";
+        const updatedLead = isLead
+          ? { ...t.lead, checkedIn: nextCheckIn, checkedInAt: nextCheckIn ? nowIso : null }
+          : t.lead;
+
+        const updatedMembers = (t.members || []).map((m) => {
+          if (
+            !isLead &&
+            ((p.email && m.email?.toLowerCase() === p.email.toLowerCase()) ||
+              (p.roll && m.roll?.toLowerCase() === p.roll.toLowerCase()) ||
+              m.name.toLowerCase() === p.name.toLowerCase())
+          ) {
+            return { ...m, checkedIn: nextCheckIn, checkedInAt: nextCheckIn ? nowIso : null };
+          }
+          return m;
+        });
+
+        const totalRoster = 1 + updatedMembers.length;
+        const leadChecked = updatedLead.checkedIn ? 1 : 0;
+        const membersChecked = updatedMembers.filter((m) => m.checkedIn).length;
+        const allChecked = leadChecked + membersChecked >= totalRoster;
+
+        return {
+          ...t,
+          lead: updatedLead,
+          members: updatedMembers,
+          checkedIn: allChecked,
+          checkedInAt: allChecked ? (t.checkedInAt || nowIso) : null,
+        };
+      })
+    );
+
+    try {
+      const res = await fetch("/api/admin/teams", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          action: "toggle_participant_check_in",
+          teamId: p.teamId,
+          teamCode: p.teamCode,
+          participantEmail: p.email,
+          checkedIn: nextCheckIn,
+          eventId: selectedEventId,
+        }),
+      });
+
+      const data = await res.json();
+      if (res.ok && data.success) {
+        if (data.team) {
+          setTeams((prev) =>
+            prev.map((t) => (t.id === data.team.id || t.teamCode === data.team.teamCode ? data.team : t))
+          );
+        }
+        triggerToast(
+          nextCheckIn
+            ? `${p.name} marked Present.`
+            : `Reverted check-in for ${p.name}.`
+        );
+      } else {
+        fetchTeams(selectedEventId);
+        triggerToast(data.error || "Failed to update participant check-in.");
+      }
+    } catch {
+      fetchTeams(selectedEventId);
+      triggerToast("Network error updating participant.");
+    } finally {
+      setActionLoadingId(null);
     }
   };
 
@@ -627,26 +781,33 @@ export default function ScannerConsole() {
   }, [isCameraActive, isProcessing, handleCheckInCode]);
 
   // -------------------------------------------------------------
-  // Manual Code Form Submit
+  // Computed Stats (Only fully registered teams & participants, exclude forming)
   // -------------------------------------------------------------
-  const handleManualSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!manualCode.trim() || isProcessing) return;
-    handleCheckInCode(manualCode.trim());
-    setManualCode("");
+  const isTeamSubmitted = (t: RegisteredTeam) => {
+    return t.submissionStatus === "submitted" || Boolean(t.submittedAt);
   };
 
-  // -------------------------------------------------------------
-  // Computed Stats
-  // -------------------------------------------------------------
-  const totalRegistered = teams.length;
-  const checkedInCount = teams.filter((t) => t.checkedIn).length;
+  const eligibleTeams = teams.filter((t) => isTeamSubmitted(t));
+  const totalRegistered = eligibleTeams.length;
+  const checkedInCount = eligibleTeams.filter((t) => t.checkedIn).length;
   const remainingCount = totalRegistered - checkedInCount;
   const attendanceRate = totalRegistered > 0 ? Math.round((checkedInCount / totalRegistered) * 100) : 0;
 
+  const getParticipantCount = (t: RegisteredTeam) =>
+    1 + (Array.isArray(t.members) ? t.members.length : 0);
+  const totalParticipants = eligibleTeams.reduce((acc, t) => acc + getParticipantCount(t), 0);
+  const checkedInParticipants = eligibleTeams
+    .filter((t) => t.checkedIn)
+    .reduce((acc, t) => acc + getParticipantCount(t), 0);
+  const remainingParticipants = totalParticipants - checkedInParticipants;
+  const participantRate =
+    totalParticipants > 0 ? Math.round((checkedInParticipants / totalParticipants) * 100) : 0;
+
   const filteredTeams = teams.filter((t) => {
-    if (rosterFilter === "checked_in" && !t.checkedIn) return false;
-    if (rosterFilter === "not_checked_in" && t.checkedIn) return false;
+    const isSubmitted = isTeamSubmitted(t);
+    if (rosterFilter === "checked_in" && (!t.checkedIn || !isSubmitted)) return false;
+    if (rosterFilter === "not_checked_in" && (t.checkedIn || !isSubmitted)) return false;
+    if (rosterFilter === "all" && !isSubmitted) return false;
     if (!rosterSearch.trim()) return true;
     const q = rosterSearch.toLowerCase();
     return (
@@ -657,6 +818,71 @@ export default function ScannerConsole() {
       t.members.some((m) => m.name.toLowerCase().includes(q) || m.email?.toLowerCase().includes(q))
     );
   });
+
+  // Flattened Participants for Participants View across eligible teams
+  const allFlattenedParticipants = useMemo<FlatParticipant[]>(() => {
+    const list: FlatParticipant[] = [];
+    for (const t of eligibleTeams) {
+      const isLeadChecked = Boolean(t.lead?.checkedIn || (t.checkedIn && t.lead?.checkedIn !== false));
+      const leadCheckedInAt = t.lead?.checkedInAt || (isLeadChecked ? t.checkedInAt : null);
+
+      list.push({
+        id: `${t.id}_lead`,
+        teamId: t.id,
+        teamName: t.teamName,
+        teamCode: t.teamCode,
+        name: t.lead.name,
+        email: t.lead.email,
+        role: "Team Leader",
+        department: t.lead.department || t.department || "General",
+        roll: t.lead.roll || "",
+        checkedIn: isLeadChecked,
+        checkedInAt: leadCheckedInAt,
+      });
+
+      if (Array.isArray(t.members)) {
+        t.members.forEach((m, idx) => {
+          const isMemChecked = Boolean(m.checkedIn !== undefined ? m.checkedIn : t.checkedIn);
+          const memCheckedInAt = m.checkedInAt || (isMemChecked ? t.checkedInAt : null);
+
+          list.push({
+            id: `${t.id}_mem_${idx}`,
+            teamId: t.id,
+            teamName: t.teamName,
+            teamCode: t.teamCode,
+            name: m.name,
+            email: m.email || "",
+            role: "Member",
+            department: m.department || t.department || "General",
+            roll: m.roll || "",
+            checkedIn: isMemChecked,
+            checkedInAt: memCheckedInAt,
+          });
+        });
+      }
+    }
+    return list;
+  }, [eligibleTeams]);
+
+  const filteredParticipants = useMemo(() => {
+    return allFlattenedParticipants.filter((p) => {
+      if (rosterFilter === "checked_in" && !p.checkedIn) return false;
+      if (rosterFilter === "not_checked_in" && p.checkedIn) return false;
+      if (!rosterSearch.trim()) return true;
+      const q = rosterSearch.toLowerCase().trim();
+      return (
+        p.name.toLowerCase().includes(q) ||
+        p.email.toLowerCase().includes(q) ||
+        p.teamName.toLowerCase().includes(q) ||
+        p.teamCode.toLowerCase().includes(q) ||
+        (p.roll && p.roll.toLowerCase().includes(q)) ||
+        (p.department && p.department.toLowerCase().includes(q))
+      );
+    });
+  }, [allFlattenedParticipants, rosterFilter, rosterSearch]);
+
+  const checkedInParticipantCount = allFlattenedParticipants.filter((p) => p.checkedIn).length;
+  const remainingParticipantCount = allFlattenedParticipants.length - checkedInParticipantCount;
 
   return (
     <div className="space-y-6 font-[family-name:var(--font-google-sans)] pb-12">
@@ -689,14 +915,14 @@ export default function ScannerConsole() {
         </div>
 
         {/* Event Selector Dropdown */}
-        <div className="flex items-center gap-3 self-start md:self-auto">
-          <div className="flex items-center gap-2 rounded-2xl border border-white/15 bg-[#16161d] px-3.5 py-2 text-xs">
-            <Calendar className="h-4 w-4 text-neutral-400" />
+        <div className="flex items-center gap-2 sm:gap-3 w-full sm:w-auto">
+          <div className="flex-1 sm:flex-initial flex items-center gap-2 rounded-2xl border border-white/15 bg-[#16161d] px-3 sm:px-3.5 py-2 text-xs min-w-0">
+            <Calendar className="h-4 w-4 text-neutral-400 shrink-0" />
             <select
               value={selectedEventId}
               onChange={(e) => setSelectedEventId(e.target.value)}
               disabled={loadingEvents}
-              className="bg-transparent text-white font-semibold text-xs focus:outline-none cursor-pointer max-w-[220px] sm:max-w-xs truncate"
+              className="bg-transparent text-white font-semibold text-xs focus:outline-none cursor-pointer w-full sm:max-w-xs truncate"
             >
               {events.map((ev) => (
                 <option key={ev._id} value={ev._id} className="bg-[#16161d] text-white">
@@ -709,7 +935,7 @@ export default function ScannerConsole() {
           <button
             onClick={() => fetchTeams(selectedEventId)}
             disabled={loadingTeams || !selectedEventId}
-            className="flex items-center gap-1.5 rounded-2xl border border-white/15 bg-[#16161d] hover:bg-[#202028] px-3.5 py-2 text-xs font-medium text-white transition-all cursor-pointer"
+            className="flex items-center gap-1.5 rounded-2xl border border-white/15 bg-[#16161d] hover:bg-[#202028] px-3 sm:px-3.5 py-2 text-xs font-medium text-white transition-all cursor-pointer shrink-0"
             title="Refresh teams"
           >
             <RefreshCw className={`h-3.5 w-3.5 ${loadingTeams ? "animate-spin" : ""}`} />
@@ -719,79 +945,90 @@ export default function ScannerConsole() {
       </div>
 
       {/* Attendance Stats HUD Cards */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
-        <div className="rounded-2xl border border-white/10 bg-[#0e0e12] p-4 sm:p-5 shadow-lg space-y-1">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-2.5 sm:gap-4">
+        <div className="rounded-2xl border border-white/10 bg-[#0e0e12] p-3.5 sm:p-5 shadow-lg space-y-1">
           <div className="flex items-center justify-between text-neutral-400 text-xs">
-            <span>Total Registered</span>
-            <Users className="h-4 w-4 text-neutral-400" />
+            <span className="text-[11px] sm:text-xs">Total Registered</span>
+            <Users className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-neutral-400 shrink-0" />
           </div>
-          <div className="text-2xl sm:text-3xl font-black text-white">{totalRegistered}</div>
-          <p className="text-[10px] text-neutral-400 font-mono">Teams enrolled for event</p>
+          <div className="text-xl sm:text-3xl font-black text-white">{totalRegistered}</div>
+          <p className="text-[10px] text-sky-400/80 font-mono truncate">{totalParticipants} participants</p>
         </div>
 
-        <div className="rounded-2xl border border-emerald-500/20 bg-emerald-950/20 p-4 sm:p-5 shadow-lg space-y-1">
+        <div className="rounded-2xl border border-emerald-500/20 bg-emerald-950/20 p-3.5 sm:p-5 shadow-lg space-y-1">
           <div className="flex items-center justify-between text-emerald-300 text-xs">
-            <span>Checked In</span>
-            <CheckCircle2 className="h-4 w-4 text-emerald-400" />
+            <span className="text-[11px] sm:text-xs">Checked In</span>
+            <CheckCircle2 className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-emerald-400 shrink-0" />
           </div>
-          <div className="text-2xl sm:text-3xl font-black text-emerald-300">{checkedInCount}</div>
+          <div className="text-xl sm:text-3xl font-black text-emerald-300">{checkedInCount}</div>
           <div className="w-full bg-white/10 h-1.5 rounded-full overflow-hidden mt-1.5">
             <div
               className="bg-emerald-400 h-full rounded-full transition-all duration-500"
-              style={{ width: `${attendanceRate}%` }}
+              style={{ width: `${participantRate}%` }}
             />
           </div>
+          <p className="text-[10px] text-emerald-300/80 font-mono truncate">{checkedInParticipants} verified</p>
         </div>
 
-        <div className="rounded-2xl border border-white/10 bg-[#0e0e12] p-4 sm:p-5 shadow-lg space-y-1">
+        <div className="rounded-2xl border border-white/10 bg-[#0e0e12] p-3.5 sm:p-5 shadow-lg space-y-1">
           <div className="flex items-center justify-between text-neutral-400 text-xs">
-            <span>Awaiting Arrival</span>
-            <ScanLine className="h-4 w-4 text-amber-400" />
+            <span className="text-[11px] sm:text-xs">Awaiting Arrival</span>
+            <ScanLine className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-amber-400 shrink-0" />
           </div>
-          <div className="text-2xl sm:text-3xl font-black text-amber-300">{remainingCount}</div>
-          <p className="text-[10px] text-neutral-400 font-mono">{attendanceRate}% arrived</p>
+          <div className="text-xl sm:text-3xl font-black text-amber-300">{remainingCount}</div>
+          <p className="text-[10px] text-amber-400/80 font-mono truncate">{remainingParticipants} pending ({participantRate}%)</p>
         </div>
 
-        <div className="rounded-2xl border border-white/10 bg-[#0e0e12] p-4 sm:p-5 shadow-lg space-y-1">
+        <div className="rounded-2xl border border-white/10 bg-[#0e0e12] p-3.5 sm:p-5 shadow-lg space-y-1">
           <div className="flex items-center justify-between text-neutral-400 text-xs">
-            <span>Session Scans</span>
-            <Camera className="h-4 w-4 text-pink-400" />
+            <span className="text-[11px] sm:text-xs">Session Scans</span>
+            <Camera className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-pink-400 shrink-0" />
           </div>
-          <div className="text-2xl sm:text-3xl font-black text-white">{sessionLogs.length}</div>
-          <p className="text-[10px] text-neutral-400 font-mono">Verified this session</p>
+          <div className="text-xl sm:text-3xl font-black text-white">{sessionLogs.length}</div>
+          <p className="text-[10px] text-neutral-400 font-mono truncate">This session</p>
         </div>
       </div>
 
-      {/* Main Scanner Section Grid */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
-        {/* Left Column: Camera Viewfinder & Controls (7 Cols) */}
-        <div className="lg:col-span-7 space-y-4">
-          <div className="relative overflow-hidden rounded-[2.5rem] border border-white/15 bg-[#0e0e12] p-5 sm:p-7 shadow-2xl space-y-5">
+      {/* Main Camera Scanner Section */}
+      <div className="max-w-4xl mx-auto space-y-4">
+          <div className="relative overflow-hidden rounded-3xl sm:rounded-[2.5rem] border border-white/15 bg-[#0e0e12] p-4 sm:p-7 shadow-2xl space-y-4 sm:space-y-5">
             {/* Header with Prominent Scan Button */}
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-white/10">
-              <div className="flex items-center gap-3">
-                <div className="h-10 w-10 rounded-2xl bg-emerald-500/20 border border-emerald-500/40 flex items-center justify-center text-emerald-300 shadow-inner">
-                  <Camera className="h-5 w-5" />
+            <div className="flex items-center justify-between gap-3 pb-3 border-b border-white/10">
+              <div className="flex items-center gap-2.5 sm:gap-3 min-w-0">
+                <div className="h-9 w-9 sm:h-10 sm:w-10 rounded-2xl bg-emerald-500/20 border border-emerald-500/40 flex items-center justify-center text-emerald-300 shadow-inner shrink-0">
+                  <Camera className="h-4 w-4 sm:h-5 sm:w-5" />
                 </div>
-                <div>
-                  <h2 className="text-lg font-bold text-white tracking-tight">Camera Scanner</h2>
-                  <p className="text-[11px] text-neutral-400">Position attendee pass in center reticle</p>
+                <div className="min-w-0">
+                  <h2 className="text-base sm:text-lg font-bold text-white tracking-tight truncate">Camera Scanner</h2>
+                  <p className="text-[10px] sm:text-[11px] text-neutral-400 truncate">Position attendee pass in reticle</p>
                 </div>
               </div>
 
-              {/* Exact Emerald Rounded Pill Button from user's request */}
-              <button
-                type="button"
-                onClick={toggleCamera}
-                className="rounded-full bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-400 hover:to-teal-500 px-5 py-2.5 text-xs sm:text-sm font-bold text-white shadow-lg shadow-emerald-600/30 transition-all hover:scale-105 flex items-center justify-center gap-2 cursor-pointer font-[family-name:var(--font-google-sans)] shrink-0"
-              >
-                <Camera className="h-4 w-4" />
-                <span>{isCameraActive ? "Pause Scanner" : "Scan Participant QR"}</span>
-              </button>
+              {/* Responsive Camera Toggle Button */}
+              {isCameraActive ? (
+                <button
+                  type="button"
+                  onClick={toggleCamera}
+                  className="rounded-full bg-rose-500/20 hover:bg-rose-500/30 border border-rose-500/40 px-3.5 sm:px-5 py-2 text-xs font-bold text-rose-300 transition-all flex items-center gap-1.5 cursor-pointer shrink-0"
+                  title="Pause Camera"
+                >
+                  <Pause className="h-3.5 w-3.5" />
+                  <span>Pause</span>
+                </button>
+              ) : (
+                <button
+                  type="button"
+                  onClick={toggleCamera}
+                  className="hidden sm:inline-flex rounded-full bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-400 hover:to-teal-500 px-4 sm:px-5 py-2 text-xs font-bold text-white shadow-lg shadow-emerald-600/30 transition-all hover:scale-105 items-center gap-1.5 cursor-pointer shrink-0"
+                >
+                  <Camera className="h-3.5 w-3.5" />
+                  <span>Scan QR</span>
+                </button>
+              )}
             </div>
 
             {/* Viewfinder Canvas Stage */}
-            <div className="relative rounded-3xl overflow-hidden border border-white/15 bg-black aspect-video flex items-center justify-center">
+            <div className="relative rounded-2xl sm:rounded-3xl overflow-hidden border border-white/15 bg-black min-h-[240px] sm:min-h-[280px] aspect-[4/3] sm:aspect-video flex items-center justify-center">
               {isCameraActive ? (
                 <>
                   <video
@@ -804,7 +1041,7 @@ export default function ScannerConsole() {
 
                   {/* Laser Reticle HUD */}
                   <div className="absolute inset-0 pointer-events-none flex items-center justify-center">
-                    <div className="relative w-48 h-48 sm:w-56 sm:h-56 rounded-3xl border-2 border-emerald-400/80 shadow-[0_0_40px_rgba(16,185,129,0.35)] flex items-center justify-center">
+                    <div className="relative w-44 h-44 sm:w-56 sm:h-56 rounded-3xl border-2 border-emerald-400/80 shadow-[0_0_40px_rgba(16,185,129,0.35)] flex items-center justify-center">
                       <div className="absolute -top-1 -left-1 w-6 h-6 border-t-4 border-l-4 border-emerald-300 rounded-tl-xl" />
                       <div className="absolute -top-1 -right-1 w-6 h-6 border-t-4 border-r-4 border-emerald-300 rounded-tr-xl" />
                       <div className="absolute -bottom-1 -left-1 w-6 h-6 border-b-4 border-l-4 border-emerald-300 rounded-bl-xl" />
@@ -865,16 +1102,16 @@ export default function ScannerConsole() {
                   </div>
                 </>
               ) : (
-                <div className="p-8 text-center space-y-4 max-w-sm">
+                <div className="p-4 sm:p-8 text-center space-y-3 sm:space-y-4 max-w-xs sm:max-w-sm">
                   {cameraError ? (
                     <>
-                      <AlertCircle className="h-10 w-10 text-rose-400 mx-auto" />
-                      <h3 className="text-sm font-bold text-white">Camera Access Error</h3>
-                      <p className="text-xs text-neutral-400 leading-relaxed">{cameraError}</p>
+                      <AlertCircle className="h-8 w-8 sm:h-10 sm:w-10 text-rose-400 mx-auto" />
+                      <h3 className="text-xs sm:text-sm font-bold text-white">Camera Access Error</h3>
+                      <p className="text-[11px] sm:text-xs text-neutral-400 leading-relaxed">{cameraError}</p>
                       <button
                         type="button"
                         onClick={startCamera}
-                        className="rounded-xl bg-white/10 hover:bg-white/20 border border-white/20 px-4 py-2 text-xs font-bold text-white transition-all cursor-pointer inline-flex items-center gap-1.5"
+                        className="rounded-xl bg-white/10 hover:bg-white/20 border border-white/20 px-3.5 py-1.5 text-xs font-bold text-white transition-all cursor-pointer inline-flex items-center gap-1.5"
                       >
                         <RefreshCw className="h-3.5 w-3.5" />
                         <span>Retry Camera</span>
@@ -882,19 +1119,19 @@ export default function ScannerConsole() {
                     </>
                   ) : (
                     <>
-                      <div className="h-14 w-14 rounded-2xl bg-white/5 border border-white/15 flex items-center justify-center text-neutral-400 mx-auto">
-                        <Camera className="h-7 w-7" />
+                      <div className="h-12 w-12 sm:h-14 sm:w-14 rounded-2xl bg-white/5 border border-white/15 flex items-center justify-center text-neutral-400 mx-auto">
+                        <Camera className="h-6 w-6 sm:h-7 sm:w-7" />
                       </div>
                       <div>
-                        <h3 className="text-sm font-bold text-white">Camera Viewfinder Paused</h3>
-                        <p className="text-xs text-neutral-400 mt-1">
-                          Click below to start the high-speed QR pass detector.
+                        <h3 className="text-xs sm:text-sm font-bold text-white">Camera Viewfinder Paused</h3>
+                        <p className="text-[11px] sm:text-xs text-neutral-400 mt-0.5">
+                          Click below to start high-speed QR pass detector.
                         </p>
                       </div>
                       <button
                         type="button"
                         onClick={startCamera}
-                        className="rounded-full bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-400 hover:to-teal-500 px-6 py-2.5 text-xs font-bold text-white shadow-lg shadow-emerald-600/30 transition-all hover:scale-105 inline-flex items-center gap-2 cursor-pointer font-[family-name:var(--font-google-sans)]"
+                        className="rounded-full bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-400 hover:to-teal-500 px-5 sm:px-6 py-2 sm:py-2.5 text-xs font-bold text-white shadow-lg shadow-emerald-600/30 transition-all hover:scale-105 inline-flex items-center gap-2 cursor-pointer font-[family-name:var(--font-google-sans)]"
                       >
                         <Camera className="h-4 w-4" />
                         <span>Scan Participant QR</span>
@@ -909,10 +1146,10 @@ export default function ScannerConsole() {
                 <div
                   className={`absolute inset-0 flex flex-col items-center justify-center p-6 text-center backdrop-blur-xl animate-fadeIn ${
                     lastScanResult.status === "success"
-                      ? "bg-emerald-950/90 text-emerald-200"
+                      ? "bg-emerald-950/95 text-emerald-200"
                       : lastScanResult.status === "duplicate"
-                      ? "bg-amber-950/90 text-amber-200"
-                      : "bg-rose-950/90 text-rose-200"
+                      ? "bg-amber-950/95 text-amber-200"
+                      : "bg-rose-950/95 text-rose-200"
                   }`}
                 >
                   <div
@@ -933,157 +1170,169 @@ export default function ScannerConsole() {
 
                   <h3 className="text-xl font-black font-[family-name:var(--font-google-sans)] mb-1">
                     {lastScanResult.status === "success"
-                      ? "Check-In Confirmed!"
+                      ? lastScanResult.allCheckedIn
+                        ? "All Team Members Verified!"
+                        : "Participant Verified!"
                       : lastScanResult.status === "duplicate"
                       ? "Already Checked In"
-                      : "Check-In Error"}
+                      : "Check-In Blocked"}
                   </h3>
+
+                  {lastScanResult.participantName && (
+                    <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/10 text-white font-mono text-xs font-bold mb-1">
+                      <span>{lastScanResult.participantName}</span>
+                      {lastScanResult.participantRole && (
+                        <span className="opacity-70 font-normal">({lastScanResult.participantRole})</span>
+                      )}
+                    </div>
+                  )}
 
                   {lastScanResult.teamName && (
                     <p className="text-sm font-bold text-white mb-0.5">
-                      {lastScanResult.teamName}
+                      Team: {lastScanResult.teamName}
                     </p>
                   )}
 
-                  {lastScanResult.leadName && (
-                    <p className="text-xs text-white/80 mb-1">
-                      Lead: {lastScanResult.leadName}
-                    </p>
+                  {lastScanResult.totalMembers && (
+                    <div className="mt-2 mb-2 px-3 py-1.5 rounded-xl bg-black/40 border border-white/15 text-xs font-mono">
+                      <span>Team Attendance: </span>
+                      <strong className="text-white font-bold">
+                        {lastScanResult.checkedInCount || 0} of {lastScanResult.totalMembers} Present
+                      </strong>
+                      {lastScanResult.allCheckedIn && (
+                        <span className="block text-[11px] text-emerald-300 font-bold mt-0.5">
+                          Full team verified — Team marked Checked In!
+                        </span>
+                      )}
+                    </div>
                   )}
 
-                  <p className="text-xs font-mono font-bold tracking-wider opacity-90 mb-2">
+                  <p className="text-xs font-mono font-bold tracking-wider opacity-90 mb-1">
                     Code: {lastScanResult.teamCode}
                   </p>
 
                   <p className="text-xs opacity-80 max-w-sm">{lastScanResult.message}</p>
+
+                  {lastScanResult.status === "success" && (
+                    <button
+                      type="button"
+                      onClick={() => handleUndoCheckIn(lastScanResult.teamCode)}
+                      className="mt-3 inline-flex items-center gap-1.5 rounded-xl border border-white/20 bg-white/10 hover:bg-white/20 px-3.5 py-1.5 text-xs font-semibold text-white transition-all cursor-pointer"
+                    >
+                      <Undo2 className="h-3.5 w-3.5" />
+                      <span>Undo Scan</span>
+                    </button>
+                  )}
                 </div>
               )}
             </div>
-
-            {/* Manual Code Input & USB Gun Scanner Support */}
-            <form onSubmit={handleManualSubmit} className="space-y-2 pt-2">
-              <div className="flex items-center justify-between text-xs text-neutral-400">
-                <span className="flex items-center gap-1.5 font-mono text-[11px] uppercase tracking-wider">
-                  <Keyboard className="h-3.5 w-3.5 text-pink-400" />
-                  <span>Manual Entry or USB Gun Scanner:</span>
-                </span>
-                <span className="text-[10px] font-mono text-neutral-400">Press ENTER to submit</span>
-              </div>
-
-              <div className="flex items-center gap-2">
-                <input
-                  type="text"
-                  value={manualCode}
-                  onChange={(e) => setManualCode(e.target.value)}
-                  placeholder="e.g. HULT-2026-X9K2 or scan barcode..."
-                  disabled={isProcessing}
-                  className="flex-1 rounded-2xl border border-white/15 bg-[#16161d] hover:bg-[#202028] px-4 py-2.5 text-xs text-white placeholder:text-neutral-500 focus:border-emerald-400 focus:outline-none focus:ring-1 focus:ring-emerald-400 font-mono tracking-wider transition-all"
-                />
-                <button
-                  type="submit"
-                  disabled={isProcessing || !manualCode.trim()}
-                  className="rounded-2xl bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-400 hover:to-teal-500 disabled:opacity-40 disabled:pointer-events-none px-5 py-2.5 text-xs font-bold text-white shadow-lg shadow-emerald-600/30 transition-all cursor-pointer flex items-center gap-1.5 font-mono shrink-0"
-                >
-                  <Check className="h-3.5 w-3.5" />
-                  <span>Check In</span>
-                </button>
-              </div>
-            </form>
           </div>
         </div>
-
-        {/* Right Column: Live Session Activity Feed (5 Cols) */}
-        <div className="lg:col-span-5 space-y-4">
-          <div className="rounded-[2.5rem] border border-white/15 bg-[#0e0e12] p-5 sm:p-6 shadow-2xl space-y-4">
-            <div className="flex items-center justify-between pb-3 border-b border-white/10">
-              <div className="flex items-center gap-2.5">
-                <span className="h-2 w-2 rounded-full bg-emerald-400" />
-                <h3 className="text-base font-bold text-white">Live Session Feed</h3>
-              </div>
-              <span className="text-[10px] font-mono text-neutral-400">
-                {sessionLogs.length} verified
-              </span>
-            </div>
-
-            {sessionLogs.length > 0 ? (
-              <div className="space-y-2.5 max-h-[460px] overflow-y-auto pr-1">
-                {sessionLogs.map((log) => (
-                  <div
-                    key={log.id}
-                    className={`rounded-2xl p-3 border transition-all text-xs flex items-center justify-between gap-3 ${
-                      log.status === "success"
-                        ? "bg-[#16161d] border-emerald-500/25"
-                        : log.status === "duplicate"
-                        ? "bg-[#16161d] border-amber-500/25"
-                        : "bg-[#16161d] border-rose-500/25"
-                    }`}
-                  >
-                    <div className="space-y-0.5 min-w-0 flex-1">
-                      <div className="flex items-center gap-2">
-                        <span className="font-bold text-white truncate">{log.teamName}</span>
-                        <span className="font-mono text-[10px] text-rose-400 font-bold">
-                          {log.teamCode}
-                        </span>
-                      </div>
-                      <div className="text-[11px] text-neutral-400 flex items-center gap-2">
-                        {log.leadName && <span>Lead: {log.leadName}</span>}
-                        <span>•</span>
-                        <span className="font-mono">{log.timestamp}</span>
-                      </div>
-                    </div>
-
-                    {log.status === "success" && (
-                      <button
-                        type="button"
-                        onClick={() => handleUndoCheckIn(log.teamCode)}
-                        className="rounded-xl border border-white/10 bg-white/5 hover:bg-white/15 px-2.5 py-1 text-[10px] font-mono font-semibold text-neutral-300 hover:text-white transition-all cursor-pointer flex items-center gap-1 shrink-0"
-                        title="Revert check in"
-                      >
-                        <Undo2 className="h-3 w-3" />
-                        <span>Undo</span>
-                      </button>
-                    )}
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <div className="py-16 text-center text-xs text-neutral-500 font-mono space-y-1">
-                <ScanLine className="h-8 w-8 mx-auto text-neutral-600 mb-2" />
-                <p>No scans recorded this session yet.</p>
-                <p className="text-[10px] text-neutral-600">
-                  Scanned passes will appear here in real-time.
-                </p>
-              </div>
-            )}
-          </div>
-        </div>
-      </div>
 
       {/* Event Roster Fast-Check Table */}
-      <div className="rounded-[2.5rem] border border-white/15 bg-[#0e0e12] p-6 sm:p-8 shadow-2xl space-y-4">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-white/10">
+      <div className="rounded-3xl sm:rounded-[2.5rem] border border-white/15 bg-[#0e0e12] p-4 sm:p-8 shadow-2xl space-y-4">
+        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 pb-3 border-b border-white/10">
           <div>
-            <h3 className="text-lg font-bold text-white">Event Roster Quick-Check</h3>
-            <p className="text-xs text-neutral-400">
-              Manual attendance toggle and backup lookup for participants without passes.
+            <h3 className="text-base sm:text-lg font-bold text-white">Event Roster Quick-Check</h3>
+            <p className="text-[11px] sm:text-xs text-neutral-400">
+              Manual attendance toggle and backup lookup for attendees without passes.
             </p>
           </div>
 
-          {/* Roster Filter Buttons */}
-          <div className="flex items-center gap-2">
-            {(["all", "checked_in", "not_checked_in"] as const).map((filter) => (
+          <div className="flex flex-wrap items-center gap-2 sm:gap-3">
+            {/* View Mode Filter: By Teams vs By Participants */}
+            <div className="flex items-center rounded-xl bg-[#16161d] p-1 border border-white/10 shrink-0">
               <button
-                key={filter}
-                onClick={() => setRosterFilter(filter)}
-                className={`rounded-xl px-3 py-1.5 text-xs font-semibold transition-all cursor-pointer border ${
-                  rosterFilter === filter
+                type="button"
+                onClick={() => setViewMode("teams")}
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
+                  viewMode === "teams"
+                    ? "bg-white text-black shadow-sm"
+                    : "text-neutral-400 hover:text-white"
+                }`}
+              >
+                <Users className="h-3.5 w-3.5" />
+                <span>By Teams</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setViewMode("participants")}
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
+                  viewMode === "participants"
+                    ? "bg-white text-black shadow-sm"
+                    : "text-neutral-400 hover:text-white"
+                }`}
+              >
+                <UserCheck className="h-3.5 w-3.5" />
+                <span>By Participants</span>
+              </button>
+            </div>
+
+            {/* Attendance Status Filters */}
+            <div className="flex items-center gap-1.5 sm:gap-2 overflow-x-auto no-scrollbar">
+              <button
+                type="button"
+                onClick={() => setRosterFilter("all")}
+                className={`rounded-xl px-2.5 sm:px-3 py-1.5 text-xs font-semibold transition-all cursor-pointer border flex items-center gap-1.5 shrink-0 ${
+                  rosterFilter === "all"
                     ? "bg-white text-black border-white shadow-md shadow-white/10"
                     : "bg-[#16161d] text-neutral-400 border-white/10 hover:text-white hover:bg-[#202028]"
                 }`}
               >
-                {filter === "checked_in" ? "Checked In" : filter === "not_checked_in" ? "Not Checked In" : "All Teams"}
+                <span>All ({viewMode === "teams" ? totalRegistered : allFlattenedParticipants.length})</span>
+                {viewMode === "teams" && (
+                  <span
+                    className={`px-1.5 py-0.5 rounded text-[10px] font-mono ${
+                      rosterFilter === "all" ? "bg-black/10 text-neutral-900 font-bold" : "bg-white/10 text-neutral-400"
+                    }`}
+                  >
+                    {totalParticipants} Pax
+                  </span>
+                )}
               </button>
-            ))}
+
+              <button
+                type="button"
+                onClick={() => setRosterFilter("checked_in")}
+                className={`rounded-xl px-2.5 sm:px-3 py-1.5 text-xs font-semibold transition-all cursor-pointer border flex items-center gap-1.5 shrink-0 ${
+                  rosterFilter === "checked_in"
+                    ? "bg-emerald-500 text-black border-emerald-500 shadow-md shadow-emerald-500/20 font-bold"
+                    : "bg-[#16161d] text-neutral-400 border-white/10 hover:text-white hover:bg-[#202028]"
+                }`}
+              >
+                <span>Checked In ({viewMode === "teams" ? checkedInCount : checkedInParticipantCount})</span>
+                {viewMode === "teams" && (
+                  <span
+                    className={`px-1.5 py-0.5 rounded text-[10px] font-mono ${
+                      rosterFilter === "checked_in" ? "bg-black/15 text-neutral-900 font-bold" : "bg-emerald-500/20 text-emerald-300"
+                    }`}
+                  >
+                    {checkedInParticipants} Pax
+                  </span>
+                )}
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setRosterFilter("not_checked_in")}
+                className={`rounded-xl px-2.5 sm:px-3 py-1.5 text-xs font-semibold transition-all cursor-pointer border flex items-center gap-1.5 shrink-0 ${
+                  rosterFilter === "not_checked_in"
+                    ? "bg-amber-500 text-black border-amber-500 shadow-md shadow-amber-500/20 font-bold"
+                    : "bg-[#16161d] text-neutral-400 border-white/10 hover:text-white hover:bg-[#202028]"
+                }`}
+              >
+                <span>Pending ({viewMode === "teams" ? remainingCount : remainingParticipantCount})</span>
+                {viewMode === "teams" && (
+                  <span
+                    className={`px-1.5 py-0.5 rounded text-[10px] font-mono ${
+                      rosterFilter === "not_checked_in" ? "bg-black/15 text-neutral-900 font-bold" : "bg-amber-500/20 text-amber-300"
+                    }`}
+                  >
+                    {remainingParticipants} Pax
+                  </span>
+                )}
+              </button>
+            </div>
           </div>
         </div>
 
@@ -1092,98 +1341,430 @@ export default function ScannerConsole() {
           <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-neutral-400" />
           <input
             type="text"
-            placeholder="Search by team name, team code, leader name, email..."
+            placeholder={
+              viewMode === "teams"
+                ? "Search by team name, leader name, email..."
+                : "Search by participant name, team, email, roll, department..."
+            }
             value={rosterSearch}
             onChange={(e) => setRosterSearch(e.target.value)}
             className="w-full pl-10 pr-4 py-2.5 text-xs bg-[#16161d] border border-white/15 rounded-xl text-white placeholder-neutral-500 focus:outline-none focus:border-emerald-400"
           />
         </div>
 
-        {/* Teams Table */}
-        <div className="overflow-x-auto rounded-2xl border border-white/10">
-          {loadingTeams ? (
-            <div className="py-16 text-center text-xs text-neutral-500 font-mono">
-              Loading event roster...
-            </div>
-          ) : filteredTeams.length > 0 ? (
-            <table className="w-full text-left text-xs">
-              <thead>
-                <tr className="border-b border-white/10 text-neutral-400 bg-[#16161d]">
-                  <th className="py-3 px-4 font-semibold">Team & Code</th>
-                  <th className="py-3 px-4 font-semibold">Leader</th>
-                  <th className="py-3 px-4 font-semibold">Members</th>
-                  <th className="py-3 px-4 font-semibold">Status</th>
-                  <th className="py-3 px-4 font-semibold text-right">Attendance Action</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-white/5">
-                {filteredTeams.map((team) => (
-                  <tr key={team.id} className="hover:bg-[#16161d]/60 transition-colors">
-                    <td className="py-3 px-4">
-                      <div className="font-semibold text-white">{team.teamName}</div>
-                      <div className="font-mono text-[10px] text-rose-400 font-bold">
-                        {team.teamCode}
-                      </div>
-                    </td>
-
-                    <td className="py-3 px-4">
-                      <div className="text-white font-medium">{team.lead.name}</div>
-                      <div className="font-mono text-[10px] text-neutral-400 truncate max-w-[160px]">
-                        {team.lead.email}
-                      </div>
-                    </td>
-
-                    <td className="py-3 px-4 font-mono text-neutral-400">
-                      {1 + (team.members?.length || 0)} members
-                    </td>
-
-                    <td className="py-3 px-4">
-                      {team.checkedIn ? (
-                        <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-mono font-bold bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">
-                          <CheckCircle2 className="h-3 w-3" />
-                          <span>Checked In</span>
-                        </span>
-                      ) : (
-                        <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-mono font-bold bg-[#16161d] text-neutral-400 border border-white/10">
-                          <span>Pending</span>
-                        </span>
-                      )}
-                    </td>
-
-                    <td className="py-3 px-4 text-right">
-                      <button
-                        type="button"
-                        onClick={() => handleToggleRosterCheckIn(team)}
-                        className={`inline-flex items-center gap-1.5 rounded-xl px-3 py-1.5 text-xs font-semibold cursor-pointer transition-all ${
-                          team.checkedIn
-                            ? "border border-rose-500/30 bg-rose-500/10 text-rose-300 hover:bg-rose-500/20"
-                            : "border border-emerald-500/30 bg-emerald-500/20 text-emerald-300 hover:bg-emerald-500/30"
-                        }`}
-                      >
-                        {team.checkedIn ? (
-                          <>
-                            <Undo2 className="h-3 w-3" />
-                            <span>Undo Check-In</span>
-                          </>
-                        ) : (
-                          <>
-                            <Check className="h-3 w-3" />
-                            <span>Mark Present</span>
-                          </>
-                        )}
-                      </button>
-                    </td>
+        {/* Conditional Table Display: By Teams or By Participants */}
+        {viewMode === "teams" ? (
+          <div className="overflow-x-auto rounded-2xl border border-white/10">
+            {loadingTeams ? (
+              <div className="py-16 text-center text-xs text-neutral-500 font-mono">
+                Loading event roster...
+              </div>
+            ) : filteredTeams.length > 0 ? (
+              <table className="w-full text-left text-xs">
+                <thead>
+                  <tr className="border-b border-white/10 text-neutral-400 bg-[#16161d]">
+                    <th className="py-3 px-4 font-semibold">Team</th>
+                    <th className="py-3 px-4 font-semibold">Leader</th>
+                    <th className="py-3 px-4 font-semibold">Members</th>
+                    <th className="py-3 px-4 font-semibold">Status</th>
+                    <th className="py-3 px-4 font-semibold text-right">Attendance Action</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
-          ) : (
-            <div className="py-12 text-center text-xs text-neutral-500 font-mono">
-              No registered teams found matching filters.
-            </div>
-          )}
-        </div>
+                </thead>
+                <tbody className="divide-y divide-white/5">
+                  {filteredTeams.map((team) => (
+                    <tr key={team.id} className="hover:bg-[#16161d]/60 transition-colors">
+                      <td className="py-3 px-4">
+                        <div className="font-semibold text-white">{team.teamName}</div>
+                      </td>
+
+                      <td className="py-3 px-4">
+                        <div className="text-white font-medium">{team.lead.name}</div>
+                        <div className="font-mono text-[10px] text-neutral-400 truncate max-w-[160px]">
+                          {team.lead.email}
+                        </div>
+                      </td>
+
+                      <td className="py-3 px-4 font-mono text-neutral-400">
+                        {1 + (team.members?.length || 0)} members
+                      </td>
+
+                      <td className="py-3 px-4">
+                        {team.checkedIn ? (
+                          <div className="space-y-0.5">
+                            <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-mono font-bold bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">
+                              <CheckCircle2 className="h-3 w-3" />
+                              <span>Checked In</span>
+                            </span>
+                            {(() => {
+                              const formatted = formatCheckInDateTime(team.checkedInAt || team.lead?.checkedInAt);
+                              if (!formatted) return null;
+                              return (
+                                <div className="flex items-center gap-1 text-[10px] font-mono text-emerald-400/90 whitespace-nowrap">
+                                  <Clock className="h-2.5 w-2.5 opacity-70" />
+                                  <span>{formatted.dateStr}, {formatted.timeStr}</span>
+                                </div>
+                              );
+                            })()}
+                          </div>
+                        ) : (
+                          <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-mono font-bold bg-[#16161d] text-neutral-400 border border-white/10">
+                            <span>Pending</span>
+                          </span>
+                        )}
+                      </td>
+
+                      <td className="py-3 px-4 text-right">
+                        <button
+                          type="button"
+                          onClick={() => handleToggleRosterCheckIn(team)}
+                          className={`inline-flex items-center gap-1.5 rounded-xl px-3 py-1.5 text-xs font-semibold cursor-pointer transition-all ${
+                            team.checkedIn
+                              ? "border border-rose-500/30 bg-rose-500/10 text-rose-300 hover:bg-rose-500/20"
+                              : "border border-emerald-500/30 bg-emerald-500/20 text-emerald-300 hover:bg-emerald-500/30"
+                          }`}
+                        >
+                          {team.checkedIn ? (
+                            <>
+                              <Undo2 className="h-3 w-3" />
+                              <span>Undo Check-In</span>
+                            </>
+                          ) : (
+                            <>
+                              <Check className="h-3 w-3" />
+                              <span>Mark Present</span>
+                            </>
+                          )}
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            ) : (
+              <div className="py-12 text-center text-xs text-neutral-500 font-mono">
+                No registered teams found matching filters.
+              </div>
+            )}
+          </div>
+        ) : (
+          <div className="overflow-x-auto rounded-2xl border border-white/10">
+            {loadingTeams ? (
+              <div className="py-16 text-center text-xs text-neutral-500 font-mono">
+                Loading event roster...
+              </div>
+            ) : filteredParticipants.length > 0 ? (
+              <table className="w-full text-left text-xs">
+                <thead>
+                  <tr className="border-b border-white/10 text-neutral-400 bg-[#16161d]">
+                    <th className="py-3 px-4 font-semibold">Participant</th>
+                    <th className="py-3 px-4 font-semibold">Team</th>
+                    <th className="py-3 px-4 font-semibold">Department & Roll</th>
+                    <th className="py-3 px-4 font-semibold">Status</th>
+                    <th className="py-3 px-4 font-semibold text-right">Attendance Action</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-white/5">
+                  {filteredParticipants.map((p) => {
+                    const isLoading = actionLoadingId === p.id;
+                    return (
+                      <tr key={p.id} className="hover:bg-[#16161d]/60 transition-colors">
+                        <td className="py-3 px-4">
+                          <div className="flex items-center gap-2">
+                            <span className="font-semibold text-white">{p.name}</span>
+                            <span
+                              className={`text-[9px] px-2 py-0.5 rounded-full font-mono font-bold uppercase tracking-wider ${
+                                p.role === "Team Leader"
+                                  ? "bg-pink-500/20 text-pink-300 border border-pink-500/30"
+                                  : "bg-white/10 text-neutral-300 border border-white/10"
+                              }`}
+                            >
+                              {p.role === "Team Leader" ? "Leader" : "Member"}
+                            </span>
+                          </div>
+                          <div className="font-mono text-[10px] text-neutral-400 truncate max-w-[200px]">
+                            {p.email || "No email"}
+                          </div>
+                        </td>
+
+                        <td className="py-3 px-4">
+                          <div className="text-white font-medium">{p.teamName}</div>
+                        </td>
+
+                        <td className="py-3 px-4">
+                          <div className="text-neutral-300">{p.department || "General"}</div>
+                          {p.roll && (
+                            <div className="font-mono text-[10px] text-neutral-500 truncate">
+                              {p.roll}
+                            </div>
+                          )}
+                        </td>
+
+                        <td className="py-3 px-4">
+                          {p.checkedIn ? (
+                            <div className="space-y-0.5">
+                              <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-mono font-bold bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">
+                                <CheckCircle2 className="h-3 w-3" />
+                                <span>Checked In</span>
+                              </span>
+                              {(() => {
+                                const formatted = formatCheckInDateTime(p.checkedInAt);
+                                if (!formatted) return null;
+                                return (
+                                  <div className="flex items-center gap-1 text-[10px] font-mono text-emerald-400/90 whitespace-nowrap">
+                                    <Clock className="h-2.5 w-2.5 opacity-70" />
+                                    <span>{formatted.dateStr}, {formatted.timeStr}</span>
+                                  </div>
+                                );
+                              })()}
+                            </div>
+                          ) : (
+                            <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-mono font-bold bg-[#16161d] text-neutral-400 border border-white/10">
+                              <span>Pending</span>
+                            </span>
+                          )}
+                        </td>
+
+                        <td className="py-3 px-4 text-right">
+                          <button
+                            type="button"
+                            disabled={isLoading}
+                            onClick={() => handleToggleParticipantCheckIn(p)}
+                            className={`inline-flex items-center gap-1.5 rounded-xl px-3 py-1.5 text-xs font-semibold cursor-pointer transition-all ${
+                              p.checkedIn
+                                ? "border border-rose-500/30 bg-rose-500/10 text-rose-300 hover:bg-rose-500/20"
+                                : "border border-emerald-500/30 bg-emerald-500/20 text-emerald-300 hover:bg-emerald-500/30"
+                            } ${isLoading ? "opacity-50 cursor-not-allowed" : ""}`}
+                          >
+                            {isLoading ? (
+                              <RefreshCw className="h-3 w-3 animate-spin" />
+                            ) : p.checkedIn ? (
+                              <>
+                                <Undo2 className="h-3 w-3" />
+                                <span>Undo</span>
+                              </>
+                            ) : (
+                              <>
+                                <Check className="h-3 w-3" />
+                                <span>Mark Present</span>
+                              </>
+                            )}
+                          </button>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            ) : (
+              <div className="py-12 text-center text-xs text-neutral-500 font-mono">
+                No participants found matching filters.
+              </div>
+            )}
+          </div>
+        )}
       </div>
+
+      {/* Check-In / Revert Confirmation Modal */}
+      {checkInConfirmTarget && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-in fade-in duration-200"
+          onClick={(e) => {
+            if (e.target === e.currentTarget && !actionLoadingId) {
+              setCheckInConfirmTarget(null);
+            }
+          }}
+        >
+          <div className="relative w-full max-w-md rounded-3xl border border-white/20 bg-[#0e0e12] p-6 sm:p-7 shadow-2xl overflow-hidden">
+            <button
+              type="button"
+              disabled={Boolean(actionLoadingId)}
+              onClick={() => setCheckInConfirmTarget(null)}
+              className="absolute right-5 top-5 h-8 w-8 rounded-full bg-white/10 hover:bg-white/20 text-white/70 hover:text-white flex items-center justify-center transition-colors cursor-pointer disabled:opacity-40"
+            >
+              <X className="h-4 w-4" />
+            </button>
+
+            <div className="flex items-start gap-3.5 mb-5">
+              <div
+                className={`h-11 w-11 rounded-2xl flex items-center justify-center shrink-0 border ${
+                  checkInConfirmTarget.nextCheckIn
+                    ? "bg-emerald-500/15 border-emerald-500/30 text-emerald-400"
+                    : "bg-amber-500/15 border-amber-500/30 text-amber-400"
+                }`}
+              >
+                {checkInConfirmTarget.nextCheckIn ? (
+                  <CheckCircle2 className="h-6 w-6" />
+                ) : (
+                  <Undo2 className="h-6 w-6" />
+                )}
+              </div>
+              <div>
+                <span
+                  className={`inline-block text-[10px] font-mono font-bold uppercase tracking-wider px-2 py-0.5 rounded-full border mb-1.5 ${
+                    checkInConfirmTarget.nextCheckIn
+                      ? "bg-emerald-500/10 border-emerald-500/30 text-emerald-300"
+                      : "bg-amber-500/10 border-amber-500/30 text-amber-300"
+                  }`}
+                >
+                  {checkInConfirmTarget.nextCheckIn ? "Check-In Confirmation" : "Revert Confirmation"}
+                </span>
+                <h3 className="text-lg font-black text-white font-[family-name:var(--font-google-sans)] leading-snug">
+                  {checkInConfirmTarget.nextCheckIn
+                    ? checkInConfirmTarget.type === "team"
+                      ? "Confirm Team Check-In"
+                      : "Confirm Participant Check-In"
+                    : checkInConfirmTarget.type === "team"
+                    ? "Revert Team Check-In"
+                    : "Revert Participant Check-In"}
+                </h3>
+                <p className="text-xs text-white/60 mt-0.5">
+                  {checkInConfirmTarget.nextCheckIn
+                    ? "Verify and mark official attendance for this session."
+                    : "Reset attendance status back to pending."}
+                </p>
+              </div>
+            </div>
+
+            <div className="rounded-2xl border border-white/10 bg-[#16161d] p-4 space-y-3 mb-6">
+              {checkInConfirmTarget.type === "team" && checkInConfirmTarget.team && (
+                <>
+                  <div className="flex items-center justify-between gap-2 border-b border-white/10 pb-2.5">
+                    <div className="min-w-0 flex-1">
+                      <span className="text-[10px] uppercase font-mono tracking-wider text-white/40 block">
+                        Team Name
+                      </span>
+                      <span className="text-sm font-bold text-white block truncate">
+                        {checkInConfirmTarget.team.teamName}
+                      </span>
+                    </div>
+                    <span className="text-xs font-mono font-bold bg-white/10 text-neutral-300 px-2.5 py-1 rounded-lg border border-white/15 shrink-0">
+                      {checkInConfirmTarget.team.teamCode}
+                    </span>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-2 text-xs">
+                    <div>
+                      <span className="text-[10px] uppercase font-mono text-white/40 block">Team Leader</span>
+                      <span className="text-white font-medium truncate block">
+                        {checkInConfirmTarget.team.lead?.name || "N/A"}
+                      </span>
+                    </div>
+                    <div>
+                      <span className="text-[10px] uppercase font-mono text-white/40 block">Roster Size</span>
+                      <span className="text-white font-medium block">
+                        {1 + (checkInConfirmTarget.team.members?.length || 0)} Members
+                      </span>
+                    </div>
+                  </div>
+
+                  {checkInConfirmTarget.team.department && (
+                    <div className="pt-2 border-t border-white/5 text-[11px] text-white/60 truncate">
+                      {checkInConfirmTarget.team.department}
+                    </div>
+                  )}
+                </>
+              )}
+
+              {checkInConfirmTarget.type === "participant" && checkInConfirmTarget.participant && (
+                <>
+                  <div className="flex items-center justify-between gap-2 border-b border-white/10 pb-2.5">
+                    <div className="min-w-0 flex-1">
+                      <span className="text-[10px] uppercase font-mono tracking-wider text-white/40 block">
+                        Participant
+                      </span>
+                      <span className="text-sm font-bold text-white block truncate">
+                        {checkInConfirmTarget.participant.name}
+                      </span>
+                    </div>
+                    <span
+                      className={`text-[10px] font-mono font-bold px-2 py-0.5 rounded-full border shrink-0 ${
+                        checkInConfirmTarget.participant.role === "Team Leader"
+                          ? "bg-purple-500/20 text-purple-300 border-purple-500/30"
+                          : "bg-white/10 text-white/70 border-white/15"
+                      }`}
+                    >
+                      {checkInConfirmTarget.participant.role}
+                    </span>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-2 text-xs">
+                    <div>
+                      <span className="text-[10px] uppercase font-mono text-white/40 block">Team</span>
+                      <span className="text-white font-medium truncate block">
+                        {checkInConfirmTarget.participant.teamName}
+                      </span>
+                    </div>
+                    <div>
+                      <span className="text-[10px] uppercase font-mono text-white/40 block">Team Code</span>
+                      <span className="text-white font-mono font-medium block">
+                        {checkInConfirmTarget.participant.teamCode}
+                      </span>
+                    </div>
+                  </div>
+
+                  {(checkInConfirmTarget.participant.email || checkInConfirmTarget.participant.roll) && (
+                    <div className="pt-2 border-t border-white/5 text-[11px] font-mono text-white/50 truncate">
+                      {checkInConfirmTarget.participant.email}
+                      {checkInConfirmTarget.participant.roll ? ` • Roll: ${checkInConfirmTarget.participant.roll}` : ""}
+                    </div>
+                  )}
+                </>
+              )}
+            </div>
+
+            <div className="flex items-center justify-end gap-3">
+              <button
+                type="button"
+                disabled={Boolean(actionLoadingId)}
+                onClick={() => setCheckInConfirmTarget(null)}
+                className="rounded-xl border border-white/20 bg-white/[0.08] hover:bg-white/15 px-4 py-2.5 text-xs font-semibold text-white transition-all cursor-pointer disabled:opacity-40"
+              >
+                Cancel
+              </button>
+
+              <button
+                type="button"
+                disabled={Boolean(actionLoadingId)}
+                onClick={async () => {
+                  if (checkInConfirmTarget.type === "team" && checkInConfirmTarget.team) {
+                    const target = checkInConfirmTarget.team;
+                    const nextState = checkInConfirmTarget.nextCheckIn;
+                    setCheckInConfirmTarget(null);
+                    await executeToggleRosterCheckIn(target, nextState);
+                  } else if (checkInConfirmTarget.type === "participant" && checkInConfirmTarget.participant) {
+                    const target = checkInConfirmTarget.participant;
+                    const nextState = checkInConfirmTarget.nextCheckIn;
+                    setCheckInConfirmTarget(null);
+                    await executeToggleParticipantCheckIn(target, nextState);
+                  }
+                }}
+                className={`rounded-xl px-5 py-2.5 text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 shadow-md ${
+                  checkInConfirmTarget.nextCheckIn
+                    ? "bg-emerald-500 hover:bg-emerald-400 text-black shadow-emerald-500/20"
+                    : "bg-rose-500 hover:bg-rose-400 text-white shadow-rose-500/20"
+                } ${actionLoadingId ? "opacity-50 cursor-not-allowed" : ""}`}
+              >
+                {actionLoadingId ? (
+                  <>
+                    <RefreshCw className="h-3.5 w-3.5 animate-spin" />
+                    <span>Processing...</span>
+                  </>
+                ) : checkInConfirmTarget.nextCheckIn ? (
+                  <>
+                    <Check className="h-3.5 w-3.5" />
+                    <span>Confirm Check-In</span>
+                  </>
+                ) : (
+                  <>
+                    <Undo2 className="h-3.5 w-3.5" />
+                    <span>Confirm Revert</span>
+                  </>
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

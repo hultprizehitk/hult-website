@@ -1710,47 +1710,18 @@ export default function EventsManager() {
                       </div>
 
                       {/* Bottom Card Actions */}
-                      <div className="flex items-center justify-between gap-2 pt-3.5 border-t border-white/10">
+                      <div className="flex items-center justify-end gap-2 pt-3.5 border-t border-white/10">
                         <button
                           type="button"
                           onClick={(e) => {
                             e.stopPropagation();
-                            handleToggleRegistration(event._id);
+                            handleGoInsideEvent(event);
                           }}
-                          className={`h-8.5 rounded-lg px-3 text-xs font-medium transition-all cursor-pointer border ${
-                            isRegOpen
-                              ? "border-white/10 bg-white/[0.03] text-neutral-300 hover:text-rose-400 hover:bg-rose-500/10 hover:border-rose-500/25"
-                              : "border-emerald-500/30 bg-emerald-500/10 text-emerald-300 hover:bg-emerald-500/20"
-                          }`}
+                          className="h-8.5 inline-flex items-center gap-1.5 rounded-lg bg-white text-neutral-950 px-4 text-xs font-semibold hover:bg-neutral-200 transition-colors shadow-sm cursor-pointer"
                         >
-                          {isRegOpen ? "Close Registration" : "Open Registration"}
+                          <span>Edit Event</span>
+                          <ArrowRight className="w-3.5 h-3.5 transition-transform group-hover:translate-x-0.5" />
                         </button>
-
-                        <div className="flex items-center gap-2">
-                          <button
-                            type="button"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleGoInsideEvent(event);
-                            }}
-                            className="h-8.5 inline-flex items-center gap-1.5 rounded-lg bg-white text-neutral-950 px-3.5 text-xs font-semibold hover:bg-neutral-200 transition-colors shadow-sm cursor-pointer"
-                          >
-                            <span>Manage Event</span>
-                            <ArrowRight className="w-3.5 h-3.5 transition-transform group-hover:translate-x-0.5" />
-                          </button>
-
-                          <button
-                            type="button"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleDeleteEvent(event._id, event.title);
-                            }}
-                            className="h-8.5 w-8.5 inline-flex items-center justify-center rounded-lg border border-white/10 bg-white/[0.02] text-neutral-400 hover:text-rose-400 hover:bg-rose-500/10 hover:border-rose-500/25 transition-colors cursor-pointer"
-                            title="Delete event"
-                          >
-                            <Trash2 className="w-3.5 h-3.5" />
-                          </button>
-                        </div>
                       </div>
                     </div>
                   );

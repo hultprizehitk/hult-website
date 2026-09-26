@@ -2,11 +2,19 @@ import { NextResponse } from "next/server";
 import mongoose from "mongoose";
 import { connectDB } from "@/lib/mongodb";
 import Event from "@/models/Event";
-import { isAuthorizedAdmin } from "@/lib/admin-check";
+import Team from "@/models/Team";
+import { isAuthorizedAdmin, isAuthorizedSuperAdmin } from "@/lib/admin-check";
 import { logAdminAction } from "@/lib/audit-logger";
 
 function unauthorizedResponse() {
   return NextResponse.json({ error: "Unauthorized access" }, { status: 401 });
+}
+
+function forbiddenMasterAdminResponse() {
+  return NextResponse.json(
+    { error: "Unauthorized access: Master Admin clearance is required to modify events." },
+    { status: 403 }
+  );
 }
 
 // GET: Fetch all events
@@ -16,8 +24,20 @@ export async function GET(req: Request) {
 
   try {
     await connectDB();
-    const events = await Event.find({}).sort({ order: 1, createdAt: -1 });
-    return NextResponse.json({ events }, { status: 200 });
+    const events = await Event.find({}).sort({ order: 1, createdAt: -1 }).lean();
+
+    // Dynamically calculate accurate team counts from Team collection
+    const eventCounts = await Team.aggregate([
+      { $group: { _id: "$eventId", count: { $sum: 1 } } }
+    ]);
+    const countMap = new Map(eventCounts.map((ec: { _id: unknown; count: number }) => [String(ec._id), ec.count]));
+
+    const enrichedEvents = events.map((ev) => ({
+      ...ev,
+      registeredTeamsCount: countMap.get(String(ev._id)) ?? (ev.registeredTeamsCount || 0),
+    }));
+
+    return NextResponse.json({ events: enrichedEvents }, { status: 200 });
   } catch (error: unknown) {
     console.error("Admin GET events error:", error);
     return NextResponse.json({ error: "Failed to fetch events" }, { status: 500 });
@@ -26,8 +46,8 @@ export async function GET(req: Request) {
 
 // POST: Create a new event
 export async function POST(req: Request) {
-  const isAdmin = await isAuthorizedAdmin(req);
-  if (!isAdmin) return unauthorizedResponse();
+  const isSuper = await isAuthorizedSuperAdmin(req);
+  if (!isSuper) return forbiddenMasterAdminResponse();
 
   try {
     const body = await req.json();
@@ -100,8 +120,8 @@ export async function POST(req: Request) {
 
 // PUT: Update an event / control registration / extend deadline / manage teams
 export async function PUT(req: Request) {
-  const isAdmin = await isAuthorizedAdmin(req);
-  if (!isAdmin) return unauthorizedResponse();
+  const isSuper = await isAuthorizedSuperAdmin(req);
+  if (!isSuper) return forbiddenMasterAdminResponse();
 
   try {
     const body = await req.json();
@@ -295,8 +315,8 @@ export async function PUT(req: Request) {
 
 // DELETE: Remove an event
 export async function DELETE(req: Request) {
-  const isAdmin = await isAuthorizedAdmin(req);
-  if (!isAdmin) return unauthorizedResponse();
+  const isSuper = await isAuthorizedSuperAdmin(req);
+  if (!isSuper) return forbiddenMasterAdminResponse();
 
   try {
     const { searchParams } = new URL(req.url);

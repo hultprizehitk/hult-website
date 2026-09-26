@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { connectDB } from "@/lib/mongodb";
 import Event from "@/models/Event";
+import Team from "@/models/Team";
 
 import mongoose from "mongoose";
 
@@ -23,7 +24,8 @@ export async function GET(req: Request) {
       if (!event) {
         return NextResponse.json({ success: false, error: "Event not found" }, { status: 404 });
       }
-      return NextResponse.json({ success: true, event }, { status: 200 });
+      const teamCount = await Team.countDocuments({ eventId: event._id });
+      return NextResponse.json({ success: true, event: { ...event, registeredTeamsCount: teamCount } }, { status: 200 });
     }
 
     const events = await Event.find({ isPublished: true })
@@ -31,7 +33,17 @@ export async function GET(req: Request) {
       .sort({ order: 1, createdAt: 1 })
       .lean();
 
-    return NextResponse.json({ success: true, events }, { status: 200 });
+    const eventCounts = await Team.aggregate([
+      { $group: { _id: "$eventId", count: { $sum: 1 } } }
+    ]);
+    const countMap = new Map(eventCounts.map((ec: { _id: unknown; count: number }) => [String(ec._id), ec.count]));
+
+    const enrichedEvents = events.map((ev) => ({
+      ...ev,
+      registeredTeamsCount: countMap.get(String(ev._id)) ?? (ev.registeredTeamsCount || 0),
+    }));
+
+    return NextResponse.json({ success: true, events: enrichedEvents }, { status: 200 });
   } catch (error: unknown) {
     console.error("Public GET /api/events error:", error);
     return NextResponse.json(

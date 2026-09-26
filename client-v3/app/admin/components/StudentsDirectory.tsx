@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from "react";
 import { parseHeritageEmail } from "@/lib/heritage-parser";
 import { Button } from "@/components/ui/button";
+import { Clock } from "lucide-react";
 
 import type { Participant } from "@/types";
 
@@ -84,11 +85,26 @@ export default function StudentsDirectory() {
       "Passing Year",
       "Batch",
       "Role",
-      "Registration Date",
+      "Registration Date & Time (IST)",
     ];
 
     const rows = filteredParticipants.map((p) => {
       const parsed = parseHeritageEmail(p.email, p.name);
+      const regTime =
+        p.createdAt && !isNaN(new Date(p.createdAt).getTime())
+          ? `${new Date(p.createdAt).toLocaleDateString("en-IN", {
+              day: "2-digit",
+              month: "short",
+              year: "numeric",
+            })} ${new Date(p.createdAt)
+              .toLocaleTimeString("en-IN", {
+                hour: "2-digit",
+                minute: "2-digit",
+                second: "2-digit",
+                hour12: true,
+              })
+              .toUpperCase()}`
+          : "";
       return [
         `"${p._id}"`,
         `"${parsed.fullName.replace(/"/g, '""')}"`,
@@ -102,7 +118,7 @@ export default function StudentsDirectory() {
         `"${parsed.passingYear}"`,
         `"${parsed.batch}"`,
         `"${p.role}"`,
-        `"${new Date(p.createdAt).toLocaleString()}"`,
+        `"${regTime}"`,
       ];
     });
 
@@ -289,12 +305,33 @@ export default function StudentsDirectory() {
                         Class of {parsed.passingYear}
                       </span>
                     </td>
-                    <td className="px-5 py-4 text-white/50">
-                      {new Date(student.createdAt).toLocaleDateString("en-IN", {
-                        month: "short",
-                        day: "numeric",
-                        year: "numeric",
-                      })}
+                    <td className="px-5 py-4">
+                      {student.createdAt && !isNaN(new Date(student.createdAt).getTime()) ? (
+                        <div>
+                          <span className="block text-xs font-semibold text-white/90">
+                            {new Date(student.createdAt).toLocaleDateString("en-IN", {
+                              day: "numeric",
+                              month: "short",
+                              year: "numeric",
+                            })}
+                          </span>
+                          <span className="inline-flex items-center gap-1 text-[10px] text-white/40 font-mono mt-0.5">
+                            <Clock size={10} className="text-white/30 shrink-0" />
+                            <span>
+                              {new Date(student.createdAt)
+                                .toLocaleTimeString("en-IN", {
+                                  hour: "2-digit",
+                                  minute: "2-digit",
+                                  second: "2-digit",
+                                  hour12: true,
+                                })
+                                .toUpperCase()}
+                            </span>
+                          </span>
+                        </div>
+                      ) : (
+                        <span className="text-white/30 font-normal">N/A</span>
+                      )}
                     </td>
                   </tr>
                 );

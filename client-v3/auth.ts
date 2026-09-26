@@ -86,6 +86,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
               year: parsed.academicYear,
               role: assignedRole,
               welcomeEmailSent: true,
+              lastLoginAt: new Date(),
             });
 
             // Send welcome email — MUST be awaited, otherwise Next.js terminates
@@ -113,6 +114,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
               department: parsed.branchName,
               year: parsed.academicYear,
               role: assignedRole,
+              lastLoginAt: new Date(),
             };
             if (user.image) updates.image = user.image;
             if (parsed.fullName) updates.name = parsed.fullName;

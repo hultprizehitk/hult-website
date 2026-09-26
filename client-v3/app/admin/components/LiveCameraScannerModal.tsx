@@ -20,7 +20,7 @@ interface LiveCameraScannerModalProps {
   eventTitle?: string;
   isOpen: boolean;
   onClose: () => void;
-  onCheckInTeam: (teamCode: string) => Promise<{ success: boolean; message: string; teamName?: string }>;
+  onCheckInTeam: (rawCode: string) => Promise<{ success: boolean; message: string; teamName?: string; teamCode?: string }>;
 }
 
 export default function LiveCameraScannerModal({
@@ -121,10 +121,10 @@ export default function LiveCameraScannerModal({
     return trimmed;
   };
 
-  // Process a detected team code
+  // Process a detected team or participant code
   const handleProcessCode = useCallback(
     async (rawCode: string) => {
-      const code = parseTeamCodeFromQr(rawCode);
+      const code = String(rawCode || "").trim();
       if (!code) return;
 
       setIsProcessing(true);
@@ -137,7 +137,7 @@ export default function LiveCameraScannerModal({
         setLastScanResult({
           success: res.success,
           message: res.message,
-          teamCode: code,
+          teamCode: res.teamCode || code,
           teamName: res.teamName,
         });
 
