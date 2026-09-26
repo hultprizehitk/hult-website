@@ -740,22 +740,75 @@ export default function ScannerConsole({
     try {
       if (streamRef.current) {
         streamRef.current.getTracks().forEach((t) => t.stop());
+        streamRef.current = null;
       }
 
-      const mediaStream = await navigator.mediaDevices.getUserMedia({
-        video: {
-          facingMode: { ideal: cameraFacing },
-          width: { ideal: 1280 },
-          height: { ideal: 720 },
-        },
-        audio: false,
-      });
+      let mediaStream: MediaStream | null = null;
+
+      // Tier 1: When targeting back camera (default for QR scanner), use exact constraint to force back camera directly
+      if (cameraFacing === "environment") {
+        try {
+          mediaStream = await navigator.mediaDevices.getUserMedia({
+            video: {
+              facingMode: { exact: "environment" },
+              width: { ideal: 1280 },
+              height: { ideal: 720 },
+            },
+            audio: false,
+          });
+        } catch {
+          // If exact constraint is not supported or overconstrained (e.g. desktop webcam), try device enumeration
+          if (navigator.mediaDevices.enumerateDevices) {
+            try {
+              const devices = await navigator.mediaDevices.enumerateDevices();
+              const videoInputs = devices.filter((d) => d.kind === "videoinput");
+              const backCam = videoInputs.find((d) =>
+                /back|rear|environment|facing\s*back|camera2\s*0/i.test(d.label)
+              );
+              if (backCam?.deviceId) {
+                mediaStream = await navigator.mediaDevices.getUserMedia({
+                  video: {
+                    deviceId: { exact: backCam.deviceId },
+                    width: { ideal: 1280 },
+                    height: { ideal: 720 },
+                  },
+                  audio: false,
+                });
+              }
+            } catch {}
+          }
+        }
+      }
+
+      // Tier 2: Fallback to ideal facingMode (or user-facing when flipped)
+      if (!mediaStream) {
+        mediaStream = await navigator.mediaDevices.getUserMedia({
+          video: {
+            facingMode: { ideal: cameraFacing },
+            width: { ideal: 1280 },
+            height: { ideal: 720 },
+          },
+          audio: false,
+        });
+      }
 
       streamRef.current = mediaStream;
 
       const track = mediaStream.getVideoTracks()[0];
       const capabilities = track?.getCapabilities ? (track.getCapabilities() as { torch?: boolean }) : undefined;
       setHasTorch(Boolean(capabilities?.torch));
+
+      // Attempt continuous autofocus if supported on mobile
+      try {
+        const trackWithApply = track as MediaStreamTrack & {
+          applyConstraints: (c: MediaTrackConstraints) => Promise<void>;
+        };
+        if (trackWithApply?.applyConstraints) {
+          await trackWithApply.applyConstraints({
+            advanced: [{ focusMode: "continuous" } as unknown as MediaTrackConstraintSet],
+          });
+        }
+      } catch {}
 
       if (videoRef.current) {
         videoRef.current.srcObject = mediaStream;
@@ -1185,10 +1238,6 @@ export default function ScannerConsole({
                       <div className="absolute -top-1 -right-1 w-6 h-6 border-t-4 border-r-4 border-emerald-300 rounded-tr-xl" />
                       <div className="absolute -bottom-1 -left-1 w-6 h-6 border-b-4 border-l-4 border-emerald-300 rounded-bl-xl" />
                       <div className="absolute -bottom-1 -right-1 w-6 h-6 border-b-4 border-r-4 border-emerald-300 rounded-br-xl" />
-
-                      {/* Animated Bouncing Laser Line */}
-                      <div className="absolute inset-x-2 h-0.5 bg-gradient-to-r from-transparent via-emerald-300 to-transparent animate-bounce shadow-[0_0_15px_#34d399]" />
-                      <div className="h-2 w-2 rounded-full bg-emerald-400 animate-ping" />
                     </div>
                   </div>
 
