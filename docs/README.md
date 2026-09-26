@@ -10,6 +10,7 @@ Docs about problems we hit, how we diagnosed them, and the reusable tooling buil
 | [Quiz Runbook](./quiz-runbook.md) | Setup, load test, event-day flow and recovery playbook for the live quiz app (`quiz/`) |
 | [Quiz Design Spec](./superpowers/specs/2026-09-24-quiz-design.md) | Decisions, data model, state machine and scoring for the quiz |
 | [Quiz Implementation Plan](./superpowers/plans/2026-09-24-quiz.md) | Task-by-task build plan for the quiz |
+| [Quiz on Firebase PRD](./superpowers/specs/2026-09-26-quiz-firebase-prd.md) | Plan to move the quiz to Firestore + NextAuth custom-token bridge, with cost model and full testing checklist |
 
 ## Quick reference
 
