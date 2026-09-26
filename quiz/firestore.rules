@@ -1,0 +1,56 @@
+rules_version = '2';
+
+// Hult Prize Quiz. Browsers only READ; every write goes through the Next.js API (Admin SDK bypasses rules).
+// Identity comes from a Firebase custom token minted after NextAuth login: token.email, token.admin.
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function signedIn() {
+      return request.auth != null;
+    }
+    function isAdmin() {
+      return signedIn() && request.auth.token.admin == true;
+    }
+    function isMember(data) {
+      return signedIn() && request.auth.token.email in data.memberEmails;
+    }
+
+    // Public: projector needs no login. Contains no correct answers until reveal.
+    match /quizSessions/{code} {
+      allow read: if true;
+      allow write: if false;
+
+      // Live counters (checked-in / answered), read by projector + admin only in practice.
+      match /live/{docId} {
+        allow read: if true;
+        allow write: if false;
+      }
+
+      // Full questions incl. correctIndex.
+      match /questions/{questionId} {
+        allow read: if isAdmin();
+        allow write: if false;
+      }
+
+      // Team roster + quiz state + scores. Members see only their own team.
+      match /teams/{teamId} {
+        allow read: if isAdmin() || isMember(resource.data);
+        allow write: if false;
+      }
+
+      // Audit trail of submissions.
+      match /answers/{answerId} {
+        allow read: if isAdmin();
+        allow write: if false;
+      }
+    }
+
+    match /quizAdmins/{email} {
+      allow read: if isAdmin();
+      allow write: if false;
+    }
+
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

@@ -7,14 +7,18 @@
     "build": "node scripts/next-exfat.cjs build --webpack",
     "start": "node scripts/next-exfat.cjs start -p 3001",
     "lint": "eslint",
-    "test": "vitest run",
+    "test": "firebase emulators:exec --only firestore,auth --project demo-hult-quiz \"vitest run\"",
     "test:watch": "vitest",
     "seed": "node --env-file=.env.local --import tsx scripts/seed-dev.ts",
-    "simulate": "node --env-file=.env.local --import tsx scripts/simulate.ts"
+    "simulate": "node --env-file=.env.local --import tsx scripts/simulate.ts",
+    "test:unit": "vitest run tests/unit",
+    "emulators": "firebase emulators:start --only firestore,auth --project demo-hult-quiz"
   },
   "dependencies": {
     "class-variance-authority": "^0.7.1",
     "cn": "^0.4.0",
+    "firebase": "^12.19.0",
+    "firebase-admin": "^14.5.0",
     "lucide-react": "^1.48.0",
     "mongoose": "^9.10.2",
     "motion": "^13.4.2",
@@ -31,12 +35,14 @@
     "zod": "^4.6.5"
   },
   "devDependencies": {
+    "@firebase/rules-unit-testing": "^5.0.2",
     "@tailwindcss/postcss": "^4",
     "@types/node": "^22.20.4",
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "eslint": "^9",
     "eslint-config-next": "16.3.1",
+    "firebase-tools": "^15.31.0",
     "mongodb-memory-server": "^11.3.0",
     "tailwindcss": "^4",
     "tsx": "^4.23.15",

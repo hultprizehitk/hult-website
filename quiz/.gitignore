@@ -42,3 +42,8 @@ next-env.d.ts
 bun.lock
 package-lock.json
 pnpm-lock.yaml
+
+# firebase emulators
+firebase-debug.log
+firestore-debug.log
+ui-debug.log
