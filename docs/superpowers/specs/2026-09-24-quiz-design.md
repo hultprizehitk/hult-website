@@ -1,5 +1,7 @@
 # Hult Prize Live Quiz — Design Spec
 
+> **Superseded for backend and runtime decisions.** The current implementation uses Firestore, listener-based updates, and a NextAuth-to-Firebase token bridge as specified in [the 2026-09-26 Firebase PRD](./2026-09-26-quiz-firebase-prd.md). This document remains a reference for quiz product rules and screens.
+
 **Date:** 2026-09-24
 **Owner:** Aheen
 **App:** `quiz/` (standalone Next.js 16.3.1 app, same MongoDB as `client-v3`)

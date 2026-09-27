@@ -10,7 +10,8 @@ export const ADMINS = "quizAdmins";
 
 export const paths = {
   session: (code: string) => `${SESSIONS}/${code}`,
-  counts: (code: string) => `${SESSIONS}/${code}/live/counts`,
+  counts: (code: string) => `${SESSIONS}/${code}/counts`,
+  counter: (code: string, teamId: string) => `${SESSIONS}/${code}/counts/${teamId}`,
   questions: (code: string) => `${SESSIONS}/${code}/questions`,
   question: (code: string, id: string) => `${SESSIONS}/${code}/questions/${id}`,
   teams: (code: string) => `${SESSIONS}/${code}/teams`,
@@ -72,12 +73,21 @@ export interface SessionDoc<T = Ts> {
   lastSync: SyncSummary | null;
 }
 
-/** quizSessions/{code}/live/counts (projector + admin). */
+/** Aggregated counts returned to views; Firestore stores one shard per team instead. */
 export interface CountsDoc {
   checkedIn: number;
   eligible: number;
   answeredCurrent: number;
   answeredFor: string | null;
+}
+
+/** quizSessions/{code}/counts/{teamId}; avoids a shared write hotspot. */
+export interface CounterDoc {
+  teamId: string;
+  eligible: boolean;
+  checkedIn: boolean;
+  answeredFor: string | null;
+  answered: boolean;
 }
 
 /** quizSessions/{code}/questions/{id} (admin only). */
@@ -132,8 +142,8 @@ export interface AnswerDoc<T = Ts> {
   responseMs: number;
 }
 
-export function emptyTeamState(): Pick<
-  TeamDoc,
+export function emptyTeamState<T = Ts>(): Pick<
+  TeamDoc<T>,
   | "checkedInAt" | "checkedInBy" | "deviceId" | "currentAnswer" | "score" | "totalTimeMs"
   | "answeredCount" | "correctCount" | "rank" | "lastResult" | "perQuestion"
 > {

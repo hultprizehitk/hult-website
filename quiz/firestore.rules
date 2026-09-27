@@ -19,8 +19,8 @@ service cloud.firestore {
       allow read: if true;
       allow write: if false;
 
-      // Live counters (checked-in / answered), read by projector + admin only in practice.
-      match /live/{docId} {
+      // Counter shards: one per team, publicly readable by projector; avoids a write hotspot.
+      match /counts/{counterId} {
         allow read: if true;
         allow write: if false;
       }

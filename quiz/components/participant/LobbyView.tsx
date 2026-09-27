@@ -7,7 +7,7 @@ import { TextShimmer } from "@/components/motion-primitives/text-shimmer";
 import { api, type ApiError } from "@/lib/client/api";
 import type { StateResponse } from "@/lib/quiz/types";
 
-export function LobbyView({ s, code, onChanged }: { s: StateResponse; code: string; onChanged: () => void }) {
+export function LobbyView({ s, code }: { s: StateResponse; code: string }) {
   const me = s.me!;
   const team = me.team!;
   const [saving, setSaving] = useState(false);
@@ -18,7 +18,6 @@ export function LobbyView({ s, code, onChanged }: { s: StateResponse; code: stri
     try {
       await api(`/api/s/${code}/taker`, { body: { email } });
       toast.success("Taker updated");
-      onChanged();
     } catch (e) {
       toast.error((e as ApiError).message);
     } finally {
@@ -33,8 +32,9 @@ export function LobbyView({ s, code, onChanged }: { s: StateResponse; code: stri
           Waiting for host
         </TextShimmer>
         <h1 className="mt-3 text-3xl font-bold tracking-tight">{s.title}</h1>
-        <p className="mt-1 font-mono text-xs text-white/50 tabular-nums">
-          <span className="font-sans font-semibold text-emerald-400">{s.counts.checkedIn}</span> of {s.counts.eligible} teams in
+        <p className="mt-1 inline-flex items-center gap-1.5 text-xs font-medium text-emerald-400">
+          <span className="size-1.5 rounded-full bg-emerald-400 shadow-[0_0_8px_rgba(52,211,153,0.6)]" />
+          Checked in
         </p>
       </div>
 

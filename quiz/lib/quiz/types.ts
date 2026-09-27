@@ -1,7 +1,6 @@
 export const LEAD_IN_MS = 3000;
 export const ANSWER_GRACE_MS = 750;
 export const LEADERBOARD_SIZE = 10;
-export const POLL_MS = 1000;
 
 export type SessionStatus = "draft" | "lobby" | "live" | "ended";
 export type Phase = "idle" | "question" | "reveal" | "leaderboard";

@@ -1,64 +1,69 @@
-import { Types } from "mongoose";
-import { QuizAnswer, type QuizAnswerDoc, type QuizSessionDoc } from "@/models/quiz";
+import { Timestamp } from "firebase-admin/firestore";
+import { adminDb } from "@/lib/firebase/admin";
 import { QuizError } from "./errors";
-import { markSnapshotStale } from "./cache";
-import { findQuizTeamForEmail } from "./teams";
-import { ANSWER_GRACE_MS, type QuestionLite } from "./types";
+import { paths, type AnswerDoc, type SessionDoc, type TeamDoc } from "./fs-types";
+import { ANSWER_GRACE_MS } from "./types";
 import type { AnswerInput } from "./validation";
 
 export interface SubmitResult {
-  answer: QuizAnswerDoc;
+  questionId: string;
+  optionIndex: number;
   duplicate: boolean;
 }
 
-export async function submitAnswer(
-  session: QuizSessionDoc,
-  questions: QuestionLite[],
-  email: string,
-  input: AnswerInput,
-  now: Date = new Date(),
-): Promise<SubmitResult> {
-  if (session.status !== "live" || session.phase !== "question" || !session.questionOpenedAt || !session.questionClosesAt) {
-    throw new QuizError("invalid_state", "No open question");
-  }
-  const q = questions[session.currentIndex];
-  if (!q || q.id !== input.questionId) throw new QuizError("invalid_state", "Question is not current");
+/**
+ * One transaction: 2 reads (session, team) + 3 writes (audit answer, team.currentAnswer, counts).
+ * The team's currentAnswer makes a second submit a no-op; correctness is only computed at Reveal.
+ */
+export async function submitAnswer(code: string, email: string, input: AnswerInput, now: Date = new Date()): Promise<SubmitResult> {
+  const db = adminDb();
+  // Resolve the participant outside the transaction so a burst of teams does not
+  // place a transactional lock on the shared memberEmails query range.
+  const teamQuery = await db.collection(paths.teams(code)).where("memberEmails", "array-contains", email).limit(1).get();
+  if (teamQuery.empty) throw new QuizError("not_registered", "Team not checked in");
+  const teamRef = teamQuery.docs[0].ref;
+  return db.runTransaction(async (tx) => {
+    const sSnap = await tx.get(db.doc(paths.session(code)));
+    if (!sSnap.exists) throw new QuizError("not_found", "Session not found");
+    const s = sSnap.data() as SessionDoc;
+    if (s.status !== "live" || s.phase !== "question" || !s.current || !s.questionOpenedAt || !s.questionClosesAt) {
+      throw new QuizError("invalid_state", "No open question");
+    }
+    const q = s.current;
+    if (q.id !== input.questionId) throw new QuizError("invalid_state", "Question is not current");
 
-  const t = now.getTime();
-  const openedAt = new Date(session.questionOpenedAt).getTime();
-  const closesAt = new Date(session.questionClosesAt).getTime();
-  if (t < openedAt) throw new QuizError("too_early", "Question not open yet");
-  if (t > closesAt + ANSWER_GRACE_MS) throw new QuizError("too_late", "Time is up");
-  if (input.optionIndex >= q.options.length) throw new QuizError("invalid_input", "Invalid option");
+    const t = now.getTime();
+    const openedAt = s.questionOpenedAt.toMillis();
+    const closesAt = s.questionClosesAt.toMillis();
+    if (t < openedAt) throw new QuizError("too_early", "Question not open yet");
+    if (t > closesAt + ANSWER_GRACE_MS) throw new QuizError("too_late", "Time is up");
+    if (input.optionIndex >= q.options.length) throw new QuizError("invalid_input", "Invalid option");
 
-  const qt = await findQuizTeamForEmail(session._id, email);
-  if (!qt) throw new QuizError("not_registered", "Team not checked in");
-  if (qt.takerEmail !== email) throw new QuizError("not_taker", "Your teammate is answering");
-  if (!qt.deviceId || qt.deviceId !== input.deviceId) throw new QuizError("wrong_device", "Active on another device");
+    const teamSnap = await tx.get(teamRef);
+    if (!teamSnap.exists) throw new QuizError("not_registered", "Team not checked in");
+    const team = teamSnap.data() as TeamDoc;
+    if (!team.memberEmails.includes(email)) throw new QuizError("not_registered", "Team not checked in");
+    if (!team.checkedInAt) throw new QuizError("not_registered", "Team not checked in");
+    if (team.takerEmail !== email) throw new QuizError("not_taker", "Your teammate is answering");
+    if (!team.deviceId || team.deviceId !== input.deviceId) throw new QuizError("wrong_device", "Active on another device");
 
-  const isCorrect = input.optionIndex === q.correctIndex;
-  const doc = {
-    sessionId: session._id,
-    teamId: qt.teamId,
-    questionId: new Types.ObjectId(q.id),
-    questionIndex: session.currentIndex,
-    takerEmail: email,
-    optionIndex: input.optionIndex,
-    isCorrect,
-    pointsAwarded: isCorrect ? q.points : 0,
-    responseMs: Math.min(Math.max(t - openedAt, 0), q.timeLimitSec * 1000),
-    answeredAt: now,
-  };
-  try {
-    const created = await QuizAnswer.create(doc);
-    // Soft: pollers keep the current snapshot while it refreshes; the answering phone shows its answer optimistically.
-    markSnapshotStale(session.code);
-    return { answer: created.toObject(), duplicate: false };
-  } catch (err) {
-    if ((err as { code?: number }).code !== 11000) throw err;
-    const existing = await QuizAnswer.findOne({
-      sessionId: session._id, teamId: qt.teamId, questionId: doc.questionId,
-    }).lean<QuizAnswerDoc>();
-    return { answer: existing!, duplicate: true };
-  }
+    if (team.currentAnswer?.qid === q.id) {
+      return { questionId: q.id, optionIndex: team.currentAnswer.optionIndex, duplicate: true };
+    }
+
+    const responseMs = Math.min(Math.max(t - openedAt, 0), q.timeLimitSec * 1000);
+    const answer: AnswerDoc<Timestamp> = {
+      teamId: team.teamId,
+      questionId: q.id,
+      questionIndex: q.index,
+      takerEmail: email,
+      optionIndex: input.optionIndex,
+      answeredAt: Timestamp.fromDate(now),
+      responseMs,
+    };
+    tx.set(db.doc(paths.answer(code, team.teamId, q.id)), answer);
+    tx.update(teamRef, { currentAnswer: { qid: q.id, optionIndex: input.optionIndex, responseMs } });
+    tx.update(db.doc(paths.counter(code, team.teamId)), { answeredFor: q.id, answered: true });
+    return { questionId: q.id, optionIndex: input.optionIndex, duplicate: false };
+  });
 }

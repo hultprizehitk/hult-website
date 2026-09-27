@@ -10,6 +10,7 @@
     "test": "firebase emulators:exec --only firestore,auth --project demo-hult-quiz \"vitest run\"",
     "test:watch": "vitest",
     "seed": "node --env-file=.env.local --import tsx scripts/seed-dev.ts",
+    "sync-teams": "node --env-file=.env.local --import tsx scripts/sync-teams.ts",
     "simulate": "node --env-file=.env.local --import tsx scripts/simulate.ts",
     "test:unit": "vitest run tests/unit",
     "emulators": "firebase emulators:start --only firestore,auth --project demo-hult-quiz"

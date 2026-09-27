@@ -1,87 +1,60 @@
-import mongoose from "mongoose";
-import { connectDB } from "@/lib/db";
-import { questionInputSchema } from "@/lib/quiz/validation";
-import { Event, Team, User } from "@/models/mirror";
-import { QuizAnswer, QuizQuestion, QuizSession, QuizTeam } from "@/models/quiz";
+import { adminDb, DEMO_PROJECT_ID } from "@/lib/firebase/admin";
+import { addQuestion } from "@/lib/quiz/questions";
+import { applyControl, createSession } from "@/lib/quiz/sessions";
+import type { SourceTeam } from "@/lib/sync/sync-teams";
+import { syncTeamsToFirestore } from "@/lib/sync/sync-teams";
 import { DEV_QUESTIONS } from "./dev-questions";
 
-const PROTECTED_DBS = new Set(["hult-website"]);
-const EVENT_TITLE = "DEV Quiz Event";
 const SESSION_CODE = "424242";
 const mail = (local: string) => `${local}@heritageit.edu.in`;
 const pad = (n: number) => String(n).padStart(2, "0");
 
-async function main() {
-  if (process.env.ALLOW_DEV_SEED !== "true") throw new Error("Refusing to seed: set ALLOW_DEV_SEED=true in quiz/.env.local");
-  const conn = await connectDB();
-  const dbName = conn.connection.db?.databaseName ?? "";
-  if (!dbName || PROTECTED_DBS.has(dbName)) throw new Error(`Refusing to seed protected database "${dbName}"`);
-  console.log(`Seeding database: ${dbName}`);
-
-  const questions = DEV_QUESTIONS.map((q) => questionInputSchema.parse(q));
-
-  const oldEvent = await Event.findOne({ title: EVENT_TITLE }).lean();
-  if (oldEvent) {
-    await Team.deleteMany({ eventId: oldEvent._id });
-    await Event.deleteOne({ _id: oldEvent._id });
+function requireDemoEmulator(): void {
+  if (process.env.GCLOUD_PROJECT !== DEMO_PROJECT_ID || !process.env.FIRESTORE_EMULATOR_HOST) {
+    throw new Error(`Refusing to seed outside the ${DEMO_PROJECT_ID} Firestore emulator`);
   }
-  const oldSession = await QuizSession.findOne({ code: SESSION_CODE }).lean();
-  if (oldSession) {
-    await Promise.all([
-      QuizQuestion.deleteMany({ sessionId: oldSession._id }),
-      QuizTeam.deleteMany({ sessionId: oldSession._id }),
-      QuizAnswer.deleteMany({ sessionId: oldSession._id }),
-    ]);
-    await QuizSession.deleteOne({ _id: oldSession._id });
-  }
-
-  const event = await Event.create({ title: EVENT_TITLE, date: "2026-10-01", venue: "Auditorium 1" });
-
-  await User.updateOne(
-    { email: mail("dev.admin") },
-    { $set: { name: "Dev Admin", email: mail("dev.admin"), role: "master_admin", department: "CSE", year: "3rd Year" } },
-    { upsert: true },
-  );
-
-  await Team.insertMany(
-    Array.from({ length: 50 }, (_, i) => {
-      const n = pad(i + 1);
-      return {
-        eventId: event._id,
-        teamCode: `DEV${n}`,
-        teamName: `Dev Team ${n}`,
-        lead: { name: `Lead ${n}`, email: mail(`dev.t${n}.lead`) },
-        leadEmail: mail(`dev.t${n}.lead`),
-        members: [1, 2, 3].map((m) => ({ name: `Member ${n}-${m}`, email: mail(`dev.t${n}.m${m}`) })),
-        membersCount: 4,
-        department: "CSE",
-        status: i === 49 ? "disqualified" : "confirmed",
-        submissionStatus: i === 47 || i === 48 ? "forming" : "submitted",
-      };
-    }),
-  );
-
-  const session = await QuizSession.create({
-    code: SESSION_CODE,
-    title: "Hult Prize Quiz (Dev)",
-    eventId: event._id,
-    status: "lobby",
-    checkinOpen: true,
-    requireSubmitted: true,
-    createdBy: mail("dev.admin"),
-  });
-  await QuizQuestion.insertMany(questions.map((q, order) => ({ sessionId: session._id, order, ...q })));
-
-  console.log(`Event        ${event._id}`);
-  console.log(`Session      #${SESSION_CODE} (lobby, check-in open, ${questions.length} questions)`);
-  console.log("Teams        50 (47 eligible, DEV48-49 forming, DEV50 disqualified)");
-  console.log(`Admin        ${mail("dev.admin")}`);
-  console.log(`Participants ${mail("dev.t01.lead")} .. ${mail("dev.t50.lead")}, members dev.tNN.m1..m3`);
-  await mongoose.disconnect();
 }
 
-main().catch(async (err) => {
+function seedTeams(): SourceTeam[] {
+  return Array.from({ length: 50 }, (_, i) => {
+    const n = i + 1;
+    const suffix = pad(n);
+    return {
+      id: `dev-team-${suffix}`,
+      teamCode: `DEV${suffix}`,
+      teamName: `Dev Team ${suffix}`,
+      leadEmail: mail(`dev.t${suffix}.lead`),
+      lead: { name: `Lead ${suffix}`, email: mail(`dev.t${suffix}.lead`) },
+      members: [1, 2, 3].map((m) => ({ name: `Member ${suffix}-${m}`, email: mail(`dev.t${suffix}.m${m}`) })),
+      status: n === 50 ? "disqualified" : "confirmed",
+      submissionStatus: n === 48 || n === 49 ? "forming" : "submitted",
+    };
+  });
+}
+
+async function main(): Promise<void> {
+  requireDemoEmulator();
+  const db = adminDb();
+  const sessionRef = db.doc(`quizSessions/${SESSION_CODE}`);
+  await db.recursiveDelete(sessionRef);
+
+  const session = await createSession(
+    { title: "Hult Prize Quiz (Emulator)", eventId: "emulator-seed-event", eventTitle: "DEV Quiz Event", requireSubmitted: true },
+    mail("dev.admin"),
+    SESSION_CODE,
+  );
+  const summary = await syncTeamsToFirestore(session.code, seedTeams(), [mail("dev.admin")]);
+  for (const question of DEV_QUESTIONS) await addQuestion(session.code, question);
+  await applyControl(session.code, { type: "open_lobby" });
+
+  console.log(`Project      ${DEMO_PROJECT_ID} (Firestore emulator)`);
+  console.log(`Session      #${SESSION_CODE} (lobby, check-in open, ${DEV_QUESTIONS.length} questions)`);
+  console.log(`Teams        ${summary.total} (${summary.eligible} eligible, 2 unsubmitted, 1 disqualified)`);
+  console.log(`Admin        ${mail("dev.admin")}`);
+  console.log(`Participants ${mail("dev.t01.lead")} .. ${mail("dev.t50.lead")}, members dev.tNN.m1..m3`);
+}
+
+main().catch((err) => {
   console.error(err);
-  await mongoose.disconnect().catch(() => {});
-  process.exit(1);
+  process.exitCode = 1;
 });

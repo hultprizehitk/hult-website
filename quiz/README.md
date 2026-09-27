@@ -1,26 +1,41 @@
 # Hult Prize Quiz
 
-A Slido-style live quiz for Hult Prize HITK. It uses Next.js 16 (webpack), MongoDB (shared with the main site), NextAuth (Google, `@heritageit.edu.in` only), shadcn/ui, and motion-primitives, styled to match the admin dashboard.
+Standalone Next.js quiz app. Quiz state, questions, answers, scores, and live updates use Firestore. NextAuth handles Google sign-in; a server-minted Firebase custom token gives the browser read-only Firestore access. MongoDB is used only to read event teams and site admin roles during sync.
+
+## Local development
+
+Use Node.js and Java 21. Copy `.env.example` to `.env.local`, then run:
 
 ```bash
 npm install
-npm run dev        # http://localhost:3001
-npm run seed       # dev data: session #424242, 50 teams, 15 questions (needs ALLOW_DEV_SEED=true)
-npm test           # unit + service tests
-npm run build      # production build (works on exFAT via scripts/next-exfat.cjs)
-npm run simulate   # 50-team load + correctness test against a running server
+npm run emulators    # keep running in its own terminal
+npm run seed         # demo session #424242, 50 teams, 15 questions
+npm run dev          # http://localhost:3001
+npm test             # Firebase Emulator Suite + Vitest
 ```
 
-| Route | Who |
+Run `npm run sync-teams -- <six-digit-session-code>` to sync an existing session from the main site's MongoDB. It requires a MongoDB read connection and Firebase credentials.
+
+Dev login is available at `/signin` when `QUIZ_DEV_LOGIN=true` and the app runs in development mode. `npm run seed` refuses to run unless both the Firestore emulator and the `demo-hult-quiz` project ID are set.
+
+## Production load simulation
+
+Build and start the production app against the local emulators, then run `npm run simulate`. The simulator expects session `#424242`; it exercises the API, team and answer rules, scoring, listener propagation, projected reads/writes, and CSV export. See [the quiz runbook](../docs/quiz-runbook.md) for commands and limits.
+
+## Routes
+
+| Route | Purpose |
 |---|---|
-| `/` | join by code |
-| `/s/<code>` | participant phone |
-| `/present/<code>` | projector (public) |
-| `/admin` | organizer console |
+| `/` | Join by code |
+| `/s/<code>` | Participant phone |
+| `/present/<code>` | Projector |
+| `/present/<code>/board` | Always-on leaderboard |
+| `/admin` | Organizer console |
 
-Code layout: pure quiz logic lives in `lib/quiz/`, Mongo models in `models/`, route handlers in `app/api/`, and UI in `components/{quiz,participant,present,admin}`.
+## Documentation
 
-Docs:
-- `../docs/quiz-runbook.md` — setup, event day, recovery
-- `../docs/superpowers/specs/2026-09-24-quiz-design.md` — design
-- `../docs/case-study-turbopack-exfat-junctions.md` — why webpack, and the build launcher
+- [What the quiz system contains](../docs/quiz-system.md)
+- [Full implementation and test report](../docs/mega-quiz-report.md)
+- [Operator runbook](../docs/quiz-runbook.md)
+- [Firebase migration PRD](../docs/superpowers/specs/2026-09-26-quiz-firebase-prd.md)
+- [Original MongoDB design spec (superseded)](../docs/superpowers/specs/2026-09-24-quiz-design.md)

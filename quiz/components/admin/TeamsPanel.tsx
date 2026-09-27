@@ -2,34 +2,73 @@
 
 import { useState } from "react";
 import { toast } from "sonner";
-import { CheckCircle2, Circle, Search } from "lucide-react";
+import { CheckCircle2, Circle, RefreshCw, Search } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { usePolling } from "@/hooks/usePolling";
 import { api, type ApiError } from "@/lib/client/api";
-import type { AdminSessionView, TeamBoardRow } from "@/lib/quiz/types";
+import type { SessionDoc, SyncSummary } from "@/lib/quiz/fs-types";
+import type { TeamBoardRow } from "@/lib/quiz/types";
 import type { TeamAdminInput } from "@/lib/quiz/validation";
 import { ConfirmButton } from "./ConfirmButton";
 import { SegmentedControl } from "./SegmentedControl";
 
 type Filter = "all" | "in" | "out";
 
-export function TeamsPanel({ code, view }: { code: string; view: AdminSessionView }) {
-  const poll = usePolling<{ serverNow: number; teams: TeamBoardRow[] }>(`/api/admin/sessions/${code}/teams`, 3000);
+function SyncBar({ code, session }: { code: string; session: SessionDoc }) {
+  const [busy, setBusy] = useState(false);
+  const sync = async () => {
+    setBusy(true);
+    try {
+      const { summary } = await api<{ summary: SyncSummary }>(`/api/admin/sessions/${code}/sync`, { body: {} });
+      toast.success(`Synced ${summary.total}: ${summary.eligible} eligible, ${summary.added} new, ${summary.updated} updated`);
+    } catch (e) {
+      toast.error((e as ApiError).message);
+    } finally {
+      setBusy(false);
+    }
+  };
+  const last = session.lastSyncAt ? new Date(session.lastSyncAt.toMillis()).toLocaleString() : null;
+  return (
+    <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-white/15 bg-[#0e0e12] px-4 py-3 shadow-2xl">
+      <div className="text-xs">
+        <p className="font-mono uppercase tracking-wider text-white/60">Teams from {session.eventTitle}</p>
+        <p className="mt-0.5 text-white/80">
+          {last ? (
+            <>
+              Last synced {last}
+              {session.lastSync && (
+                <span className="text-white/50">
+                  {" "}&middot; {session.lastSync.total} teams, <span className="text-emerald-400">{session.lastSync.eligible} eligible</span>, {session.lastSync.added} new, {session.lastSync.updated} updated
+                </span>
+              )}
+            </>
+          ) : (
+            <span className="text-amber-300">Not synced yet</span>
+          )}
+        </p>
+      </div>
+      <Button variant="outline" size="sm" loading={busy} onClick={() => void sync()} className="rounded-lg">
+        <RefreshCw />
+        Sync teams
+      </Button>
+    </div>
+  );
+}
+
+export function TeamsPanel({ code, session, rows: all, loading }: { code: string; session: SessionDoc; rows: TeamBoardRow[]; loading: boolean }) {
   const [filter, setFilter] = useState<Filter>("all");
   const [query, setQuery] = useState("");
-  const live = view.session.status === "live";
+  const live = session.status === "live";
 
   const act = async (body: TeamAdminInput) => {
     try {
       await api(`/api/admin/sessions/${code}/teams`, { body });
       toast.success("Updated");
-      await poll.refresh();
     } catch (e) {
       toast.error((e as ApiError).message);
     }
   };
 
-  const all = poll.data?.teams ?? [];
   const needle = query.trim().toLowerCase();
   const rows = all
     .filter((r) => filter === "all" || (filter === "in" ? r.checkedIn : !r.checkedIn))
@@ -38,6 +77,7 @@ export function TeamsPanel({ code, view }: { code: string; view: AdminSessionVie
 
   return (
     <div className="flex flex-col gap-4">
+      <SyncBar code={code} session={session} />
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div className="relative w-full sm:w-96">
           <Search className="absolute top-1/2 left-3.5 size-4 -translate-y-1/2 text-white/40" />
@@ -60,8 +100,10 @@ export function TeamsPanel({ code, view }: { code: string; view: AdminSessionVie
       </div>
 
       <div className="overflow-hidden rounded-2xl border border-white/15 bg-[#0e0e12] shadow-2xl">
-        {!poll.data ? (
+        {loading ? (
           <div className="py-20 text-center font-mono text-xs text-neutral-500">Loading teams...</div>
+        ) : all.length === 0 ? (
+          <div className="py-16 text-center font-mono text-xs text-neutral-400">No teams yet. Use Sync teams.</div>
         ) : rows.length === 0 ? (
           <div className="py-16 text-center font-mono text-xs text-neutral-400">No teams match</div>
         ) : (

@@ -1,8 +1,8 @@
 import Image from "next/image";
 import Link from "next/link";
 import { signOut } from "@/auth";
-import { Button } from "@/components/ui/button";
 import { DotPattern } from "@/components/ui/dot-pattern";
+import { SignOutButton } from "./SignOutButton";
 
 /** Server component: admin layout + header, mirroring client-v3/app/admin/layout.tsx and DashboardNav. */
 export function AdminFrame({ email, children }: { email: string; children: React.ReactNode }) {
@@ -30,16 +30,12 @@ export function AdminFrame({ email, children }: { email: string; children: React
           <span className="hidden text-xs text-white/60 md:inline-block">
             Logged in as <span className="font-medium text-white">{email}</span>
           </span>
-          <form
+          <SignOutButton
             action={async () => {
               "use server";
               await signOut({ redirectTo: "/" });
             }}
-          >
-            <Button type="submit" variant="destructive-outline" size="sm" className="rounded-full text-xs">
-              Sign Out
-            </Button>
-          </form>
+          />
         </div>
       </header>
 

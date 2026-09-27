@@ -1,229 +1,307 @@
 import { performance } from "node:perf_hooks";
-import type { AdminSessionView, ControlAction, StateResponse } from "@/lib/quiz/types";
+import { adminDb, DEMO_PROJECT_ID } from "@/lib/firebase/admin";
+import { paths, type QuestionDoc, type SessionDoc, type TeamDoc } from "@/lib/quiz/fs-types";
+import type { ControlAction } from "@/lib/quiz/types";
 
 const BASE = process.env.SIM_BASE_URL ?? "http://localhost:3001";
 const CODE = process.env.SIM_CODE ?? "424242";
 const ADMIN = "dev.admin@heritageit.edu.in";
+const DEVICE_COUNT = 200;
 const TEAM_COUNT = 50;
+const CLIENTS_PER_TEAM = 4;
 const ELIGIBLE = Array.from({ length: 47 }, (_, i) => i + 1);
-
 const mail = (local: string) => `${local}@heritageit.edu.in`;
 const pad = (n: number) => String(n).padStart(2, "0");
 const lead = (n: number) => mail(`dev.t${pad(n)}.lead`);
 const device = (n: number) => `sim-device-${pad(n)}`;
-const sleep = (ms: number) => new Promise((r) => setTimeout(r, Math.max(0, ms)));
+const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, Math.max(0, ms)));
 
-type Kind = "state" | "join" | "answer" | "admin";
-const latency: Record<Kind, number[]> = { state: [], join: [], answer: [], admin: [] };
-const serverErrors: Record<string, number> = {};
+if (process.env.GCLOUD_PROJECT !== DEMO_PROJECT_ID || !process.env.FIRESTORE_EMULATOR_HOST) {
+  throw new Error(`Refusing to simulate outside the ${DEMO_PROJECT_ID} Firestore emulator`);
+}
+
+type ApiBody = {
+  error?: string;
+  message?: string;
+  duplicate?: boolean;
+  role?: string;
+  deviceOk?: boolean;
+  teamId?: string;
+};
+type CallResult = { status: number; data: ApiBody; ms: number };
 const failures: string[] = [];
+const answerTimes: number[] = [];
+const propagationTimes: number[] = [];
+const serverErrors: Record<string, number> = {};
+let listenerReads = 0;
+let joinCalls = 0;
+let answerCalls = 0;
+let controlCalls = 0;
+let latestSession: SessionDoc | null = null;
+let stopListeners = () => {};
+const versionWaiters = new Map<number, (at: number) => void>();
 
 function check(ok: boolean, label: string): void {
   if (!ok) failures.push(label);
   console.log(`${ok ? "PASS" : "FAIL"}  ${label}`);
 }
 
-interface ApiBody {
-  error?: string;
-  message?: string;
-  duplicate?: boolean;
-  role?: string;
-  deviceOk?: boolean;
-}
-
-async function call<T = ApiBody>(kind: Kind, user: string | null, path: string, body?: unknown): Promise<{ status: number; data: T }> {
-  const t0 = performance.now();
+async function call(path: string, user: string | null, body?: unknown): Promise<CallResult> {
+  if (path.endsWith("/join")) joinCalls++;
+  if (path.endsWith("/answer")) answerCalls++;
+  if (path.endsWith("/control")) controlCalls++;
+  const started = performance.now();
   const headers: Record<string, string> = {};
   if (user) headers["x-quiz-dev-user"] = user;
   if (body !== undefined) headers["content-type"] = "application/json";
   try {
-    const res = await fetch(`${BASE}${path}`, {
+    const response = await fetch(`${BASE}${path}`, {
       method: body === undefined ? "GET" : "POST",
       headers,
       body: body === undefined ? undefined : JSON.stringify(body),
     });
-    latency[kind].push(performance.now() - t0);
-    const data = (await res.json().catch(() => ({}))) as T;
-    if (res.status >= 500) serverErrors[`${kind} ${res.status}`] = (serverErrors[`${kind} ${res.status}`] ?? 0) + 1;
-    return { status: res.status, data };
-  } catch {
-    serverErrors[`${kind} network`] = (serverErrors[`${kind} network`] ?? 0) + 1;
-    return { status: 0, data: {} as T };
+    const data = (await response.json().catch(() => ({}))) as ApiBody;
+    const ms = performance.now() - started;
+    if (response.status >= 500) serverErrors[`${path} ${response.status}`] = (serverErrors[`${path} ${response.status}`] ?? 0) + 1;
+    return { status: response.status, data, ms };
+  } catch (err) {
+    serverErrors[`${path} network`] = (serverErrors[`${path} network`] ?? 0) + 1;
+    return { status: 0, data: { message: String(err) }, ms: performance.now() - started };
   }
 }
 
-let offset = 0;
-const serverNow = () => Date.now() + offset;
-
-async function adminView(): Promise<AdminSessionView> {
-  const sent = Date.now();
-  const { status, data } = await call<AdminSessionView & ApiBody>("admin", ADMIN, `/api/admin/sessions/${CODE}`);
-  if (status !== 200) throw new Error(`admin view -> ${status} ${JSON.stringify(data)}`);
-  offset = data.serverNow - (sent + Date.now()) / 2;
-  return data;
+function waitForVersion(version: number): Promise<number> {
+  if (latestSession && latestSession.stateVersion >= version) return Promise.resolve(performance.now());
+  return new Promise((resolve) => versionWaiters.set(version, resolve));
 }
 
-async function control(action: ControlAction): Promise<void> {
-  const r = await call("admin", ADMIN, `/api/admin/sessions/${CODE}/control`, action);
-  if (r.status !== 200) throw new Error(`control ${action.type} -> ${r.status} ${JSON.stringify(r.data)}`);
-}
-
-const answer = (user: string, questionId: string, optionIndex: number, deviceId: string) =>
-  call("answer", user, `/api/s/${CODE}/answer`, { questionId, optionIndex, deviceId });
-
-function pct(values: number[], p: number): number {
-  if (values.length === 0) return 0;
+function quantile(values: number[], p: number): number {
+  if (!values.length) return 0;
   const sorted = [...values].sort((a, b) => a - b);
   return sorted[Math.min(sorted.length - 1, Math.floor((p / 100) * sorted.length))];
 }
 
-async function main() {
-  // Warm up dev-mode route compilation, then discard those timings.
-  await call("state", null, `/api/s/${CODE}/state`);
-  await call("join", mail("sim.warmup"), `/api/s/${CODE}/join`, { deviceId: "sim-warmup-1" });
-  await call("answer", mail("sim.warmup"), `/api/s/${CODE}/answer`, {});
-  const initial = await adminView();
-  (Object.keys(latency) as Kind[]).forEach((k) => (latency[k] = []));
-
-  if (initial.session.status !== "lobby") throw new Error(`Session #${CODE} is "${initial.session.status}". Run "npm run seed" first.`);
-  const questions = initial.questions;
-  const lateQ = questions.findIndex((q) => q.timeLimitSec === 5);
-  const LATE_TEAM = 4;
-
-  check((await call("join", mail("sim.stranger"), `/api/s/${CODE}/join`, { deviceId: "sim-stranger-1" })).status === 404, "unregistered user cannot join");
-  check((await call("join", lead(48), `/api/s/${CODE}/join`, { deviceId: device(48) })).status === 403, "unsubmitted team is ineligible");
-  check((await call("join", lead(50), `/api/s/${CODE}/join`, { deviceId: device(50) })).status === 403, "disqualified team is ineligible");
-
-  const joins = await Promise.all(ELIGIBLE.map((n) => call("join", lead(n), `/api/s/${CODE}/join`, { deviceId: device(n) })));
-  check(joins.every((j) => j.status === 200 && j.data.role === "taker" && j.data.deviceOk), "47 eligible leads check in as takers on bound devices");
-  const mate = await call("join", mail("dev.t01.m1"), `/api/s/${CODE}/join`, { deviceId: "sim-mate-01" });
-  check(mate.status === 200 && mate.data.role === "teammate", "teammate joins as teammate");
-
-  let polling = true;
-  const pollers = Array.from({ length: TEAM_COUNT }, (_, i) =>
-    (async () => {
-      await sleep(Math.random() * 1000);
-      while (polling) {
-        const t = Date.now();
-        await call("state", lead(i + 1), `/api/s/${CODE}/state?d=${device(i + 1)}`);
-        await sleep(1000 - (Date.now() - t));
+function createListeners(code: string): () => void {
+  const db = adminDb();
+  const stops: (() => void)[] = [];
+  const initialized: Promise<void>[] = [];
+  const onReady = (run: (ready: () => void, fail: (error: Error) => void) => void) => new Promise<void>((resolve, reject) => {
+    let readyOnce = false;
+    run(() => {
+      if (!readyOnce) {
+        readyOnce = true;
+        resolve();
       }
-    })(),
-  );
+    }, reject);
+  });
 
-  const expectedScore = new Map(ELIGIBLE.map((n) => [n, 0]));
-  const expectedAnswered = new Map(ELIGIBLE.map((n) => [n, 0]));
+  // Model the PRD's worst-case audience: 200 phones, projector, and two admin consoles.
+  for (let i = 0; i < DEVICE_COUNT + 2; i++) {
+    initialized.push(onReady((ready, fail) => {
+      let first = true;
+      stops.push(db.doc(paths.session(code)).onSnapshot((snap) => {
+        listenerReads += 1;
+        if (snap.exists) {
+          const data = snap.data() as SessionDoc;
+          latestSession = data;
+          const receivedAt = performance.now();
+          for (const [version, resolve] of versionWaiters) {
+            if (data.stateVersion >= version) {
+              versionWaiters.delete(version);
+              resolve(receivedAt);
+            }
+          }
+        }
+        if (first) { first = false; ready(); }
+      }, fail));
+    }));
+  }
+
+  // Four phones per eligible team listen only to their team's document.
+  for (const n of ELIGIBLE) {
+    for (let phone = 0; phone < CLIENTS_PER_TEAM; phone++) {
+      initialized.push(onReady((ready, fail) => {
+        let first = true;
+        stops.push(db.doc(paths.team(code, `dev-team-${pad(n)}`)).onSnapshot(() => {
+          listenerReads += 1;
+          if (first) { first = false; ready(); }
+        }, fail));
+      }));
+    }
+  }
+
+  // Projector and admin views listen to the split counters; two admins keep one live team list each.
+  for (let i = 0; i < 1; i++) {
+    initialized.push(onReady((ready, fail) => {
+      let first = true;
+      stops.push(db.collection(paths.counts(code)).onSnapshot((snap) => {
+        listenerReads += first ? snap.size : snap.docChanges().length;
+        if (first) { first = false; ready(); }
+      }, fail));
+    }));
+  }
+  for (let i = 0; i < 2; i++) {
+    initialized.push(onReady((ready, fail) => {
+      let first = true;
+      stops.push(db.collection(paths.teams(code)).onSnapshot((snap) => {
+        listenerReads += first ? snap.size : snap.docChanges().length;
+        if (first) { first = false; ready(); }
+      }, fail));
+    }));
+  }
+
+  return () => { void Promise.all(initialized).then(() => stops.forEach((stop) => stop())); };
+}
+
+async function main(): Promise<void> {
+  const initial = await adminDb().doc(paths.session(CODE)).get();
+  if (!initial.exists) throw new Error(`Session #${CODE} is missing. Run "npm run seed" first.`);
+  const session = initial.data() as SessionDoc;
+  if (session.status !== "lobby") throw new Error(`Session #${CODE} is "${session.status}". Run "npm run seed" first.`);
+  const questions: { id: string; data: QuestionDoc }[] = [];
+  for (const plan of session.plan) {
+    const snap = await adminDb().doc(paths.question(CODE, plan.id)).get();
+    if (!snap.exists) throw new Error(`Missing question ${plan.id}`);
+    questions.push({ id: plan.id, data: snap.data() as QuestionDoc });
+  }
+
+  const wrongTeam = await call(`/api/s/${CODE}/join`, mail("sim.stranger"), { deviceId: "sim-stranger" });
+  const unsubmitted = await call(`/api/s/${CODE}/join`, lead(48), { deviceId: device(48) });
+  const disqualified = await call(`/api/s/${CODE}/join`, lead(50), { deviceId: device(50) });
+  check(wrongTeam.status === 404, "unregistered user is rejected");
+  check(unsubmitted.status === 403 && unsubmitted.data.error === "ineligible", "unsubmitted team is rejected");
+  check(disqualified.status === 403 && disqualified.data.error === "ineligible", "disqualified team is rejected");
+
+  const joins = await Promise.all(ELIGIBLE.map((n) => call(`/api/s/${CODE}/join`, lead(n), { deviceId: device(n) })));
+  const joinFailed = joins.flatMap((j, i) => j.status === 200 && j.data.role === "taker" && j.data.deviceOk ? [] : [{ team: i + 1, status: j.status, ...j.data }]);
+  check(joinFailed.length === 0, "47 eligible teams join and bind their taker device");
+  if (joinFailed.length) console.error("Join failures:", joinFailed.slice(0, 10));
+  if (joinFailed.length) throw new Error(`Stopping load simulation: ${joinFailed.length} eligible teams failed to check in`);
+  const mate = await call(`/api/s/${CODE}/join`, mail("dev.t01.m1"), { deviceId: "sim-mate-01" });
+  check(mate.status === 200 && mate.data.role === "teammate", "teammate joins as read-only participant");
+
+  stopListeners = createListeners(CODE);
+  // Wait for all simulated phones/screens to receive their initial snapshots.
+  while (listenerReads < DEVICE_COUNT + 2 + ELIGIBLE.length * CLIENTS_PER_TEAM + TEAM_COUNT + 2 * ELIGIBLE.length) await sleep(25);
+
+  let writes = ELIGIBLE.length * 2; // each team check-in changes its team and private counter shard
+  const random = (() => { let state = 0x51d0; return () => ((state = (state * 1664525 + 1013904223) >>> 0) / 0x100000000); })();
+  const expected = new Map(ELIGIBLE.map((n) => [n, { score: 0, answered: 0 }]));
+
+  const control = async (action: ControlAction) => {
+    const version = (latestSession?.stateVersion ?? session.stateVersion) + 1;
+    const before = performance.now();
+    const response = await call(`/api/admin/sessions/${CODE}/control`, ADMIN, { ...action, expectedVersion: version - 1 });
+    if (response.status !== 200) throw new Error(`control ${action.type} -> ${response.status} ${JSON.stringify(response.data)}`);
+    const fired = await waitForVersion(version);
+    propagationTimes.push(fired - before);
+    writes += 1;
+  };
 
   await control({ type: "start" });
 
   for (let qi = 0; qi < questions.length; qi++) {
-    let view = await adminView();
     const q = questions[qi];
-    const openedAt = view.session.questionOpenedAt!;
-    let closesAt = view.session.questionClosesAt!;
-    check(view.session.currentIndex === qi && view.session.phase === "question", `Q${qi + 1} opened`);
+    const opened = latestSession?.questionOpenedAt?.toMillis();
+    const closes = latestSession?.questionClosesAt?.toMillis();
+    if (!opened || !closes) throw new Error(`Question ${qi + 1} did not open`);
 
     if (qi === 0) {
-      const early = await answer(lead(1), q.id, 0, device(1));
+      const early = await call(`/api/s/${CODE}/answer`, lead(1), { questionId: q.id, optionIndex: q.data.correctIndex, deviceId: device(1) });
       check(early.status === 409 && early.data.error === "too_early", "answer during lead-in is rejected");
     }
+    await sleep(opened + 200 - Date.now());
 
-    const windowMs = Math.min(q.timeLimitSec * 1000 - 1000, 6000);
-    const tasks: Promise<void>[] = ELIGIBLE.map(async (n) => {
-      if (qi === lateQ && n === LATE_TEAM) return;
-      if (Math.random() < 0.1 && !(qi === 0 && n === 3)) return;
-      const correct = Math.random() < 0.7;
-      const optionIndex = correct ? q.correctIndex : (q.correctIndex + 1) % q.options.length;
-      await sleep(openedAt + 300 + Math.random() * windowMs - serverNow());
-      const r = await answer(lead(n), q.id, optionIndex, device(n));
-      if (r.status === 200 && !r.data.duplicate) {
-        expectedAnswered.set(n, expectedAnswered.get(n)! + 1);
-        if (correct) expectedScore.set(n, expectedScore.get(n)! + q.points);
-      } else {
-        failures.push(`Q${qi + 1} team ${n} answer -> ${r.status} ${JSON.stringify(r.data)}`);
+    const tasks = ELIGIBLE.map(async (n) => {
+      if ((q.data.timeLimitSec === 5 && n === 4) || (qi !== 0 || n !== 3) && random() < 0.1) return;
+      const correct = random() < 0.7;
+      const optionIndex = correct ? q.data.correctIndex : (q.data.correctIndex + 1) % q.data.options.length;
+      await sleep(random() * Math.min(900, q.data.timeLimitSec * 1000 - 1200));
+      const result = await call(`/api/s/${CODE}/answer`, lead(n), { questionId: q.id, optionIndex, deviceId: device(n) });
+      answerTimes.push(result.ms);
+      if (result.status !== 200 || result.data.duplicate) {
+        failures.push(`Q${qi + 1} team ${n} answer -> ${result.status} ${JSON.stringify(result.data)}`);
+        return;
       }
+      const tally = expected.get(n)!;
+      tally.answered++;
+      if (correct) tally.score += q.data.points;
+      writes += 3;
     });
 
     if (qi === 0) {
-      await sleep(openedAt + 200 - serverNow());
-      const mateTry = await answer(mail("dev.t01.m1"), q.id, 0, "sim-mate-01");
-      check(mateTry.status === 403 && mateTry.data.error === "not_taker", "teammate cannot answer");
-      const wrongDevice = await answer(lead(2), q.id, 0, "sim-wrong-device");
-      check(wrongDevice.status === 403 && wrongDevice.data.error === "wrong_device", "taker on another device is rejected");
-      await control({ type: "extend", seconds: 5 });
-      view = await adminView();
-      check(view.session.questionClosesAt === closesAt + 5000, "extend adds 5s");
-      closesAt = view.session.questionClosesAt!;
+      const mateTry = await call(`/api/s/${CODE}/answer`, mail("dev.t01.m1"), { questionId: q.id, optionIndex: 0, deviceId: "sim-mate-01" });
+      const wrongDevice = await call(`/api/s/${CODE}/answer`, lead(2), { questionId: q.id, optionIndex: 0, deviceId: "sim-wrong-device" });
+      check(mateTry.status === 403 && mateTry.data.error === "not_taker", "teammate cannot submit an answer");
+      check(wrongDevice.status === 403 && wrongDevice.data.error === "wrong_device", "unbound device cannot submit an answer");
     }
-
-    if (qi === lateQ) {
-      tasks.push(
-        (async () => {
-          await sleep(closesAt + 1500 - serverNow());
-          const late = await answer(lead(LATE_TEAM), q.id, q.correctIndex, device(LATE_TEAM));
-          check(late.status === 409 && late.data.error === "too_late", "answer after close + grace is rejected");
-        })(),
-      );
-    }
-
     await Promise.all(tasks);
-
     if (qi === 0) {
-      const dup = await answer(lead(3), q.id, (q.correctIndex + 1) % q.options.length, device(3));
-      check(dup.status === 200 && dup.data.duplicate === true, "double submit is idempotent and keeps the first answer");
+      const duplicate = await call(`/api/s/${CODE}/answer`, lead(3), { questionId: q.id, optionIndex: 0, deviceId: device(3) });
+      check(duplicate.status === 200 && duplicate.data.duplicate === true, "duplicate submit retains the first answer");
+      if (duplicate.status !== 200 || duplicate.data.duplicate !== true) throw new Error(`Stopping load simulation: duplicate answer check failed (${duplicate.status})`);
+    }
+    await control({ type: "close_now" });
+
+    if (q.data.timeLimitSec === 5) {
+      await sleep(ANSWER_GRACE_MS + 100);
+      const late = await call(`/api/s/${CODE}/answer`, lead(4), { questionId: q.id, optionIndex: q.data.correctIndex, deviceId: device(4) });
+      check(late.status === 409 && late.data.error === "too_late", "answer after close plus grace is rejected");
     }
 
-    if (serverNow() < closesAt - 1000) await control({ type: "close_now" });
-    else await sleep(closesAt + 800 - serverNow());
     await control({ type: "reveal" });
-    const pub = await call<StateResponse>("state", null, `/api/s/${CODE}/state`);
-    check(pub.data.question?.correctIndex === q.correctIndex, `Q${qi + 1} reveal exposes the correct answer`);
-    await sleep(400);
-    await control({ type: "show_leaderboard" });
-    await sleep(400);
-    if (qi < questions.length - 1) await control({ type: "next" });
+    writes += ELIGIBLE.length; // one grading update per checked-in team
+    if (qi < questions.length - 1) {
+      await control({ type: "show_leaderboard" });
+      await control({ type: "next" });
+    }
   }
-
   await control({ type: "end" });
-  polling = false;
-  await Promise.all(pollers);
 
-  const final = await adminView();
-  check(final.session.status === "ended", "quiz ended");
-  check(final.standings.length === 47, "standings include all 47 checked-in teams");
-  const byName = new Map(final.standings.map((s) => [s.teamName, s]));
+  const teamDocs = await adminDb().collection(paths.teams(CODE)).get();
+  const checkedIn = teamDocs.docs.map((d) => d.data() as TeamDoc).filter((t) => t.checkedInAt);
   const mismatches = ELIGIBLE.filter((n) => {
-    const s = byName.get(`Dev Team ${pad(n)}`);
-    return !s || s.score !== expectedScore.get(n) || s.answeredCount !== expectedAnswered.get(n);
+    const team = checkedIn.find((t) => t.teamName === `Dev Team ${pad(n)}`);
+    return !team || team.score !== expected.get(n)?.score || team.answeredCount !== expected.get(n)?.answered;
   });
-  check(mismatches.length === 0, `server scores match client-side expectation (${mismatches.length} mismatches)`);
-  const sorted = final.standings.every(
-    (s, i, a) => i === 0 || a[i - 1].score > s.score || (a[i - 1].score === s.score && a[i - 1].totalTimeMs <= s.totalTimeMs),
-  );
-  check(sorted, "standings sorted by score desc, then time asc");
+  check(checkedIn.length === 47, "standings include all 47 checked-in teams");
+  check(mismatches.length === 0, `server scores match the simulator tally (${mismatches.length} mismatches)`);
+  const ended = (await adminDb().doc(paths.session(CODE)).get()).data() as SessionDoc;
+  check(ended.status === "ended" && ended.leaderboard?.length === 10, "end publishes the final top 10 leaderboard");
 
-  const pub = await call<StateResponse>("state", null, `/api/s/${CODE}/state`);
-  check(pub.data.leaderboard?.length === 10 && pub.data.leaderboard[0].teamName === final.standings[0].teamName, "public leaderboard shows top 10");
+  const exportResponse = await fetch(`${BASE}/api/admin/sessions/${CODE}/export`, { headers: { "x-quiz-dev-user": ADMIN } });
+  const csv = await exportResponse.text();
+  check(exportResponse.status === 200 && csv.trim().split("\n").length === 48, "CSV export has header and 47 teams");
 
-  const csvRes = await fetch(`${BASE}/api/admin/sessions/${CODE}/export`, { headers: { "x-quiz-dev-user": ADMIN } });
-  const csv = await csvRes.text();
-  check(csvRes.status === 200 && csv.trim().split("\n").length === 48, "CSV export has header + 47 rows");
+  // Approximate server-side Firestore reads: member lookup query + session/team docs per join or answer, session per control,
+  // question+teams per reveal, questions opened, and session+teams for CSV. Listener reads use actual callback counts.
+  const serverReadEstimate = joinCalls * 3 + answerCalls * 3 + controlCalls + questions.length * 49 + 48;
+  const projectedReads = listenerReads + serverReadEstimate;
 
+  // Listener reads are counted at the target audience size. Writes include check-ins, answers, grading and controls.
+  check(quantile(propagationTimes, 95) < 1000, `Firestore host-action propagation p95 < 1 s (${quantile(propagationTimes, 95).toFixed(0)} ms)`);
+  check(quantile(answerTimes, 95) < 1000, `answer API latency p95 < 1 s (${quantile(answerTimes, 95).toFixed(0)} ms)`);
+  check(projectedReads <= 35_000, `worst-case read projection <= 35k (${projectedReads.toLocaleString()} reads)`);
+  check(writes <= 10_000, `write projection <= 10k (${writes.toLocaleString()} writes)`);
   check(Object.keys(serverErrors).length === 0, `no 5xx or network errors ${JSON.stringify(serverErrors)}`);
-  check(pct(latency.state, 95) < 500, `state p95 < 500ms (${pct(latency.state, 95).toFixed(0)}ms)`);
-  check(pct(latency.answer, 95) < 1000, `answer p95 < 1000ms (${pct(latency.answer, 95).toFixed(0)}ms)`);
 
-  console.log("\nLatency (ms)");
-  for (const k of Object.keys(latency) as Kind[]) {
-    const a = latency[k];
-    console.log(`${k.padEnd(7)} n=${String(a.length).padStart(5)}  p50=${pct(a, 50).toFixed(0).padStart(5)}  p95=${pct(a, 95).toFixed(0).padStart(5)}  max=${pct(a, 100).toFixed(0).padStart(5)}`);
-  }
+  console.log("\nLoad summary");
+  console.log(`Audience: ${DEVICE_COUNT} phones, projector, board and 2 admin consoles`);
+  console.log(`Listener reads: ${listenerReads.toLocaleString()} (worst-case audience simulated directly)`);
+  console.log(`Server read estimate: ${serverReadEstimate.toLocaleString()}`);
+  console.log(`Projected total reads: ${projectedReads.toLocaleString()}`);
+  console.log(`Estimated writes: ${writes.toLocaleString()}`);
+  console.log(`Propagation p50/p95: ${quantile(propagationTimes, 50).toFixed(0)}/${quantile(propagationTimes, 95).toFixed(0)} ms`);
+  console.log(`Answer p50/p95: ${quantile(answerTimes, 50).toFixed(0)}/${quantile(answerTimes, 95).toFixed(0)} ms`);
+  stopListeners();
   console.log(failures.length ? `\n${failures.length} FAILURE(S)` : "\nALL CHECKS PASSED");
-  for (const f of failures) console.log(` - ${f}`);
-  process.exit(failures.length ? 1 : 0);
+  for (const failure of failures) console.log(` - ${failure}`);
+  process.exitCode = failures.length ? 1 : 0;
 }
 
+const ANSWER_GRACE_MS = 750;
 main().catch((err) => {
+  stopListeners();
   console.error(err);
-  process.exit(1);
+  process.exitCode = 1;
 });

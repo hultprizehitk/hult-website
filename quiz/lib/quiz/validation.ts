@@ -2,6 +2,8 @@ import { z } from "zod";
 
 export const codeSchema = z.string().regex(/^\d{6}$/, "Code must be 6 digits");
 export const objectIdSchema = z.string().regex(/^[a-f\d]{24}$/i, "Invalid id");
+/** Firestore auto-ids (20 chars) for questions. */
+export const questionIdSchema = z.string().regex(/^[A-Za-z0-9]{1,40}$/, "Invalid question id");
 const deviceIdSchema = z.string().min(8).max(64);
 const emailSchema = z.string().trim().toLowerCase().email();
 
@@ -48,7 +50,7 @@ export const joinSchema = z.object({ deviceId: deviceIdSchema });
 export const takerSchema = z.object({ email: emailSchema });
 
 export const answerSchema = z.object({
-  questionId: objectIdSchema,
+  questionId: questionIdSchema,
   optionIndex: z.number().int().min(0).max(5),
   deviceId: deviceIdSchema,
 });

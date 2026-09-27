@@ -1,22 +1,18 @@
 import mongoose from "mongoose";
 import { MongoMemoryServer } from "mongodb-memory-server";
 import "@/models/mirror";
-import "@/models/quiz";
 
 let server: MongoMemoryServer | null = null;
 
-export async function startDb(): Promise<void> {
+/** In-memory MongoDB for the team-sync reader (the only Mongo code left in the quiz). */
+export async function startMongo(): Promise<string> {
   server = await MongoMemoryServer.create();
-  await mongoose.connect(server.getUri(), { dbName: "quiz-test" });
-  await Promise.all(Object.values(mongoose.models).map((m) => m.syncIndexes()));
+  const uri = `${server.getUri()}quiz-sync-test`;
+  process.env.MONGODB_URI = uri;
+  return uri;
 }
 
-export async function clearDb(): Promise<void> {
-  const collections = await mongoose.connection.db!.collections();
-  await Promise.all(collections.map((c) => c.deleteMany({})));
-}
-
-export async function stopDb(): Promise<void> {
+export async function stopMongo(): Promise<void> {
   await mongoose.disconnect();
   await server?.stop();
 }

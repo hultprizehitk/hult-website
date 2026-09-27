@@ -9,22 +9,36 @@ import { Leaderboard } from "@/components/quiz/Leaderboard";
 import { ReconnectingPill } from "@/components/quiz/ReconnectingPill";
 import { StateMessage } from "@/components/quiz/StateMessage";
 import { useOrigin } from "@/hooks/useOrigin";
-import { usePolling } from "@/hooks/usePolling";
+import { useCollectionData, useDocData } from "@/hooks/useFirestore";
+import { useServerClock } from "@/hooks/useServerClock";
 import { useServerNow } from "@/hooks/useServerNow";
-import type { StateResponse } from "@/lib/quiz/types";
+import { toStateResponse } from "@/lib/quiz/client-state";
+import { paths, type CounterDoc, type CountsDoc, type SessionDoc } from "@/lib/quiz/fs-types";
 import { PresentLobby } from "./PresentLobby";
 import { PresentQuestion } from "./PresentQuestion";
 import { Podium } from "./Podium";
 
 export function PresentApp({ code }: { code: string }) {
   const valid = /^\d{6}$/.test(code);
-  const poll = usePolling<StateResponse>(valid ? `/api/s/${code}/state` : null);
-  const now = useServerNow(poll.serverNow);
+  // Public docs only (no login): the session and the live counters.
+  const sessionLive = useDocData<SessionDoc>(valid ? paths.session(code) : null);
+  const countsLive = useCollectionData<CounterDoc>(valid ? paths.counts(code) : null, "teamId");
+  const now = useServerNow(useServerClock());
   const host = useOrigin().replace(/^https?:\/\//, "");
-  const s = poll.data;
+  const counts: CountsDoc | null = sessionLive.data
+    ? {
+        checkedIn: countsLive.data.filter((c) => c.checkedIn).length,
+        eligible: countsLive.data.filter((c) => c.eligible).length,
+        answeredFor: sessionLive.data.current?.id ?? null,
+        answeredCurrent: countsLive.data.filter((c) => c.answered && c.answeredFor === sessionLive.data?.current?.id).length,
+      }
+    : null;
+  const s = sessionLive.data
+    ? toStateResponse({ session: sessionLive.data, counts, team: null, email: null, deviceId: null, nowMs: now })
+    : null;
 
   let body: React.ReactNode;
-  if (!valid || poll.error?.code === "not_found") body = <StateMessage icon={SearchX} title="Session not found" />;
+  if (!valid || (!sessionLive.loading && !sessionLive.data)) body = <StateMessage icon={SearchX} title="Session not found" />;
   else if (!s) body = <StateMessage icon={Loader2} spin title="Connecting" />;
   else if (s.status === "draft" || s.status === "lobby") body = <PresentLobby s={s} />;
   else if (s.status === "ended") {
@@ -79,7 +93,7 @@ export function PresentApp({ code }: { code: string }) {
         )}
       </header>
       <main className="relative z-10 flex flex-1 flex-col px-12 py-10">{body}</main>
-      <ReconnectingPill show={poll.reconnecting} />
+      <ReconnectingPill show={sessionLive.offline} />
     </div>
   );
 }

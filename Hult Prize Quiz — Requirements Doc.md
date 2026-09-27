@@ -1,5 +1,7 @@
 # **Hult Prize Quiz — Requirements Doc**
 
+> This is the original product brief. Implementation decisions and acceptance criteria are refined in [the current Firebase PRD](docs/superpowers/specs/2026-09-26-quiz-firebase-prd.md); in particular, the quiz does not use Cloud Functions.
+
 **Version:** 0.2 **Stack:** Next.js (frontend \+ API routes/server actions), Firebase (Firestore, real-time listeners, Cloud Functions)
 
 ---

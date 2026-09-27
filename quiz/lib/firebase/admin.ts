@@ -9,20 +9,10 @@ export function usingEmulators(): boolean {
   return !!process.env.FIRESTORE_EMULATOR_HOST;
 }
 
-type Cache = { app: App | null; db: Firestore | null };
-declare global {
-  var quizFirebaseAdmin: Cache | undefined;
-}
-const cache: Cache = (globalThis.quizFirebaseAdmin ??= { app: null, db: null });
-
 /** Lazy init so `next build` works without secrets; throws only when first used. */
 function adminApp(): App {
-  if (cache.app) return cache.app;
-  if (getApps().length) return (cache.app = getApp());
-  if (usingEmulators()) {
-    cache.app = initializeApp({ projectId: process.env.GCLOUD_PROJECT || DEMO_PROJECT_ID });
-    return cache.app;
-  }
+  if (getApps().length) return getApp();
+  if (usingEmulators()) return initializeApp({ projectId: process.env.GCLOUD_PROJECT || DEMO_PROJECT_ID });
   const raw = process.env.FIREBASE_SERVICE_ACCOUNT;
   if (!raw) throw new Error("FIREBASE_SERVICE_ACCOUNT is not set (base64 or raw service-account JSON)");
   const json = JSON.parse(raw.trim().startsWith("{") ? raw : Buffer.from(raw, "base64").toString("utf8")) as {
@@ -30,19 +20,23 @@ function adminApp(): App {
     client_email: string;
     private_key: string;
   };
-  cache.app = initializeApp({
+  return initializeApp({
     credential: cert({ projectId: json.project_id, clientEmail: json.client_email, privateKey: json.private_key }),
     projectId: json.project_id,
   });
-  return cache.app;
 }
 
+let db: Firestore | null = null;
+
 export function adminDb(): Firestore {
-  if (!cache.db) {
-    cache.db = getFirestore(adminApp());
-    cache.db.settings({ ignoreUndefinedProperties: true });
+  if (db) return db;
+  db = getFirestore(adminApp());
+  try {
+    db.settings({ ignoreUndefinedProperties: true });
+  } catch {
+    // already configured (dev hot reload re-imports this module but reuses the Firestore instance)
   }
-  return cache.db;
+  return db;
 }
 
 export function adminAuth(): Auth {

@@ -23,7 +23,7 @@ beforeEach(async () => {
   await env.withSecurityRulesDisabled(async (ctx) => {
     const db = ctx.firestore();
     await setDoc(doc(db, S), { code: "123456", status: "live" });
-    await setDoc(doc(db, `${S}/live/counts`), { checkedIn: 1 });
+    await setDoc(doc(db, `${S}/counts/t1`), { teamId: "t1", checkedIn: true });
     await setDoc(doc(db, `${S}/questions/q1`), { text: "Q", correctIndex: 1 });
     await setDoc(doc(db, `${S}/teams/t1`), { memberEmails: ["a@heritageit.edu.in", "a2@heritageit.edu.in"] });
     await setDoc(doc(db, `${S}/teams/t2`), { memberEmails: ["b@heritageit.edu.in"] });
@@ -42,9 +42,10 @@ const member = (email: string) => env.authenticatedContext(email, { email }).fir
 const admin = () => env.authenticatedContext("boss@heritageit.edu.in", { email: "boss@heritageit.edu.in", admin: true }).firestore();
 
 describe("anonymous (projector)", () => {
-  it("reads the public session and counts docs", async () => {
+  it("reads the public session and counter shards", async () => {
     await assertSucceeds(getDoc(doc(anon(), S)));
-    await assertSucceeds(getDoc(doc(anon(), `${S}/live/counts`)));
+    await assertSucceeds(getDoc(doc(anon(), `${S}/counts/t1`)));
+    await assertSucceeds(getDocs(collection(anon(), `${S}/counts`)));
   });
   it("reads nothing else", async () => {
     await assertFails(getDoc(doc(anon(), `${S}/questions/q1`)));
@@ -55,7 +56,7 @@ describe("anonymous (projector)", () => {
   });
   it("cannot write anywhere", async () => {
     await assertFails(setDoc(doc(anon(), S), { status: "ended" }));
-    await assertFails(updateDoc(doc(anon(), `${S}/live/counts`), { checkedIn: 99 }));
+    await assertFails(updateDoc(doc(anon(), `${S}/counts/t1`), { checkedIn: false }));
   });
 });
 

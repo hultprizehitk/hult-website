@@ -1,109 +1,205 @@
 import { randomInt } from "node:crypto";
-import { Types } from "mongoose";
-import { Event } from "@/models/mirror";
-import { QuizAnswer, QuizQuestion, QuizSession, QuizTeam, type QuizSessionDoc } from "@/models/quiz";
+import { Timestamp } from "firebase-admin/firestore";
+import { adminDb } from "@/lib/firebase/admin";
+import { sessionStateFromDoc } from "./client-state";
 import { applyAction } from "./engine";
 import { QuizError } from "./errors";
-import { invalidateSnapshot, sessionIdCache } from "./cache";
-import { listQuestions } from "./questions";
-import type { ControlAction, QuestionLite, SessionState } from "./types";
+import { paths, SESSIONS, type QuestionDoc, type SessionDoc, type TeamDoc } from "./fs-types";
+import { gradeQuestion } from "./grading";
+import { LEADERBOARD_SIZE, type ControlAction, type QuestionLite, type SessionState } from "./types";
 
-export function toState(s: QuizSessionDoc): SessionState {
-  return {
-    status: s.status,
-    phase: s.phase,
-    currentIndex: s.currentIndex,
-    checkinOpen: s.checkinOpen,
-    questionOpenedAt: s.questionOpenedAt ? new Date(s.questionOpenedAt) : null,
-    questionClosesAt: s.questionClosesAt ? new Date(s.questionClosesAt) : null,
-    startedAt: s.startedAt ? new Date(s.startedAt) : null,
-    endedAt: s.endedAt ? new Date(s.endedAt) : null,
-  };
+const EDITABLE = new Set(["draft", "lobby"]);
+
+function ts(d: Date | null | undefined): Timestamp | null {
+  return d ? Timestamp.fromDate(d) : null;
 }
 
-function isDuplicateKey(err: unknown): boolean {
-  return typeof err === "object" && err !== null && (err as { code?: number }).code === 11000;
+/** SessionState patch (Dates) -> Firestore update (Timestamps). */
+export function toDocPatch(patch: Partial<SessionState>): Record<string, unknown> {
+  const out: Record<string, unknown> = {};
+  for (const [k, v] of Object.entries(patch)) out[k] = v instanceof Date ? ts(v) : v;
+  return out;
+}
+
+function sessionRef(code: string) {
+  return adminDb().doc(paths.session(code));
 }
 
 export async function createSession(
-  input: { title: string; eventId: string; requireSubmitted: boolean },
+  input: { title: string; eventId: string; eventTitle: string; requireSubmitted: boolean },
   createdBy: string,
-): Promise<QuizSessionDoc> {
-  if (!(await Event.exists({ _id: input.eventId }))) throw new QuizError("not_found", "Event not found");
-  for (let attempt = 0; attempt < 10; attempt++) {
-    const code = String(randomInt(100000, 1000000));
+  fixedCode?: string,
+): Promise<SessionDoc> {
+  const db = adminDb();
+  for (let attempt = 0; attempt < (fixedCode ? 1 : 10); attempt++) {
+    const code = fixedCode ?? String(randomInt(100000, 1000000));
+    const doc: SessionDoc<Timestamp> = {
+      code,
+      title: input.title,
+      eventId: input.eventId,
+      eventTitle: input.eventTitle,
+      status: "draft",
+      phase: "idle",
+      currentIndex: -1,
+      checkinOpen: false,
+      requireSubmitted: input.requireSubmitted,
+      questionOpenedAt: null,
+      questionClosesAt: null,
+      startedAt: null,
+      endedAt: null,
+      stateVersion: 0,
+      plan: [],
+      current: null,
+      leaderboard: null,
+      gradedThrough: -1,
+      createdBy,
+      createdAt: Timestamp.now(),
+      lastSyncAt: null,
+      lastSync: null,
+    };
+    const batch = db.batch();
+    batch.create(db.doc(paths.session(code)), doc);
     try {
-      const doc = await QuizSession.create({ ...input, eventId: new Types.ObjectId(input.eventId), code, createdBy });
-      return doc.toObject();
+      await batch.commit();
+      return doc;
     } catch (err) {
-      if (!isDuplicateKey(err)) throw err;
+      if ((err as { code?: number }).code !== 6) throw err; // 6 = ALREADY_EXISTS: code collision, retry
     }
   }
   throw new QuizError("conflict", "Could not allocate a session code");
 }
 
-export async function listSessions(): Promise<QuizSessionDoc[]> {
-  return QuizSession.find().sort({ createdAt: -1 }).lean<QuizSessionDoc[]>();
+export async function listSessions(): Promise<SessionDoc[]> {
+  const snap = await adminDb().collection(SESSIONS).orderBy("createdAt", "desc").get();
+  return snap.docs.map((d) => d.data() as SessionDoc);
 }
 
-export async function getSessionByCode(code: string): Promise<QuizSessionDoc> {
-  const s = await QuizSession.findOne({ code }).lean<QuizSessionDoc>();
-  if (!s) throw new QuizError("not_found", "Session not found");
-  return s;
+export async function getSession(code: string): Promise<SessionDoc> {
+  const snap = await sessionRef(code).get();
+  if (!snap.exists) throw new QuizError("not_found", "Session not found");
+  return snap.data() as SessionDoc;
 }
 
-export async function updateSessionMeta(
-  code: string,
-  patch: { title?: string; requireSubmitted?: boolean },
-): Promise<QuizSessionDoc> {
-  const s = await getSessionByCode(code);
-  if (s.status === "live" || s.status === "ended") throw new QuizError("invalid_state", "Session is locked");
-  const updated = await QuizSession.findOneAndUpdate({ _id: s._id }, { $set: patch }, { new: true }).lean<QuizSessionDoc>();
-  invalidateSnapshot(code);
-  return updated!;
+export function assertEditable(s: Pick<SessionDoc, "status">, message = "Session is locked"): void {
+  if (!EDITABLE.has(s.status)) throw new QuizError("invalid_state", message);
+}
+
+export async function updateSessionMeta(code: string, patch: { title?: string; requireSubmitted?: boolean }): Promise<SessionDoc> {
+  return adminDb().runTransaction(async (tx) => {
+    const snap = await tx.get(sessionRef(code));
+    if (!snap.exists) throw new QuizError("not_found", "Session not found");
+    const s = snap.data() as SessionDoc;
+    assertEditable(s);
+    const clean = Object.fromEntries(Object.entries(patch).filter(([, v]) => v !== undefined));
+    tx.update(snap.ref, clean);
+    return { ...s, ...clean };
+  });
 }
 
 export async function deleteSession(code: string): Promise<void> {
-  const s = await getSessionByCode(code);
+  const s = await getSession(code);
   if (s.status === "live") throw new QuizError("invalid_state", "End the quiz before deleting");
-  await Promise.all([
-    QuizQuestion.deleteMany({ sessionId: s._id }),
-    QuizTeam.deleteMany({ sessionId: s._id }),
-    QuizAnswer.deleteMany({ sessionId: s._id }),
-  ]);
-  await QuizSession.deleteOne({ _id: s._id });
-  invalidateSnapshot(code);
-  sessionIdCache.delete(code);
+  await adminDb().recursiveDelete(sessionRef(code));
 }
 
-/** Fresh session + its questions; one parallel round trip once the code's session id is known. */
-export async function getSessionWithQuestions(code: string): Promise<{ session: QuizSessionDoc; questions: QuestionLite[] }> {
-  const knownId = sessionIdCache.get(code);
-  if (knownId) {
-    const [session, questions] = await Promise.all([getSessionByCode(code), listQuestions(knownId)]);
-    if (String(session._id) === String(knownId)) return { session, questions };
-    sessionIdCache.delete(code);
-  }
-  const session = await getSessionByCode(code);
-  sessionIdCache.set(code, session._id);
-  return { session, questions: await listQuestions(session._id) };
+export interface ControlResult {
+  stateVersion: number;
+  status: SessionDoc["status"];
+  phase: SessionDoc["phase"];
+  currentIndex: number;
 }
 
-/** Runs one state-machine action with optimistic concurrency on stateVersion. */
-export async function applyControl(code: string, action: ControlAction, now: Date = new Date()): Promise<QuizSessionDoc> {
-  const session = await getSessionByCode(code);
-  const questions = await listQuestions(session._id);
-  const result = applyAction(toState(session), action, questions, now);
-  const updated = await QuizSession.findOneAndUpdate(
-    { _id: session._id, stateVersion: session.stateVersion },
-    { $set: result.patch, $inc: { stateVersion: 1 } },
-    { new: true },
-  ).lean<QuizSessionDoc>();
-  if (!updated) throw new QuizError("conflict", "State changed, retry");
-  if (result.clearAnswersForIndex !== undefined) {
-    const q = questions[result.clearAnswersForIndex];
-    await QuizAnswer.deleteMany({ sessionId: session._id, questionId: new Types.ObjectId(q.id) });
-  }
-  invalidateSnapshot(code);
-  return updated;
+/**
+ * Runs one host action in a transaction. Opening a question copies its public fields into `current`;
+ * Reveal (and End on an ungraded question) grades every team and publishes answer, distribution and top 10.
+ */
+export async function applyControl(
+  code: string,
+  action: ControlAction,
+  now: Date = new Date(),
+  expectedVersion?: number,
+): Promise<ControlResult> {
+  const db = adminDb();
+  return db.runTransaction(async (tx) => {
+    const sRef = sessionRef(code);
+    const snap = await tx.get(sRef);
+    if (!snap.exists) throw new QuizError("not_found", "Session not found");
+    const s = snap.data() as SessionDoc;
+    if (expectedVersion !== undefined && expectedVersion !== s.stateVersion) throw new QuizError("conflict", "State changed, retry");
+
+    const lite: QuestionLite[] = s.plan.map((p, i) => ({ id: p.id, order: i, text: "", options: [], correctIndex: 0, points: 0, timeLimitSec: p.timeLimitSec }));
+    const state = sessionStateFromDoc(s);
+    const result = applyAction(state, action, lite, now);
+    const next: SessionState = { ...state, ...result.patch };
+
+    // ---- reads (all before writes) ----
+    const opensQuestion = result.patch.phase === "question" && result.patch.questionOpenedAt !== undefined;
+    const openQid = opensQuestion ? s.plan[next.currentIndex].id : null;
+    const openQ = openQid ? ((await tx.get(db.doc(paths.question(code, openQid)))).data() as QuestionDoc | undefined) : undefined;
+    if (openQid && !openQ) throw new QuizError("not_found", "Question missing");
+
+    const gradeIndex = next.currentIndex;
+    const needsGrade =
+      (next.phase === "reveal" || next.status === "ended") && gradeIndex >= 0 && s.phase !== "idle" && s.gradedThrough < gradeIndex;
+    const gradeQid = needsGrade ? s.plan[gradeIndex].id : null;
+    const gradeQ = gradeQid ? ((await tx.get(db.doc(paths.question(code, gradeQid)))).data() as QuestionDoc | undefined) : undefined;
+    const gradeTeams = gradeQid ? await tx.get(db.collection(paths.teams(code))) : null;
+
+    const clearQid = result.clearAnswersForIndex !== undefined ? s.plan[result.clearAnswersForIndex].id : null;
+    const clearAnswers = clearQid ? await tx.get(db.collection(paths.answers(code)).where("questionId", "==", clearQid)) : null;
+    const clearTeams = clearQid ? await tx.get(db.collection(paths.teams(code)).where("currentAnswer.qid", "==", clearQid)) : null;
+
+    // ---- writes ----
+    const update: Record<string, unknown> = { ...toDocPatch(result.patch), stateVersion: s.stateVersion + 1 };
+    if (openQid && openQ) {
+      update.current = {
+        id: openQid,
+        index: next.currentIndex,
+        text: openQ.text,
+        options: openQ.options,
+        points: openQ.points,
+        timeLimitSec: openQ.timeLimitSec,
+        correctIndex: null,
+        distribution: null,
+      };
+    }
+
+    if (clearAnswers && clearTeams) {
+      clearAnswers.docs.forEach((d) => tx.delete(d.ref));
+      clearTeams.docs.forEach((d) => {
+        tx.update(d.ref, { currentAnswer: null });
+        tx.update(db.doc(paths.counter(code, d.id)), { answeredFor: null, answered: false });
+      });
+    }
+
+    if (gradeQid && gradeQ && gradeTeams) {
+      const teams = gradeTeams.docs.map((d) => d.data() as TeamDoc);
+      const out = gradeQuestion(
+        { id: gradeQid, index: gradeIndex, correctIndex: gradeQ.correctIndex, points: gradeQ.points, timeLimitSec: gradeQ.timeLimitSec, optionCount: gradeQ.options.length },
+        teams.map((t) => ({ teamId: t.teamId, teamName: t.teamName, checkedIn: !!t.checkedInAt, currentAnswer: t.currentAnswer, score: t.score, totalTimeMs: t.totalTimeMs, answeredCount: t.answeredCount, correctCount: t.correctCount })),
+      );
+      const rankOf = new Map(out.standings.map((r) => [r.teamId, r.rank]));
+      for (const d of gradeTeams.docs) {
+        const u = out.updates.get(d.id);
+        if (!u) continue;
+        tx.update(d.ref, {
+          score: u.score,
+          totalTimeMs: u.totalTimeMs,
+          answeredCount: u.answeredCount,
+          correctCount: u.correctCount,
+          rank: rankOf.get(d.id) ?? null,
+          lastResult: { qid: gradeQid, optionIndex: u.result.optionIndex, correct: u.result.correct, points: u.result.points },
+          [`perQuestion.${gradeQid}`]: u.result,
+        });
+      }
+      update.gradedThrough = gradeIndex;
+      update.leaderboard = out.standings.slice(0, LEADERBOARD_SIZE);
+      // A question closed by End keeps its public fields; reveal the answer on it either way.
+      const current = (update.current as SessionDoc["current"]) ?? s.current;
+      if (current && current.id === gradeQid) update.current = { ...current, correctIndex: gradeQ.correctIndex, distribution: out.distribution };
+    }
+
+    tx.update(sRef, update);
+    return { stateVersion: s.stateVersion + 1, status: next.status, phase: next.phase, currentIndex: next.currentIndex };
+  });
 }

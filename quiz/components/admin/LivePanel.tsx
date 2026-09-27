@@ -13,25 +13,15 @@ import { StandingsTable } from "./StandingsTable";
 import { StatCard } from "./StatCard";
 import { StatusBadge } from "./StatusBadge";
 
-export function LivePanel({
-  code,
-  view,
-  now,
-  onChanged,
-}: {
-  code: string;
-  view: AdminSessionView;
-  now: number;
-  onChanged: () => Promise<void>;
-}) {
+export function LivePanel({ code, view, now }: { code: string; view: AdminSessionView; now: number }) {
   const { session: s, questions, counts, distribution: dist, standings } = view;
   const [busy, setBusy] = useState(false);
 
   const control = async (action: ControlAction) => {
     setBusy(true);
     try {
-      await api(`/api/admin/sessions/${code}/control`, { body: action });
-      await onChanged();
+      // expectedVersion: a stale console (double click, second admin) gets 409 instead of acting twice.
+      await api(`/api/admin/sessions/${code}/control`, { body: { ...action, expectedVersion: s.stateVersion } });
     } catch (e) {
       toast.error((e as ApiError).message);
     } finally {

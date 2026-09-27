@@ -8,6 +8,22 @@ export interface ScoringAnswer {
   responseMs: number;
 }
 
+export type RankInput = Omit<Standing, "rank">;
+
+/** Score desc, then total time asc (name only for stable display). Exact score+time ties share a rank (1,1,3). */
+export function rankStandings(rows: RankInput[]): Standing[] {
+  const sorted = [...rows].sort(
+    (a, b) => b.score - a.score || a.totalTimeMs - b.totalTimeMs || a.teamName.localeCompare(b.teamName),
+  );
+  const out: Standing[] = [];
+  sorted.forEach((r, i) => {
+    const prev = out[i - 1];
+    const tied = prev !== undefined && prev.score === r.score && prev.totalTimeMs === r.totalTimeMs;
+    out.push({ ...r, rank: tied ? prev.rank : i + 1 });
+  });
+  return out;
+}
+
 export function computeStandings(
   teams: { teamId: string; teamName: string }[],
   closedQuestions: { id: string; timeLimitSec: number }[],
@@ -35,13 +51,5 @@ export function computeStandings(
     return { teamId: t.teamId, teamName: t.teamName, score, totalTimeMs, answeredCount, correctCount };
   });
 
-  rows.sort((a, b) => b.score - a.score || a.totalTimeMs - b.totalTimeMs || a.teamName.localeCompare(b.teamName));
-
-  const out: Standing[] = [];
-  rows.forEach((r, i) => {
-    const prev = out[i - 1];
-    const tied = prev !== undefined && prev.score === r.score && prev.totalTimeMs === r.totalTimeMs;
-    out.push({ ...r, rank: tied ? prev.rank : i + 1 });
-  });
-  return out;
+  return rankStandings(rows);
 }
