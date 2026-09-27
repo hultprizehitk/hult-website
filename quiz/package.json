@@ -19,7 +19,7 @@
     "class-variance-authority": "^0.7.1",
     "cn": "^0.4.0",
     "firebase": "^12.19.0",
-    "firebase-admin": "^14.5.0",
+    "firebase-admin": "^13.10.0",
     "lucide-react": "^1.48.0",
     "mongoose": "^9.10.2",
     "motion": "^13.4.2",
@@ -49,5 +49,8 @@
     "tsx": "^4.23.15",
     "typescript": "^5",
     "vitest": "^5.0.1"
+  },
+  "overrides": {
+    "jwks-rsa": "^3.1.0"
   }
 }
