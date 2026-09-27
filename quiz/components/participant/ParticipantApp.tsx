@@ -22,6 +22,7 @@ import { LobbyView } from "./LobbyView";
 import { QuestionView } from "./QuestionView";
 import { RevealView } from "./RevealView";
 import { LeaderboardView } from "./LeaderboardView";
+import { ComingSoonView } from "./ComingSoonView";
 
 const backLink = (
   <Link href="/" className={buttonVariants({ variant: "outline", className: "rounded-full" })}>
@@ -94,7 +95,7 @@ export function ParticipantApp({ code }: { code: string }) {
   };
 
   const shell = (children: React.ReactNode) => (
-    <QuizShell code={valid ? code : undefined}>
+    <QuizShell>
       {children}
       <ReconnectingPill show={sessionLive.offline} />
     </QuizShell>
@@ -113,7 +114,7 @@ export function ParticipantApp({ code }: { code: string }) {
         title="Sign in to join"
         subtitle={fb.error ?? "College account required"}
         action={
-          <Link href={`/signin?callbackUrl=${encodeURIComponent(`/s/${code}`)}`} className={buttonVariants({ size: "lg", className: "rounded-2xl px-6 font-bold" })}>
+          <Link href={`/signin?callbackUrl=${encodeURIComponent(code === "470009" ? "/quiz" : `/s/${code}`)}`} className={buttonVariants({ size: "lg", className: "rounded-2xl px-6 font-bold" })}>
             Sign in
           </Link>
         }
@@ -122,12 +123,22 @@ export function ParticipantApp({ code }: { code: string }) {
   }
 
   const switchAccount = (
-    <Link href={`/signin?callbackUrl=${encodeURIComponent(`/s/${code}`)}`} className={buttonVariants({ variant: "outline", className: "rounded-full" })}>
+    <Link href={`/signin?callbackUrl=${encodeURIComponent(code === "470009" ? "/quiz" : `/s/${code}`)}`} className={buttonVariants({ variant: "outline", className: "rounded-full" })}>
       Switch account
     </Link>
   );
   if (!join) {
     const c = joinError?.code;
+    if (c === "team_already_active") {
+      return shell(
+        <StateMessage
+          icon={Smartphone}
+          title="Device limit reached"
+          subtitle={joinError?.message || "A teammate is already playing on another device. Only 1 player per team is allowed. They must sign out to hand over the device."}
+          action={switchAccount}
+        />
+      );
+    }
     if (c === "not_registered") return shell(<StateMessage icon={UserX} title="No team found" subtitle={`${fb.email} is not on a registered team for this event`} action={switchAccount} />);
     if (c === "ineligible") return shell(<StateMessage icon={ShieldAlert} title="Team not eligible" subtitle="Team must be confirmed and submitted" action={switchAccount} />);
     if (c === "checkin_closed") return shell(<StateMessage icon={Lock} title="Check-in closed" subtitle="See an organizer" />);
@@ -157,5 +168,6 @@ export function ParticipantApp({ code }: { code: string }) {
   }
   if (s.phase === "reveal" && q) return shell(<RevealView s={s} answer={answer} />);
   if (s.phase === "leaderboard") return shell(<LeaderboardView s={s} title="Leaderboard" />);
+  if (s.status === "live") return shell(<ComingSoonView s={s} />);
   return shell(<StateMessage icon={Loader2} spin title="Waiting for host" />);
 }

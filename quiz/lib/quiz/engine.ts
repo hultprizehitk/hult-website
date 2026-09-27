@@ -48,7 +48,36 @@ export function applyAction(s: SessionState, a: ControlAction, questions: Questi
     case "start":
       requireState(s.status === "lobby");
       if (questions.length === 0) throw new QuizError("no_questions");
-      return { patch: { status: "live", checkinOpen: false, startedAt: now, ...openQuestionPatch(0, questions, now) } };
+      return { patch: { status: "live", phase: "idle", currentIndex: -1, checkinOpen: false, startedAt: now } };
+
+    case "reset_session":
+      requireState(s.status === "ended" || live || s.status === "lobby");
+      return {
+        patch: {
+          status: "lobby",
+          phase: "idle",
+          currentIndex: -1,
+          checkinOpen: true,
+          questionOpenedAt: null,
+          questionClosesAt: null,
+          startedAt: null,
+          endedAt: null,
+        },
+      };
+
+    case "publish_question":
+      if (questions.length === 0) throw new QuizError("no_questions");
+      if (a.index < 0 || a.index >= questions.length) throw new QuizError("not_found");
+      return {
+        patch: {
+          status: "live",
+          checkinOpen: false,
+          startedAt: s.startedAt ?? now,
+          endedAt: null,
+          ...openQuestionPatch(a.index, questions, now),
+        },
+        clearAnswersForIndex: a.index,
+      };
 
     case "next": {
       requireState(live && (s.phase === "reveal" || s.phase === "leaderboard"));

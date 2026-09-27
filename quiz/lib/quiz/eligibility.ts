@@ -1,6 +1,10 @@
 /** Team may play if confirmed and (when required) its registration is submitted. */
-export function isTeamEligible(team: { status?: string; submissionStatus?: string }, requireSubmitted: boolean): boolean {
-  return team.status === "confirmed" && (!requireSubmitted || team.submissionStatus === "submitted");
+export function isTeamEligible(
+  team: { status?: string; submissionStatus?: string; submittedAt?: unknown },
+  requireSubmitted: boolean,
+): boolean {
+  const isSubmitted = team.submissionStatus === "submitted" || Boolean(team.submittedAt);
+  return team.status === "confirmed" && (!requireSubmitted || isSubmitted);
 }
 
 /** Lead first, then members; lowercased, de-duplicated, blank emails dropped. */

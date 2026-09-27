@@ -30,13 +30,15 @@ export type ControlAction =
   | { type: "open_lobby" }
   | { type: "toggle_checkin" }
   | { type: "start" }
+  | { type: "publish_question"; index: number }
   | { type: "next" }
   | { type: "close_now" }
   | { type: "extend"; seconds: number }
   | { type: "restart_question" }
   | { type: "reveal" }
   | { type: "show_leaderboard" }
-  | { type: "end" };
+  | { type: "end" }
+  | { type: "reset_session" };
 
 export interface ActionResult {
   patch: Partial<SessionState>;

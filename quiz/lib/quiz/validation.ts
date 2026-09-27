@@ -36,6 +36,7 @@ export const controlSchema = z.discriminatedUnion("type", [
   z.object({ type: z.literal("open_lobby") }),
   z.object({ type: z.literal("toggle_checkin") }),
   z.object({ type: z.literal("start") }),
+  z.object({ type: z.literal("publish_question"), index: z.number().int().min(0) }),
   z.object({ type: z.literal("next") }),
   z.object({ type: z.literal("close_now") }),
   z.object({ type: z.literal("extend"), seconds: z.number().int().min(5).max(60) }),
@@ -43,6 +44,7 @@ export const controlSchema = z.discriminatedUnion("type", [
   z.object({ type: z.literal("reveal") }),
   z.object({ type: z.literal("show_leaderboard") }),
   z.object({ type: z.literal("end") }),
+  z.object({ type: z.literal("reset_session") }),
 ]);
 export type ControlInput = z.infer<typeof controlSchema>;
 

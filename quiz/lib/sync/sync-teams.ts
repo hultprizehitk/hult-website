@@ -14,6 +14,8 @@ export interface SourceTeam {
   members: { name?: string; email?: string }[];
   status?: string;
   submissionStatus?: string;
+  checkedIn?: boolean;
+  checkedInAt?: Date;
 }
 
 const BATCH_LIMIT = 400;
@@ -48,6 +50,11 @@ export async function syncTeamsToFirestore(code: string, source: SourceTeam[], a
     const members = rosterMembers(src.lead, src.members);
     const leadEmail = src.leadEmail.toLowerCase();
     const isEligible = isTeamEligible(src, s.requireSubmitted);
+    const isVenueCheckedIn = Boolean(src.checkedIn);
+    const venueCheckedInAt = isVenueCheckedIn
+      ? Timestamp.fromDate(src.checkedInAt ? new Date(src.checkedInAt) : now)
+      : null;
+
     if (isEligible) eligible += 1;
     const roster = {
       teamId: src.id,
@@ -65,7 +72,7 @@ export async function syncTeamsToFirestore(code: string, source: SourceTeam[], a
     const counter: CounterDoc = {
       teamId: src.id,
       eligible: isEligible,
-      checkedIn: prevCounter?.checkedIn ?? !!prev?.checkedInAt,
+      checkedIn: prevCounter?.checkedIn ?? (prev?.checkedInAt ? true : isVenueCheckedIn),
       answeredFor: prevCounter?.answeredFor ?? prev?.currentAnswer?.qid ?? null,
       answered: prevCounter?.answered ?? !!prev?.currentAnswer,
     };
@@ -73,6 +80,10 @@ export async function syncTeamsToFirestore(code: string, source: SourceTeam[], a
     if (prev) {
       updated += 1;
       const patch: Record<string, unknown> = { ...roster };
+      if (isVenueCheckedIn && !prev.checkedInAt) {
+        patch.checkedInAt = venueCheckedInAt;
+        patch.checkedInBy = "venue_scanner";
+      }
       // The chosen taker left the team on the site: fall back to the lead.
       if (prev.takerEmail && !roster.memberEmails.includes(prev.takerEmail)) {
         patch.takerEmail = leadEmail;
@@ -81,7 +92,13 @@ export async function syncTeamsToFirestore(code: string, source: SourceTeam[], a
       writes.push((b) => b.set(ref, patch, { merge: true }));
     } else {
       added += 1;
-      const doc: TeamDoc<Timestamp> = { ...roster, ...emptyTeamState<Timestamp>(), takerEmail: leadEmail };
+      const doc: TeamDoc<Timestamp> = {
+        ...roster,
+        ...emptyTeamState<Timestamp>(),
+        takerEmail: leadEmail,
+        checkedInAt: isVenueCheckedIn ? venueCheckedInAt : null,
+        checkedInBy: isVenueCheckedIn ? "venue_scanner" : null,
+      };
       writes.push((b) => b.set(ref, doc));
     }
   }

@@ -69,11 +69,13 @@ export function TeamsPanel({ code, session, rows: all, loading }: { code: string
     }
   };
 
+  // Only fully registered (eligible) teams are displayed in the quiz roster
+  const eligibleAll = all.filter((r) => r.eligible);
   const needle = query.trim().toLowerCase();
-  const rows = all
+  const rows = eligibleAll
     .filter((r) => filter === "all" || (filter === "in" ? r.checkedIn : !r.checkedIn))
     .filter((r) => !needle || `${r.teamName} ${r.teamCode} ${r.leadEmail}`.toLowerCase().includes(needle));
-  const inCount = all.filter((r) => r.checkedIn).length;
+  const inCount = eligibleAll.filter((r) => r.checkedIn).length;
 
   return (
     <div className="flex flex-col gap-4">
@@ -92,9 +94,9 @@ export function TeamsPanel({ code, session, rows: all, loading }: { code: string
           value={filter}
           onChange={setFilter}
           options={[
-            { value: "all", label: "All", count: all.length },
+            { value: "all", label: "All", count: eligibleAll.length },
             { value: "in", label: "Checked in", count: inCount },
-            { value: "out", label: "Not in", count: all.length - inCount },
+            { value: "out", label: "Not in", count: eligibleAll.length - inCount },
           ]}
         />
       </div>
@@ -102,7 +104,7 @@ export function TeamsPanel({ code, session, rows: all, loading }: { code: string
       <div className="overflow-hidden rounded-2xl border border-white/15 bg-[#0e0e12] shadow-2xl">
         {loading ? (
           <div className="py-20 text-center font-mono text-xs text-neutral-500">Loading teams...</div>
-        ) : all.length === 0 ? (
+        ) : eligibleAll.length === 0 ? (
           <div className="py-16 text-center font-mono text-xs text-neutral-400">No teams yet. Use Sync teams.</div>
         ) : rows.length === 0 ? (
           <div className="py-16 text-center font-mono text-xs text-neutral-400">No teams match</div>
@@ -113,7 +115,6 @@ export function TeamsPanel({ code, session, rows: all, loading }: { code: string
                 <tr className="border-b border-white/10 bg-white/[0.02] font-mono text-[11px] uppercase tracking-wider text-neutral-400">
                   <th className="px-4 py-3.5 font-medium">Team & Code</th>
                   <th className="px-4 py-3.5 font-medium">Eligible</th>
-                  <th className="px-4 py-3.5 font-medium">Check-in</th>
                   <th className="px-4 py-3.5 font-medium">Taker</th>
                   <th className="px-4 py-3.5 font-medium">Device</th>
                   {live && <th className="px-4 py-3.5 font-medium">Answered</th>}
@@ -140,20 +141,6 @@ export function TeamsPanel({ code, session, rows: all, loading }: { code: string
                           <span className="size-1.5 rounded-full bg-amber-400" />
                           Not eligible
                         </span>
-                      )}
-                    </td>
-                    <td className="px-4 py-3">
-                      {r.checkedIn && r.checkedInAt !== null ? (
-                        <span className="font-mono text-[11px] text-emerald-400 tabular-nums">{new Date(r.checkedInAt).toLocaleTimeString()}</span>
-                      ) : (
-                        <ConfirmButton
-                          size="xs"
-                          variant="outline"
-                          label="Check in"
-                          title={`Check in ${r.teamName}?`}
-                          description="Manual check-in by an organizer."
-                          onConfirm={() => act({ action: "checkin", teamId: r.teamId })}
-                        />
                       )}
                     </td>
                     <td className="px-4 py-3">

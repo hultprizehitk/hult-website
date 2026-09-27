@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { toast } from "sonner";
-import { DoorOpen, Download, Eye, Flag, ListOrdered, Play, RotateCcw, SkipForward, Square, TimerReset } from "lucide-react";
+import { DoorOpen, Download, Eye, Flag, ListOrdered, Play, Radio, RotateCcw, SkipForward, Square, TimerReset } from "lucide-react";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { CountdownRing } from "@/components/quiz/CountdownRing";
 import { ResultBar } from "@/components/quiz/ResultBar";
@@ -13,7 +13,17 @@ import { StandingsTable } from "./StandingsTable";
 import { StatCard } from "./StatCard";
 import { StatusBadge } from "./StatusBadge";
 
-export function LivePanel({ code, view, now }: { code: string; view: AdminSessionView; now: number }) {
+export function LivePanel({
+  code,
+  view,
+  now,
+  onNavigateQuestions,
+}: {
+  code: string;
+  view: AdminSessionView;
+  now: number;
+  onNavigateQuestions?: () => void;
+}) {
   const { session: s, questions, counts, distribution: dist, standings } = view;
   const [busy, setBusy] = useState(false);
 
@@ -57,19 +67,31 @@ export function LivePanel({ code, view, now }: { code: string; view: AdminSessio
             </Button>
           )}
           {s.status === "lobby" && (
+            <ConfirmButton
+              variant="emerald"
+              label="Start quiz"
+              title="Start the quiz?"
+              description="Check-in closes and the quiz starts. You can then publish questions to player consoles."
+              disabled={busy || questions.length === 0}
+              icon={<Play />}
+              onConfirm={() => control({ type: "start" })}
+            />
+          )}
+          {s.status === "live" && s.phase === "idle" && (
             <>
-              <ConfirmButton
+              <Button
                 variant="emerald"
-                label="Start quiz"
-                title="Start the quiz?"
-                description="Check-in closes and question 1 opens for everyone."
                 disabled={busy || questions.length === 0}
-                icon={<Play />}
-                onConfirm={() => control({ type: "start" })}
-              />
-              <Button variant="outline" disabled={busy} onClick={() => control({ type: "toggle_checkin" })}>
-                {s.checkinOpen ? "Close check-in" : "Open check-in"}
+                onClick={() => control({ type: "publish_question", index: 0 })}
+              >
+                <Radio className="size-3.5" />
+                Publish Question 1
               </Button>
+              {onNavigateQuestions && (
+                <Button variant="outline" onClick={onNavigateQuestions}>
+                  Choose Question from List
+                </Button>
+              )}
             </>
           )}
           {inQuestion && (
@@ -120,11 +142,33 @@ export function LivePanel({ code, view, now }: { code: string; view: AdminSessio
               onConfirm={() => control({ type: "end" })}
             />
           )}
+          {s.status === "ended" && (
+            <ConfirmButton
+              variant="emerald"
+              label="Start new quiz"
+              title="Start a new quiz session?"
+              description="Archives this quiz run's final results, resets scores to 0, and reopens the lobby."
+              disabled={busy}
+              icon={<RotateCcw />}
+              onConfirm={() => control({ type: "reset_session" })}
+            />
+          )}
           {(s.status === "live" || s.status === "ended") && (
             <a href={`/api/admin/sessions/${code}/export`} className={buttonVariants({ variant: "outline" })}>
               <Download />
               Export CSV
             </a>
+          )}
+          {s.status === "live" && (
+            <ConfirmButton
+              variant="ghost"
+              label="Reset to lobby"
+              title="Reset quiz session to lobby?"
+              description="Archives current progress and returns session to lobby with 0 scores."
+              disabled={busy}
+              icon={<RotateCcw className="text-white/60" />}
+              onConfirm={() => control({ type: "reset_session" })}
+            />
           )}
           {inQuestion && s.questionOpenedAt !== null && s.questionClosesAt !== null && (
             <div className="ml-auto">

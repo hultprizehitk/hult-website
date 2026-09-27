@@ -84,9 +84,9 @@ export function AdminConsole({ code }: { code: string }) {
 
   const nav = (
     <>
-      <Link href="/admin" className={buttonVariants({ variant: "ghost", size: "sm", className: "rounded-full text-xs" })}>
-        <ArrowLeft />
-        Sessions
+      <Link href="/" className={buttonVariants({ variant: "ghost", size: "sm", className: "rounded-full text-xs" })}>
+        <ArrowLeft className="size-3.5" />
+        Home
       </Link>
       <Link href={`/present/${code}/board`} target="_blank" className={buttonVariants({ variant: "outline", size: "sm", className: "rounded-full text-xs" })}>
         <Trophy />
@@ -140,8 +140,8 @@ export function AdminConsole({ code }: { code: string }) {
         </span>
       </nav>
 
-      {tab === "live" && <LivePanel code={code} view={view} now={now} />}
-      {tab === "questions" && <QuestionsPanel code={code} view={view} onChanged={noop} />}
+      {tab === "live" && <LivePanel code={code} view={view} now={now} onNavigateQuestions={() => setTab("questions")} />}
+      {tab === "questions" && <QuestionsPanel code={code} view={view} onChanged={noop} onNavigateLive={() => setTab("live")} />}
       {tab === "teams" && <TeamsPanel code={code} session={s} rows={teamBoardRows(teamsLive.data, currentId)} loading={teamsLive.loading} />}
 
       <ReconnectingPill show={sessionLive.offline} />

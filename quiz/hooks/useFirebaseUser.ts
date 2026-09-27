@@ -10,6 +10,7 @@ export type FirebaseUserStatus = "loading" | "signed-in" | "anonymous" | "error"
 export interface FirebaseUser {
   status: FirebaseUserStatus;
   email: string | null;
+  name: string | null;
   admin: boolean;
   error: string | null;
   retry: () => void;
@@ -20,7 +21,7 @@ export interface FirebaseUser {
  * Firebase SDK in with it (Firestore rules read token.email / token.admin). No NextAuth session -> anonymous.
  */
 export function useFirebaseUser(): FirebaseUser {
-  const [state, setState] = useState<Omit<FirebaseUser, "retry">>({ status: "loading", email: null, admin: false, error: null });
+  const [state, setState] = useState<Omit<FirebaseUser, "retry">>({ status: "loading", email: null, name: null, admin: false, error: null });
   const [attempt, setAttempt] = useState(0);
 
   useEffect(() => {
@@ -28,20 +29,20 @@ export function useFirebaseUser(): FirebaseUser {
     const { auth } = firebaseClient();
     (async () => {
       try {
-        const res = await api<{ token: string; email: string; admin: boolean }>("/api/firebase-token");
+        const res = await api<{ token: string; email: string; name?: string; admin: boolean }>("/api/firebase-token");
         const current = auth.currentUser;
         const claims = current ? (await current.getIdTokenResult()).claims : null;
         if (!current || current.uid !== res.email || Boolean(claims?.admin) !== res.admin) {
           await signInWithCustomToken(auth, res.token);
         }
-        if (!cancelled) setState({ status: "signed-in", email: res.email, admin: res.admin, error: null });
+        if (!cancelled) setState({ status: "signed-in", email: res.email, name: res.name || res.email.split("@")[0], admin: res.admin, error: null });
       } catch (e) {
         if (cancelled) return;
         if (e instanceof ApiError && (e.status === 401 || e.status === 403)) {
           if (auth.currentUser) await signOut(auth).catch(() => {});
-          setState({ status: "anonymous", email: null, admin: false, error: e.status === 403 ? e.message : null });
+          setState({ status: "anonymous", email: null, name: null, admin: false, error: e.status === 403 ? e.message : null });
         } else {
-          setState({ status: "error", email: null, admin: false, error: e instanceof Error ? e.message : "Sign-in failed" });
+          setState({ status: "error", email: null, name: null, admin: false, error: e instanceof Error ? e.message : "Sign-in failed" });
         }
       }
     })();

@@ -3,9 +3,9 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "next dev --webpack -p 3001",
+    "dev": "next dev --webpack -p 3000",
     "build": "node scripts/next-exfat.cjs build --webpack",
-    "start": "node scripts/next-exfat.cjs start -p 3001",
+    "start": "node scripts/next-exfat.cjs start -p 3000",
     "lint": "eslint",
     "test": "firebase emulators:exec --only firestore,auth --project demo-hult-quiz \"vitest run\"",
     "test:watch": "vitest",

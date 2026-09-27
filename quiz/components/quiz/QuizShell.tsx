@@ -2,6 +2,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { DotPattern } from "@/components/ui/dot-pattern";
 import { cn } from "@/lib/utils";
+import { UserNav } from "@/components/quiz/UserNav";
 
 /** Page frame shared by every quiz screen; mirrors the admin dashboard layout + header (client-v3/app/admin). */
 export function QuizShell({
@@ -40,12 +41,7 @@ export function QuizShell({
           </span>
         </Link>
         <div className="flex items-center gap-2">
-          {code && (
-            <span className="rounded-full border border-white/15 bg-[#16161d] px-3 py-1 font-mono text-xs font-bold tracking-widest text-white">
-              #{code}
-            </span>
-          )}
-          {right}
+          {right ?? <UserNav />}
         </div>
       </header>
 

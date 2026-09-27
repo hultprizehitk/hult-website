@@ -149,6 +149,10 @@ export async function applyControl(
     const clearAnswers = clearQid ? await tx.get(db.collection(paths.answers(code)).where("questionId", "==", clearQid)) : null;
     const clearTeams = clearQid ? await tx.get(db.collection(paths.teams(code)).where("currentAnswer.qid", "==", clearQid)) : null;
 
+    const isReset = action.type === "reset_session";
+    const resetTeams = isReset ? await tx.get(db.collection(paths.teams(code))) : null;
+    const resetAnswers = isReset ? await tx.get(db.collection(paths.answers(code))) : null;
+
     // ---- writes ----
     const update: Record<string, unknown> = { ...toDocPatch(result.patch), stateVersion: s.stateVersion + 1 };
     if (openQid && openQ) {
@@ -162,6 +166,60 @@ export async function applyControl(
         correctIndex: null,
         distribution: null,
       };
+    }
+
+    if (isReset && resetTeams) {
+      const teamsData = resetTeams.docs.map((d) => d.data() as TeamDoc);
+      const hasScores = teamsData.some((t) => t.score > 0 || t.answeredCount > 0);
+      if (hasScores || s.status === "ended") {
+        const runId = `run_${Date.now()}`;
+        const runRef = db.doc(`${paths.session(code)}/runs/${runId}`);
+        tx.set(runRef, {
+          runId,
+          code,
+          title: s.title,
+          startedAt: s.startedAt,
+          endedAt: s.endedAt ?? Timestamp.now(),
+          leaderboard: s.leaderboard ?? [],
+          teams: teamsData.map((t) => ({
+            teamId: t.teamId,
+            teamName: t.teamName,
+            score: t.score,
+            rank: t.rank,
+            answeredCount: t.answeredCount,
+            correctCount: t.correctCount,
+            totalTimeMs: t.totalTimeMs,
+          })),
+          archivedAt: Timestamp.now(),
+        });
+      }
+
+      if (resetAnswers) {
+        resetAnswers.docs.forEach((d) => tx.delete(d.ref));
+      }
+
+      for (const d of resetTeams.docs) {
+        tx.update(d.ref, {
+          score: 0,
+          totalTimeMs: 0,
+          answeredCount: 0,
+          correctCount: 0,
+          rank: null,
+          lastResult: null,
+          perQuestion: {},
+          currentAnswer: null,
+        });
+        tx.update(db.doc(paths.counter(code, d.id)), { answeredFor: null, answered: false });
+      }
+
+      update.current = null;
+      update.leaderboard = null;
+      update.gradedThrough = -1;
+      update.questionOpenedAt = null;
+      update.questionClosesAt = null;
+      update.startedAt = null;
+      update.endedAt = null;
+      update.checkinOpen = true;
     }
 
     if (clearAnswers && clearTeams) {

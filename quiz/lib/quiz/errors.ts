@@ -6,7 +6,9 @@ export type QuizErrorCode =
   | "invalid_state"
   | "conflict"
   | "not_registered"
+  | "not_checked_in"
   | "ineligible"
+  | "team_already_active"
   | "checkin_closed"
   | "not_lead"
   | "not_taker"
@@ -24,7 +26,9 @@ const STATUS: Record<QuizErrorCode, number> = {
   invalid_state: 409,
   conflict: 409,
   not_registered: 404,
+  not_checked_in: 403,
   ineligible: 403,
+  team_already_active: 409,
   checkin_closed: 409,
   not_lead: 403,
   not_taker: 403,

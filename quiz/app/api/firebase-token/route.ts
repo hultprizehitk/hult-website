@@ -6,6 +6,7 @@ import { handle, json } from "@/lib/http";
 export async function GET(req: Request) {
   return handle(async () => {
     const actor = await requireActor(req);
-    return json(await mintFirebaseToken(actor.email));
+    const data = await mintFirebaseToken(actor.email);
+    return json({ ...data, name: actor.name });
   });
 }

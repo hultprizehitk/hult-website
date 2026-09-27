@@ -13,6 +13,7 @@ export interface MirrorUser {
 export interface MirrorPerson {
   name: string;
   email: string;
+  checkedIn?: boolean;
 }
 
 export interface MirrorTeam {
@@ -25,6 +26,9 @@ export interface MirrorTeam {
   members: MirrorPerson[];
   status: "confirmed" | "disqualified";
   submissionStatus?: "forming" | "ready" | "submitted";
+  submittedAt?: Date;
+  checkedIn?: boolean;
+  checkedInAt?: Date;
 }
 
 export interface MirrorEvent {
@@ -34,7 +38,7 @@ export interface MirrorEvent {
   venue: string;
 }
 
-const person = new Schema<MirrorPerson>({ name: String, email: String }, { _id: false });
+const person = new Schema<MirrorPerson>({ name: String, email: String, checkedIn: Boolean }, { _id: false });
 
 const UserSchema = new Schema<MirrorUser>(
   { name: String, email: { type: String, lowercase: true }, role: String },
@@ -51,6 +55,9 @@ const TeamSchema = new Schema<MirrorTeam>(
     members: [person],
     status: String,
     submissionStatus: String,
+    submittedAt: Date,
+    checkedIn: Boolean,
+    checkedInAt: Date,
   },
   { collection: "teams", strict: false, timestamps: true },
 );

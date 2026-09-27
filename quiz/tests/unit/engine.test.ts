@@ -35,18 +35,67 @@ describe("engine.applyAction", () => {
     expect(() => applyAction(base, { type: "toggle_checkin" }, questions, T0)).toThrow("invalid_state");
   });
 
-  it("starts: closes check-in and opens question 0 after the lead-in", () => {
+  it("starts: closes check-in and enters live idle state", () => {
     const lobby = merge(base, { status: "lobby", checkinOpen: true });
     const { patch } = applyAction(lobby, { type: "start" }, questions, T0);
     expect(patch).toEqual({
-      status: "live", checkinOpen: false, startedAt: T0, currentIndex: 0, phase: "question",
-      questionOpenedAt: at(LEAD_IN_MS), questionClosesAt: at(LEAD_IN_MS + 20_000),
+      status: "live",
+      phase: "idle",
+      currentIndex: -1,
+      checkinOpen: false,
+      startedAt: T0,
+    });
+  });
+
+  it("resets session back to lobby", () => {
+    const ended = merge(base, { status: "ended", phase: "leaderboard", startedAt: T0, endedAt: at(100_000) });
+    const { patch } = applyAction(ended, { type: "reset_session" }, questions, at(150_000));
+    expect(patch).toEqual({
+      status: "lobby",
+      phase: "idle",
+      currentIndex: -1,
+      checkinOpen: true,
+      questionOpenedAt: null,
+      questionClosesAt: null,
+      startedAt: null,
+      endedAt: null,
     });
   });
 
   it("refuses start with no questions", () => {
     const lobby = merge(base, { status: "lobby" });
     expect(() => applyAction(lobby, { type: "start" }, [], T0)).toThrow("no_questions");
+  });
+
+  it("publishes a specific question directly to live", () => {
+    const lobby = merge(base, { status: "lobby", checkinOpen: true });
+    const r = applyAction(lobby, { type: "publish_question", index: 1 }, questions, T0);
+    expect(r.clearAnswersForIndex).toBe(1);
+    expect(r.patch).toEqual({
+      status: "live",
+      checkinOpen: false,
+      startedAt: T0,
+      endedAt: null,
+      currentIndex: 1,
+      phase: "question",
+      questionOpenedAt: at(LEAD_IN_MS),
+      questionClosesAt: at(LEAD_IN_MS + 20_000),
+    });
+  });
+
+  it("publishes a question while already live", () => {
+    const s = liveAtQuestion(0);
+    const r = applyAction(s, { type: "publish_question", index: 2 }, questions, at(10_000));
+    expect(r.clearAnswersForIndex).toBe(2);
+    expect(r.patch.currentIndex).toBe(2);
+    expect(r.patch.phase).toBe("question");
+    expect(r.patch.questionOpenedAt).toEqual(at(10_000 + LEAD_IN_MS));
+  });
+
+  it("refuses publish_question with invalid index or empty list", () => {
+    const lobby = merge(base, { status: "lobby" });
+    expect(() => applyAction(lobby, { type: "publish_question", index: 0 }, [], T0)).toThrow("no_questions");
+    expect(() => applyAction(lobby, { type: "publish_question", index: 99 }, questions, T0)).toThrow("not_found");
   });
 
   it("extends an open question", () => {

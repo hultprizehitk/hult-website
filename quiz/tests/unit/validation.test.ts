@@ -19,6 +19,14 @@ describe("validation", () => {
     expect(controlSchema.safeParse({ type: "extend", seconds: 4 }).success).toBe(false);
     expect(controlSchema.safeParse({ type: "extend", seconds: 15 }).success).toBe(true);
   });
+  it("validates publish_question schema", () => {
+    expect(controlSchema.safeParse({ type: "publish_question", index: -1 }).success).toBe(false);
+    expect(controlSchema.safeParse({ type: "publish_question", index: 0 }).success).toBe(true);
+    expect(controlSchema.safeParse({ type: "publish_question", index: 3 }).success).toBe(true);
+  });
+  it("validates reset_session schema", () => {
+    expect(controlSchema.safeParse({ type: "reset_session" }).success).toBe(true);
+  });
   it("accepts only 6-digit codes", () => {
     expect(codeSchema.safeParse("123456").success).toBe(true);
     expect(codeSchema.safeParse("12345a").success).toBe(false);

@@ -1,7 +1,7 @@
 import { Timestamp, type Transaction } from "firebase-admin/firestore";
 import { adminDb } from "@/lib/firebase/admin";
 import { QuizError } from "./errors";
-import { paths, type SessionDoc, type TeamDoc } from "./fs-types";
+import { paths, SESSIONS, type SessionDoc, type TeamDoc } from "./fs-types";
 import { latePenaltyMs } from "./grading";
 
 export interface JoinResult {
@@ -59,15 +59,47 @@ export async function joinSession(code: string, email: string, deviceId: string,
       tx.update(db.doc(paths.counter(code, team.teamId)), { checkedIn: true });
       t = { ...team, takerEmail: patch.takerEmail as string };
     }
-    const role = t.takerEmail === email ? "taker" : "teammate";
-    let deviceBound = team.deviceId;
-    if (role === "taker" && !team.deviceId) {
-      patch.deviceId = deviceId;
-      deviceBound = deviceId;
+
+    // Single-device / Single-player team enforcement:
+    // If a device is already bound to another teammate, reject this member until the teammate signs out
+    if (team.deviceId && team.takerEmail && team.takerEmail !== email) {
+      throw new QuizError(
+        "team_already_active",
+        `A teammate (${team.takerEmail}) is currently active for ${team.teamName}. Only 1 device can play. They must sign out to hand over the device.`
+      );
     }
+
+    // Bind this member as the active player & device
+    if (!team.deviceId || team.takerEmail === email) {
+      patch.takerEmail = email;
+      patch.deviceId = deviceId;
+      t = { ...t, takerEmail: email, deviceId };
+    }
+
+    const role = "taker";
+    const deviceBound = patch.deviceId ?? team.deviceId;
     if (Object.keys(patch).length > 0) tx.update(ref, patch);
-    return { teamId: team.teamId, role, deviceOk: role === "taker" && deviceBound === deviceId };
+    return { teamId: team.teamId, role, deviceOk: deviceBound === deviceId };
   });
+}
+
+/** Release team device binding when a player signs out so another teammate can take over. */
+export async function releaseTeamDevice(email: string, code?: string): Promise<void> {
+  const db = adminDb();
+  if (code) {
+    const found = await teamForEmail(code, email);
+    if (found && found.team.takerEmail === email) {
+      await found.ref.update({ deviceId: null, takerEmail: null });
+    }
+  } else {
+    const sessionsSnap = await db.collection(SESSIONS).where("status", "in", ["lobby", "live", "draft"]).get();
+    for (const sDoc of sessionsSnap.docs) {
+      const found = await teamForEmail(sDoc.id, email);
+      if (found && found.team.takerEmail === email) {
+        await found.ref.update({ deviceId: null, takerEmail: null });
+      }
+    }
+  }
 }
 
 export async function setTaker(code: string, actorEmail: string, takerEmail: string): Promise<TeamDoc> {

@@ -1,7 +1,9 @@
 import NextAuth from "next-auth";
 import Google from "next-auth/providers/google";
 import Credentials from "next-auth/providers/credentials";
-import { isDevLoginEnabled, isHeritageEmail } from "@/lib/env";
+import { isDevLoginEnabled, isHeritageEmail, adminEmailsFromEnv } from "@/lib/env";
+import { isAdminEmail } from "@/lib/admin";
+import { checkUserRegistration } from "@/lib/sync/mongo-read";
 
 const devProvider = Credentials({
   id: "dev",
@@ -27,8 +29,89 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
     ...(isDevLoginEnabled() ? [devProvider] : []),
   ],
   callbacks: {
-    signIn({ user }) {
-      return isHeritageEmail(user.email ?? "") ? true : "/signin?error=domain";
+    async signIn({ user, account }) {
+      const email = String(user?.email ?? "").toLowerCase().trim();
+      const base = process.env.AUTH_URL || process.env.NEXTAUTH_URL || "http://localhost:3000";
+
+      // Detect portal: Admin Console (/admin) vs Participant Portal (/signin)
+      let isAdminPortal = false;
+      try {
+        const { cookies } = await import("next/headers");
+        const cookieStore = await cookies();
+        const portalCookie = cookieStore.get("quiz_portal")?.value;
+        if (portalCookie === "admin") {
+          isAdminPortal = true;
+        } else if (portalCookie === "participant") {
+          isAdminPortal = false;
+        } else {
+          const callbackUrl =
+            cookieStore.get("authjs.callback-url")?.value ||
+            cookieStore.get("__Secure-authjs.callback-url")?.value ||
+            cookieStore.get("next-auth.callback-url")?.value ||
+            cookieStore.get("__Secure-next-auth.callback-url")?.value ||
+            "";
+          if (callbackUrl.includes("/admin")) {
+            isAdminPortal = true;
+          }
+        }
+      } catch {
+        // Outside request scope
+      }
+
+      if (!isHeritageEmail(email)) {
+        return isAdminPortal ? `${base}/admin?error=domain` : `${base}/signin?error=domain`;
+      }
+
+      const isAdmin = adminEmailsFromEnv().includes(email) || (await isAdminEmail(email));
+
+      // Dev provider login
+      if (account?.provider === "dev" && isDevLoginEnabled()) {
+        if (isAdminPortal && !isAdmin) {
+          return `${base}/admin?error=admin_only`;
+        }
+        if (!isAdminPortal && isAdmin) {
+          return `${base}/signin?error=admin_must_use_admin_portal`;
+        }
+        return true;
+      }
+
+      // STRICT SEPARATION:
+      // 1. Admin Portal: Only organizers/admins can sign in. Normal users are blocked.
+      if (isAdminPortal) {
+        if (!isAdmin) {
+          return `${base}/admin?error=admin_only`;
+        }
+        return true;
+      }
+
+      // 2. Participant Portal: Normal users only. Admins must sign in from /admin.
+      if (isAdmin) {
+        return `${base}/signin?error=admin_must_use_admin_portal`;
+      }
+
+      // 3. Enforce participant gate: registered & checked in at venue
+      const reg = await checkUserRegistration(email);
+      if (!reg.allowed) {
+        return `${base}/signin?error=${reg.reason ?? "not_registered"}`;
+      }
+
+      return true;
+    },
+    async jwt({ token, user }) {
+      if (user?.email) {
+        const email = user.email.toLowerCase().trim();
+        token.email = email;
+        token.admin = adminEmailsFromEnv().includes(email) || (await isAdminEmail(email));
+      }
+      return token;
+    },
+    async session({ session, token }) {
+      if (session.user && token.email) {
+        session.user.email = token.email as string;
+        (session.user as { admin?: boolean }).admin = Boolean(token.admin);
+      }
+      return session;
     },
   },
 });
+
