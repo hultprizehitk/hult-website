@@ -60,6 +60,10 @@ export function applyAction(s: SessionState, a: ControlAction, questions: Questi
       return { patch: { status: "live", phase: "idle", currentIndex: -1, checkinOpen: false, startedAt: now } };
 
 
+    case "ready_next":
+      requireState(live && s.phase === "results");
+      return { patch: { phase: "idle" } };
+
     case "next": {
       requireState(live && (s.phase === "idle" || s.phase === "results"));
       const nextIndex = s.currentIndex + 1;

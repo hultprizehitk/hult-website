@@ -14,7 +14,7 @@ import type { TeamAdminInput } from "@/lib/quiz/validation";
 import { ConfirmButton } from "./ConfirmButton";
 import { SegmentedControl } from "./SegmentedControl";
 
-type Filter = "all" | "in" | "out" | "attention";
+type Filter = "all" | "in" | "playing" | "out" | "attention";
 
 function ago(ms: number): string {
   const s = Math.max(0, Math.round((Date.now() - ms) / 1000));
@@ -139,20 +139,30 @@ export const TeamsPanel = memo(function TeamsPanel({ code, session, rows: all, l
 
   const eligible = useMemo(() => all.filter((r) => r.eligible), [all]);
   const needle = query.trim().toLowerCase();
+  const inCount = eligible.filter((r) => r.checkedIn).length;
+  const playingCount = eligible.filter((r) => r.checkedIn && r.deviceBound).length;
+  const attention = eligible.filter((r) => needsAttention(r, session.status)).length;
+
   const rows = eligible
     .filter((r) =>
-      filter === "all" ? true : filter === "in" ? r.checkedIn : filter === "out" ? !r.checkedIn : needsAttention(r, session.status),
+      filter === "all"
+        ? true
+        : filter === "in"
+        ? r.checkedIn
+        : filter === "playing"
+        ? r.checkedIn && r.deviceBound
+        : filter === "out"
+        ? !r.checkedIn
+        : needsAttention(r, session.status),
     )
     .filter((r) => !needle || `${r.teamName} ${r.teamCode} ${r.members.map((m) => `${m.name} ${m.email}`).join(" ")}`.toLowerCase().includes(needle));
-  const inCount = eligible.filter((r) => r.checkedIn).length;
-  const attention = eligible.filter((r) => needsAttention(r, session.status)).length;
 
   return (
     <div className="overflow-hidden rounded-3xl border border-white/15 bg-[#0e0e12] shadow-2xl">
       <div className="flex items-center justify-between px-4 pt-4">
         <p className="font-mono text-xs uppercase tracking-wider text-white/60">Teams</p>
         <p className="font-mono text-xs text-white/50 tabular-nums">
-          {inCount}/{eligible.length} in
+          <span className="text-emerald-400 font-semibold">{inCount}</span> in · <span className="text-sky-400 font-semibold">{playingCount}</span> playing · {eligible.length} eligible
         </p>
       </div>
       <div className="flex flex-col gap-3 p-4">
@@ -171,6 +181,7 @@ export const TeamsPanel = memo(function TeamsPanel({ code, session, rows: all, l
           options={[
             { value: "all", label: "All", count: eligible.length },
             { value: "in", label: "In", count: inCount },
+            { value: "playing", label: "Playing", count: playingCount },
             { value: "out", label: "Not in", count: eligible.length - inCount },
             { value: "attention", label: "Attention", count: attention },
           ]}

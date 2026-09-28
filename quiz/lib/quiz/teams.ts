@@ -63,7 +63,6 @@ export async function joinSession(
     if (firstCheckIn) {
       patch.checkedInAt = Timestamp.fromDate(now);
       patch.checkedInBy = email;
-      tx.update(db.doc(paths.counter(code, team.teamId)), { checkedIn: true });
     }
 
     const mine = team.takerEmail === email;
@@ -80,6 +79,21 @@ export async function joinSession(
 
     const takerEmail = takesSeat ? email : team.takerEmail;
     const boundDevice = takesSeat ? deviceId : team.deviceId;
+
+    // Sync to public counter shard for live projector display
+    const currentTaker = takerEmail ?? email;
+    const memberName = team.members.find((m) => m.email.toLowerCase() === currentTaker.toLowerCase())?.name ?? currentTaker;
+    const counterPatch: Record<string, unknown> = {
+      teamName: team.teamName,
+      teamCode: team.teamCode,
+    };
+    if (firstCheckIn) counterPatch.checkedIn = true;
+    if (takesSeat || firstCheckIn) {
+      counterPatch.playerName = memberName;
+      counterPatch.playerEmail = currentTaker;
+    }
+    tx.set(db.doc(paths.counter(code, team.teamId)), counterPatch, { merge: true });
+
     return { teamId: team.teamId, role: takerEmail === email ? "taker" : "teammate", deviceOk: takerEmail === email && boundDevice === deviceId };
   });
 }
@@ -108,7 +122,9 @@ export async function adminReassignTaker(code: string, teamId: string, email: st
     const { ref, team } = await requireTeam(tx, code, teamId);
     if (!team.checkedInAt) throw new QuizError("invalid_state", "Team is not checked in");
     if (!team.memberEmails.includes(email)) throw new QuizError("invalid_input", "Not a team member");
+    const memberName = team.members.find((m) => m.email.toLowerCase() === email.toLowerCase())?.name ?? email;
     tx.update(ref, { takerEmail: email, deviceId: null });
+    tx.set(adminDb().doc(paths.counter(code, teamId)), { playerName: memberName, playerEmail: email }, { merge: true });
   });
 }
 
@@ -118,5 +134,6 @@ export async function adminFreeSeat(code: string, teamId: string): Promise<void>
     const { ref, team } = await requireTeam(tx, code, teamId);
     if (!team.checkedInAt) throw new QuizError("invalid_state", "Team is not checked in");
     tx.update(ref, { takerEmail: null, deviceId: null });
+    tx.set(adminDb().doc(paths.counter(code, teamId)), { playerName: null, playerEmail: null }, { merge: true });
   });
 }

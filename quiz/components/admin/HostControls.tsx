@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { ArrowRight, Flag, Play, RotateCcw, Square, TimerReset } from "lucide-react";
+import { ArrowRight, Flag, Play, RotateCcw, Sparkles, Square, TimerReset } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { CountdownRing } from "@/components/quiz/CountdownRing";
@@ -21,6 +21,7 @@ interface Step {
 
 /** The one primary action for each moment of the quiz (spec §3). */
 function primaryStep(s: AdminSessionSummary, questionCount: number, counts: Counts, now: number): Step | null {
+  const currentNo = s.currentIndex + 1;
   const nextNo = s.currentIndex + 2;
   const teams = (n: number) => `${n} ${n === 1 ? "team" : "teams"}`;
   const isLast = s.currentIndex >= questionCount - 1;
@@ -32,13 +33,26 @@ function primaryStep(s: AdminSessionSummary, questionCount: number, counts: Coun
       icon: <Play />,
       disabled: questionCount === 0,
       confirm: {
-        title: "Start the quiz?",
-        description: `${teams(counts.checkedIn)} joined so far. Anyone scanned at the desk can still join after Start.`,
+        title: "Are you sure you want to start the quiz?",
+        description: `${teams(counts.checkedIn)} joined so far. Once started, the live quiz room will begin.`,
       },
     };
   }
   if (s.status !== "live") return null;
-  if (s.phase === "idle") return { label: "Question 1", action: { type: "next" }, icon: <ArrowRight /> };
+
+  if (s.phase === "idle") {
+    const targetQ = s.currentIndex < 0 ? 1 : nextNo;
+    return {
+      label: `Question ${targetQ}`,
+      action: { type: "next" },
+      icon: <ArrowRight />,
+      confirm: {
+        title: `Are you sure you want to start Question ${targetQ}?`,
+        description: `This will immediately reveal Question ${targetQ} on the projector and start the live countdown for all teams.`,
+      },
+    };
+  }
+
   if (s.phase === "question") {
     const inLeadIn = s.questionOpenedAt !== null && now < s.questionOpenedAt;
     const open = s.questionClosesAt !== null && now < s.questionClosesAt;
@@ -48,19 +62,49 @@ function primaryStep(s: AdminSessionSummary, questionCount: number, counts: Coun
       action: { type: "show_results" },
       icon: <ArrowRight />,
       disabled: inLeadIn,
-      confirm: open && waiting > 0 ? { title: "Timer still running", description: `${teams(waiting)} not answered yet. Close the question and show results?` } : undefined,
+      confirm: {
+        title: `Are you sure you want to show results for Question ${currentNo}?`,
+        description:
+          open && waiting > 0
+            ? `The timer is still running and ${teams(waiting)} have not answered yet. Showing results will stop answers and reveal the correct choice.`
+            : "This will reveal the correct answer and leaderboard on the big screen.",
+      },
     };
   }
-  if (isLast) {
-    return { label: "Final results", action: { type: "end" }, icon: <Flag />, confirm: { title: "Show final results?", description: "Ends the quiz and shows the podium." } };
+
+  if (s.phase === "results") {
+    if (isLast) {
+      return {
+        label: "Final results",
+        action: { type: "end" },
+        icon: <Flag />,
+        confirm: {
+          title: "Are you sure you want to end the quiz and show final results?",
+          description: "This will officially end the quiz session and present the winner podium on the big screen.",
+        },
+      };
+    }
+
+    return {
+      label: `Ready Question ${nextNo}`,
+      action: { type: "ready_next" },
+      icon: <Sparkles className="size-5 text-amber-300" />,
+      confirm: {
+        title: `Show "Are you ready for Question ${nextNo}?"`,
+        description: `This will dismiss the leaderboard on the projector and student phones, showing "Are you ready for Question ${nextNo}?" so you can get everyone ready before launching.`,
+      },
+    };
   }
-  return { label: `Question ${nextNo}`, action: { type: "next" }, icon: <ArrowRight /> };
+
+  return null;
 }
 
 function stageLabel(s: AdminSessionSummary, questionCount: number, now: number): string {
   if (s.status === "draft" || s.status === "lobby") return "Setup";
   if (s.status === "ended") return "Ended";
-  if (s.phase === "idle") return "Quiz is starting";
+  if (s.phase === "idle") {
+    return s.currentIndex < 0 ? "Quiz is starting" : `Ready for Question ${s.currentIndex + 2}`;
+  }
   const q = `Question ${s.currentIndex + 1} of ${questionCount}`;
   if (s.phase === "results") return `${q} · Results`;
   if (s.questionOpenedAt !== null && now < s.questionOpenedAt) return `${q} · Starting`;
@@ -97,9 +141,12 @@ export function HostControls({
 
   const trigger = useCallback(() => {
     if (!step || step.disabled || busy) return;
-    if (step.confirm) setConfirming(step);
-    else void run(step.action);
-  }, [step, busy, run]);
+    const confirmInfo = step.confirm ?? {
+      title: `Are you sure you want to proceed with "${step.label}"?`,
+      description: "Please confirm to continue.",
+    };
+    setConfirming({ ...step, confirm: confirmInfo });
+  }, [step, busy]);
 
   // "N" = primary action (with its confirmation if any). Ignored while typing or when a dialog is open.
   useEffect(() => {
@@ -120,6 +167,8 @@ export function HostControls({
   const inLeadIn = inQuestion && s.questionOpenedAt !== null && now < s.questionOpenedAt;
   // +15s and Restart work on the current question whether it is open, timed out, in results or after the end.
   const hasCurrent = (s.status === "live" || s.status === "ended") && s.currentIndex >= 0;
+  const isLast = s.currentIndex >= questionCount - 1;
+  const nextNo = s.currentIndex + 2;
   const total = Math.max(questionCount, 1);
 
   return (
@@ -172,10 +221,16 @@ export function HostControls({
                 {open ? "+15s" : "Reopen +15s"}
               </Button>
               {inQuestion && (
-                <Button variant="outline" size="sm" disabled={busy || !open || inLeadIn} onClick={() => void run({ type: "close_now" })}>
-                  <Square />
-                  Close early
-                </Button>
+                <ConfirmButton
+                  variant="outline"
+                  size="sm"
+                  label="Close early"
+                  title="Close question early?"
+                  description="Are you sure you want to stop the timer now? No more answers will be accepted."
+                  disabled={busy || !open || inLeadIn}
+                  icon={<Square />}
+                  onConfirm={() => run({ type: "close_now" })}
+                />
               )}
               <ConfirmButton
                 variant="outline"
@@ -187,6 +242,18 @@ export function HostControls({
                 icon={<RotateCcw />}
                 onConfirm={() => run({ type: "restart_question" })}
               />
+              {s.phase === "results" && !isLast && (
+                <ConfirmButton
+                  variant="outline"
+                  size="sm"
+                  label={`Skip to Question ${nextNo}`}
+                  title={`Start Question ${nextNo} directly?`}
+                  description={`Launches Question ${nextNo} immediately without showing the "Are you ready?" announcement screen.`}
+                  disabled={busy}
+                  icon={<ArrowRight />}
+                  onConfirm={() => run({ type: "next" })}
+                />
+              )}
             </>
           )}
         </div>
@@ -200,19 +267,20 @@ export function HostControls({
             <DialogTitle>{confirming?.confirm?.title}</DialogTitle>
             <DialogDescription>{confirming?.confirm?.description}</DialogDescription>
           </DialogHeader>
-          <DialogFooter>
+          <DialogFooter className="gap-2 sm:gap-0">
             <Button variant="outline" onClick={() => setConfirming(null)}>
               Cancel
             </Button>
             <Button
               autoFocus
+              variant="default"
               onClick={() => {
                 const c = confirming;
                 setConfirming(null);
                 if (c) void run(c.action);
               }}
             >
-              {confirming?.label}
+              Yes, proceed
             </Button>
           </DialogFooter>
         </DialogContent>

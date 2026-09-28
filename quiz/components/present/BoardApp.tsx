@@ -24,16 +24,25 @@ export function BoardApp({ code }: { code: string }) {
   else if (!s) body = <StateMessage icon={Loader2} spin title="Connecting" />;
   else if (s.status === "ended") {
     body = (
-      <div className="flex flex-1 flex-col gap-10">
-        <TextEffect per="word" preset="fade" as="h1" className="text-center text-6xl font-black tracking-tight">
-          Final results
-        </TextEffect>
-        <Podium rows={rows} />
-        {rows.length > 3 && (
-          <div className="mx-auto w-full max-w-4xl">
-            <Leaderboard rows={rows.slice(3)} large />
+      <div className="mx-auto flex w-full max-w-5xl flex-1 flex-col gap-8 pb-12">
+        <div className="text-center">
+          <TextEffect per="word" preset="fade" as="h1" className="text-5xl lg:text-6xl font-black tracking-tight">
+            Final results
+          </TextEffect>
+          <p className="mt-2 font-mono text-sm uppercase tracking-[0.25em] text-emerald-400">
+            Top 10 Teams
+          </p>
+        </div>
+        {rows.length > 0 && <Podium rows={rows} />}
+        <div className="mt-4 flex flex-col gap-3 rounded-3xl border border-white/10 bg-[#0c0c10]/95 p-6 shadow-2xl">
+          <div className="flex items-center justify-between border-b border-white/10 pb-3">
+            <h2 className="font-mono text-sm uppercase tracking-wider text-white/60">
+              Top 10 Leaderboard
+            </h2>
+            <span className="font-mono text-xs text-white/40">Rank &bull; Total Time &bull; Score</span>
           </div>
-        )}
+          <Leaderboard rows={rows} large />
+        </div>
       </div>
     );
   } else {

@@ -3,7 +3,7 @@
 import { useMemo, useState } from "react";
 import Link from "next/link";
 import { toast } from "sonner";
-import { Copy, Download, ListChecks, Loader2, MonitorPlay, Radio, SearchX, ShieldAlert, Trophy } from "lucide-react";
+import { CheckCircle2, Copy, Download, ListChecks, Loader2, MonitorPlay, Radio, SearchX, ShieldAlert, Smartphone, Trophy, Users } from "lucide-react";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { ReconnectingPill } from "@/components/quiz/ReconnectingPill";
 import { StateMessage } from "@/components/quiz/StateMessage";
@@ -73,6 +73,7 @@ export function AdminConsole({ code }: { code: string }) {
     }),
     [teams, currentId],
   );
+  const playingCount = useMemo(() => teams.filter((t) => t.eligible && !!t.deviceId).length, [teams]);
   const rows = useMemo(() => teamBoardRows(teams, currentId), [teams, currentId]);
   const standings = useMemo(() => standingsFromTeams(teams), [teams]);
   const attention = useMemo(
@@ -147,6 +148,37 @@ export function AdminConsole({ code }: { code: string }) {
           <ListChecks className="size-3.5" />
           Questions ({s.plan.length})
         </TabButton>
+
+        {/* Live Audience & Participation Counters */}
+        <div className="flex items-center gap-1.5 pl-2 shrink-0">
+          <div
+            className="inline-flex items-center gap-1.5 rounded-full border border-white/10 bg-[#16161d] px-2.5 py-1 text-xs font-medium text-white/70 shadow-sm"
+            title="Eligible confirmed teams registered for this quiz"
+          >
+            <Users className="size-3 text-white/40" />
+            <span className="font-mono text-white font-semibold">{counts.eligible}</span>
+            <span className="hidden sm:inline text-white/50 text-[11px]">Eligible</span>
+          </div>
+
+          <div
+            className="inline-flex items-center gap-1.5 rounded-full border border-emerald-500/25 bg-emerald-500/10 px-2.5 py-1 text-xs font-medium text-emerald-300 shadow-sm"
+            title="Teams checked into the quiz room"
+          >
+            <CheckCircle2 className="size-3 text-emerald-400" />
+            <span className="font-mono font-bold">{counts.checkedIn}</span>
+            <span className="hidden sm:inline text-[11px]">Checked In</span>
+          </div>
+
+          <div
+            className="inline-flex items-center gap-1.5 rounded-full border border-sky-500/25 bg-sky-500/10 px-2.5 py-1 text-xs font-medium text-sky-300 shadow-sm"
+            title="Teams actively connected with a phone ready to answer"
+          >
+            <Smartphone className="size-3 text-sky-400" />
+            <span className="font-mono font-bold">{playingCount}</span>
+            <span className="hidden sm:inline text-[11px]">Playing</span>
+          </div>
+        </div>
+
         <span className="ml-auto hidden items-center gap-1.5 font-mono text-[11px] text-white/40 sm:flex">
           <Radio className="size-3" />v{s.stateVersion}
         </span>

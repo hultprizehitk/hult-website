@@ -84,6 +84,10 @@ export interface CountsDoc {
 /** quizSessions/{code}/counts/{teamId}; avoids a shared write hotspot. */
 export interface CounterDoc {
   teamId: string;
+  teamName?: string;
+  teamCode?: string;
+  playerName?: string | null;
+  playerEmail?: string | null;
   eligible: boolean;
   checkedIn: boolean;
   answeredFor: string | null;

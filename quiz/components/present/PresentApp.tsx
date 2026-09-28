@@ -38,19 +38,29 @@ export function PresentApp({ code }: { code: string }) {
   let body: React.ReactNode;
   if (!valid || (!sessionLive.loading && !sessionLive.data)) body = <StateMessage icon={SearchX} title="Quiz not set up yet" />;
   else if (!s) body = <StateMessage icon={Loader2} spin title="Connecting" />;
-  else if (s.status === "draft" || s.status === "lobby") body = <PresentLobby s={s} />;
+  else if (s.status === "draft" || s.status === "lobby") body = <PresentLobby s={s} joinedCounters={countsLive.data} />;
   else if (s.status === "ended") {
+    const board = s.leaderboard ?? [];
     body = (
-      <div className="flex flex-1 flex-col gap-10">
-        <TextEffect per="word" preset="fade" as="h1" className="text-center text-6xl font-black tracking-tight">
-          Final results
-        </TextEffect>
-        <Podium rows={s.leaderboard ?? []} />
-        {(s.leaderboard?.length ?? 0) > 3 && (
-          <div className="mx-auto w-full max-w-4xl">
-            <Leaderboard rows={s.leaderboard!.slice(3)} large />
+      <div className="mx-auto flex w-full max-w-5xl flex-1 flex-col gap-8 pb-12">
+        <div className="text-center">
+          <TextEffect per="word" preset="fade" as="h1" className="text-5xl lg:text-6xl font-black tracking-tight">
+            Final results
+          </TextEffect>
+          <p className="mt-2 font-mono text-sm uppercase tracking-[0.25em] text-emerald-400">
+            Top 10 Teams
+          </p>
+        </div>
+        {board.length > 0 && <Podium rows={board} />}
+        <div className="mt-4 flex flex-col gap-3 rounded-3xl border border-white/10 bg-[#0c0c10]/95 p-6 shadow-2xl">
+          <div className="flex items-center justify-between border-b border-white/10 pb-3">
+            <h2 className="font-mono text-sm uppercase tracking-wider text-white/60">
+              Top 10 Leaderboard
+            </h2>
+            <span className="font-mono text-xs text-white/40">Rank &bull; Total Time &bull; Score</span>
           </div>
-        )}
+          <Leaderboard rows={board} large />
+        </div>
       </div>
     );
   } else if (s.phase === "question" && s.question && (now < s.question.openedAt || !s.question.text)) {
@@ -60,12 +70,21 @@ export function PresentApp({ code }: { code: string }) {
   } else if (s.phase === "results" && s.question) {
     body = <PresentResults s={s} />;
   } else {
+    const isFirst = s.currentIndex < 0;
+    const nextNo = s.currentIndex + 2;
     body = (
       <div className="flex flex-1 flex-col items-center justify-center gap-6 text-center">
-        <p className="font-mono text-2xl uppercase tracking-[0.3em] text-white/50">{s.questionCount} questions</p>
-        <TextEffect per="word" preset="fade" as="h1" className="text-8xl font-black tracking-tight">
-          Quiz is starting
+        {isFirst && (
+          <p className="font-mono text-2xl uppercase tracking-[0.3em] text-white/50">{s.questionCount} questions</p>
+        )}
+        <TextEffect per="word" preset="fade" as="h1" className="text-6xl lg:text-8xl font-black tracking-tight">
+          {isFirst ? "Quiz is starting" : `Are you ready for Question ${nextNo}?`}
         </TextEffect>
+        {!isFirst && (
+          <p className="font-mono text-xl text-white/50 animate-pulse">
+            Keep your phones ready &middot; Question {nextNo} is launching next
+          </p>
+        )}
       </div>
     );
   }

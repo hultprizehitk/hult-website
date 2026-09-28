@@ -32,6 +32,7 @@ export type ControlAction =
   | { type: "toggle_checkin" }
   | { type: "start" }
   | { type: "next" }
+  | { type: "ready_next" }
   | { type: "close_now" }
   | { type: "extend"; seconds: number }
   | { type: "restart_question" }

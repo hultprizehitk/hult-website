@@ -72,7 +72,17 @@ export async function syncTeamsToFirestore(code: string, source: SourceTeam[], a
     if (!prev) {
       added += 1;
       const doc: TeamDoc<Timestamp> = { ...roster, ...emptyTeamState<Timestamp>(), takerEmail: null, syncedAt };
-      const counter: CounterDoc = { teamId: src.id, eligible: isEligible, checkedIn: false, answeredFor: null, answered: false };
+      const counter: CounterDoc = {
+        teamId: src.id,
+        teamName: src.teamName,
+        teamCode: src.teamCode,
+        playerName: null,
+        playerEmail: null,
+        eligible: isEligible,
+        checkedIn: false,
+        answeredFor: null,
+        answered: false,
+      };
       writes.push((b) => b.set(ref, doc));
       writes.push((b) => b.set(counterRef, counter));
       continue;
@@ -86,7 +96,14 @@ export async function syncTeamsToFirestore(code: string, source: SourceTeam[], a
       patch.deviceId = null;
     }
     writes.push((b) => b.set(ref, patch, { merge: true }));
-    if (prev.eligible !== isEligible) writes.push((b) => b.set(counterRef, { teamId: src.id, eligible: isEligible }, { merge: true }));
+    writes.push(
+      (b) =>
+        b.set(
+          counterRef,
+          { teamId: src.id, teamName: src.teamName, teamCode: src.teamCode, eligible: isEligible },
+          { merge: true },
+        ),
+    );
   }
   for (const [id, t] of existing) {
     if (seen.has(id) || !t.eligible) continue;

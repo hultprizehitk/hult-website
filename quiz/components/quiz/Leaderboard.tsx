@@ -40,7 +40,13 @@ export function Leaderboard({
               className={cn(
                 "grid shrink-0 place-items-center rounded-xl font-black tabular-nums",
                 large ? "size-12" : "size-8 text-sm",
-                r.rank === 1 ? "bg-white text-black shadow-lg shadow-white/15" : r.rank <= 3 ? "bg-[#202028] text-white" : "bg-white/[0.04] text-neutral-400",
+                r.rank === 1
+                  ? "bg-amber-400 text-black shadow-lg shadow-amber-400/20"
+                  : r.rank === 2
+                  ? "bg-slate-300 text-black shadow-md shadow-slate-300/20"
+                  : r.rank === 3
+                  ? "bg-amber-700 text-white shadow-md shadow-amber-700/20"
+                  : "bg-white/[0.04] text-neutral-400",
               )}
             >
               {r.rank}

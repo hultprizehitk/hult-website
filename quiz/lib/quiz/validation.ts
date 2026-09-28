@@ -39,6 +39,7 @@ export const controlSchema = z.discriminatedUnion("type", [
   z.object({ type: z.literal("toggle_checkin") }),
   z.object({ type: z.literal("start") }),
   z.object({ type: z.literal("next") }),
+  z.object({ type: z.literal("ready_next") }),
   z.object({ type: z.literal("close_now") }),
   z.object({ type: z.literal("extend"), seconds: z.number().int().min(5).max(60) }),
   z.object({ type: z.literal("restart_question") }),

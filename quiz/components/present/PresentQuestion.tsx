@@ -10,7 +10,6 @@ import type { StateResponse } from "@/lib/quiz/types";
 export function PresentQuestion({ s, now }: { s: StateResponse; now: number }) {
   const q = s.question!;
   const options = q.options ?? [];
-  const answeredPct = s.counts.checkedIn > 0 ? (s.counts.answered / s.counts.checkedIn) * 100 : 0;
   const closed = now >= q.closesAt;
 
   return (
@@ -32,14 +31,6 @@ export function PresentQuestion({ s, now }: { s: StateResponse; now: number }) {
         {options.map((opt, i) => (
           <OptionButton key={i} index={i} text={opt} large disabled />
         ))}
-      </div>
-      <div className="mt-auto flex items-center gap-4">
-        <div className="h-3 flex-1 overflow-hidden rounded-full bg-white/10">
-          <div className="h-full rounded-full bg-white transition-all duration-500" style={{ width: `${answeredPct}%` }} />
-        </div>
-        <span className="font-mono text-xl tabular-nums text-white/70">
-          {s.counts.answered}/{s.counts.checkedIn} answered
-        </span>
       </div>
     </div>
   );
