@@ -1,11 +1,10 @@
 "use client";
 
 import { useState } from "react";
-import { CheckCircle2, SendHorizontal, Trophy, Users } from "lucide-react";
+import { CheckCircle2, SendHorizontal, Users } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { CountdownRing } from "@/components/quiz/CountdownRing";
 import { OptionButton } from "@/components/quiz/OptionButton";
-import { cn } from "@/lib/utils";
 import type { AnswerView, StateResponse } from "@/lib/quiz/types";
 
 export function QuestionView({
@@ -75,52 +74,17 @@ export function QuestionView({
           onClick={handleSubmit}
         >
           <SendHorizontal className="size-4" />
-          Submit Answer
+          Submit answer
         </Button>
       )}
 
       {answer ? (
-        <div className="space-y-4">
-          <div className="relative overflow-hidden rounded-2xl border border-emerald-500/30 bg-[#0c1611] p-4 text-center shadow-lg">
-            <div className="flex items-center justify-center gap-2 text-emerald-400 font-semibold text-sm">
-              <CheckCircle2 className="size-4" />
-              Answer Submitted
-            </div>
-            <p className="mt-1 font-mono text-[11px] text-white/50">Answer locked. Waiting for results & next question.</p>
+        <div className="rounded-2xl border border-emerald-500/30 bg-[#0c1611] p-4 text-center shadow-lg">
+          <div className="flex items-center justify-center gap-2 text-sm font-semibold text-emerald-400">
+            <CheckCircle2 className="size-4" />
+            Answer locked
           </div>
-
-          {s.leaderboard && s.leaderboard.length > 0 && (
-            <div className="rounded-2xl border border-white/10 bg-[#0e0e12] p-4 text-left shadow-lg">
-              <div className="flex items-center justify-between mb-3 border-b border-white/10 pb-2">
-                <span className="font-mono text-xs uppercase tracking-wider text-white/50 flex items-center gap-1.5">
-                  <Trophy className="size-3.5 text-amber-400" />
-                  Live Standings
-                </span>
-                <span className="font-mono text-xs text-rose-400">
-                  Your Rank: {me.standing?.rank ? `#${me.standing.rank}` : "-"}
-                </span>
-              </div>
-              <div className="space-y-1.5">
-                {s.leaderboard.slice(0, 5).map((entry) => (
-                  <div
-                    key={entry.teamId}
-                    className={cn(
-                      "flex items-center justify-between rounded-xl px-3 py-2 text-xs font-mono transition-all",
-                      entry.teamId === me.team?.id
-                        ? "border border-rose-500/40 bg-rose-500/10 font-bold text-white shadow-sm"
-                        : "bg-white/[0.02] text-neutral-300",
-                    )}
-                  >
-                    <div className="flex items-center gap-2 truncate">
-                      <span className="font-bold text-white/40">#{entry.rank}</span>
-                      <span className="truncate">{entry.teamName}</span>
-                    </div>
-                    <span className="font-semibold text-rose-400 tabular-nums">{entry.score} pts</span>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
+          <p className="mt-1 font-mono text-[11px] text-white/50">Results after the timer</p>
         </div>
       ) : closed ? (
         <p className="text-center font-mono text-xs text-neutral-400">Time is up</p>

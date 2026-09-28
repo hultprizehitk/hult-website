@@ -7,7 +7,8 @@ import { useFirebaseUser } from "@/hooks/useFirebaseUser";
 import { firebaseClient } from "@/lib/firebase/client";
 import { handleSignOut } from "@/app/actions/auth";
 
-export function UserNav() {
+/** lockSignOut: hidden while the quiz is live, so a mis-tap cannot drop the team's player mid-question. */
+export function UserNav({ lockSignOut = false }: { lockSignOut?: boolean }) {
   const fb = useFirebaseUser();
 
   if (fb.status === "loading") {
@@ -52,15 +53,17 @@ export function UserNav() {
         <span className="max-w-[110px] truncate text-xs font-medium text-white sm:max-w-[150px]">
           {fb.name || fb.email.split("@")[0]}
         </span>
-        <button
-          type="button"
-          onClick={onLogout}
-          className="ml-1 text-white/50 transition-colors hover:text-rose-400"
-          title="Sign out"
-          aria-label="Sign out"
-        >
-          <LogOut className="size-3.5" />
-        </button>
+        {!lockSignOut && (
+          <button
+            type="button"
+            onClick={onLogout}
+            className="ml-1 text-white/50 transition-colors hover:text-rose-400"
+            title="Sign out"
+            aria-label="Sign out"
+          >
+            <LogOut className="size-3.5" />
+          </button>
+        )}
       </div>
     </div>
   );

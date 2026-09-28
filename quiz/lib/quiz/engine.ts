@@ -31,10 +31,15 @@ function requireState(ok: boolean): void {
   if (!ok) throw new QuizError("invalid_state");
 }
 
+/**
+ * Host state machine (docs/superpowers/specs/2026-09-28-quiz-ux-overhaul.md §3). Questions run strictly in order:
+ * start -> idle ("quiz is starting") -> next -> question -> show_results -> next -> ... -> end.
+ */
 export function applyAction(s: SessionState, a: ControlAction, questions: QuestionLite[], now: Date): ActionResult {
   const t = now.getTime();
   const live = s.status === "live";
   const inQuestion = live && s.phase === "question";
+  const stillOpen = inQuestion && t < ms(s.questionClosesAt);
 
   switch (a.type) {
     case "open_lobby":
@@ -50,37 +55,8 @@ export function applyAction(s: SessionState, a: ControlAction, questions: Questi
       if (questions.length === 0) throw new QuizError("no_questions");
       return { patch: { status: "live", phase: "idle", currentIndex: -1, checkinOpen: false, startedAt: now } };
 
-    case "reset_session":
-      requireState(s.status === "ended" || live || s.status === "lobby");
-      return {
-        patch: {
-          status: "lobby",
-          phase: "idle",
-          currentIndex: -1,
-          checkinOpen: true,
-          questionOpenedAt: null,
-          questionClosesAt: null,
-          startedAt: null,
-          endedAt: null,
-        },
-      };
-
-    case "publish_question":
-      if (questions.length === 0) throw new QuizError("no_questions");
-      if (a.index < 0 || a.index >= questions.length) throw new QuizError("not_found");
-      return {
-        patch: {
-          status: "live",
-          checkinOpen: false,
-          startedAt: s.startedAt ?? now,
-          endedAt: null,
-          ...openQuestionPatch(a.index, questions, now),
-        },
-        clearAnswersForIndex: a.index,
-      };
-
     case "next": {
-      requireState(live && (s.phase === "reveal" || s.phase === "leaderboard"));
+      requireState(live && (s.phase === "idle" || s.phase === "results"));
       const nextIndex = s.currentIndex + 1;
       if (nextIndex >= questions.length) throw new QuizError("last_question");
       return { patch: openQuestionPatch(nextIndex, questions, now) };
@@ -89,30 +65,42 @@ export function applyAction(s: SessionState, a: ControlAction, questions: Questi
     case "close_now":
       requireState(inQuestion);
       // Idempotent: the host may click just as the timer runs out; an already-closed question stays closed.
-      if (t >= ms(s.questionClosesAt)) return { patch: {} };
+      if (!stillOpen) return { patch: {} };
       return { patch: { questionClosesAt: new Date(Math.max(t, ms(s.questionOpenedAt))) } };
 
     case "extend":
-      requireState(inQuestion && t < ms(s.questionClosesAt));
+      requireState(stillOpen);
       return { patch: { questionClosesAt: new Date(ms(s.questionClosesAt) + a.seconds * 1000) } };
 
     case "restart_question":
       requireState(inQuestion);
       return { patch: openQuestionPatch(s.currentIndex, questions, now), clearAnswersForIndex: s.currentIndex };
 
-    case "reveal":
+    case "show_results":
       requireState(inQuestion);
-      if (t < ms(s.questionClosesAt)) {
-        return { patch: { phase: "reveal", questionClosesAt: new Date(Math.max(t, ms(s.questionOpenedAt))) } };
-      }
-      return { patch: { phase: "reveal" } };
-
-    case "show_leaderboard":
-      requireState(live && s.phase === "reveal");
-      return { patch: { phase: "leaderboard" } };
+      if (stillOpen) return { patch: { phase: "results", questionClosesAt: new Date(Math.max(t, ms(s.questionOpenedAt))) } };
+      return { patch: { phase: "results" } };
 
     case "end":
       requireState(s.status === "lobby" || live);
-      return { patch: { status: "ended", phase: "leaderboard", endedAt: now, checkinOpen: false } };
+      if (stillOpen) {
+        return { patch: { status: "ended", phase: "results", endedAt: now, checkinOpen: false, questionClosesAt: new Date(Math.max(t, ms(s.questionOpenedAt))) } };
+      }
+      return { patch: { status: "ended", phase: s.currentIndex >= 0 ? "results" : "idle", endedAt: now, checkinOpen: false } };
+
+    case "reset_event":
+      return {
+        patch: {
+          status: "draft",
+          phase: "idle",
+          currentIndex: -1,
+          checkinOpen: false,
+          questionOpenedAt: null,
+          questionClosesAt: null,
+          startedAt: null,
+          endedAt: null,
+        },
+        resetEvent: true,
+      };
   }
 }

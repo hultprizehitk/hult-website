@@ -21,11 +21,12 @@ Quiz roster sync reads the selected event's teams and admin roles from the main 
 
 Implemented in `quiz/`:
 
-- `/`: enter a session code.
-- `/s/<code>`: sign in, check in, choose/answer as taker, view team answers and results.
+- `/quiz` (and `/s/<code>`): sign in, check in, play on the team's one phone, results and final rank. `/` redirects here.
 - `/present/<code>`: public projector view.
 - `/present/<code>/board`: live second-screen leaderboard.
-- `/admin` and `/admin/s/<code>`: create sessions, sync teams, edit/import questions, control the quiz, manage check-in/takers/devices, export CSV.
+- `/admin` (and `/admin/s/<code>`): one-button run console, questions, teams help desk, auto team sync, CSV export, reset for event.
+
+Flow, screens and the testing checklist: [quiz UX overhaul spec](docs/superpowers/specs/2026-09-28-quiz-ux-overhaul.md). Manual script for the admin team: [docs/quiz-manual-test.md](docs/quiz-manual-test.md).
 - Firestore Emulator rules and service coverage, emulator-only demo seed, and a production-build API/listener load simulator.
 
 From `quiz/`, the primary local commands are `npm run emulators`, `npm run seed`, `npm run dev`, `npm test`, `npm run build`, and `npm run simulate`. Java 21 is required for Firebase emulators. See [the system guide](docs/quiz-system.md) and [the runbook](docs/quiz-runbook.md).

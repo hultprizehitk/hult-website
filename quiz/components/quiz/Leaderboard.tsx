@@ -6,7 +6,18 @@ import { cn } from "@/lib/utils";
 import { formatMs } from "@/lib/format";
 import type { Standing } from "@/lib/quiz/types";
 
-export function Leaderboard({ rows, highlightTeamId, large = false }: { rows: Standing[]; highlightTeamId?: string; large?: boolean }) {
+/** time = "total" (tie-break total) or "last" (time on the question just graded; "-" when unanswered). */
+export function Leaderboard({
+  rows,
+  highlightTeamId,
+  large = false,
+  time = "total",
+}: {
+  rows: Standing[];
+  highlightTeamId?: string;
+  large?: boolean;
+  time?: "total" | "last";
+}) {
   if (rows.length === 0) return <p className="py-8 text-center font-mono text-xs text-neutral-500">No scores yet</p>;
   return (
     <ol className="flex flex-col gap-2">
@@ -35,7 +46,13 @@ export function Leaderboard({ rows, highlightTeamId, large = false }: { rows: St
               {r.rank}
             </span>
             <span className="flex-1 truncate font-semibold">{r.teamName}</span>
-            <span className="font-mono text-xs text-neutral-400 tabular-nums">{formatMs(r.totalTimeMs)}</span>
+            {time === "last" ? (
+              <span className={cn("font-mono tabular-nums", large ? "text-xl" : "text-xs", r.lastCorrect ? "text-emerald-300" : "text-neutral-500")}>
+                {r.lastMs == null ? "-" : formatMs(r.lastMs)}
+              </span>
+            ) : (
+              <span className={cn("font-mono text-neutral-400 tabular-nums", large ? "text-lg" : "text-xs")}>{formatMs(r.totalTimeMs)}</span>
+            )}
             <AnimatedNumber value={r.score} className="w-20 text-right font-black" springOptions={{ bounce: 0, duration: 1200 }} />
           </motion.li>
         ))}

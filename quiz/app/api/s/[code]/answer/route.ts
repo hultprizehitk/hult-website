@@ -12,3 +12,8 @@ export async function POST(req: Request, ctx: { params: Promise<{ code: string }
     return json(await submitAnswer(code, actor.email, input, receivedAt));
   });
 }
+
+/** Warm-up ping sent by phones during the 3 s lead-in, so a cold function never delays the first answers. */
+export function GET() {
+  return new Response(null, { status: 204, headers: { "Cache-Control": "no-store" } });
+}

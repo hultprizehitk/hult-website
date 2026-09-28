@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
 import { applyAction, closedQuestionCount, isQuestionOpen } from "@/lib/quiz/engine";
-import { LEAD_IN_MS, type QuestionLite, type SessionState } from "@/lib/quiz/types";
+import { LEAD_IN_MS, type ControlAction, type QuestionLite, type SessionState } from "@/lib/quiz/types";
 
 const T0 = new Date("2026-10-01T10:00:00.000Z");
 const at = (ms: number) => new Date(T0.getTime() + ms);
@@ -12,173 +12,116 @@ const base: SessionState = {
   questionOpenedAt: null, questionClosesAt: null, startedAt: null, endedAt: null,
 };
 const merge = (s: SessionState, patch: Partial<SessionState>): SessionState => ({ ...s, ...patch });
+const lobby = merge(base, { status: "lobby", checkinOpen: true });
+const starting = merge(base, { status: "live", phase: "idle", startedAt: T0 });
 
-function liveAtQuestion(index: number): SessionState {
-  return merge(base, {
-    status: "live", phase: "question", currentIndex: index,
-    questionOpenedAt: at(LEAD_IN_MS), questionClosesAt: at(LEAD_IN_MS + 20_000), startedAt: T0,
-  });
+function atQuestion(index: number): SessionState {
+  return merge(starting, { phase: "question", currentIndex: index, questionOpenedAt: at(LEAD_IN_MS), questionClosesAt: at(LEAD_IN_MS + 20_000) });
 }
+const results = (index: number) => merge(atQuestion(index), { phase: "results" });
+const refuse = (s: SessionState, a: ControlAction, now = T0) => expect(() => applyAction(s, a, questions, now)).toThrow(expect.objectContaining({ code: "invalid_state" }));
 
-describe("engine.applyAction", () => {
-  it("opens the lobby from draft with check-in open", () => {
+describe("engine: setup and check-in", () => {
+  it("opens check-in from setup only", () => {
     expect(applyAction(base, { type: "open_lobby" }, questions, T0).patch).toEqual({ status: "lobby", checkinOpen: true });
+    refuse(lobby, { type: "open_lobby" });
+    refuse(starting, { type: "open_lobby" });
   });
 
-  it("refuses open_lobby outside draft", () => {
-    expect(() => applyAction(merge(base, { status: "live" }), { type: "open_lobby" }, questions, T0)).toThrow("invalid_state");
-  });
-
-  it("toggles check-in only in lobby", () => {
-    const lobby = merge(base, { status: "lobby", checkinOpen: true });
+  it("pauses and resumes check-in only before start", () => {
     expect(applyAction(lobby, { type: "toggle_checkin" }, questions, T0).patch).toEqual({ checkinOpen: false });
-    expect(() => applyAction(base, { type: "toggle_checkin" }, questions, T0)).toThrow("invalid_state");
+    refuse(base, { type: "toggle_checkin" });
+    refuse(starting, { type: "toggle_checkin" });
   });
 
-  it("starts: closes check-in and enters live idle state", () => {
-    const lobby = merge(base, { status: "lobby", checkinOpen: true });
-    const { patch } = applyAction(lobby, { type: "start" }, questions, T0);
-    expect(patch).toEqual({
-      status: "live",
-      phase: "idle",
-      currentIndex: -1,
-      checkinOpen: false,
-      startedAt: T0,
+  it("start closes check-in and shows 'quiz is starting' (idle) without opening a question", () => {
+    expect(applyAction(lobby, { type: "start" }, questions, T0).patch).toEqual({ status: "live", phase: "idle", currentIndex: -1, checkinOpen: false, startedAt: T0 });
+    expect(() => applyAction(lobby, { type: "start" }, [], T0)).toThrow(expect.objectContaining({ code: "no_questions" }));
+    refuse(base, { type: "start" });
+    refuse(starting, { type: "start" });
+  });
+});
+
+describe("engine: strictly ordered questions", () => {
+  it("next from 'starting' opens question 1 after the lead-in", () => {
+    expect(applyAction(starting, { type: "next" }, questions, T0).patch).toEqual({
+      currentIndex: 0, phase: "question", questionOpenedAt: at(LEAD_IN_MS), questionClosesAt: at(LEAD_IN_MS + 20_000),
     });
   });
 
-  it("resets session back to lobby", () => {
-    const ended = merge(base, { status: "ended", phase: "leaderboard", startedAt: T0, endedAt: at(100_000) });
-    const { patch } = applyAction(ended, { type: "reset_session" }, questions, at(150_000));
-    expect(patch).toEqual({
-      status: "lobby",
-      phase: "idle",
-      currentIndex: -1,
-      checkinOpen: true,
-      questionOpenedAt: null,
-      questionClosesAt: null,
-      startedAt: null,
-      endedAt: null,
+  it("next from results opens exactly the following question", () => {
+    expect(applyAction(results(0), { type: "next" }, questions, at(30_000)).patch).toMatchObject({ currentIndex: 1, phase: "question" });
+    expect(applyAction(results(1), { type: "next" }, questions, at(30_000)).patch).toMatchObject({ currentIndex: 2 });
+  });
+
+  it("refuses next during a question, before start, and after the last question", () => {
+    refuse(atQuestion(0), { type: "next" }, at(10_000));
+    refuse(lobby, { type: "next" });
+    expect(() => applyAction(results(2), { type: "next" }, questions, T0)).toThrow(expect.objectContaining({ code: "last_question" }));
+  });
+});
+
+describe("engine: during a question", () => {
+  it("extends and closes only while open; close is idempotent after time is up", () => {
+    const q = atQuestion(0);
+    expect(applyAction(q, { type: "extend", seconds: 15 }, questions, at(10_000)).patch).toEqual({ questionClosesAt: at(LEAD_IN_MS + 35_000) });
+    refuse(q, { type: "extend", seconds: 15 }, at(LEAD_IN_MS + 20_000));
+    expect(applyAction(q, { type: "close_now" }, questions, at(10_000)).patch).toEqual({ questionClosesAt: at(10_000) });
+    expect(applyAction(q, { type: "close_now" }, questions, at(LEAD_IN_MS + 25_000)).patch).toEqual({});
+    // Closing during the lead-in closes at open time (zero-length window), never before it.
+    expect(applyAction(q, { type: "close_now" }, questions, at(1000)).patch).toEqual({ questionClosesAt: at(LEAD_IN_MS) });
+  });
+
+  it("restart reopens the same question with a new lead-in and clears its answers", () => {
+    expect(applyAction(atQuestion(1), { type: "restart_question" }, questions, at(9000))).toEqual({
+      patch: { currentIndex: 1, phase: "question", questionOpenedAt: at(9000 + LEAD_IN_MS), questionClosesAt: at(9000 + LEAD_IN_MS + 20_000) },
+      clearAnswersForIndex: 1,
     });
+    refuse(results(1), { type: "restart_question" });
   });
 
-  it("refuses start with no questions", () => {
-    const lobby = merge(base, { status: "lobby" });
-    expect(() => applyAction(lobby, { type: "start" }, [], T0)).toThrow("no_questions");
+  it("show_results closes a running question, or just switches phase after time is up", () => {
+    expect(applyAction(atQuestion(0), { type: "show_results" }, questions, at(10_000)).patch).toEqual({ phase: "results", questionClosesAt: at(10_000) });
+    expect(applyAction(atQuestion(0), { type: "show_results" }, questions, at(40_000)).patch).toEqual({ phase: "results" });
+    refuse(results(0), { type: "show_results" });
+    refuse(starting, { type: "show_results" });
   });
+});
 
-  it("publishes a specific question directly to live", () => {
-    const lobby = merge(base, { status: "lobby", checkinOpen: true });
-    const r = applyAction(lobby, { type: "publish_question", index: 1 }, questions, T0);
-    expect(r.clearAnswersForIndex).toBe(1);
-    expect(r.patch).toEqual({
-      status: "live",
-      checkinOpen: false,
-      startedAt: T0,
-      endedAt: null,
-      currentIndex: 1,
-      phase: "question",
-      questionOpenedAt: at(LEAD_IN_MS),
-      questionClosesAt: at(LEAD_IN_MS + 20_000),
+describe("engine: end and reset", () => {
+  it("ends from check-in or live; closes a running question", () => {
+    expect(applyAction(results(2), { type: "end" }, questions, at(1000)).patch).toEqual({ status: "ended", phase: "results", endedAt: at(1000), checkinOpen: false });
+    expect(applyAction(atQuestion(0), { type: "end" }, questions, at(10_000)).patch).toEqual({
+      status: "ended", phase: "results", endedAt: at(10_000), checkinOpen: false, questionClosesAt: at(10_000),
     });
+    expect(applyAction(lobby, { type: "end" }, questions, T0).patch).toMatchObject({ status: "ended", phase: "idle" });
+    refuse(base, { type: "end" });
+    refuse(merge(results(2), { status: "ended" }), { type: "end" });
   });
 
-  it("publishes a question while already live", () => {
-    const s = liveAtQuestion(0);
-    const r = applyAction(s, { type: "publish_question", index: 2 }, questions, at(10_000));
-    expect(r.clearAnswersForIndex).toBe(2);
-    expect(r.patch.currentIndex).toBe(2);
-    expect(r.patch.phase).toBe("question");
-    expect(r.patch.questionOpenedAt).toEqual(at(10_000 + LEAD_IN_MS));
-  });
-
-  it("refuses publish_question with invalid index or empty list", () => {
-    const lobby = merge(base, { status: "lobby" });
-    expect(() => applyAction(lobby, { type: "publish_question", index: 0 }, [], T0)).toThrow("no_questions");
-    expect(() => applyAction(lobby, { type: "publish_question", index: 99 }, questions, T0)).toThrow("not_found");
-  });
-
-  it("extends an open question", () => {
-    const s = liveAtQuestion(0);
-    const { patch } = applyAction(s, { type: "extend", seconds: 15 }, questions, at(10_000));
-    expect(patch.questionClosesAt).toEqual(at(LEAD_IN_MS + 35_000));
-  });
-
-  it("refuses extend after the question closed", () => {
-    const s = liveAtQuestion(0);
-    expect(() => applyAction(s, { type: "extend", seconds: 15 }, questions, at(LEAD_IN_MS + 20_000))).toThrow("invalid_state");
-  });
-
-  it("close_now sets closesAt to now (never before openedAt)", () => {
-    const s = liveAtQuestion(0);
-    expect(applyAction(s, { type: "close_now" }, questions, at(10_000)).patch).toEqual({ questionClosesAt: at(10_000) });
-    expect(applyAction(s, { type: "close_now" }, questions, at(1_000)).patch).toEqual({ questionClosesAt: at(LEAD_IN_MS) });
-  });
-
-  it("close_now after the question already closed is a no-op, not an error", () => {
-    const s = liveAtQuestion(0);
-    expect(applyAction(s, { type: "close_now" }, questions, at(LEAD_IN_MS + 20_500)).patch).toEqual({});
-    const revealed = merge(s, { phase: "reveal" });
-    expect(() => applyAction(revealed, { type: "close_now" }, questions, T0)).toThrow("invalid_state");
-  });
-
-  it("reveal closes an open question and switches phase", () => {
-    const s = liveAtQuestion(0);
-    expect(applyAction(s, { type: "reveal" }, questions, at(10_000)).patch).toEqual({ phase: "reveal", questionClosesAt: at(10_000) });
-  });
-
-  it("reveal after natural close keeps closesAt", () => {
-    const s = liveAtQuestion(0);
-    expect(applyAction(s, { type: "reveal" }, questions, at(60_000)).patch).toEqual({ phase: "reveal" });
-  });
-
-  it("show_leaderboard only from reveal", () => {
-    const s = merge(liveAtQuestion(0), { phase: "reveal" });
-    expect(applyAction(s, { type: "show_leaderboard" }, questions, T0).patch).toEqual({ phase: "leaderboard" });
-    expect(() => applyAction(liveAtQuestion(0), { type: "show_leaderboard" }, questions, T0)).toThrow("invalid_state");
-  });
-
-  it("next opens the following question from reveal or leaderboard", () => {
-    const s = merge(liveAtQuestion(0), { phase: "leaderboard" });
-    const { patch } = applyAction(s, { type: "next" }, questions, at(100_000));
-    expect(patch).toEqual({
-      currentIndex: 1, phase: "question",
-      questionOpenedAt: at(100_000 + LEAD_IN_MS), questionClosesAt: at(100_000 + LEAD_IN_MS + 20_000),
-    });
-  });
-
-  it("next refuses during an open question and after the last one", () => {
-    expect(() => applyAction(liveAtQuestion(0), { type: "next" }, questions, T0)).toThrow("invalid_state");
-    const last = merge(liveAtQuestion(2), { phase: "reveal" });
-    expect(() => applyAction(last, { type: "next" }, questions, T0)).toThrow("last_question");
-  });
-
-  it("restart_question reopens the current question and clears its answers", () => {
-    const s = liveAtQuestion(1);
-    const r = applyAction(s, { type: "restart_question" }, questions, at(50_000));
-    expect(r.clearAnswersForIndex).toBe(1);
-    expect(r.patch.questionOpenedAt).toEqual(at(50_000 + LEAD_IN_MS));
-  });
-
-  it("end works from lobby and live, not from draft", () => {
-    const { patch } = applyAction(liveAtQuestion(1), { type: "end" }, questions, at(5));
-    expect(patch).toEqual({ status: "ended", phase: "leaderboard", endedAt: at(5), checkinOpen: false });
-    expect(() => applyAction(base, { type: "end" }, questions, T0)).toThrow("invalid_state");
+  it("reset_event returns to setup from any state and flags a full wipe", () => {
+    for (const s of [base, lobby, atQuestion(1), merge(results(2), { status: "ended", endedAt: at(5000) })]) {
+      expect(applyAction(s, { type: "reset_event" }, questions, T0)).toEqual({
+        patch: { status: "draft", phase: "idle", currentIndex: -1, checkinOpen: false, questionOpenedAt: null, questionClosesAt: null, startedAt: null, endedAt: null },
+        resetEvent: true,
+      });
+    }
   });
 });
 
 describe("engine helpers", () => {
-  it("isQuestionOpen respects lead-in and close", () => {
-    const s = liveAtQuestion(0);
-    expect(isQuestionOpen(s, at(LEAD_IN_MS - 1))).toBe(false);
-    expect(isQuestionOpen(s, at(LEAD_IN_MS))).toBe(true);
-    expect(isQuestionOpen(s, at(LEAD_IN_MS + 20_000))).toBe(false);
+  it("isQuestionOpen is true only inside the window", () => {
+    const q = atQuestion(0);
+    expect(isQuestionOpen(q, at(LEAD_IN_MS - 1))).toBe(false);
+    expect(isQuestionOpen(q, at(LEAD_IN_MS))).toBe(true);
+    expect(isQuestionOpen(q, at(LEAD_IN_MS + 20_000))).toBe(false);
+    expect(isQuestionOpen(results(0), at(LEAD_IN_MS + 1))).toBe(false);
   });
 
-  it("closedQuestionCount excludes an open current question", () => {
-    expect(closedQuestionCount(base, T0)).toBe(0);
-    expect(closedQuestionCount(liveAtQuestion(2), at(5_000))).toBe(2);
-    expect(closedQuestionCount(liveAtQuestion(2), at(60_000))).toBe(3);
-    expect(closedQuestionCount(merge(liveAtQuestion(2), { phase: "reveal" }), at(5_000))).toBe(3);
+  it("closedQuestionCount counts the current question once its window is over", () => {
+    expect(closedQuestionCount(starting, T0)).toBe(0);
+    expect(closedQuestionCount(atQuestion(1), at(10_000))).toBe(1);
+    expect(closedQuestionCount(atQuestion(1), at(LEAD_IN_MS + 20_000))).toBe(2);
+    expect(closedQuestionCount(results(1), T0)).toBe(2);
   });
 });

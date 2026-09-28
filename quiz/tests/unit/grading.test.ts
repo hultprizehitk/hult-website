@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { gradeQuestion, latePenaltyMs, type GradeTeam } from "@/lib/quiz/grading";
+import { gradeQuestion, type GradeTeam } from "@/lib/quiz/grading";
 import { rankStandings } from "@/lib/quiz/scoring";
 
 const team = (id: string, over: Partial<GradeTeam> = {}): GradeTeam => ({
@@ -50,17 +50,17 @@ describe("gradeQuestion", () => {
     expect(out.standings).toHaveLength(1);
   });
 
+  it("puts this question's time, correctness and the previous rank on each standing", () => {
+    const out = gradeQuestion(Q, [
+      team("t1", { rank: 2, currentAnswer: { qid: "q1", optionIndex: 1, responseMs: 1500 } }),
+      team("t2", { rank: 1 }),
+    ]);
+    expect(out.standings.find((r) => r.teamId === "t1")).toMatchObject({ rank: 1, prevRank: 2, lastMs: 1500, lastCorrect: true });
+    expect(out.standings.find((r) => r.teamId === "t2")).toMatchObject({ rank: 2, prevRank: 1, lastMs: null, lastCorrect: false });
+  });
+
   it("clamps response time to the time limit", () => {
     const out = gradeQuestion(Q, [team("t1", { currentAnswer: { qid: "q1", optionIndex: 1, responseMs: 99_999 } })]);
     expect(out.updates.get("t1")!.totalTimeMs).toBe(20000);
-  });
-});
-
-describe("latePenaltyMs", () => {
-  it("charges full time for every question graded before the team checked in", () => {
-    const plan = [{ id: "a", timeLimitSec: 20 }, { id: "b", timeLimitSec: 10 }, { id: "c", timeLimitSec: 30 }];
-    expect(latePenaltyMs(plan, -1)).toBe(0);
-    expect(latePenaltyMs(plan, 1)).toBe(30_000);
-    expect(latePenaltyMs(plan, 2)).toBe(60_000);
   });
 });

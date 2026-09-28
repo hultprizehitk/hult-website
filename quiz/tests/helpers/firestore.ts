@@ -82,3 +82,9 @@ export async function readTeam(code: string, n: number): Promise<TeamDoc> {
 export async function countAnswers(code: string): Promise<number> {
   return (await adminDb().collection(paths.answers(code)).count().get()).data().count;
 }
+
+/** Start the quiz and open question 1 at T0 (it accepts answers from T0 + LEAD_IN_MS). */
+export async function startAndOpenFirst(code: string): Promise<void> {
+  await applyControl(code, { type: "start" }, T0);
+  await applyControl(code, { type: "next" }, T0);
+}

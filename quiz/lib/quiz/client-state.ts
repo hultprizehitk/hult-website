@@ -1,6 +1,6 @@
 import type { CountsDoc, SessionDoc, TeamDoc, Ts } from "./fs-types";
 import { rankStandings } from "./scoring";
-import type { AdminSessionSummary, AnswerView, Counts, MeView, PublicQuestion, SessionState, Standing, StateResponse, TeamBoardRow } from "./types";
+import type { AdminSessionSummary, AnswerView, Counts, MeView, PublicQuestion, SeatState, SessionState, Standing, StateResponse, TeamBoardRow } from "./types";
 import { isRevealed } from "./views";
 
 const ms = (t: Ts | null | undefined): number | null => (t ? t.toMillis() : null);
@@ -42,7 +42,19 @@ export function publicQuestionFromDoc(s: SessionDoc, nowMs: number): PublicQuest
 
 function teamStanding(t: TeamDoc): Standing | null {
   if (t.rank === null) return null;
-  return { rank: t.rank, teamId: t.teamId, teamName: t.teamName, score: t.score, totalTimeMs: t.totalTimeMs, answeredCount: t.answeredCount, correctCount: t.correctCount };
+  const last = t.lastResult;
+  return {
+    rank: t.rank,
+    teamId: t.teamId,
+    teamName: t.teamName,
+    score: t.score,
+    totalTimeMs: t.totalTimeMs,
+    answeredCount: t.answeredCount,
+    correctCount: t.correctCount,
+    lastMs: last && last.optionIndex !== null ? (last.ms ?? null) : null,
+    lastCorrect: last ? last.correct : null,
+    prevRank: t.prevRank ?? null,
+  };
 }
 
 function teamAnswer(t: TeamDoc, qid: string | undefined, revealed: boolean): AnswerView | null {
@@ -55,17 +67,30 @@ function teamAnswer(t: TeamDoc, qid: string | undefined, revealed: boolean): Ans
   return null;
 }
 
+export function seatState(t: Pick<TeamDoc, "takerEmail" | "deviceId">, email: string, deviceId: string | null): SeatState {
+  if (t.takerEmail === email) {
+    if (!t.deviceId) return "reserved_me";
+    return deviceId && t.deviceId === deviceId ? "mine" : "other_device";
+  }
+  if (t.deviceId) return "taken";
+  return t.takerEmail ? "reserved_other" : "free";
+}
+
 export function meFromTeam(s: SessionDoc, t: TeamDoc, email: string, deviceId: string | null): MeView {
   const role = t.takerEmail === email ? "taker" : "teammate";
+  const seat = seatState(t, email, deviceId);
   return {
     email,
     role,
     team: { id: t.teamId, name: t.teamName, code: t.teamCode, takerEmail: t.takerEmail, isLead: t.leadEmail === email, members: t.members },
     checkedIn: !!t.checkedInAt,
     deviceBound: !!t.deviceId,
-    deviceOk: role === "taker" && !!deviceId && t.deviceId === deviceId,
+    deviceOk: seat === "mine",
+    seat,
+    takerName: t.takerEmail ? (t.members.find((m) => m.email === t.takerEmail)?.name ?? t.takerEmail.split("@")[0]) : null,
     answer: teamAnswer(t, s.current?.id, isRevealed(sessionStateFromDoc(s))),
     standing: teamStanding(t),
+    gradedQid: t.lastResult?.qid ?? null,
   };
 }
 
@@ -86,7 +111,7 @@ export function toStateResponse(input: {
   if (email) {
     me = team
       ? meFromTeam(s, team, email, deviceId)
-      : { email, role: input.role ?? "unregistered", team: null, checkedIn: false, deviceBound: false, deviceOk: false, answer: null, standing: null };
+      : { email, role: input.role ?? "unregistered", team: null, checkedIn: false, deviceBound: false, deviceOk: false, seat: "free", takerName: null, answer: null, standing: null, gradedQid: null };
   }
   return {
     serverNow: nowMs,
@@ -100,8 +125,8 @@ export function toStateResponse(input: {
     checkinOpen: s.checkinOpen,
     question: publicQuestionFromDoc(s, nowMs),
     counts: c,
-    distribution: s.phase === "reveal" ? (s.current?.distribution ?? null) : null,
-    leaderboard: s.phase === "leaderboard" || s.status === "ended" ? (s.leaderboard ?? []) : null,
+    distribution: s.phase === "results" ? (s.current?.distribution ?? null) : null,
+    leaderboard: s.phase === "results" || s.status === "ended" ? (s.leaderboard ?? []) : null,
     me,
   };
 }
@@ -127,7 +152,17 @@ export function standingsFromTeams(teams: TeamDoc[]): Standing[] {
   return rankStandings(
     teams
       .filter((t) => t.checkedInAt)
-      .map((t) => ({ teamId: t.teamId, teamName: t.teamName, score: t.score, totalTimeMs: t.totalTimeMs, answeredCount: t.answeredCount, correctCount: t.correctCount })),
+      .map((t) => ({
+        teamId: t.teamId,
+        teamName: t.teamName,
+        score: t.score,
+        totalTimeMs: t.totalTimeMs,
+        answeredCount: t.answeredCount,
+        correctCount: t.correctCount,
+        lastMs: t.lastResult && t.lastResult.optionIndex !== null ? (t.lastResult.ms ?? null) : null,
+        lastCorrect: t.lastResult ? t.lastResult.correct : null,
+        prevRank: t.prevRank ?? null,
+      })),
   );
 }
 
@@ -143,7 +178,11 @@ export function teamBoardRows(teams: TeamDoc[], currentQid: string | null): Team
       checkedInAt: ms(t.checkedInAt),
       takerEmail: t.takerEmail,
       deviceBound: !!t.deviceId,
+      deskScanned: !!t.deskScanned,
       answeredCurrent: !!currentQid && t.currentAnswer?.qid === currentQid,
+      missedLast: !!t.lastResult && t.lastResult.optionIndex === null,
+      score: t.score,
+      rank: t.rank,
       members: t.members,
     }))
     .sort((a, b) => Number(b.checkedIn) - Number(a.checkedIn) || a.teamName.localeCompare(b.teamName));

@@ -3,6 +3,7 @@
 **Date:** 2026-09-26 · **Owner:** Aheen · **Status:** Implementation complete; emulator-verified; live Firebase and browser acceptance pending
 **Replaces:** the MongoDB runtime of the quiz built on 2026-09-24 (`docs/superpowers/specs/2026-09-24-quiz-design.md`). The product, screens and rules stay the same; the backend moves to Firebase.
 **Related:** `docs/quiz-runbook.md` (current ops guide), `Hult Prize Quiz — Requirements Doc.md` (original PRD, which asked for Firebase).
+**Superseded in part (2026-09-28):** host controls, phone and projector screens, check-in and seat rules are now defined by [the quiz UX overhaul spec](./2026-09-28-quiz-ux-overhaul.md). Team rules check the Firebase uid, not `token.email` (Firebase strips an `email` custom claim).
 
 ---
 

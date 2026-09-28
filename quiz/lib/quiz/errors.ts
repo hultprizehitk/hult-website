@@ -39,10 +39,19 @@ const STATUS: Record<QuizErrorCode, number> = {
   last_question: 409,
 };
 
+/** Short default copy when a throw site gives no message (shown in admin toasts). */
+const DEFAULT_MESSAGE: Partial<Record<QuizErrorCode, string>> = {
+  invalid_state: "Not available at this step",
+  conflict: "Already updated",
+  no_questions: "Add questions first",
+  last_question: "No more questions",
+  not_checked_in: "Scan your pass at the desk first",
+};
+
 export class QuizError extends Error {
   readonly status: number;
   constructor(readonly code: QuizErrorCode, message?: string) {
-    super(message ?? code);
+    super(message ?? DEFAULT_MESSAGE[code] ?? code);
     this.name = "QuizError";
     this.status = STATUS[code];
   }

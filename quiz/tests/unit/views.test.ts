@@ -26,9 +26,9 @@ describe("views", () => {
     expect(v.correctIndex).toBeNull();
   });
 
-  it("shows correctIndex on reveal and after the quiz ends", () => {
-    expect(publicQuestion({ ...live, phase: "reveal" }, q, 0, at(30000))!.correctIndex).toBe(2);
-    expect(publicQuestion({ ...live, status: "ended", phase: "leaderboard" }, q, 0, at(30000))!.correctIndex).toBe(2);
+  it("shows correctIndex in results, including a question graded by End", () => {
+    expect(publicQuestion({ ...live, phase: "results" }, q, 0, at(30000))!.correctIndex).toBe(2);
+    expect(publicQuestion({ ...live, status: "ended", phase: "results" }, q, 0, at(30000))!.correctIndex).toBe(2);
   });
 
   it("returns null before the first question", () => {
@@ -45,9 +45,10 @@ describe("views", () => {
     expect(answerView(a, true)).toEqual({ optionIndex: 1, isCorrect: true, pointsAwarded: 100 });
   });
 
-  it("isRevealed covers reveal, leaderboard and ended", () => {
+  it("isRevealed is the results phase only", () => {
     expect(isRevealed(live)).toBe(false);
-    expect(isRevealed({ ...live, phase: "leaderboard" })).toBe(true);
-    expect(isRevealed({ ...live, status: "ended" })).toBe(true);
+    expect(isRevealed({ ...live, phase: "results" })).toBe(true);
+    expect(isRevealed({ ...live, status: "ended", phase: "results" })).toBe(true);
+    expect(isRevealed({ ...live, status: "ended", phase: "idle", currentIndex: -1 })).toBe(false);
   });
 });

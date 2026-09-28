@@ -1,7 +1,8 @@
 rules_version = '2';
 
 // Hult Prize Quiz. Browsers only READ; every write goes through the Next.js API (Admin SDK bypasses rules).
-// Identity comes from a Firebase custom token minted after NextAuth login: token.email, token.admin.
+// Identity comes from a Firebase custom token minted after NextAuth login: uid = the lowercased email,
+// claim token.admin. Firebase strips an `email` custom claim from the ID token, so never rely on token.email.
 service cloud.firestore {
   match /databases/{database}/documents {
     function signedIn() {
@@ -11,7 +12,7 @@ service cloud.firestore {
       return signedIn() && request.auth.token.admin == true;
     }
     function isMember(data) {
-      return signedIn() && request.auth.token.email in data.memberEmails;
+      return signedIn() && request.auth.uid in data.memberEmails;
     }
 
     // Public: projector needs no login. Contains no correct answers until reveal.

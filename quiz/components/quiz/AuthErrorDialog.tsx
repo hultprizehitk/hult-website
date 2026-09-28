@@ -1,10 +1,10 @@
 "use client";
 
-import { Suspense, useEffect, useState } from "react";
+import { Suspense, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { AlertTriangle, ExternalLink, QrCode, RefreshCw, ShieldAlert, Smartphone, UserX } from "lucide-react";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Button, buttonVariants } from "@/components/ui/button";
+import { Button } from "@/components/ui/button";
 
 export type AuthErrorCode = "not_checked_in" | "not_registered" | "not_eligible" | "team_already_active" | "domain" | null;
 
@@ -22,113 +22,75 @@ interface ErrorMeta {
   };
 }
 
+// One-line copy (repo rule: no text walls).
 const ERROR_MAP: Record<string, ErrorMeta> = {
   not_checked_in: {
-    title: "Venue Check-In Required",
-    badge: "Check-In Pending",
-    description:
-      "You have not checked in at the venue yet. Please visit the registration desk at the SV Auditorium entrance to scan your digital QR entry pass before entering the quiz.",
+    title: "Scan your pass at the desk",
+    badge: "Desk check-in",
+    description: "Then sign in again.",
     icon: QrCode,
     color: "amber",
-    primaryCta: {
-      label: "Refresh Check-In Status",
-      icon: RefreshCw,
-    },
+    primaryCta: { label: "Try again", icon: RefreshCw },
   },
   not_registered: {
-    title: "Not Registered for Hult Ascend",
-    badge: "Registration Not Found",
-    description:
-      "Your college account is not registered on a verified team for HULT ASCEND : The Rise Begins. Only confirmed team participants can play.",
+    title: "No team found",
+    badge: "Not registered",
+    description: "This account is not on a registered Hult Ascend team.",
     icon: UserX,
     color: "rose",
-    primaryCta: {
-      label: "Visit Team Portal",
-      href: "https://www.hultprizehitk.live/events",
-      icon: ExternalLink,
-    },
+    primaryCta: { label: "Team portal", href: "https://www.hultprizehitk.live/events", icon: ExternalLink },
   },
   not_eligible: {
-    title: "Team Registration Incomplete",
-    badge: "Submission Required",
-    description:
-      "Your team roster has not been finalized or submitted. Only confirmed and fully submitted teams are eligible to participate in the live quiz.",
+    title: "Team not eligible",
+    badge: "Submission required",
+    description: "Only confirmed, submitted teams can play.",
     icon: ShieldAlert,
     color: "rose",
-    primaryCta: {
-      label: "Complete Submission",
-      href: "https://www.hultprizehitk.live/events",
-      icon: ExternalLink,
-    },
+    primaryCta: { label: "Team portal", href: "https://www.hultprizehitk.live/events", icon: ExternalLink },
   },
   team_already_active: {
-    title: "Team Device Limit Reached",
-    badge: "1 Player Per Team",
-    description:
-      "A teammate is already active on another device for your team. Only one device per team can play. Please ask your active teammate to click Sign Out to hand over the device.",
+    title: "Your team is already playing",
+    badge: "One phone per team",
+    description: "Follow along on the screen.",
     icon: Smartphone,
     color: "purple",
   },
   domain: {
-    title: "College Account Required",
-    badge: "Invalid Domain",
-    description: "Please sign in using your official @heritageit.edu.in student or organizer Google account.",
+    title: "College account required",
+    badge: "Wrong account",
+    description: "Use your @heritageit.edu.in Google account.",
     icon: AlertTriangle,
     color: "amber",
   },
   AccessDenied: {
-    title: "Access Not Authorized",
-    badge: "Authorization Required",
-    description:
-      "Your college account is not authorized or has not checked in at the venue. Only registered and venue checked-in participants can access the live quiz.",
+    title: "Access not allowed",
+    badge: "Not authorized",
+    description: "Registered, desk-scanned players only.",
     icon: ShieldAlert,
     color: "amber",
-    primaryCta: {
-      label: "Refresh Check-In Status",
-      icon: RefreshCw,
-    },
+    primaryCta: { label: "Try again", icon: RefreshCw },
   },
   CallbackRouteError: {
-    title: "Sign-In Verification Failed",
-    badge: "Verification Error",
-    description:
-      "Could not verify your registration against the live database. Please ensure you are using your official college Google account.",
+    title: "Could not verify sign-in",
+    badge: "Try again",
+    description: "Use your college Google account.",
     icon: AlertTriangle,
     color: "rose",
   },
   OAuthCallbackError: {
-    title: "Authentication Failed",
-    badge: "OAuth Error",
-    description:
-      "Google authentication could not be completed. Please ensure you select your official @heritageit.edu.in account and try again.",
+    title: "Google sign-in failed",
+    badge: "Try again",
+    description: "Use your college Google account.",
     icon: AlertTriangle,
     color: "rose",
   },
   admin_only: {
-    title: "Admin Privileges Required",
-    badge: "Organizers Only",
-    description:
-      "This portal is strictly reserved for event organizers and administrators. Participants must sign in from the main quiz portal.",
+    title: "Organizers only",
+    badge: "Admin console",
+    description: "Players sign in from the quiz page.",
     icon: ShieldAlert,
     color: "rose",
-    primaryCta: {
-      label: "Go to Participant Quiz",
-      href: "/signin",
-      icon: ExternalLink,
-    },
-  },
-  admin_must_use_admin_portal: {
-    title: "Admin Portal Required",
-    badge: "Organizer Account",
-    description:
-      "Your account has administrator privileges. Event organizers and admins must sign in through the Admin Console at /admin.",
-    icon: ShieldAlert,
-    color: "purple",
-    primaryCta: {
-      label: "Go to Admin Console",
-      href: "/admin",
-      icon: ExternalLink,
-    },
+    primaryCta: { label: "Go to quiz", href: "/quiz", icon: ExternalLink },
   },
 };
 
@@ -142,15 +104,8 @@ function AuthErrorDialogInner({
   const searchParams = useSearchParams();
   const router = useRouter();
   const errorCode = overrideCode ?? searchParams.get("error");
-  const [open, setOpen] = useState(false);
-
-  useEffect(() => {
-    if (errorCode && ERROR_MAP[errorCode]) {
-      setOpen(true);
-    } else {
-      setOpen(false);
-    }
-  }, [errorCode]);
+  const [dismissed, setDismissed] = useState<string | null>(null);
+  const open = !!errorCode && !!ERROR_MAP[errorCode] && dismissed !== errorCode;
 
   if (!errorCode || !ERROR_MAP[errorCode]) return null;
 
@@ -158,8 +113,8 @@ function AuthErrorDialogInner({
   const Icon = meta.icon;
 
   const handleClose = (nextOpen: boolean) => {
-    setOpen(nextOpen);
     if (!nextOpen) {
+      setDismissed(errorCode);
       if (onDismiss) onDismiss();
       // Remove error from URL cleanly without full reload
       const url = new URL(window.location.href);
@@ -169,8 +124,8 @@ function AuthErrorDialogInner({
   };
 
   const handlePrimaryClick = () => {
-    if (errorCode === "not_checked_in" || errorCode === "AccessDenied") {
-      window.location.reload();
+    if (!meta.primaryCta?.href) {
+      handleClose(false); // back to the sign-in button
       return;
     }
     if (meta.primaryCta?.href) {

@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
 import { emptyTeamState, type CountsDoc, type SessionDoc, type TeamDoc, type Ts } from "@/lib/quiz/fs-types";
-import { liveDistribution, publicQuestionFromDoc, standingsFromTeams, teamBoardRows, toStateResponse } from "@/lib/quiz/client-state";
+import { liveDistribution, publicQuestionFromDoc, seatState, standingsFromTeams, teamBoardRows, toStateResponse } from "@/lib/quiz/client-state";
 
 const ts = (ms: number): Ts => ({ toMillis: () => ms });
 const T0 = 1_800_000_000_000;
@@ -27,7 +27,7 @@ describe("publicQuestionFromDoc", () => {
   it("hides text and options during the lead-in and correctIndex until reveal", () => {
     expect(publicQuestionFromDoc(session(), T0 + 1000)).toMatchObject({ text: null, options: null, correctIndex: null, openedAt: T0 + 3000 });
     expect(publicQuestionFromDoc(session(), T0 + 5000)).toMatchObject({ text: "Capital?", options: ["A", "B", "C"], correctIndex: null });
-    const revealed = session({ phase: "reveal", current: { ...session().current!, correctIndex: 2, distribution: [0, 1, 3] } });
+    const revealed = session({ phase: "results", current: { ...session().current!, correctIndex: 2, distribution: [0, 1, 3] } });
     expect(publicQuestionFromDoc(revealed, T0 + 5000)!.correctIndex).toBe(2);
   });
   it("is null before the first question", () => {
@@ -50,26 +50,40 @@ describe("toStateResponse", () => {
     expect(s.me).toMatchObject({ role: "teammate", deviceOk: false, answer: { optionIndex: 1, isCorrect: null, pointsAwarded: null } });
   });
 
-  it("shows correctness, distribution and standing after reveal", () => {
+  it("shows correctness, distribution, top 10 and standing in results", () => {
     const t = team({
       currentAnswer: { qid: "q1", optionIndex: 1, responseMs: 900 },
-      lastResult: { qid: "q1", optionIndex: 1, correct: true, points: 100 },
-      score: 100, totalTimeMs: 900, answeredCount: 1, correctCount: 1, rank: 1,
+      lastResult: { qid: "q1", optionIndex: 1, correct: true, points: 100, ms: 900 },
+      score: 100, totalTimeMs: 900, answeredCount: 1, correctCount: 1, rank: 1, prevRank: 3,
     });
     const s = toStateResponse({
-      session: session({ phase: "reveal", gradedThrough: 0, current: { ...session().current!, correctIndex: 1, distribution: [0, 1, 0] } }),
+      session: session({ phase: "results", gradedThrough: 0, leaderboard: [], current: { ...session().current!, correctIndex: 1, distribution: [0, 1, 0] } }),
       counts: null, team: t, email: "lead@x.in", deviceId: "dev-1", nowMs: T0 + 30000,
     });
     expect(s.me!.answer).toEqual({ optionIndex: 1, isCorrect: true, pointsAwarded: 100 });
     expect(s.distribution).toEqual([0, 1, 0]);
-    expect(s.leaderboard).toBeNull();
-    expect(s.me!.standing).toMatchObject({ rank: 1, score: 100 });
+    expect(s.leaderboard).toEqual([]);
+    expect(s.me!.standing).toMatchObject({ rank: 1, score: 100, prevRank: 3, lastMs: 900, lastCorrect: true });
+    expect(s.me!.gradedQid).toBe("q1");
   });
 
-  it("exposes the leaderboard in leaderboard phase and after the end", () => {
+  it("exposes the leaderboard only in results and after the end", () => {
     const board = [{ rank: 1, teamId: "t1", teamName: "Team 1", score: 100, totalTimeMs: 900, answeredCount: 1, correctCount: 1 }];
-    expect(toStateResponse({ session: session({ phase: "leaderboard", leaderboard: board }), counts: null, team: null, email: null, deviceId: null, nowMs: T0 }).leaderboard).toEqual(board);
-    expect(toStateResponse({ session: session({ status: "ended", phase: "leaderboard", leaderboard: board }), counts: null, team: null, email: null, deviceId: null, nowMs: T0 }).leaderboard).toEqual(board);
+    const view = (over: Partial<SessionDoc>) => toStateResponse({ session: session({ leaderboard: board, ...over }), counts: null, team: null, email: null, deviceId: null, nowMs: T0 }).leaderboard;
+    expect(view({ phase: "question" })).toBeNull();
+    expect(view({ phase: "results" })).toEqual(board);
+    expect(view({ status: "ended", phase: "idle" })).toEqual(board);
+  });
+
+  it("derives the seat state for this phone", () => {
+    expect(seatState({ takerEmail: "a@x.in", deviceId: "d1" }, "a@x.in", "d1")).toBe("mine");
+    expect(seatState({ takerEmail: "a@x.in", deviceId: "d1" }, "a@x.in", "d2")).toBe("other_device");
+    expect(seatState({ takerEmail: "a@x.in", deviceId: null }, "a@x.in", "d2")).toBe("reserved_me");
+    expect(seatState({ takerEmail: "a@x.in", deviceId: "d1" }, "b@x.in", "d2")).toBe("taken");
+    expect(seatState({ takerEmail: "a@x.in", deviceId: null }, "b@x.in", "d2")).toBe("reserved_other");
+    expect(seatState({ takerEmail: null, deviceId: null }, "b@x.in", "d2")).toBe("free");
+    const me = toStateResponse({ session: session(), counts: null, team: team({ takerEmail: "mem@x.in", deviceId: "d9" }), email: "lead@x.in", deviceId: "d1", nowMs: T0 }).me!;
+    expect(me).toMatchObject({ role: "teammate", seat: "taken", takerName: "Mem" });
   });
 
   it("reports unregistered / ineligible roles from the join result", () => {

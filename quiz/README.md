@@ -10,7 +10,7 @@ Use Node.js and Java 21. Copy `.env.example` to `.env.local`, then run:
 npm install
 npm run emulators    # keep running in its own terminal
 npm run seed         # demo session #424242, 50 teams, 15 questions
-npm run dev          # http://localhost:3001
+npm run dev          # http://localhost:3000
 npm test             # Firebase Emulator Suite + Vitest
 ```
 
@@ -26,14 +26,17 @@ Build and start the production app against the local emulators, then run `npm ru
 
 | Route | Purpose |
 |---|---|
-| `/` | Join by code |
-| `/s/<code>` | Participant phone |
+| `/` | Redirects to `/quiz` |
+| `/quiz` | Event phone app (session `470009`) |
+| `/s/<code>` | Phone app for another session (seed: `424242`) |
 | `/present/<code>` | Projector |
 | `/present/<code>/board` | Always-on leaderboard |
-| `/admin` | Organizer console |
+| `/admin` | Event console; `/admin/s/<code>` for another session |
 
 ## Documentation
 
+- [Flow and screens (UX overhaul spec)](../docs/superpowers/specs/2026-09-28-quiz-ux-overhaul.md)
+- [Manual test script](../docs/quiz-manual-test.md)
 - [What the quiz system contains](../docs/quiz-system.md)
 - [Full implementation and test report](../docs/mega-quiz-report.md)
 - [Operator runbook](../docs/quiz-runbook.md)

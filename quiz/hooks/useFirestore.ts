@@ -22,10 +22,15 @@ type Inner<T> = Omit<Live<T>, "loading"> & { path: string | null; synced: boolea
  */
 export function useDocData<T>(path: string | null): Live<T | null> {
   const [s, setS] = useState<Inner<T | null>>({ path: null, data: null, exists: false, offline: false, error: null, synced: false });
+  // A listener denied while auth is still settling (token just minted, team just joined) is closed for good
+  // by the SDK; resubscribe a few times before showing the error.
+  const [retry, setRetry] = useState({ path: null as string | null, n: 0 });
+  const attempt = retry.path === path ? retry.n : 0;
   useEffect(() => {
     if (!path) return;
     const { db } = firebaseClient();
-    return onSnapshot(
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    const stop = onSnapshot(
       doc(db, path),
       { includeMetadataChanges: true },
       (snap) =>
@@ -33,9 +38,20 @@ export function useDocData<T>(path: string | null): Live<T | null> {
           const synced = (prev.path === path && prev.synced) || !snap.metadata.fromCache;
           return { path, data: snap.exists() ? (snap.data() as T) : null, exists: snap.exists(), offline: synced && snap.metadata.fromCache, error: null, synced };
         }),
-      (error) => setS((prev) => ({ ...prev, path, error })),
+      (error) => {
+        console.warn(`[quiz] listener ${path}: ${error.code}`);
+        if (error.code === "permission-denied" && attempt < 5) {
+          timer = setTimeout(() => setRetry({ path, n: attempt + 1 }), 1000 * (attempt + 1));
+          return;
+        }
+        setS((prev) => ({ ...prev, path, error }));
+      },
     );
-  }, [path]);
+    return () => {
+      clearTimeout(timer);
+      stop();
+    };
+  }, [path, attempt]);
   const current = s.path === path && path !== null;
   return { data: current ? s.data : null, exists: current && s.exists, loading: path !== null && !current, offline: current && s.offline, error: current ? s.error : null };
 }

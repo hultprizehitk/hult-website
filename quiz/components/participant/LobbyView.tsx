@@ -1,35 +1,16 @@
 "use client";
 
-import { useState } from "react";
-import { toast } from "sonner";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { TextShimmer } from "@/components/motion-primitives/text-shimmer";
-import { api, type ApiError } from "@/lib/client/api";
 import type { StateResponse } from "@/lib/quiz/types";
 
-export function LobbyView({ s, code }: { s: StateResponse; code: string }) {
-  const me = s.me!;
-  const team = me.team!;
-  const [saving, setSaving] = useState(false);
-  const canPick = team.isLead && s.status === "lobby";
-
-  const pick = async (email: string) => {
-    setSaving(true);
-    try {
-      await api(`/api/s/${code}/taker`, { body: { email } });
-      toast.success("Taker updated");
-    } catch (e) {
-      toast.error((e as ApiError).message);
-    } finally {
-      setSaving(false);
-    }
-  };
-
+/** Checked in and holding the seat, before Start. */
+export function LobbyView({ s }: { s: StateResponse }) {
+  const team = s.me!.team!;
   return (
     <div className="flex flex-1 flex-col gap-6">
       <div className="text-center">
         <TextShimmer className="font-mono text-xs uppercase tracking-[0.3em]" duration={2}>
-          Waiting for host
+          {s.checkinOpen ? "Waiting for start" : "Check-in paused"}
         </TextShimmer>
         <h1 className="mt-3 text-3xl font-bold tracking-tight">{s.title}</h1>
         <p className="mt-1 inline-flex items-center gap-1.5 text-xs font-medium text-emerald-400">
@@ -54,34 +35,15 @@ export function LobbyView({ s, code }: { s: StateResponse; code: string }) {
               {m.email === team.takerEmail && (
                 <span className="inline-flex items-center gap-1.5 text-xs font-medium text-emerald-400">
                   <span className="size-1.5 rounded-full bg-emerald-400 shadow-[0_0_8px_rgba(52,211,153,0.6)]" />
-                  Answering
+                  Playing
                 </span>
               )}
             </li>
           ))}
         </ul>
-        {canPick && (
-          <div className="mt-5 flex flex-col gap-2">
-            <p className="font-mono text-[11px] uppercase tracking-wider text-white/60">Quiz taker</p>
-            <Select value={team.takerEmail ?? undefined} onValueChange={pick} disabled={saving}>
-              <SelectTrigger className="w-full">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {team.members.map((m) => (
-                  <SelectItem key={m.email} value={m.email}>
-                    {m.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-        )}
       </div>
 
-      <p className="text-center text-xs text-neutral-400">
-        {me.role === "taker" ? "You answer for your team" : "Your teammate answers"}
-      </p>
+      <p className="text-center text-xs text-neutral-400">You play for your team. Keep this screen open.</p>
     </div>
   );
 }

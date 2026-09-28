@@ -3,7 +3,7 @@ import { adminDb, DEMO_PROJECT_ID } from "@/lib/firebase/admin";
 import { paths, type QuestionDoc, type SessionDoc, type TeamDoc } from "@/lib/quiz/fs-types";
 import type { ControlAction } from "@/lib/quiz/types";
 
-const BASE = process.env.SIM_BASE_URL ?? "http://localhost:3001";
+const BASE = process.env.SIM_BASE_URL ?? "http://localhost:3000";
 const CODE = process.env.SIM_CODE ?? "424242";
 const ADMIN = "dev.admin@heritageit.edu.in";
 const DEVICE_COUNT = 200;
@@ -178,7 +178,7 @@ async function main(): Promise<void> {
   if (joinFailed.length) console.error("Join failures:", joinFailed.slice(0, 10));
   if (joinFailed.length) throw new Error(`Stopping load simulation: ${joinFailed.length} eligible teams failed to check in`);
   const mate = await call(`/api/s/${CODE}/join`, mail("dev.t01.m1"), { deviceId: "sim-mate-01" });
-  check(mate.status === 200 && mate.data.role === "teammate", "teammate joins as read-only participant");
+  check(mate.status === 200 && mate.data.role === "teammate" && mate.data.deviceOk === false, "a second member's phone is a teammate, not a second player");
 
   stopListeners = createListeners(CODE);
   // Wait for all simulated phones/screens to receive their initial snapshots.
@@ -198,7 +198,8 @@ async function main(): Promise<void> {
     writes += 1;
   };
 
-  await control({ type: "start" });
+  await control({ type: "start" }); // "Quiz is starting"
+  await control({ type: "next" }); // Question 1
 
   for (let qi = 0; qi < questions.length; qi++) {
     const q = questions[qi];
@@ -249,12 +250,9 @@ async function main(): Promise<void> {
       check(late.status === 409 && late.data.error === "too_late", "answer after close plus grace is rejected");
     }
 
-    await control({ type: "reveal" });
+    await control({ type: "show_results" });
     writes += ELIGIBLE.length; // one grading update per checked-in team
-    if (qi < questions.length - 1) {
-      await control({ type: "show_leaderboard" });
-      await control({ type: "next" });
-    }
+    if (qi < questions.length - 1) await control({ type: "next" });
   }
   await control({ type: "end" });
 

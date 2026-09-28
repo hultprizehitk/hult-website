@@ -116,6 +116,8 @@ export interface TeamDoc<T = Ts> {
   members: { name: string; email: string }[];
   memberEmails: string[];
   eligible: boolean;
+  /** Any member scanned at the venue desk (main site), copied by sync. Informational only. */
+  deskScanned?: boolean;
   syncedAt: T | null;
   checkedInAt: T | null;
   checkedInBy: string | null;
@@ -127,7 +129,9 @@ export interface TeamDoc<T = Ts> {
   answeredCount: number;
   correctCount: number;
   rank: number | null;
-  lastResult: { qid: string; optionIndex: number | null; correct: boolean; points: number } | null;
+  /** Rank before the last graded question (movement arrows). */
+  prevRank?: number | null;
+  lastResult: { qid: string; optionIndex: number | null; correct: boolean; points: number; ms?: number } | null;
   perQuestion: Record<string, QuestionResult>;
 }
 
@@ -145,7 +149,7 @@ export interface AnswerDoc<T = Ts> {
 export function emptyTeamState<T = Ts>(): Pick<
   TeamDoc<T>,
   | "checkedInAt" | "checkedInBy" | "deviceId" | "currentAnswer" | "score" | "totalTimeMs"
-  | "answeredCount" | "correctCount" | "rank" | "lastResult" | "perQuestion"
+  | "answeredCount" | "correctCount" | "rank" | "prevRank" | "lastResult" | "perQuestion"
 > {
   return {
     checkedInAt: null,
@@ -157,6 +161,7 @@ export function emptyTeamState<T = Ts>(): Pick<
     answeredCount: 0,
     correctCount: 0,
     rank: null,
+    prevRank: null,
     lastResult: null,
     perQuestion: {},
   };

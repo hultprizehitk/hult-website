@@ -3,7 +3,8 @@ export const ANSWER_GRACE_MS = 750;
 export const LEADERBOARD_SIZE = 10;
 
 export type SessionStatus = "draft" | "lobby" | "live" | "ended";
-export type Phase = "idle" | "question" | "reveal" | "leaderboard";
+/** Live phases: idle = "quiz is starting", question = lead-in + answering, results = graded answer + standings. */
+export type Phase = "idle" | "question" | "results";
 
 export interface SessionState {
   status: SessionStatus;
@@ -30,19 +31,19 @@ export type ControlAction =
   | { type: "open_lobby" }
   | { type: "toggle_checkin" }
   | { type: "start" }
-  | { type: "publish_question"; index: number }
   | { type: "next" }
   | { type: "close_now" }
   | { type: "extend"; seconds: number }
   | { type: "restart_question" }
-  | { type: "reveal" }
-  | { type: "show_leaderboard" }
+  | { type: "show_results" }
   | { type: "end" }
-  | { type: "reset_session" };
+  | { type: "reset_event" };
 
 export interface ActionResult {
   patch: Partial<SessionState>;
   clearAnswersForIndex?: number;
+  /** reset_event: wipe scores, answers, check-ins and seats. */
+  resetEvent?: boolean;
 }
 
 export interface Standing {
@@ -53,6 +54,11 @@ export interface Standing {
   totalTimeMs: number;
   answeredCount: number;
   correctCount: number;
+  /** Response time on the last graded question; null = no answer. */
+  lastMs?: number | null;
+  lastCorrect?: boolean | null;
+  /** Rank before the last graded question; null = first ranking. */
+  prevRank?: number | null;
 }
 
 export interface PublicQuestion {
@@ -75,6 +81,13 @@ export interface AnswerView {
 
 export type MeRole = "taker" | "teammate" | "unregistered" | "ineligible";
 
+/**
+ * The team's one seat, from this phone's point of view.
+ * mine: playing here. other_device: my seat is bound to another device. reserved_me: admin gave me the seat, binding.
+ * taken / reserved_other: a teammate plays. free: nobody plays (anyone can take it).
+ */
+export type SeatState = "mine" | "other_device" | "reserved_me" | "taken" | "reserved_other" | "free";
+
 export interface MeTeam {
   id: string;
   name: string;
@@ -91,8 +104,13 @@ export interface MeView {
   checkedIn: boolean;
   deviceBound: boolean;
   deviceOk: boolean;
+  seat: SeatState;
+  /** Display name of whoever holds (or is reserved) the seat. */
+  takerName: string | null;
   answer: AnswerView | null;
   standing: Standing | null;
+  /** Question id the standing was last graded for (the session doc can arrive before the team doc). */
+  gradedQid: string | null;
 }
 
 export interface Counts {
@@ -132,15 +150,6 @@ export interface AdminSessionSummary {
   stateVersion: number;
 }
 
-export interface AdminSessionView {
-  serverNow: number;
-  session: AdminSessionSummary;
-  questions: QuestionLite[];
-  counts: Counts;
-  distribution: number[] | null;
-  standings: Standing[];
-}
-
 export interface TeamBoardRow {
   teamId: string;
   teamName: string;
@@ -151,6 +160,11 @@ export interface TeamBoardRow {
   checkedInAt: number | null;
   takerEmail: string | null;
   deviceBound: boolean;
+  deskScanned: boolean;
   answeredCurrent: boolean;
+  /** Last graded question had no answer from this team. */
+  missedLast: boolean;
+  score: number;
+  rank: number | null;
   members: { name: string; email: string }[];
 }

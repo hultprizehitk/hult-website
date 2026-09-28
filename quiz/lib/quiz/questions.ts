@@ -91,3 +91,15 @@ export async function importQuestions(code: string, inputs: QuestionInput[], mod
   });
   return listQuestions(code);
 }
+
+/** Questions tab "Set for all": same points and/or time limit on every question (setup only). */
+export async function bulkUpdateQuestions(code: string, patch: { points?: number; timeLimitSec?: number }): Promise<QuestionLite[]> {
+  const db = adminDb();
+  await db.runTransaction(async (tx) => {
+    const { ref, s } = await editableSession(tx, code);
+    const clean = Object.fromEntries(Object.entries(patch).filter(([, v]) => v !== undefined));
+    s.plan.forEach((p) => tx.update(db.doc(paths.question(code, p.id)), clean));
+    if (patch.timeLimitSec !== undefined) tx.update(ref, { plan: s.plan.map((p) => ({ id: p.id, timeLimitSec: patch.timeLimitSec! })) });
+  });
+  return listQuestions(code);
+}

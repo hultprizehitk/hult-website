@@ -64,32 +64,12 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
 
       const isAdmin = adminEmailsFromEnv().includes(email) || (await isAdminEmail(email));
 
-      // Dev provider login
-      if (account?.provider === "dev" && isDevLoginEnabled()) {
-        if (isAdminPortal && !isAdmin) {
-          return `${base}/admin?error=admin_only`;
-        }
-        if (!isAdminPortal && isAdmin) {
-          return `${base}/signin?error=admin_must_use_admin_portal`;
-        }
-        return true;
-      }
+      // Admin portal: organizers only.
+      if (isAdminPortal) return isAdmin ? true : `${base}/admin?error=admin_only`;
 
-      // STRICT SEPARATION:
-      // 1. Admin Portal: Only organizers/admins can sign in. Normal users are blocked.
-      if (isAdminPortal) {
-        if (!isAdmin) {
-          return `${base}/admin?error=admin_only`;
-        }
-        return true;
-      }
-
-      // 2. Participant Portal: Normal users only. Admins must sign in from /admin.
-      if (isAdmin) {
-        return `${base}/signin?error=admin_must_use_admin_portal`;
-      }
-
-      // 3. Enforce participant gate: registered & checked in at venue
+      // Participant portal. Admins may play too (rehearsal, organizers on a team); the quiz itself decides
+      // team membership. Everyone else must be on a registered team and scanned at the venue desk.
+      if (isAdmin || (account?.provider === "dev" && isDevLoginEnabled())) return true;
       const reg = await checkUserRegistration(email);
       if (!reg.allowed) {
         return `${base}/signin?error=${reg.reason ?? "not_registered"}`;

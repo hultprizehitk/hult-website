@@ -1,4 +1,4 @@
-import type { PlanItem, QuestionResult } from "./fs-types";
+import type { QuestionResult } from "./fs-types";
 import { rankStandings } from "./scoring";
 import type { Standing } from "./types";
 
@@ -11,6 +11,8 @@ export interface GradeTeam {
   totalTimeMs: number;
   answeredCount: number;
   correctCount: number;
+  /** Rank after the previous graded question; becomes the new standing's prevRank. */
+  rank?: number | null;
 }
 
 export interface GradeQuestionInput {
@@ -71,16 +73,19 @@ export function gradeQuestion(q: GradeQuestionInput, teams: GradeTeam[]): GradeO
       .filter((t) => updates.has(t.teamId))
       .map((t) => {
         const u = updates.get(t.teamId)!;
-        return { teamId: t.teamId, teamName: t.teamName, score: u.score, totalTimeMs: u.totalTimeMs, answeredCount: u.answeredCount, correctCount: u.correctCount };
+        return {
+          teamId: t.teamId,
+          teamName: t.teamName,
+          score: u.score,
+          totalTimeMs: u.totalTimeMs,
+          answeredCount: u.answeredCount,
+          correctCount: u.correctCount,
+          lastMs: u.result.optionIndex === null ? null : u.result.ms,
+          lastCorrect: u.result.correct,
+          prevRank: t.rank ?? null,
+        };
       }),
   );
 
   return { updates, distribution, standings };
-}
-
-/** A team checking in after some questions were graded gets the full time for each of them (fair tie-break). */
-export function latePenaltyMs(plan: PlanItem[], gradedThrough: number): number {
-  let ms = 0;
-  for (let i = 0; i <= gradedThrough && i < plan.length; i++) ms += plan[i].timeLimitSec * 1000;
-  return ms;
 }

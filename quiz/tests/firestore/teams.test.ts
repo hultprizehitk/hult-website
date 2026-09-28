@@ -1,14 +1,15 @@
 import { beforeEach, describe, expect, it } from "vitest";
 import { applyControl } from "@/lib/quiz/sessions";
-import { adminCheckin, adminReassignTaker, adminResetDevice, joinSession, setTaker } from "@/lib/quiz/teams";
-import { at, clearFirestore, mail, readCounts, readTeam, setup, srcTeam, T0 } from "../helpers/firestore";
+import { adminFreeSeat, adminReassignTaker, joinSession, releaseTeamDevice, type VenueCheck } from "@/lib/quiz/teams";
+import { clearFirestore, mail, readCounts, readTeam, setup, srcTeam, T0 } from "../helpers/firestore";
 
 beforeEach(clearFirestore);
 
 const DEV_A = "device-aaaaaaaa";
 const DEV_B = "device-bbbbbbbb";
+const DEV_C = "device-cccccccc";
 
-describe("joinSession", () => {
+describe("joinSession: check-in", () => {
   it("rejects users with no team, and unsubmitted or disqualified teams", async () => {
     const code = await setup({ teams: [srcTeam(1), srcTeam(2, { submissionStatus: "forming" }), srcTeam(3, { status: "disqualified" })] });
     await expect(joinSession(code, mail("stranger"), DEV_A)).rejects.toMatchObject({ code: "not_registered" });
@@ -22,79 +23,98 @@ describe("joinSession", () => {
     await expect(joinSession(code, mail("lead2"), DEV_A)).resolves.toMatchObject({ role: "taker" });
   });
 
-  it("checks the team in, makes the lead the taker and binds the first device", async () => {
+  it("the first member to open the quiz checks the team in and takes the seat, whoever it is", async () => {
     const code = await setup();
-    const r = await joinSession(code, mail("lead1"), DEV_A, T0);
+    const r = await joinSession(code, mail("m1b"), DEV_A, T0);
     expect(r).toMatchObject({ role: "taker", deviceOk: true });
-    const t = await readTeam(code, 1);
-    expect(t).toMatchObject({ checkedInBy: mail("lead1"), takerEmail: mail("lead1"), deviceId: DEV_A, totalTimeMs: 0 });
+    expect(await readTeam(code, 1)).toMatchObject({ checkedInBy: mail("m1b"), takerEmail: mail("m1b"), deviceId: DEV_A });
     expect((await readCounts(code)).checkedIn).toBe(1);
-    expect(await joinSession(code, mail("lead1"), DEV_B)).toMatchObject({ deviceOk: false });
+    // Page reloads are idempotent.
+    expect(await joinSession(code, mail("m1b"), DEV_A)).toMatchObject({ role: "taker", deviceOk: true });
   });
 
-  it("gives teammates the teammate role and never counts a team twice under concurrent joins", async () => {
+  it("other members become teammates (no error) and a team is counted once under concurrent joins", async () => {
     const code = await setup();
-    const [a, b] = await Promise.all([joinSession(code, mail("m1a"), DEV_A), joinSession(code, mail("m1b"), DEV_B)]);
-    expect([a.role, b.role]).toEqual(["teammate", "teammate"]);
+    const results = await Promise.all([joinSession(code, mail("m1a"), DEV_A), joinSession(code, mail("m1b"), DEV_B), joinSession(code, mail("lead1"), DEV_C)]);
+    expect(results.filter((r) => r.role === "taker")).toHaveLength(1);
+    expect(results.filter((r) => r.role === "teammate")).toHaveLength(2);
     expect((await readCounts(code)).checkedIn).toBe(1);
-    expect((await readTeam(code, 1)).deviceId).toBeNull();
   });
 
-  it("blocks new check-ins when closed or not open, but lets checked-in members back", async () => {
-    const code = await setup({ teams: [srcTeam(1), srcTeam(2)] });
+  it("refuses new check-ins while paused, in setup, and after Start (no late teams)", async () => {
+    const code = await setup({ teams: [srcTeam(1), srcTeam(2), srcTeam(3)] });
     await joinSession(code, mail("lead1"), DEV_A);
     await applyControl(code, { type: "toggle_checkin" }, T0);
-    await expect(joinSession(code, mail("lead2"), DEV_A)).rejects.toMatchObject({ code: "checkin_closed" });
+    await expect(joinSession(code, mail("lead2"), DEV_B)).rejects.toMatchObject({ code: "checkin_closed" });
+    await applyControl(code, { type: "toggle_checkin" }, T0);
+    await joinSession(code, mail("lead2"), DEV_B);
+    await applyControl(code, { type: "start" }, T0);
+    await expect(joinSession(code, mail("lead3"), DEV_C)).rejects.toMatchObject({ code: "checkin_closed" });
+    // Checked-in teams can come back after Start (refresh, new tab).
     await expect(joinSession(code, mail("lead1"), DEV_A)).resolves.toMatchObject({ deviceOk: true });
     const draft = await setup({ status: "draft" });
     await expect(joinSession(draft, mail("lead1"), DEV_A)).rejects.toMatchObject({ code: "invalid_state" });
   });
+
+  it("requires the desk scan before the team's first check-in only", async () => {
+    const code = await setup();
+    const scanned = new Set<string>();
+    const venue: VenueCheck = async (email) => (scanned.has(email) ? "ok" : "not_checked_in");
+    await expect(joinSession(code, mail("lead1"), DEV_A, T0, { venueCheck: venue })).rejects.toMatchObject({ code: "not_checked_in" });
+    scanned.add(mail("lead1"));
+    await joinSession(code, mail("lead1"), DEV_A, T0, { venueCheck: venue });
+    // A lookup failure ("unknown") never blocks: sign-in already enforced the gate.
+    const down: VenueCheck = async () => "unknown";
+    const other = await setup({ teams: [srcTeam(2)] });
+    await expect(joinSession(other, mail("lead2"), DEV_B, T0, { venueCheck: down })).resolves.toMatchObject({ role: "taker" });
+  });
 });
 
-describe("setTaker", () => {
-  it("lets the lead switch the taker in the lobby and clears the device", async () => {
+describe("joinSession: the one seat", () => {
+  it("same account on a new device needs an explicit claim (Play here), then the old device loses the seat", async () => {
     const code = await setup();
     await joinSession(code, mail("lead1"), DEV_A);
-    const t = await setTaker(code, mail("lead1"), mail("m1b"));
-    expect(t).toMatchObject({ takerEmail: mail("m1b"), deviceId: null });
+    expect(await joinSession(code, mail("lead1"), DEV_B)).toMatchObject({ role: "taker", deviceOk: false });
+    expect((await readTeam(code, 1)).deviceId).toBe(DEV_A);
+    expect(await joinSession(code, mail("lead1"), DEV_B, T0, { claim: true })).toMatchObject({ deviceOk: true });
+    expect((await readTeam(code, 1)).deviceId).toBe(DEV_B);
+  });
+
+  it("a teammate cannot take a held seat, even with claim", async () => {
+    const code = await setup();
+    await joinSession(code, mail("lead1"), DEV_A);
+    expect(await joinSession(code, mail("m1a"), DEV_B, T0, { claim: true })).toMatchObject({ role: "teammate", deviceOk: false });
+    expect((await readTeam(code, 1)).takerEmail).toBe(mail("lead1"));
+  });
+
+  it("a freed seat (sign-out or admin) is taken only by an explicit claim", async () => {
+    const code = await setup();
+    await joinSession(code, mail("lead1"), DEV_A);
+    await releaseTeamDevice(mail("lead1"), code);
+    expect(await readTeam(code, 1)).toMatchObject({ takerEmail: null, deviceId: null });
+    expect(await joinSession(code, mail("m1a"), DEV_B)).toMatchObject({ role: "teammate" });
+    expect(await joinSession(code, mail("m1a"), DEV_B, T0, { claim: true })).toMatchObject({ role: "taker", deviceOk: true });
+
+    await adminFreeSeat(code, srcTeam(1).id);
+    expect(await joinSession(code, mail("lead1"), DEV_A, T0, { claim: true })).toMatchObject({ role: "taker", deviceOk: true });
+  });
+
+  it("admin Switch player reserves the seat: only that member binds, automatically", async () => {
+    const code = await setup();
+    await joinSession(code, mail("lead1"), DEV_A);
+    await adminReassignTaker(code, srcTeam(1).id, mail("m1b"));
+    expect(await readTeam(code, 1)).toMatchObject({ takerEmail: mail("m1b"), deviceId: null });
+    expect(await joinSession(code, mail("m1a"), DEV_C, T0, { claim: true })).toMatchObject({ role: "teammate" });
     expect(await joinSession(code, mail("m1b"), DEV_B)).toMatchObject({ role: "taker", deviceOk: true });
+    await expect(adminReassignTaker(code, srcTeam(1).id, mail("stranger"))).rejects.toMatchObject({ code: "invalid_input" });
   });
 
-  it("rejects non-leads, non-members, unchecked teams and a started quiz", async () => {
+  it("admin seat actions need a checked-in team and work mid-quiz", async () => {
     const code = await setup({ teams: [srcTeam(1), srcTeam(2)] });
-    await expect(setTaker(code, mail("lead2"), mail("m2a"))).rejects.toMatchObject({ code: "not_registered" });
-    await joinSession(code, mail("lead1"), DEV_A);
-    await expect(setTaker(code, mail("m1a"), mail("m1a"))).rejects.toMatchObject({ code: "not_lead" });
-    await expect(setTaker(code, mail("lead1"), mail("stranger"))).rejects.toMatchObject({ code: "invalid_input" });
-    await applyControl(code, { type: "start" }, T0);
-    await expect(setTaker(code, mail("lead1"), mail("m1a"))).rejects.toMatchObject({ code: "invalid_state" });
-  });
-});
-
-describe("admin team ops", () => {
-  it("checks in despite closed check-in, reassigns the taker and resets the device", async () => {
-    const code = await setup();
-    await applyControl(code, { type: "toggle_checkin" }, T0);
-    const id = srcTeam(1).id;
-    await adminCheckin(code, id, mail("admin"));
-    await adminCheckin(code, id, mail("admin")); // idempotent
-    expect((await readCounts(code)).checkedIn).toBe(1);
-    expect((await readTeam(code, 1)).checkedInBy).toBe(mail("admin"));
-    await joinSession(code, mail("lead1"), DEV_A);
-    await adminReassignTaker(code, id, mail("m1a"));
-    expect(await readTeam(code, 1)).toMatchObject({ takerEmail: mail("m1a"), deviceId: null });
-    await expect(adminReassignTaker(code, id, mail("stranger"))).rejects.toMatchObject({ code: "invalid_input" });
-    await joinSession(code, mail("m1a"), DEV_B);
-    await adminResetDevice(code, id);
-    expect((await readTeam(code, 1)).deviceId).toBeNull();
-  });
-
-  it("charges a late check-in the full time of already graded questions", async () => {
-    const code = await setup({ teams: [srcTeam(1), srcTeam(2)] });
+    await expect(adminFreeSeat(code, srcTeam(2).id)).rejects.toMatchObject({ code: "invalid_state" });
     await joinSession(code, mail("lead1"), DEV_A);
     await applyControl(code, { type: "start" }, T0);
-    await applyControl(code, { type: "reveal" }, at(5000));
-    await adminCheckin(code, srcTeam(2).id, mail("admin"));
-    expect((await readTeam(code, 2)).totalTimeMs).toBe(20_000);
+    await adminReassignTaker(code, srcTeam(1).id, mail("m1a"));
+    expect(await joinSession(code, mail("m1a"), DEV_B)).toMatchObject({ role: "taker", deviceOk: true });
   });
 });

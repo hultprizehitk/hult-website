@@ -1,7 +1,7 @@
 import type { AnswerView, PublicQuestion, QuestionLite, SessionState } from "./types";
 
 export function isRevealed(s: SessionState): boolean {
-  return s.status === "ended" || s.phase === "reveal" || s.phase === "leaderboard";
+  return s.phase === "results";
 }
 
 export function publicQuestion(

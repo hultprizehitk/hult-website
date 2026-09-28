@@ -4,7 +4,7 @@ import { adminDb } from "@/lib/firebase/admin";
 import { sessionStateFromDoc } from "./client-state";
 import { applyAction } from "./engine";
 import { QuizError } from "./errors";
-import { paths, SESSIONS, type QuestionDoc, type SessionDoc, type TeamDoc } from "./fs-types";
+import { emptyTeamState, paths, SESSIONS, type QuestionDoc, type SessionDoc, type TeamDoc } from "./fs-types";
 import { gradeQuestion } from "./grading";
 import { LEADERBOARD_SIZE, type ControlAction, type QuestionLite, type SessionState } from "./types";
 
@@ -111,7 +111,7 @@ export interface ControlResult {
 
 /**
  * Runs one host action in a transaction. Opening a question copies its public fields into `current`;
- * Reveal (and End on an ungraded question) grades every team and publishes answer, distribution and top 10.
+ * Show results (and End on an ungraded question) grades every team once and publishes answer, distribution and top 10.
  */
 export async function applyControl(
   code: string,
@@ -140,7 +140,7 @@ export async function applyControl(
 
     const gradeIndex = next.currentIndex;
     const needsGrade =
-      (next.phase === "reveal" || next.status === "ended") && gradeIndex >= 0 && s.phase !== "idle" && s.gradedThrough < gradeIndex;
+      (next.phase === "results" || next.status === "ended") && gradeIndex >= 0 && s.phase === "question" && s.gradedThrough < gradeIndex;
     const gradeQid = needsGrade ? s.plan[gradeIndex].id : null;
     const gradeQ = gradeQid ? ((await tx.get(db.doc(paths.question(code, gradeQid)))).data() as QuestionDoc | undefined) : undefined;
     const gradeTeams = gradeQid ? await tx.get(db.collection(paths.teams(code))) : null;
@@ -149,9 +149,8 @@ export async function applyControl(
     const clearAnswers = clearQid ? await tx.get(db.collection(paths.answers(code)).where("questionId", "==", clearQid)) : null;
     const clearTeams = clearQid ? await tx.get(db.collection(paths.teams(code)).where("currentAnswer.qid", "==", clearQid)) : null;
 
-    const isReset = action.type === "reset_session";
-    const resetTeams = isReset ? await tx.get(db.collection(paths.teams(code))) : null;
-    const resetAnswers = isReset ? await tx.get(db.collection(paths.answers(code))) : null;
+    const resetTeams = result.resetEvent ? await tx.get(db.collection(paths.teams(code))) : null;
+    const resetAnswers = result.resetEvent ? await tx.get(db.collection(paths.answers(code))) : null;
 
     // ---- writes ----
     const update: Record<string, unknown> = { ...toDocPatch(result.patch), stateVersion: s.stateVersion + 1 };
@@ -168,58 +167,33 @@ export async function applyControl(
       };
     }
 
-    if (isReset && resetTeams) {
+    if (resetTeams && resetAnswers) {
       const teamsData = resetTeams.docs.map((d) => d.data() as TeamDoc);
-      const hasScores = teamsData.some((t) => t.score > 0 || t.answeredCount > 0);
-      if (hasScores || s.status === "ended") {
-        const runId = `run_${Date.now()}`;
-        const runRef = db.doc(`${paths.session(code)}/runs/${runId}`);
-        tx.set(runRef, {
+      if (s.startedAt || teamsData.some((t) => t.checkedInAt)) {
+        // Keep the rehearsal's results for reference before wiping.
+        const runId = `run_${now.getTime()}`;
+        tx.set(db.doc(`${paths.session(code)}/runs/${runId}`), {
           runId,
           code,
           title: s.title,
           startedAt: s.startedAt,
-          endedAt: s.endedAt ?? Timestamp.now(),
+          endedAt: s.endedAt ?? Timestamp.fromDate(now),
           leaderboard: s.leaderboard ?? [],
-          teams: teamsData.map((t) => ({
-            teamId: t.teamId,
-            teamName: t.teamName,
-            score: t.score,
-            rank: t.rank,
-            answeredCount: t.answeredCount,
-            correctCount: t.correctCount,
-            totalTimeMs: t.totalTimeMs,
-          })),
-          archivedAt: Timestamp.now(),
+          teams: teamsData
+            .filter((t) => t.checkedInAt)
+            .map((t) => ({ teamId: t.teamId, teamName: t.teamName, takerEmail: t.takerEmail, score: t.score, rank: t.rank, answeredCount: t.answeredCount, correctCount: t.correctCount, totalTimeMs: t.totalTimeMs })),
+          archivedAt: Timestamp.fromDate(now),
         });
       }
-
-      if (resetAnswers) {
-        resetAnswers.docs.forEach((d) => tx.delete(d.ref));
-      }
-
+      resetAnswers.docs.forEach((d) => tx.delete(d.ref));
       for (const d of resetTeams.docs) {
-        tx.update(d.ref, {
-          score: 0,
-          totalTimeMs: 0,
-          answeredCount: 0,
-          correctCount: 0,
-          rank: null,
-          lastResult: null,
-          perQuestion: {},
-          currentAnswer: null,
-        });
-        tx.update(db.doc(paths.counter(code, d.id)), { answeredFor: null, answered: false });
+        const t = d.data() as TeamDoc;
+        tx.update(d.ref, { ...emptyTeamState<Timestamp>(), takerEmail: null });
+        tx.set(db.doc(paths.counter(code, d.id)), { teamId: d.id, eligible: t.eligible, checkedIn: false, answeredFor: null, answered: false });
       }
-
       update.current = null;
       update.leaderboard = null;
       update.gradedThrough = -1;
-      update.questionOpenedAt = null;
-      update.questionClosesAt = null;
-      update.startedAt = null;
-      update.endedAt = null;
-      update.checkinOpen = true;
     }
 
     if (clearAnswers && clearTeams) {
@@ -234,7 +208,7 @@ export async function applyControl(
       const teams = gradeTeams.docs.map((d) => d.data() as TeamDoc);
       const out = gradeQuestion(
         { id: gradeQid, index: gradeIndex, correctIndex: gradeQ.correctIndex, points: gradeQ.points, timeLimitSec: gradeQ.timeLimitSec, optionCount: gradeQ.options.length },
-        teams.map((t) => ({ teamId: t.teamId, teamName: t.teamName, checkedIn: !!t.checkedInAt, currentAnswer: t.currentAnswer, score: t.score, totalTimeMs: t.totalTimeMs, answeredCount: t.answeredCount, correctCount: t.correctCount })),
+        teams.map((t) => ({ teamId: t.teamId, teamName: t.teamName, checkedIn: !!t.checkedInAt, currentAnswer: t.currentAnswer, score: t.score, totalTimeMs: t.totalTimeMs, answeredCount: t.answeredCount, correctCount: t.correctCount, rank: t.rank })),
       );
       const rankOf = new Map(out.standings.map((r) => [r.teamId, r.rank]));
       for (const d of gradeTeams.docs) {
@@ -246,7 +220,8 @@ export async function applyControl(
           answeredCount: u.answeredCount,
           correctCount: u.correctCount,
           rank: rankOf.get(d.id) ?? null,
-          lastResult: { qid: gradeQid, optionIndex: u.result.optionIndex, correct: u.result.correct, points: u.result.points },
+          prevRank: (d.data() as TeamDoc).rank ?? null,
+          lastResult: { qid: gradeQid, optionIndex: u.result.optionIndex, correct: u.result.correct, points: u.result.points, ms: u.result.ms },
           [`perQuestion.${gradeQid}`]: u.result,
         });
       }

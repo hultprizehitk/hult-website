@@ -1,53 +1,62 @@
-import { afterAll, beforeAll, beforeEach, describe, expect, it } from "vitest";
-import { Types } from "mongoose";
-import { connectDB } from "@/lib/db";
+import { beforeEach, describe, expect, it } from "vitest";
 import { adminDb } from "@/lib/firebase/admin";
 import { mintFirebaseToken } from "@/lib/firebase/token";
 import { clearAdminCache, isAdminEmail } from "@/lib/admin";
 import { paths } from "@/lib/quiz/fs-types";
 import { applyControl } from "@/lib/quiz/sessions";
-import { joinSession, setTaker } from "@/lib/quiz/teams";
-import { readAdminEmails, readEventTeams } from "@/lib/sync/mongo-read";
+import { joinSession } from "@/lib/quiz/teams";
 import { syncTeamsToFirestore } from "@/lib/sync/sync-teams";
-import { Event, Team, User } from "@/models/mirror";
-import { startMongo, stopMongo } from "../helpers/db";
-import { clearFirestore, mail, readCounts, readSession, readTeam, setup, srcTeam, T0, teamId } from "../helpers/firestore";
+import { clearFirestore, mail, readCounts, readSession, readTeam, setup, srcTeam, T0 } from "../helpers/firestore";
 
-beforeAll(startMongo);
-afterAll(stopMongo);
 beforeEach(async () => {
   await clearFirestore();
   clearAdminCache();
 });
 
 describe("syncTeamsToFirestore", () => {
-  it("creates teams with roster, eligibility, counts and a sync summary", async () => {
+  it("creates teams with roster, eligibility, counters and a sync summary; nobody holds the seat yet", async () => {
     const code = await setup({ teams: [srcTeam(1), srcTeam(2, { submissionStatus: "ready" })] });
     const t = await readTeam(code, 1);
-    expect(t).toMatchObject({ teamName: "Team 1", eligible: true, takerEmail: mail("lead1"), memberEmails: [mail("lead1"), mail("m1a"), mail("m1b")], checkedInAt: null, score: 0 });
+    expect(t).toMatchObject({ teamName: "Team 1", eligible: true, takerEmail: null, deviceId: null, memberEmails: [mail("lead1"), mail("m1a"), mail("m1b")], checkedInAt: null, score: 0 });
     expect((await readTeam(code, 2)).eligible).toBe(false);
     expect((await readCounts(code)).eligible).toBe(1);
     expect((await readSession(code)).lastSync).toEqual({ total: 2, eligible: 1, added: 2, updated: 0, removed: 0 });
   });
 
-  it("re-sync updates roster fields but preserves check-in, taker, device and scores", async () => {
-    const code = await setup({ teams: [srcTeam(1), srcTeam(2)] });
-    await joinSession(code, mail("lead1"), "device-aaaaaaaa");
-    await setTaker(code, mail("lead1"), mail("m1a"));
-    await joinSession(code, mail("m1a"), "device-bbbbbbbb");
-    const summary = await syncTeamsToFirestore(code, [srcTeam(1, { teamName: "Renamed" })], []);
-    expect(summary).toEqual({ total: 1, eligible: 1, added: 0, updated: 1, removed: 1 });
-    expect(await readTeam(code, 1)).toMatchObject({ teamName: "Renamed", takerEmail: mail("m1a"), deviceId: "device-bbbbbbbb" });
-    expect((await readTeam(code, 1)).checkedInAt).not.toBeNull();
-    expect((await readTeam(code, 2)).eligible).toBe(false); // removed on the site -> ineligible, not deleted
+  it("a desk scan is recorded but does not check the team into the quiz", async () => {
+    const code = await setup({ teams: [srcTeam(1, { checkedIn: true })] });
+    expect(await readTeam(code, 1)).toMatchObject({ deskScanned: true, checkedInAt: null });
+    expect((await readCounts(code)).checkedIn).toBe(0);
   });
 
-  it("falls back to the lead if the chosen taker left the team", async () => {
+  it("writes only what changed and preserves check-in, seat, scores and live counters", async () => {
+    const code = await setup({ teams: [srcTeam(1), srcTeam(2)] });
+    await joinSession(code, mail("m1a"), "device-aaaaaaaa");
+    const before = await readTeam(code, 2);
+    const unchanged = await syncTeamsToFirestore(code, [srcTeam(1), srcTeam(2)], []);
+    expect(unchanged).toEqual({ total: 2, eligible: 2, added: 0, updated: 0, removed: 0 });
+    expect((await readTeam(code, 2)).syncedAt!.toMillis()).toBe(before.syncedAt!.toMillis());
+
+    const summary = await syncTeamsToFirestore(code, [srcTeam(1, { teamName: "Renamed" })], []);
+    expect(summary).toEqual({ total: 1, eligible: 1, added: 0, updated: 1, removed: 1 });
+    expect(await readTeam(code, 1)).toMatchObject({ teamName: "Renamed", takerEmail: mail("m1a"), deviceId: "device-aaaaaaaa" });
+    expect((await readTeam(code, 1)).checkedInAt).not.toBeNull();
+    expect((await readCounts(code)).checkedIn).toBe(1);
+    expect((await readTeam(code, 2)).eligible).toBe(false); // removed on the site -> ineligible, not deleted
+    expect((await readCounts(code)).eligible).toBe(1);
+  });
+
+  it("frees the seat if the player left the team on the site", async () => {
     const code = await setup();
-    await joinSession(code, mail("lead1"), "device-aaaaaaaa");
-    await setTaker(code, mail("lead1"), mail("m1b"));
+    await joinSession(code, mail("m1b"), "device-aaaaaaaa");
     await syncTeamsToFirestore(code, [srcTeam(1, { members: [{ name: "A", email: mail("m1a") }] })], []);
-    expect(await readTeam(code, 1)).toMatchObject({ takerEmail: mail("lead1"), deviceId: null });
+    expect(await readTeam(code, 1)).toMatchObject({ takerEmail: null, deviceId: null });
+  });
+
+  it("is refused once the quiz has started", async () => {
+    const code = await setup();
+    await applyControl(code, { type: "start" }, T0);
+    await expect(syncTeamsToFirestore(code, [srcTeam(1)], [])).rejects.toMatchObject({ code: "invalid_state" });
   });
 
   it("mirrors site admins into quizAdmins and removes stale ones", async () => {
@@ -68,26 +77,6 @@ describe("syncTeamsToFirestore", () => {
   });
 });
 
-describe("mongo-read (read-only source)", () => {
-  it("maps an event's teams and the site's admin users", async () => {
-    await connectDB();
-    const eventId = new Types.ObjectId();
-    await Event.create({ _id: eventId, title: "Quiz Night", date: "2026-10-01", venue: "Hall" });
-    await Team.create({
-      _id: new Types.ObjectId(teamId(7).slice(0, 24)),
-      eventId, teamCode: "T7", teamName: "Team 7",
-      lead: { name: "Lead 7", email: "LEAD7@heritageit.edu.in" }, leadEmail: "lead7@heritageit.edu.in",
-      members: [{ name: "M", email: "m7@heritageit.edu.in" }], status: "confirmed", submissionStatus: "submitted",
-    });
-    await User.create({ name: "Admin", email: mail("siteadmin"), role: "lead_admin" });
-    await User.create({ name: "User", email: mail("plain"), role: "user" });
-    const teams = await readEventTeams(String(eventId));
-    expect(teams).toHaveLength(1);
-    expect(teams[0]).toMatchObject({ teamName: "Team 7", leadEmail: "lead7@heritageit.edu.in", status: "confirmed", submissionStatus: "submitted" });
-    expect(await readAdminEmails()).toEqual([mail("siteadmin")]);
-  });
-});
-
 describe("auth bridge (custom token)", () => {
   function claims(token: string) {
     return JSON.parse(Buffer.from(token.split(".")[1], "base64url").toString("utf8")) as { uid: string; claims: { email: string; admin: boolean } };
@@ -105,15 +94,5 @@ describe("auth bridge (custom token)", () => {
 
   it("refuses non-college accounts", async () => {
     await expect(mintFirebaseToken("someone@gmail.com")).rejects.toMatchObject({ code: "forbidden" });
-  });
-});
-
-describe("quiz flow smoke", () => {
-  it("an ended quiz keeps checked-in counts", async () => {
-    const code = await setup();
-    await joinSession(code, mail("lead1"), "device-aaaaaaaa", T0);
-    await applyControl(code, { type: "end" }, T0);
-    expect((await readSession(code)).status).toBe("ended");
-    expect((await readCounts(code)).checkedIn).toBe(1);
   });
 });

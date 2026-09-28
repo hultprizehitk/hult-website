@@ -38,7 +38,8 @@ afterAll(async () => {
 });
 
 const anon = () => env.unauthenticatedContext().firestore();
-const member = (email: string) => env.authenticatedContext(email, { email }).firestore();
+// Real custom-token ID tokens carry no `email` claim (Firebase strips it); the uid is the email.
+const member = (email: string) => env.authenticatedContext(email).firestore();
 const admin = () => env.authenticatedContext("boss@heritageit.edu.in", { email: "boss@heritageit.edu.in", admin: true }).firestore();
 
 describe("anonymous (projector)", () => {
@@ -64,6 +65,10 @@ describe("signed-in participant", () => {
   it("reads only their own team", async () => {
     await assertSucceeds(getDoc(doc(member("a2@heritageit.edu.in"), `${S}/teams/t1`)));
     await assertFails(getDoc(doc(member("a@heritageit.edu.in"), `${S}/teams/t2`)));
+  });
+  it("membership comes from the uid (the email), not from an email claim", async () => {
+    const forged = env.authenticatedContext("someone-else", { email: "a2@heritageit.edu.in" }).firestore();
+    await assertFails(getDoc(doc(forged, `${S}/teams/t1`)));
   });
   it("cannot read questions (no correctIndex leak), answers, admins, or list all teams", async () => {
     const db = member("a@heritageit.edu.in");

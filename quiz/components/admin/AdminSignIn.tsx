@@ -1,7 +1,7 @@
 import { AuthError } from "next-auth";
 import { redirect } from "next/navigation";
 import Link from "next/link";
-import { ArrowRight, ShieldCheck } from "lucide-react";
+import { ArrowRight } from "lucide-react";
 import { signIn } from "@/auth";
 import { isDevLoginEnabled } from "@/lib/env";
 import { QuizShell } from "@/components/quiz/QuizShell";

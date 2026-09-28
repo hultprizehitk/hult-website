@@ -2,6 +2,7 @@
 
 import { motion } from "motion/react";
 import { cn } from "@/lib/utils";
+import { formatMs } from "@/lib/format";
 import type { Standing } from "@/lib/quiz/types";
 
 const ORDER = [1, 0, 2]; // 2nd, 1st, 3rd
@@ -21,7 +22,9 @@ export function Podium({ rows }: { rows: Standing[] }) {
           className="flex w-64 flex-col items-center gap-3"
         >
           <p className="line-clamp-2 text-center text-2xl font-bold tracking-tight">{top[i].teamName}</p>
-          <p className="font-mono text-lg text-white/60 tabular-nums">{top[i].score} pts</p>
+          <p className="font-mono text-lg text-white/60 tabular-nums">
+            {top[i].score} pts &middot; {formatMs(top[i].totalTimeMs)}
+          </p>
           <div
             className={cn(
               "grid w-full place-items-center rounded-t-3xl border border-b-0 text-6xl font-black shadow-2xl",
