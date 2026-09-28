@@ -83,6 +83,24 @@ describe("sessions", () => {
     expect((await readTeam(code, 1)).perQuestion[(await readSession(code)).plan[0].id]).toBeUndefined();
   });
 
+  it("+15s after Final results reopens the last question, hides its answer again and re-grades without double counting", async () => {
+    const code = await setup({ questions: 1 });
+    const dev = "device-aaaaaaaa";
+    await joinSession(code, mail("lead1"), dev, T0);
+    await startAndOpenFirst(code);
+    const qid = (await readSession(code)).current!.id;
+    await applyControl(code, { type: "end" }, at(40_000));
+    expect((await readSession(code)).current!.correctIndex).toBe(1);
+
+    await applyControl(code, { type: "extend", seconds: 15 }, at(50_000));
+    const reopened = await readSession(code);
+    expect(reopened).toMatchObject({ status: "live", phase: "question" });
+    expect(reopened.current).toMatchObject({ correctIndex: null, distribution: null });
+    await submitAnswer(code, mail("lead1"), { questionId: qid, optionIndex: 1, deviceId: dev }, at(55_000));
+    await applyControl(code, { type: "show_results" }, at(60_000));
+    expect(await readTeam(code, 1)).toMatchObject({ score: 100, answeredCount: 1, correctCount: 1 });
+  });
+
   it("rejects a stale expectedVersion and serialises concurrent identical actions", async () => {
     const code = await setup({ status: "draft" });
     await expect(applyControl(code, { type: "open_lobby" }, T0, 7)).rejects.toMatchObject({ code: "conflict" });

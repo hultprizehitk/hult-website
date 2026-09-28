@@ -62,22 +62,29 @@ describe("engine: strictly ordered questions", () => {
 });
 
 describe("engine: during a question", () => {
-  it("extends and closes only while open; close is idempotent after time is up", () => {
+  it("extends while open, reopens after time up, results or the end; close is idempotent after time is up", () => {
     const q = atQuestion(0);
     expect(applyAction(q, { type: "extend", seconds: 15 }, questions, at(10_000)).patch).toEqual({ questionClosesAt: at(LEAD_IN_MS + 35_000) });
-    refuse(q, { type: "extend", seconds: 15 }, at(LEAD_IN_MS + 20_000));
+    const reopen = { status: "live", phase: "question", endedAt: null, questionOpenedAt: at(LEAD_IN_MS), questionClosesAt: at(60_000) };
+    expect(applyAction(q, { type: "extend", seconds: 15 }, questions, at(45_000)).patch).toEqual(reopen);
+    expect(applyAction(results(2), { type: "extend", seconds: 15 }, questions, at(45_000)).patch).toEqual(reopen);
+    expect(applyAction(merge(results(2), { status: "ended", endedAt: at(40_000) }), { type: "extend", seconds: 15 }, questions, at(45_000)).patch).toEqual(reopen);
+    refuse(starting, { type: "extend", seconds: 15 });
     expect(applyAction(q, { type: "close_now" }, questions, at(10_000)).patch).toEqual({ questionClosesAt: at(10_000) });
     expect(applyAction(q, { type: "close_now" }, questions, at(LEAD_IN_MS + 25_000)).patch).toEqual({});
     // Closing during the lead-in closes at open time (zero-length window), never before it.
     expect(applyAction(q, { type: "close_now" }, questions, at(1000)).patch).toEqual({ questionClosesAt: at(LEAD_IN_MS) });
   });
 
-  it("restart reopens the same question with a new lead-in and clears its answers", () => {
-    expect(applyAction(atQuestion(1), { type: "restart_question" }, questions, at(9000))).toEqual({
-      patch: { currentIndex: 1, phase: "question", questionOpenedAt: at(9000 + LEAD_IN_MS), questionClosesAt: at(9000 + LEAD_IN_MS + 20_000) },
+  it("restart reopens the same question with a new lead-in and clears its answers, even after results or the end", () => {
+    const restarted = {
+      patch: { status: "live", endedAt: null, currentIndex: 1, phase: "question", questionOpenedAt: at(9000 + LEAD_IN_MS), questionClosesAt: at(9000 + LEAD_IN_MS + 20_000) },
       clearAnswersForIndex: 1,
-    });
-    refuse(results(1), { type: "restart_question" });
+    };
+    expect(applyAction(atQuestion(1), { type: "restart_question" }, questions, at(9000))).toEqual(restarted);
+    expect(applyAction(results(1), { type: "restart_question" }, questions, at(9000))).toEqual(restarted);
+    expect(applyAction(merge(results(1), { status: "ended" }), { type: "restart_question" }, questions, at(9000))).toEqual(restarted);
+    refuse(starting, { type: "restart_question" });
   });
 
   it("show_results closes a running question, or just switches phase after time is up", () => {

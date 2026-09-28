@@ -41,6 +41,8 @@ export function applyAction(s: SessionState, a: ControlAction, questions: Questi
   const live = s.status === "live";
   const inQuestion = live && s.phase === "question";
   const stillOpen = inQuestion && t < ms(s.questionClosesAt);
+  // A current question exists: open, timed out, showing results, or the last one after Final results.
+  const hasCurrent = (live || s.status === "ended") && s.currentIndex >= 0;
 
   switch (a.type) {
     case "open_lobby":
@@ -80,12 +82,23 @@ export function applyAction(s: SessionState, a: ControlAction, questions: Questi
       return { patch: { questionClosesAt: new Date(Math.max(t, ms(s.questionOpenedAt))) } };
 
     case "extend":
-      requireState(stillOpen);
-      return { patch: { questionClosesAt: new Date(ms(s.questionClosesAt) + a.seconds * 1000) } };
+      // Open: add time. Time up, results or ended: reopen the same question for `seconds` more (answers kept;
+      // grading again replaces its earlier result).
+      requireState(hasCurrent);
+      if (stillOpen) return { patch: { questionClosesAt: new Date(ms(s.questionClosesAt) + a.seconds * 1000) } };
+      return {
+        patch: {
+          status: "live",
+          phase: "question",
+          endedAt: null,
+          questionOpenedAt: s.questionOpenedAt && ms(s.questionOpenedAt) <= t ? s.questionOpenedAt : now,
+          questionClosesAt: new Date(t + a.seconds * 1000),
+        },
+      };
 
     case "restart_question":
-      requireState(inQuestion);
-      return { patch: openQuestionPatch(s.currentIndex, questions, now), clearAnswersForIndex: s.currentIndex };
+      requireState(hasCurrent);
+      return { patch: { status: "live", endedAt: null, ...openQuestionPatch(s.currentIndex, questions, now) }, clearAnswersForIndex: s.currentIndex };
 
     case "show_results":
       requireState(inQuestion);

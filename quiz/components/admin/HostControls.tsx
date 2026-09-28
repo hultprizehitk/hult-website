@@ -120,6 +120,8 @@ export function HostControls({
   const inQuestion = s.status === "live" && s.phase === "question";
   const open = inQuestion && s.questionClosesAt !== null && now < s.questionClosesAt;
   const inLeadIn = inQuestion && s.questionOpenedAt !== null && now < s.questionOpenedAt;
+  // +15s and Restart work on the current question whether it is open, timed out, in results or after the end.
+  const hasCurrent = (s.status === "live" || s.status === "ended") && s.currentIndex >= 0;
   const total = Math.max(questionCount, 1);
 
   return (
@@ -163,7 +165,7 @@ export function HostControls({
         </div>
       )}
 
-      {(inQuestion || s.status === "lobby") && (
+      {(hasCurrent || s.status === "lobby") && (
         <div className="mt-4 flex flex-wrap gap-2">
           {s.status === "lobby" && (
             <Button variant="outline" size="sm" disabled={busy} onClick={() => void run({ type: "toggle_checkin" })}>
@@ -171,16 +173,18 @@ export function HostControls({
               {s.checkinOpen ? "Pause check-in" : "Resume check-in"}
             </Button>
           )}
-          {inQuestion && (
+          {hasCurrent && (
             <>
-              <Button variant="outline" size="sm" disabled={busy || !open} onClick={() => void run({ type: "extend", seconds: 15 })}>
+              <Button variant="outline" size="sm" disabled={busy || inLeadIn} onClick={() => void run({ type: "extend", seconds: 15 })}>
                 <TimerReset />
-                +15s
+                {open ? "+15s" : "Reopen +15s"}
               </Button>
-              <Button variant="outline" size="sm" disabled={busy || !open || inLeadIn} onClick={() => void run({ type: "close_now" })}>
-                <Square />
-                Close early
-              </Button>
+              {inQuestion && (
+                <Button variant="outline" size="sm" disabled={busy || !open || inLeadIn} onClick={() => void run({ type: "close_now" })}>
+                  <Square />
+                  Close early
+                </Button>
+              )}
               <ConfirmButton
                 variant="outline"
                 size="sm"
