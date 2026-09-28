@@ -55,6 +55,34 @@ describe("sessions", () => {
     expect(s.current!.correctIndex).toBe(1);
   });
 
+  it("publish_question jumps to any question, and re-grading a question replaces its old result", async () => {
+    const code = await setup({ questions: 3 });
+    const dev = "device-aaaaaaaa";
+    await joinSession(code, mail("lead1"), dev, T0);
+    await expect(applyControl((await setup({ status: "draft" })), { type: "publish_question", index: 0 }, T0)).rejects.toMatchObject({ code: "invalid_state" });
+
+    // From check-in straight to question 3.
+    expect(await applyControl(code, { type: "publish_question", index: 2 }, T0)).toMatchObject({ status: "live", phase: "question", currentIndex: 2 });
+    const q3 = (await readSession(code)).current!.id;
+    await submitAnswer(code, mail("lead1"), { questionId: q3, optionIndex: 1, deviceId: dev }, at(LEAD_IN_MS + 1000));
+    await applyControl(code, { type: "show_results" }, at(LEAD_IN_MS + 2000));
+    expect(await readTeam(code, 1)).toMatchObject({ score: 100, correctCount: 1, answeredCount: 1, totalTimeMs: 1000 });
+
+    // Back to question 3 again after the end: its answers clear and the new result replaces the old one.
+    await applyControl(code, { type: "end" }, at(20_000));
+    await applyControl(code, { type: "publish_question", index: 2 }, at(30_000));
+    expect(await readSession(code)).toMatchObject({ status: "live", endedAt: null });
+    expect((await readTeam(code, 1)).currentAnswer).toBeNull();
+    await submitAnswer(code, mail("lead1"), { questionId: q3, optionIndex: 0, deviceId: dev }, at(30_000 + LEAD_IN_MS + 3000));
+    await applyControl(code, { type: "show_results" }, at(30_000 + LEAD_IN_MS + 4000));
+    expect(await readTeam(code, 1)).toMatchObject({ score: 0, correctCount: 0, answeredCount: 1, totalTimeMs: 3000 });
+
+    // Jumping away from an open question leaves it ungraded.
+    await applyControl(code, { type: "publish_question", index: 0 }, at(60_000));
+    await applyControl(code, { type: "publish_question", index: 1 }, at(61_000));
+    expect((await readTeam(code, 1)).perQuestion[(await readSession(code)).plan[0].id]).toBeUndefined();
+  });
+
   it("rejects a stale expectedVersion and serialises concurrent identical actions", async () => {
     const code = await setup({ status: "draft" });
     await expect(applyControl(code, { type: "open_lobby" }, T0, 7)).rejects.toMatchObject({ code: "conflict" });

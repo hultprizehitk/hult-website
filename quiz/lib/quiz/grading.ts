@@ -13,6 +13,8 @@ export interface GradeTeam {
   correctCount: number;
   /** Rank after the previous graded question; becomes the new standing's prevRank. */
   rank?: number | null;
+  /** This question's earlier result, if it was graded before (admin re-published it). It is replaced, not added to. */
+  previous?: QuestionResult | null;
 }
 
 export interface GradeQuestionInput {
@@ -59,11 +61,12 @@ export function gradeQuestion(q: GradeQuestionInput, teams: GradeTeam[]): GradeO
     } else {
       result = { optionIndex: null, correct: false, points: 0, ms: limitMs };
     }
+    const p = t.previous;
     updates.set(t.teamId, {
-      score: t.score + result.points,
-      totalTimeMs: t.totalTimeMs + result.ms,
-      answeredCount: t.answeredCount + (a ? 1 : 0),
-      correctCount: t.correctCount + (result.correct ? 1 : 0),
+      score: t.score - (p?.points ?? 0) + result.points,
+      totalTimeMs: t.totalTimeMs - (p?.ms ?? 0) + result.ms,
+      answeredCount: t.answeredCount - (p && p.optionIndex !== null ? 1 : 0) + (a ? 1 : 0),
+      correctCount: t.correctCount - (p?.correct ? 1 : 0) + (result.correct ? 1 : 0),
       result,
     });
   }

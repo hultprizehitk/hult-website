@@ -2,10 +2,11 @@
 
 import { useState } from "react";
 import { toast } from "sonner";
-import { ArrowDown, ArrowUp, Check, Eye, EyeOff, Lock, Pencil, Plus, Trash2 } from "lucide-react";
+import { ArrowDown, ArrowUp, Check, Eye, EyeOff, Lock, Pencil, Plus, Send, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { api, type ApiError } from "@/lib/client/api";
+import { sendControl } from "@/lib/client/control";
 import { optionLetter } from "@/lib/format";
 import { cn } from "@/lib/utils";
 import type { QuestionLite, SessionStatus } from "@/lib/quiz/types";
@@ -46,7 +47,23 @@ function BulkSet({ code, count }: { code: string; count: number }) {
   );
 }
 
-export function QuestionsPanel({ code, status, questions: qs, loading }: { code: string; status: SessionStatus; questions: QuestionLite[]; loading: boolean }) {
+export function QuestionsPanel({
+  code,
+  status,
+  stateVersion,
+  currentIndex,
+  questions: qs,
+  loading,
+}: {
+  code: string;
+  status: SessionStatus;
+  stateVersion: number;
+  currentIndex: number;
+  questions: QuestionLite[];
+  loading: boolean;
+}) {
+  // Publish jumps straight to any question (check-in, mid-quiz or after the end).
+  const canPublish = status !== "draft";
   const editable = status === "draft" || status === "lobby";
   const [editing, setEditing] = useState<QuestionLite | "new" | null>(null);
   // Once the quiz runs, answers stay hidden unless asked for (the admin laptop may be seen by others).
@@ -110,7 +127,14 @@ export function QuestionsPanel({ code, status, questions: qs, loading }: { code:
         <div key={q.id} className="rounded-3xl border border-white/15 bg-[#0e0e12] p-5 shadow-2xl">
           <div className="flex flex-col gap-4 sm:flex-row sm:items-start">
             <div className="flex min-w-0 flex-1 items-start gap-4">
-              <span className="grid size-8 shrink-0 place-items-center rounded-xl border border-white/10 bg-white/[0.04] font-mono text-xs font-bold tabular-nums">{i + 1}</span>
+              <span
+                className={cn(
+                  "grid size-8 shrink-0 place-items-center rounded-xl border font-mono text-xs font-bold tabular-nums",
+                  i === currentIndex ? "border-amber-300/60 bg-amber-300/10 text-amber-200" : "border-white/10 bg-white/[0.04]",
+                )}
+              >
+                {i + 1}
+              </span>
               <div className="min-w-0 flex-1">
                 <p className="break-words font-semibold tracking-tight">{q.text}</p>
                 <p className="mt-0.5 font-mono text-[11px] text-white/50 tabular-nums">
@@ -130,6 +154,23 @@ export function QuestionsPanel({ code, status, questions: qs, loading }: { code:
                 </ul>
               </div>
             </div>
+            {canPublish && (
+              <div className="flex shrink-0 items-center border-t border-white/10 pt-3 sm:border-0 sm:pt-0">
+                <ConfirmButton
+                  size="sm"
+                  variant={i === currentIndex ? "outline" : "default"}
+                  label={i === currentIndex ? "Publish again" : "Publish"}
+                  title={`Publish question ${i + 1}?`}
+                  description={
+                    i === currentIndex
+                      ? "Clears its answers and reopens it for everyone."
+                      : "Opens it on every phone and the projector now. The current question is not graded if it is still open."
+                  }
+                  icon={<Send />}
+                  onConfirm={() => sendControl(code, { type: "publish_question", index: i }, stateVersion)}
+                />
+              </div>
+            )}
             {editable && (
               <div className="flex shrink-0 items-center gap-1 border-t border-white/10 pt-3 sm:border-0 sm:pt-0">
                 <Button size="icon-sm" variant="ghost" aria-label="Move up" disabled={i === 0} onClick={() => move(i, -1)}>

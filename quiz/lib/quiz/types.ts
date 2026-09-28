@@ -35,6 +35,7 @@ export type ControlAction =
   | { type: "close_now" }
   | { type: "extend"; seconds: number }
   | { type: "restart_question" }
+  | { type: "publish_question"; index: number }
   | { type: "show_results" }
   | { type: "end" }
   | { type: "reset_event" };

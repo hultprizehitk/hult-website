@@ -23,8 +23,8 @@
 | U2 | Quiz check-in | The first eligible, desk-scanned member to open `/quiz` while check-in is open checks the team in and binds the phone. A desk scan alone does **not** check a team into the quiz. |
 | U3 | One phone | The team has one seat: `takerEmail` + `deviceId`. Other members see "Playing on X's phone", not an error. |
 | U4 | Seat recovery | Same account on a new phone: "Play here" moves the seat. Admin can **Switch player** (reserve the seat for a member) or **Free seat** (any member can tap "Play on this phone"). |
-| U5 | Late teams | Rejected once Start is pressed. No admin late check-in. |
-| U6 | Pacing | Strictly in order. Start, Question 1, Show results, Question 2, ..., Final results. No jumping or re-publishing. |
+| U5 | Late teams | The desk scan is the check-in (Harsh, 2026-09-28): a desk-scanned member, or an admin, can check the team in at any time, even after Start or while check-in is paused. Members who were not desk-scanned can only check in while check-in is open. |
+| U6 | Pacing | The primary button runs in order (Start, Question 1, Show results, ..., Final results). The Questions tab also has **Publish** on every question: it jumps to that question from check-in, mid-quiz or after the end. An open question left by a jump is not graded. Re-publishing a graded question clears its answers, and its next grading replaces the old result (no double counting). |
 | U7 | Results | One step (reveal and leaderboard merged). Phones: verdict, points, time, rank, movement, top 10. Projector: correct answer + distribution, top 10 with **time on this question** and score. |
 | U8 | Timer | Per question. The answer window closes on its own; the admin can +15s, close early, or restart. Showing results while the timer runs asks for confirmation. |
 | U9 | Admin answers | Hidden on the admin screen by default; one toggle reveals them. |

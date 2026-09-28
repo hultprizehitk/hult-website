@@ -34,7 +34,7 @@ function primaryStep(s: AdminSessionSummary, questionCount: number, counts: Coun
       disabled: questionCount === 0 || counts.checkedIn === 0,
       confirm: {
         title: "Start the quiz?",
-        description: `${teams(counts.checkedIn)} in.${out > 0 ? ` ${teams(out)} not in will be locked out.` : ""} Check-in closes now.`,
+        description: `${teams(counts.checkedIn)} in.${out > 0 ? ` ${teams(out)} not in yet can still join if scanned at the desk.` : ""}`,
       },
     };
   }

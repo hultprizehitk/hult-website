@@ -139,8 +139,8 @@ export async function applyControl(
     if (openQid && !openQ) throw new QuizError("not_found", "Question missing");
 
     const gradeIndex = next.currentIndex;
-    const needsGrade =
-      (next.phase === "results" || next.status === "ended") && gradeIndex >= 0 && s.phase === "question" && s.gradedThrough < gradeIndex;
+    // Grades each time an open question ends (results or End). A re-published question replaces its earlier result.
+    const needsGrade = (next.phase === "results" || next.status === "ended") && gradeIndex >= 0 && s.status === "live" && s.phase === "question";
     const gradeQid = needsGrade ? s.plan[gradeIndex].id : null;
     const gradeQ = gradeQid ? ((await tx.get(db.doc(paths.question(code, gradeQid)))).data() as QuestionDoc | undefined) : undefined;
     const gradeTeams = gradeQid ? await tx.get(db.collection(paths.teams(code))) : null;
@@ -208,7 +208,7 @@ export async function applyControl(
       const teams = gradeTeams.docs.map((d) => d.data() as TeamDoc);
       const out = gradeQuestion(
         { id: gradeQid, index: gradeIndex, correctIndex: gradeQ.correctIndex, points: gradeQ.points, timeLimitSec: gradeQ.timeLimitSec, optionCount: gradeQ.options.length },
-        teams.map((t) => ({ teamId: t.teamId, teamName: t.teamName, checkedIn: !!t.checkedInAt, currentAnswer: t.currentAnswer, score: t.score, totalTimeMs: t.totalTimeMs, answeredCount: t.answeredCount, correctCount: t.correctCount, rank: t.rank })),
+        teams.map((t) => ({ teamId: t.teamId, teamName: t.teamName, checkedIn: !!t.checkedInAt, currentAnswer: t.currentAnswer, score: t.score, totalTimeMs: t.totalTimeMs, answeredCount: t.answeredCount, correctCount: t.correctCount, rank: t.rank, previous: t.perQuestion?.[gradeQid] ?? null })),
       );
       const rankOf = new Map(out.standings.map((r) => [r.teamId, r.rank]));
       for (const d of gradeTeams.docs) {
@@ -225,7 +225,7 @@ export async function applyControl(
           [`perQuestion.${gradeQid}`]: u.result,
         });
       }
-      update.gradedThrough = gradeIndex;
+      update.gradedThrough = Math.max(s.gradedThrough, gradeIndex);
       update.leaderboard = out.standings.slice(0, LEADERBOARD_SIZE);
       // A question closed by End keeps its public fields; reveal the answer on it either way.
       const current = (update.current as SessionDoc["current"]) ?? s.current;

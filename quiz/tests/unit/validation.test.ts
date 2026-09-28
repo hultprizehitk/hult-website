@@ -19,8 +19,10 @@ describe("validation", () => {
     expect(controlSchema.safeParse({ type: "extend", seconds: 4 }).success).toBe(false);
     expect(controlSchema.safeParse({ type: "extend", seconds: 15 }).success).toBe(true);
   });
-  it("has no out-of-order publish, and reset needs the typed confirmation", () => {
-    expect(controlSchema.safeParse({ type: "publish_question", index: 0 }).success).toBe(false);
+  it("accepts publish_question with an index, and reset needs the typed confirmation", () => {
+    expect(controlSchema.safeParse({ type: "publish_question", index: 0 }).success).toBe(true);
+    expect(controlSchema.safeParse({ type: "publish_question" }).success).toBe(false);
+    expect(controlSchema.safeParse({ type: "publish_question", index: -1 }).success).toBe(false);
     expect(controlSchema.safeParse({ type: "reveal" }).success).toBe(false);
     expect(controlSchema.safeParse({ type: "show_results" }).success).toBe(true);
     expect(controlSchema.safeParse({ type: "reset_event" }).success).toBe(false);

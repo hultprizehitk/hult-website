@@ -42,6 +42,7 @@ export const controlSchema = z.discriminatedUnion("type", [
   z.object({ type: z.literal("close_now") }),
   z.object({ type: z.literal("extend"), seconds: z.number().int().min(5).max(60) }),
   z.object({ type: z.literal("restart_question") }),
+  z.object({ type: z.literal("publish_question"), index: z.number().int().min(0) }),
   z.object({ type: z.literal("show_results") }),
   z.object({ type: z.literal("end") }),
   z.object({ type: z.literal("reset_event"), confirm: z.literal("RESET") }),

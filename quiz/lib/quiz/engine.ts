@@ -32,8 +32,9 @@ function requireState(ok: boolean): void {
 }
 
 /**
- * Host state machine (docs/superpowers/specs/2026-09-28-quiz-ux-overhaul.md §3). Questions run strictly in order:
+ * Host state machine (docs/superpowers/specs/2026-09-28-quiz-ux-overhaul.md §3). The primary flow runs in order:
  * start -> idle ("quiz is starting") -> next -> question -> show_results -> next -> ... -> end.
+ * `publish_question` lets the admin jump to any question from check-in, mid-quiz or after the end.
  */
 export function applyAction(s: SessionState, a: ControlAction, questions: QuestionLite[], now: Date): ActionResult {
   const t = now.getTime();
@@ -61,6 +62,16 @@ export function applyAction(s: SessionState, a: ControlAction, questions: Questi
       if (nextIndex >= questions.length) throw new QuizError("last_question");
       return { patch: openQuestionPatch(nextIndex, questions, now) };
     }
+
+    case "publish_question":
+      // Jump to any question. Leaving an open question does not grade it; re-grading a question replaces its old result.
+      requireState(s.status !== "draft");
+      if (questions.length === 0) throw new QuizError("no_questions");
+      if (a.index < 0 || a.index >= questions.length) throw new QuizError("not_found");
+      return {
+        patch: { status: "live", checkinOpen: false, startedAt: s.startedAt ?? now, endedAt: null, ...openQuestionPatch(a.index, questions, now) },
+        clearAnswersForIndex: a.index,
+      };
 
     case "close_now":
       requireState(inQuestion);
