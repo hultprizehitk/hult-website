@@ -58,6 +58,7 @@ export function applyAction(s: SessionState, a: ControlAction, questions: Questi
       if (questions.length === 0) throw new QuizError("no_questions");
       return { patch: { status: "live", phase: "idle", currentIndex: -1, checkinOpen: false, startedAt: now } };
 
+
     case "next": {
       requireState(live && (s.phase === "idle" || s.phase === "results"));
       const nextIndex = s.currentIndex + 1;
@@ -66,12 +67,17 @@ export function applyAction(s: SessionState, a: ControlAction, questions: Questi
     }
 
     case "publish_question":
-      // Jump to any question. Leaving an open question does not grade it; re-grading a question replaces its old result.
-      requireState(s.status !== "draft");
+      requireState(live);
       if (questions.length === 0) throw new QuizError("no_questions");
       if (a.index < 0 || a.index >= questions.length) throw new QuizError("not_found");
       return {
-        patch: { status: "live", checkinOpen: false, startedAt: s.startedAt ?? now, endedAt: null, ...openQuestionPatch(a.index, questions, now) },
+        patch: {
+          status: "live",
+          checkinOpen: false,
+          startedAt: s.startedAt ?? now,
+          endedAt: null,
+          ...openQuestionPatch(a.index, questions, now),
+        },
         clearAnswersForIndex: a.index,
       };
 

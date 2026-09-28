@@ -3,21 +3,17 @@
 import { motion } from "motion/react";
 import { CheckCircle2, Loader2, MinusCircle, XCircle } from "lucide-react";
 import { Leaderboard } from "@/components/quiz/Leaderboard";
-import { ResultBar } from "@/components/quiz/ResultBar";
 import { StandingCard } from "@/components/quiz/StandingCard";
 import { formatMs } from "@/lib/format";
 import { cn } from "@/lib/utils";
 import type { AnswerView, StateResponse } from "@/lib/quiz/types";
 
-/** After each question (spec U7): verdict, points, time, rank with movement, answer bars, top 10. */
+/** After each question (spec U7): verdict, points, time, rank with movement, top 10 leaderboard. */
 export function ResultsView({ s, answer }: { s: StateResponse; answer: AnswerView | null }) {
   const q = s.question!;
   const me = s.me!;
   // The session doc (answer key) can land a moment before the team doc (this team's grade).
   const graded = me.gradedQid === q.id;
-  const options = q.options ?? [];
-  const dist = s.distribution ?? options.map(() => 0);
-  const total = dist.reduce((a, b) => a + b, 0);
   const lastMs = graded ? (me.standing?.lastMs ?? null) : null;
   const verdict = !graded
     ? { Icon: Loader2, text: "Scoring", cls: "border-white/15 bg-[#0e0e12] text-neutral-300", spin: true }
@@ -43,14 +39,7 @@ export function ResultsView({ s, answer }: { s: StateResponse; answer: AnswerVie
 
       {graded && <StandingCard standing={me.standing} />}
 
-      <div className="flex flex-col gap-2">
-        <p className="font-mono text-[11px] uppercase tracking-wider text-white/50">
-          Q{q.index + 1} &middot; {q.text}
-        </p>
-        {options.map((opt, i) => (
-          <ResultBar key={i} index={i} text={opt} count={dist[i] ?? 0} total={total} correct={q.correctIndex === i ? true : answer?.optionIndex === i ? false : null} />
-        ))}
-      </div>
+
 
       <div className="flex flex-col gap-2">
         <p className="font-mono text-[11px] uppercase tracking-wider text-white/50">Top 10</p>

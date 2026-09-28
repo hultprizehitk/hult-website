@@ -95,11 +95,51 @@ describe("engine: during a question", () => {
   });
 });
 
+describe("engine: publish_question", () => {
+  it("publishes a specific question while live", () => {
+    const r = applyAction(starting, { type: "publish_question", index: 1 }, questions, T0);
+    expect(r.clearAnswersForIndex).toBe(1);
+    expect(r.patch).toEqual({
+      status: "live",
+      checkinOpen: false,
+      startedAt: T0,
+      endedAt: null,
+      currentIndex: 1,
+      phase: "question",
+      questionOpenedAt: at(LEAD_IN_MS),
+      questionClosesAt: at(LEAD_IN_MS + 20_000),
+    });
+  });
+
+  it("refuses publish_question before quiz is started", () => {
+    refuse(lobby, { type: "publish_question", index: 0 });
+    refuse(base, { type: "publish_question", index: 0 });
+  });
+
+  it("refuses publish_question with invalid index or empty list", () => {
+    expect(() => applyAction(starting, { type: "publish_question", index: 0 }, [], T0)).toThrow(
+      expect.objectContaining({ code: "no_questions" }),
+    );
+    expect(() => applyAction(starting, { type: "publish_question", index: 99 }, questions, T0)).toThrow(
+      expect.objectContaining({ code: "not_found" }),
+    );
+  });
+});
+
 describe("engine: end and reset", () => {
   it("ends from check-in or live; closes a running question", () => {
-    expect(applyAction(results(2), { type: "end" }, questions, at(1000)).patch).toEqual({ status: "ended", phase: "results", endedAt: at(1000), checkinOpen: false });
+    expect(applyAction(results(2), { type: "end" }, questions, at(1000)).patch).toEqual({
+      status: "ended",
+      phase: "results",
+      endedAt: at(1000),
+      checkinOpen: false,
+    });
     expect(applyAction(atQuestion(0), { type: "end" }, questions, at(10_000)).patch).toEqual({
-      status: "ended", phase: "results", endedAt: at(10_000), checkinOpen: false, questionClosesAt: at(10_000),
+      status: "ended",
+      phase: "results",
+      endedAt: at(10_000),
+      checkinOpen: false,
+      questionClosesAt: at(10_000),
     });
     expect(applyAction(lobby, { type: "end" }, questions, T0).patch).toMatchObject({ status: "ended", phase: "idle" });
     refuse(base, { type: "end" });
@@ -109,7 +149,16 @@ describe("engine: end and reset", () => {
   it("reset_event returns to setup from any state and flags a full wipe", () => {
     for (const s of [base, lobby, atQuestion(1), merge(results(2), { status: "ended", endedAt: at(5000) })]) {
       expect(applyAction(s, { type: "reset_event" }, questions, T0)).toEqual({
-        patch: { status: "draft", phase: "idle", currentIndex: -1, checkinOpen: false, questionOpenedAt: null, questionClosesAt: null, startedAt: null, endedAt: null },
+        patch: {
+          status: "draft",
+          phase: "idle",
+          currentIndex: -1,
+          checkinOpen: false,
+          questionOpenedAt: null,
+          questionClosesAt: null,
+          startedAt: null,
+          endedAt: null,
+        },
         resetEvent: true,
       });
     }

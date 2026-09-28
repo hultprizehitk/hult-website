@@ -174,7 +174,19 @@ export function AdminConsole({ code }: { code: string }) {
           <TeamsPanel code={code} session={s} rows={rows} loading={teamsLive.loading} />
         </div>
       )}
-      {tab === "questions" && <QuestionsPanel code={code} status={s.status} stateVersion={s.stateVersion} currentIndex={s.status === "live" ? s.currentIndex : -1} questions={questionList} loading={questionsLive.loading} />}
+      {tab === "questions" && (
+        <QuestionsPanel
+          code={code}
+          status={s.status}
+          stateVersion={s.stateVersion}
+          currentIndex={s.status === "live" ? s.currentIndex : -1}
+          questions={questionList}
+          loading={questionsLive.loading}
+          session={summary}
+          counts={counts}
+          clock={clock}
+        />
+      )}
 
       <ReconnectingPill show={sessionLive.offline} />
     </div>
