@@ -759,53 +759,63 @@ export default function ScannerConsole({
       if (streamRef.current) {
         streamRef.current.getTracks().forEach((t) => t.stop());
         streamRef.current = null;
+        // Brief pause to allow the hardware camera sensor pipeline to release cleanly
+        await new Promise((r) => setTimeout(r, 60));
       }
 
       let mediaStream: MediaStream | null = null;
 
-      // Tier 1: When targeting back camera (default for QR scanner), use exact constraint to force back camera directly
-      if (cameraFacing === "environment") {
-        try {
-          mediaStream = await navigator.mediaDevices.getUserMedia({
-            video: {
-              facingMode: { exact: "environment" },
-              width: { ideal: 1280 },
-              height: { ideal: 720 },
-            },
-            audio: false,
-          });
-        } catch {
-          // If exact constraint is not supported or overconstrained (e.g. desktop webcam), try device enumeration
-          if (navigator.mediaDevices.enumerateDevices) {
-            try {
-              const devices = await navigator.mediaDevices.enumerateDevices();
-              const videoInputs = devices.filter((d) => d.kind === "videoinput");
-              const backCam = videoInputs.find((d) =>
-                /back|rear|environment|facing\s*back|camera2\s*0/i.test(d.label)
-              );
-              if (backCam?.deviceId) {
-                mediaStream = await navigator.mediaDevices.getUserMedia({
-                  video: {
-                    deviceId: { exact: backCam.deviceId },
-                    width: { ideal: 1280 },
-                    height: { ideal: 720 },
-                  },
-                  audio: false,
-                });
-              }
-            } catch {}
-          }
-        }
-      }
-
-      // Tier 2: Fallback to ideal facingMode (or user-facing when flipped)
-      if (!mediaStream) {
+      // Primary Strategy: Mobile standard ideal facingMode (avoids OverconstrainedError on multi-lens devices)
+      try {
         mediaStream = await navigator.mediaDevices.getUserMedia({
           video: {
             facingMode: { ideal: cameraFacing },
             width: { ideal: 1280 },
             height: { ideal: 720 },
           },
+          audio: false,
+        });
+      } catch (err1) {
+        console.warn("Primary camera acquisition with ideal facingMode failed:", err1);
+      }
+
+      // Secondary Strategy: Device enumeration lookup (works when camera permissions are already granted)
+      if (!mediaStream && navigator.mediaDevices.enumerateDevices) {
+        try {
+          const devices = await navigator.mediaDevices.enumerateDevices();
+          const videoInputs = devices.filter((d) => d.kind === "videoinput");
+
+          let targetDevice: MediaDeviceInfo | undefined;
+          if (cameraFacing === "environment") {
+            targetDevice = videoInputs.find((d) =>
+              /back|rear|environment|facing\s*back|camera2\s*0/i.test(d.label)
+            );
+            if (!targetDevice && videoInputs.length > 1) {
+              targetDevice = videoInputs[videoInputs.length - 1];
+            }
+          } else {
+            targetDevice = videoInputs.find((d) => /front|user|selfie/i.test(d.label));
+          }
+
+          if (targetDevice?.deviceId) {
+            mediaStream = await navigator.mediaDevices.getUserMedia({
+              video: {
+                deviceId: { exact: targetDevice.deviceId },
+                width: { ideal: 1280 },
+                height: { ideal: 720 },
+              },
+              audio: false,
+            });
+          }
+        } catch (err2) {
+          console.warn("Secondary camera device enumeration failed:", err2);
+        }
+      }
+
+      // Tertiary Strategy: Permissive fallback to any available video stream
+      if (!mediaStream) {
+        mediaStream = await navigator.mediaDevices.getUserMedia({
+          video: true,
           audio: false,
         });
       }
@@ -831,7 +841,12 @@ export default function ScannerConsole({
       if (videoRef.current) {
         videoRef.current.srcObject = mediaStream;
         videoRef.current.setAttribute("playsinline", "true");
-        await videoRef.current.play();
+        videoRef.current.muted = true;
+        try {
+          await videoRef.current.play();
+        } catch (playErr) {
+          console.warn("Video play interrupted:", playErr);
+        }
       }
 
       setIsCameraActive(true);
@@ -1505,64 +1520,37 @@ export default function ScannerConsole({
               <button
                 type="button"
                 onClick={() => setRosterFilter("all")}
-                className={`rounded-xl px-2.5 sm:px-3 py-1.5 text-xs font-semibold transition-all cursor-pointer border flex items-center gap-1.5 shrink-0 ${
+                className={`rounded-xl px-3 py-1.5 text-xs font-semibold transition-all cursor-pointer border flex items-center shrink-0 ${
                   rosterFilter === "all"
                     ? "bg-white text-black border-white shadow-md shadow-white/10"
                     : "bg-[#16161d] text-neutral-400 border-white/10 hover:text-white hover:bg-[#202028]"
                 }`}
               >
                 <span>All ({viewMode === "teams" ? totalRegistered : allFlattenedParticipants.length})</span>
-                {viewMode === "teams" && (
-                  <span
-                    className={`px-1.5 py-0.5 rounded text-[10px] font-mono ${
-                      rosterFilter === "all" ? "bg-black/10 text-neutral-900 font-bold" : "bg-white/10 text-neutral-400"
-                    }`}
-                  >
-                    {totalParticipants} Pax
-                  </span>
-                )}
               </button>
 
               <button
                 type="button"
                 onClick={() => setRosterFilter("checked_in")}
-                className={`rounded-xl px-2.5 sm:px-3 py-1.5 text-xs font-semibold transition-all cursor-pointer border flex items-center gap-1.5 shrink-0 ${
+                className={`rounded-xl px-3 py-1.5 text-xs font-semibold transition-all cursor-pointer border flex items-center shrink-0 ${
                   rosterFilter === "checked_in"
                     ? "bg-emerald-500 text-black border-emerald-500 shadow-md shadow-emerald-500/20 font-bold"
                     : "bg-[#16161d] text-neutral-400 border-white/10 hover:text-white hover:bg-[#202028]"
                 }`}
               >
                 <span>Checked In ({viewMode === "teams" ? checkedInCount : checkedInParticipantCount})</span>
-                {viewMode === "teams" && (
-                  <span
-                    className={`px-1.5 py-0.5 rounded text-[10px] font-mono ${
-                      rosterFilter === "checked_in" ? "bg-black/15 text-neutral-900 font-bold" : "bg-emerald-500/20 text-emerald-300"
-                    }`}
-                  >
-                    {checkedInParticipants} Pax
-                  </span>
-                )}
               </button>
 
               <button
                 type="button"
                 onClick={() => setRosterFilter("not_checked_in")}
-                className={`rounded-xl px-2.5 sm:px-3 py-1.5 text-xs font-semibold transition-all cursor-pointer border flex items-center gap-1.5 shrink-0 ${
+                className={`rounded-xl px-3 py-1.5 text-xs font-semibold transition-all cursor-pointer border flex items-center shrink-0 ${
                   rosterFilter === "not_checked_in"
                     ? "bg-amber-500 text-black border-amber-500 shadow-md shadow-amber-500/20 font-bold"
                     : "bg-[#16161d] text-neutral-400 border-white/10 hover:text-white hover:bg-[#202028]"
                 }`}
               >
                 <span>Pending ({viewMode === "teams" ? remainingCount : remainingParticipantCount})</span>
-                {viewMode === "teams" && (
-                  <span
-                    className={`px-1.5 py-0.5 rounded text-[10px] font-mono ${
-                      rosterFilter === "not_checked_in" ? "bg-black/15 text-neutral-900 font-bold" : "bg-amber-500/20 text-amber-300"
-                    }`}
-                  >
-                    {remainingParticipants} Pax
-                  </span>
-                )}
               </button>
             </div>
           </div>
