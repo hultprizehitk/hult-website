@@ -1,6 +1,5 @@
 import { AuthError } from "next-auth";
 import { redirect } from "next/navigation";
-import Link from "next/link";
 import { signIn } from "@/auth";
 import { isDevLoginEnabled } from "@/lib/env";
 import { QuizShell } from "@/components/quiz/QuizShell";
@@ -44,12 +43,6 @@ export default async function SignInPage({
           </Button>
         </form>
 
-        <div className="mt-4 flex items-center justify-center gap-1.5 text-center text-xs text-neutral-400">
-          <span>Organizer?</span>
-          <Link href="/admin" className="font-medium text-pink-400 hover:text-pink-300 hover:underline">
-            Admin console
-          </Link>
-        </div>
 
         {isDevLoginEnabled() && (
           <form

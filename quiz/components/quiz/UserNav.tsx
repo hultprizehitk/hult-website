@@ -1,7 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { LogIn, LogOut, ShieldCheck } from "lucide-react";
+import { usePathname } from "next/navigation";
+import { LogOut, ShieldCheck } from "lucide-react";
 import { signOut as firebaseSignOut } from "firebase/auth";
 import { useFirebaseUser } from "@/hooks/useFirebaseUser";
 import { firebaseClient } from "@/lib/firebase/client";
@@ -10,19 +11,22 @@ import { handleSignOut } from "@/app/actions/auth";
 /** lockSignOut: hidden while the quiz is live, so a mis-tap cannot drop the team's player mid-question. */
 export function UserNav({ lockSignOut = false }: { lockSignOut?: boolean }) {
   const fb = useFirebaseUser();
+  const onAdminPage = usePathname().startsWith("/admin");
 
   if (fb.status === "loading") {
     return <div className="h-8 w-20 animate-pulse rounded-full bg-white/10" />;
   }
 
+  // Signed out: players are already sent to sign-in, so the nav offers the organizer route instead.
   if (fb.status === "anonymous" || !fb.email) {
+    if (onAdminPage) return null;
     return (
       <Link
-        href="/signin"
-        className="flex items-center gap-1.5 rounded-full border border-pink-500/40 bg-pink-500/10 px-3.5 py-1 text-xs font-semibold text-pink-300 transition-all hover:border-pink-500 hover:bg-pink-500/20 hover:text-white"
+        href="/admin"
+        className="flex items-center gap-1.5 rounded-full border border-white/15 bg-white/[0.04] px-3.5 py-1 text-xs font-semibold text-white/70 transition-all hover:border-pink-500/60 hover:text-white"
       >
-        <LogIn className="size-3.5" />
-        <span>Sign In</span>
+        <ShieldCheck className="size-3.5" />
+        <span>Admin console</span>
       </Link>
     );
   }
