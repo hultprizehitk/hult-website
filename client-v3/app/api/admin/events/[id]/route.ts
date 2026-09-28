@@ -70,14 +70,15 @@ export async function PUT(req: Request, { params }: RouteParams) {
       "minTeamMembers",
       "maxTeamMembers",
       "checkinEnabled",
+      "onSpotRegistrationEnabled",
     ];
 
-    // Master admin-only guard for checkinEnabled toggle
-    if (body.checkinEnabled !== undefined) {
+    // Master admin-only guard for checkinEnabled or onSpotRegistrationEnabled toggle
+    if (body.checkinEnabled !== undefined || body.onSpotRegistrationEnabled !== undefined) {
       const isSuperAdmin = await isAuthorizedSuperAdmin(req);
       if (!isSuperAdmin) {
         return NextResponse.json(
-          { error: "Only Master Admin can toggle check-in status for events." },
+          { error: "Only Master Admin can toggle check-in or on-spot registration status for events." },
           { status: 403 }
         );
       }

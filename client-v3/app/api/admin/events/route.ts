@@ -37,6 +37,8 @@ export async function GET(req: Request) {
 
     const enrichedEvents = events.map((ev) => ({
       ...ev,
+      checkinEnabled: Boolean(ev.checkinEnabled),
+      onSpotRegistrationEnabled: Boolean(ev.onSpotRegistrationEnabled),
       registeredTeamsCount: countMap.get(String(ev._id)) ?? (ev.registeredTeamsCount || 0),
     }));
 

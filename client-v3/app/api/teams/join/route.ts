@@ -82,8 +82,17 @@ export async function POST(req: Request) {
       );
     }
 
+    // 2. Fetch associated Event
+    const event = await Event.findById(team.eventId);
+    if (!event) {
+      return NextResponse.json({ error: "Associated event not found." }, { status: 404 });
+    }
+
+    const isOnSpot = Boolean(event.onSpotRegistrationEnabled);
+
     // 1b. Check if Team registration is already submitted and locked
-    if (team.submissionStatus === "submitted") {
+    // When On-Spot registration is active for the event, teammates are permitted to join their on-spot team at the venue up to maxMembers.
+    if (team.submissionStatus === "submitted" && !isOnSpot) {
       return NextResponse.json(
         {
           error: `Registration for team "${team.teamName}" has already been finalized and submitted by the team leader. The team roster is locked and no additional members can join.`,
@@ -92,28 +101,24 @@ export async function POST(req: Request) {
       );
     }
 
-    // 2. Fetch associated Event
-    const event = await Event.findById(team.eventId);
-    if (!event) {
-      return NextResponse.json({ error: "Associated event not found." }, { status: 404 });
-    }
-
-    // 3. Validate Event Registration Status
-    if (event.registrationStatus === "closed") {
-      return NextResponse.json(
-        { error: `Registrations for ${event.title} are closed.` },
-        { status: 400 }
-      );
-    }
-
-    // 4. Validate Event Deadline
-    if (event.registrationDeadline) {
-      const deadline = new Date(event.registrationDeadline);
-      if (!isNaN(deadline.getTime()) && new Date() > deadline) {
+    // 3. Validate Event Registration Status & Deadline
+    if (!isOnSpot) {
+      if (event.registrationStatus === "closed") {
         return NextResponse.json(
-          { error: `The registration deadline for ${event.title} has passed.` },
+          { error: `Registrations for ${event.title} are closed.` },
           { status: 400 }
         );
+      }
+
+      // 4. Validate Event Deadline
+      if (event.registrationDeadline) {
+        const deadline = new Date(event.registrationDeadline);
+        if (!isNaN(deadline.getTime()) && new Date() > deadline) {
+          return NextResponse.json(
+            { error: `The registration deadline for ${event.title} has passed.` },
+            { status: 400 }
+          );
+        }
       }
     }
 
@@ -185,6 +190,9 @@ export async function POST(req: Request) {
       phone: cleanPhone,
       department: userDept,
       roll: cleanRoll,
+      checkedIn: isOnSpot,
+      checkedInAt: isOnSpot ? new Date() : undefined,
+      isOnSpot,
       joinedAt: new Date(),
     };
 
@@ -193,7 +201,15 @@ export async function POST(req: Request) {
 
     const minMembers = event.minTeamMembers || 3;
     const currentTotal = 1 + team.members.length;
-    team.submissionStatus = currentTotal >= minMembers ? "ready" : "forming";
+    if (isOnSpot) {
+      team.isOnSpot = true;
+      team.submissionStatus = "submitted";
+      team.submittedAt = team.submittedAt || new Date();
+      team.checkedIn = true;
+      team.checkedInAt = team.checkedInAt || new Date();
+    } else {
+      team.submissionStatus = currentTotal >= minMembers ? "ready" : "forming";
+    }
 
     await team.save();
 
@@ -211,15 +227,25 @@ export async function POST(req: Request) {
         }
         eventTeam.members.push(newMember);
         eventTeam.submissionStatus = team.submissionStatus;
+        if (isOnSpot) {
+          eventTeam.checkedIn = true;
+          eventTeam.checkedInAt = eventTeam.checkedInAt || new Date();
+          eventTeam.isOnSpot = true;
+        }
         await event.save();
       }
     }
 
-    // 9. Synchronize phone and roll to User profile
-    if (userInDb && (userInDb.phone !== cleanPhone || userInDb.roll !== cleanRoll)) {
+    // 9. Synchronize phone, roll, and on-spot tag to User profile
+    const userUpdate: Record<string, unknown> = { phone: cleanPhone, roll: cleanRoll };
+    if (isOnSpot) {
+      userUpdate.isOnSpotRegistered = true;
+      userUpdate.onSpotRegisteredAt = new Date();
+    }
+    if (userInDb) {
       await User.updateOne(
         { email: userEmail },
-        { $set: { phone: cleanPhone, roll: cleanRoll } }
+        { $set: userUpdate }
       );
     }
 

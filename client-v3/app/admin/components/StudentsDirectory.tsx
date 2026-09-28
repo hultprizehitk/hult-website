@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from "react";
 import { parseHeritageEmail } from "@/lib/heritage-parser";
 import { Button } from "@/components/ui/button";
-import { Clock } from "lucide-react";
+import { Clock, Zap } from "lucide-react";
 
 import type { Participant } from "@/types";
 
@@ -85,6 +85,7 @@ export default function StudentsDirectory() {
       "Passing Year",
       "Batch",
       "Role",
+      "Registration Channel",
       "Registration Date & Time (IST)",
     ];
 
@@ -118,6 +119,7 @@ export default function StudentsDirectory() {
         `"${parsed.passingYear}"`,
         `"${parsed.batch}"`,
         `"${p.role}"`,
+        `"${p.isOnSpotRegistered ? "ON-SPOT" : "ONLINE"}"`,
         `"${regTime}"`,
       ];
     });
@@ -267,7 +269,15 @@ export default function StudentsDirectory() {
                     className="hover:bg-white/[0.03] transition-colors"
                   >
                     <td className="px-5 py-4 text-white">
-                      <span className="block font-bold">{parsed.fullName}</span>
+                      <div className="flex items-center gap-1.5 flex-wrap">
+                        <span className="block font-bold">{parsed.fullName}</span>
+                        {student.isOnSpotRegistered && (
+                          <span className="rounded bg-amber-500/15 border border-amber-500/30 px-1.5 py-0.5 text-[9px] font-mono font-bold text-amber-300 inline-flex items-center gap-0.5">
+                            <Zap size={9} className="text-amber-400" />
+                            <span>On-Spot</span>
+                          </span>
+                        )}
+                      </div>
                       <span className="text-[10px] text-white/50 font-normal">
                         {parsed.firstName} • {parsed.lastName}
                       </span>

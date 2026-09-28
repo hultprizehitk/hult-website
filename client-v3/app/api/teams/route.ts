@@ -42,7 +42,7 @@ export async function GET(req: Request) {
     }
 
     const teams = await Team.find(query)
-      .populate("eventId", "title tag date venue registrationStatus registrationDeadline minTeamMembers maxTeamMembers")
+      .populate("eventId", "title tag date venue registrationStatus registrationDeadline onSpotRegistrationEnabled minTeamMembers maxTeamMembers")
       .sort({ createdAt: -1 })
       .lean();
 
@@ -158,22 +158,26 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Event not found." }, { status: 404 });
     }
 
-    // 2. Validate Event Registration Status
-    if (event.registrationStatus === "closed") {
-      return NextResponse.json(
-        { error: "Registrations for this event are currently closed." },
-        { status: 400 }
-      );
-    }
+    const isOnSpot = Boolean(event.onSpotRegistrationEnabled);
 
-    // 3. Validate Event Deadline
-    if (event.registrationDeadline) {
-      const deadline = new Date(event.registrationDeadline);
-      if (!isNaN(deadline.getTime()) && new Date() > deadline) {
+    // 2. Validate Event Registration Status & Deadline
+    if (!isOnSpot) {
+      if (event.registrationStatus === "closed") {
         return NextResponse.json(
-          { error: "The registration deadline for this event has passed." },
+          { error: "Registrations for this event are currently closed." },
           { status: 400 }
         );
+      }
+
+      // 3. Validate Event Deadline
+      if (event.registrationDeadline) {
+        const deadline = new Date(event.registrationDeadline);
+        if (!isNaN(deadline.getTime()) && new Date() > deadline) {
+          return NextResponse.json(
+            { error: "The registration deadline for this event has passed." },
+            { status: 400 }
+          );
+        }
       }
     }
 
@@ -238,14 +242,20 @@ export async function POST(req: Request) {
         phone: cleanPhone,
         department: userDept,
         roll: cleanRoll,
+        checkedIn: isOnSpot,
+        checkedInAt: isOnSpot ? new Date() : undefined,
+        isOnSpot,
       },
       leadEmail: userEmail,
       membersCount: maxMembers,
       department: userDept,
       members: [],
       status: "confirmed",
-      submissionStatus: initialSubmissionStatus,
-      checkedIn: false,
+      submissionStatus: isOnSpot ? "submitted" : initialSubmissionStatus,
+      submittedAt: isOnSpot ? new Date() : undefined,
+      checkedIn: isOnSpot,
+      checkedInAt: isOnSpot ? new Date() : undefined,
+      isOnSpot,
       registeredAt: new Date(),
     });
 
@@ -267,17 +277,25 @@ export async function POST(req: Request) {
       members: [],
       registeredAt: new Date(),
       status: "confirmed",
-      submissionStatus: initialSubmissionStatus,
-      checkedIn: false,
+      submissionStatus: isOnSpot ? "submitted" : initialSubmissionStatus,
+      submittedAt: isOnSpot ? new Date() : undefined,
+      checkedIn: isOnSpot,
+      checkedInAt: isOnSpot ? new Date() : undefined,
+      isOnSpot,
     });
     event.registeredTeamsCount = event.registeredTeams.length;
     await event.save();
 
-    // 9. Synchronize phone and roll to User profile
-    if (userInDb && (userInDb.phone !== cleanPhone || userInDb.roll !== cleanRoll)) {
+    // 9. Synchronize phone, roll, and on-spot registration tag to User profile
+    const userUpdate: Record<string, unknown> = { phone: cleanPhone, roll: cleanRoll };
+    if (isOnSpot) {
+      userUpdate.isOnSpotRegistered = true;
+      userUpdate.onSpotRegisteredAt = new Date();
+    }
+    if (userInDb) {
       await User.updateOne(
         { email: userEmail },
-        { $set: { phone: cleanPhone, roll: cleanRoll } }
+        { $set: userUpdate }
       );
     }
 
@@ -367,6 +385,15 @@ export async function PATCH(req: Request) {
     const event = await Event.findById(team.eventId);
     const minMembers = event?.minTeamMembers || 3;
     const maxMembers = event?.maxTeamMembers || 5;
+    const isOnSpot = Boolean(event?.onSpotRegistrationEnabled);
+    const isDeadlinePassed = Boolean(
+      event?.registrationDeadline &&
+      !isNaN(new Date(event.registrationDeadline).getTime()) &&
+      new Date() > new Date(event.registrationDeadline)
+    );
+    const isRegistrationClosed = !isOnSpot && Boolean(
+      event && (event.registrationStatus === "closed" || isDeadlinePassed)
+    );
 
     // ── ACTION 1: LEADER REMOVES A MEMBER ──────────────────────────────────
     if (action === "remove_member") {
@@ -380,6 +407,13 @@ export async function PATCH(req: Request) {
       if (team.submissionStatus === "submitted") {
         return NextResponse.json(
           { error: "Official team registration has already been finalized and submitted. The team roster is locked and members cannot be removed." },
+          { status: 400 }
+        );
+      }
+
+      if (isRegistrationClosed) {
+        return NextResponse.json(
+          { error: "The registration deadline for this event has passed. Team rosters are permanently locked and members cannot be removed." },
           { status: 400 }
         );
       }
@@ -442,6 +476,13 @@ export async function PATCH(req: Request) {
       if (team.submissionStatus === "submitted") {
         return NextResponse.json(
           { error: "Official team registration has already been finalized and submitted. The team roster is locked and members cannot leave." },
+          { status: 400 }
+        );
+      }
+
+      if (isRegistrationClosed) {
+        return NextResponse.json(
+          { error: "The registration deadline for this event has passed. Team rosters are permanently locked and members cannot leave." },
           { status: 400 }
         );
       }
@@ -545,6 +586,15 @@ export async function PATCH(req: Request) {
             "Unauthorized. Only the Team Leader is authorized to submit official venture details.",
         },
         { status: 403 }
+      );
+    }
+
+    if (isRegistrationClosed) {
+      return NextResponse.json(
+        {
+          error: `The registration deadline for ${event?.title || "this event"} has passed. Final team registrations are no longer accepted.`,
+        },
+        { status: 400 }
       );
     }
 
@@ -721,6 +771,18 @@ export async function DELETE(req: Request) {
 
     // 1. Remove from Event.registeredTeams
     const event = await Event.findById(team.eventId);
+    const isOnSpot = Boolean(event?.onSpotRegistrationEnabled);
+    const isDeadlinePassed = Boolean(
+      event?.registrationDeadline &&
+      !isNaN(new Date(event.registrationDeadline).getTime()) &&
+      new Date() > new Date(event.registrationDeadline)
+    );
+    if (!isOnSpot && Boolean(event && (event.registrationStatus === "closed" || isDeadlinePassed))) {
+      return NextResponse.json(
+        { error: "The registration deadline for this event has passed. Teams cannot be disbanded after registration closes." },
+        { status: 400 }
+      );
+    }
     if (event && Array.isArray(event.registeredTeams)) {
       event.registeredTeams = event.registeredTeams.filter(
         (t: IRegisteredTeam) =>

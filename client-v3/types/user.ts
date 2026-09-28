@@ -20,6 +20,8 @@ export interface Participant {
   phone?: string;
   roll?: string;
   role: UserRole | string;
+  isOnSpotRegistered?: boolean;
+  onSpotRegisteredAt?: string | Date | null;
   createdAt: string;
   updatedAt?: string;
 }

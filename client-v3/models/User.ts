@@ -14,6 +14,8 @@ export interface IUser extends Document {
   welcomeEmailSent?: boolean;
   whatsappInviteSent?: boolean;
   whatsappInviteSentAt?: Date;
+  isOnSpotRegistered?: boolean;
+  onSpotRegisteredAt?: Date | null;
   lastLoginAt?: Date | null;
   invitedAt?: Date | null;
   createdAt: Date;
@@ -73,6 +75,15 @@ const UserSchema = new Schema<IUser>(
       default: false,
     },
     whatsappInviteSentAt: {
+      type: Date,
+      default: null,
+    },
+    isOnSpotRegistered: {
+      type: Boolean,
+      default: false,
+      index: true,
+    },
+    onSpotRegisteredAt: {
       type: Date,
       default: null,
     },

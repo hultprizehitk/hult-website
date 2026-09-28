@@ -14,7 +14,6 @@ import {
   ShieldCheck,
   AlertCircle,
   Lock,
-  Sparkles,
   Loader2,
   CheckCircle2,
   FileText,
@@ -25,8 +24,11 @@ import {
   Trash2,
   UserMinus,
   LogOut,
+  Zap,
+  Clock,
 } from "lucide-react";
 import type { PublicEvent } from "@/types";
+import { useCountdown } from "@/lib/countdown";
 import CreateTeamForm from "./registration/CreateTeamForm";
 import JoinTeamForm from "./registration/JoinTeamForm";
 
@@ -159,8 +161,58 @@ export default function EventRegistrationModal({
   const [actionError, setActionError] = useState<string | null>(null);
   const [actionSuccess, setActionSuccess] = useState<string | null>(null);
 
-  const minMembers = event.minTeamMembers || 3;
-  const maxMembers = event.maxTeamMembers || 5;
+  const [liveEvent, setLiveEvent] = useState(event);
+
+  useEffect(() => {
+    setLiveEvent(event);
+  }, [event]);
+
+  // Real-time synchronization when Master Admin toggles On-Spot or closes registration
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+
+    let channel: BroadcastChannel | null = null;
+    if (typeof BroadcastChannel !== "undefined") {
+      channel = new BroadcastChannel("event_onspot_sync");
+      channel.onmessage = (e) => {
+        if (e.data?.eventId === event._id) {
+          setLiveEvent((prev) => ({
+            ...prev,
+            onSpotRegistrationEnabled: e.data.onSpotRegistrationEnabled,
+            ...(e.data.registrationStatus ? { registrationStatus: e.data.registrationStatus } : {}),
+          }));
+        }
+      };
+    }
+
+    const handleStorage = (e: StorageEvent) => {
+      if (e.key === "event_onspot_sync" && e.newValue) {
+        try {
+          const parsed = JSON.parse(e.newValue);
+          if (parsed?.eventId === event._id) {
+            setLiveEvent((prev) => ({
+              ...prev,
+              onSpotRegistrationEnabled: parsed.onSpotRegistrationEnabled,
+              ...(parsed.registrationStatus ? { registrationStatus: parsed.registrationStatus } : {}),
+            }));
+          }
+        } catch {}
+      }
+    };
+    window.addEventListener("storage", handleStorage);
+
+    return () => {
+      if (channel) channel.close();
+      window.removeEventListener("storage", handleStorage);
+    };
+  }, [event._id]);
+
+  const minMembers = liveEvent.minTeamMembers || 3;
+  const maxMembers = liveEvent.maxTeamMembers || 5;
+  const countdown = useCountdown(liveEvent.registrationDeadline);
+  const isOnSpotLive = Boolean(liveEvent.onSpotRegistrationEnabled);
+  const isTimeOver = countdown.hasDeadline && countdown.isExpired;
+  const isRegistrationClosed = !isOnSpotLive && (liveEvent.registrationStatus === "closed" || isTimeOver);
 
   // Sync edit team form with existing team data
   useEffect(() => {
@@ -192,6 +244,11 @@ export default function EventRegistrationModal({
   const handleFinalSubmit = async (e?: React.FormEvent) => {
     if (e) e.preventDefault();
     if (!existingTeam) return;
+
+    if (isRegistrationClosed) {
+      setFinalSubmitError("Registration deadline for this event has passed. Submissions are closed.");
+      return;
+    }
 
     const currentMembersCount = 1 + (existingTeam.members?.length || 0);
     if (currentMembersCount < minMembers) {
@@ -476,6 +533,11 @@ export default function EventRegistrationModal({
     e.preventDefault();
     setErrorMessage(null);
 
+    if (isRegistrationClosed) {
+      setErrorMessage("Registration for this event has closed.");
+      return;
+    }
+
     const rawPhone = createForm.phone.trim() || profileData?.phone?.trim() || "";
     const rawRoll = createForm.roll.trim() || profileData?.roll?.trim() || "";
     const cleanPhone = rawPhone.replace(/\D/g, "").slice(0, 10);
@@ -532,6 +594,11 @@ export default function EventRegistrationModal({
   const handleJoinSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setErrorMessage(null);
+
+    if (isRegistrationClosed) {
+      setErrorMessage("Registration for this event has closed.");
+      return;
+    }
 
     const rawPhone = joinForm.phone.trim() || profileData?.phone?.trim() || "";
     const rawRoll = joinForm.roll.trim() || profileData?.roll?.trim() || "";
@@ -852,6 +919,11 @@ export default function EventRegistrationModal({
                     <CheckCircle2 size={12} className="shrink-0" />
                     <span>Official team registration has been finalized and submitted. The team roster is locked and no new members can join using this code.</span>
                   </p>
+                ) : isRegistrationClosed ? (
+                  <p className="text-[11px] text-rose-300/90 leading-relaxed font-mono flex items-center gap-1.5">
+                    <Lock size={12} className="shrink-0 text-rose-400" />
+                    <span>Registration deadline has passed. Roster is locked and new members can no longer join.</span>
+                  </p>
                 ) : (
                   <p className="text-[11px] text-white/50 leading-relaxed font-[family-name:var(--font-google-sans)]">
                     Share this invite code with classmates. When they enter this code on the event page, they join your team roster automatically.
@@ -1042,29 +1114,79 @@ export default function EventRegistrationModal({
                       </button>
                     )}
 
-                    <button
-                      type="button"
-                      onClick={openSubmissionModal}
-                      className="rounded-full bg-white hover:bg-neutral-200 text-black font-bold px-6 py-2.5 text-xs transition-all cursor-pointer shadow-lg inline-flex items-center gap-2 font-mono"
-                    >
-                      <Send size={13} />
-                      <span>
-                        {userRole === "lead"
-                          ? meetsMinCriteria
-                            ? "Submit Application"
-                            : `Submit Application (${currentMembersCount}/${minMembers})`
-                          : "View Registration Status"}
+                    {isRegistrationClosed ? (
+                      <span className="rounded-full bg-rose-500/[0.08] border border-rose-500/20 px-5 py-2.5 text-xs font-mono text-rose-300/90 inline-flex items-center gap-1.5">
+                        <Lock size={12} className="text-rose-400" />
+                        <span>Registration Closed</span>
                       </span>
-                    </button>
+                    ) : (
+                      <button
+                        type="button"
+                        onClick={openSubmissionModal}
+                        className="rounded-full bg-white hover:bg-neutral-200 text-black font-bold px-6 py-2.5 text-xs transition-all cursor-pointer shadow-lg inline-flex items-center gap-2 font-mono"
+                      >
+                        <Send size={13} />
+                        <span>
+                          {userRole === "lead"
+                            ? meetsMinCriteria
+                              ? "Submit Application"
+                              : `Submit Application (${currentMembersCount}/${minMembers})`
+                            : "View Registration Status"}
+                        </span>
+                      </button>
+                    )}
                   </div>
                 )}
               </div>
             </div>
           );
         })()
+      ) : isRegistrationClosed ? (
+        /* ── STATE: REGISTRATION CLOSED (STUDENT HAS NO TEAM) ─────────────── */
+        <div className="space-y-6 text-center py-8 max-w-md mx-auto animate-fadeIn">
+          <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-2xl bg-rose-500/[0.08] border border-rose-500/20 text-rose-300 shadow-xl">
+            <Lock className="h-7 w-7 text-rose-400" />
+          </div>
+
+          <div className="space-y-2">
+            <h3 className="font-serif text-2xl font-bold text-white tracking-tight">
+              Registrations Closed
+            </h3>
+            <p className="text-xs text-white/60 leading-relaxed font-[family-name:var(--font-google-sans)]">
+              The official registration deadline for {event.title} has passed. New team creations and roster joins are no longer accepted.
+            </p>
+          </div>
+
+          <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-3 text-[11px] font-mono text-white/60 flex items-center justify-center gap-2">
+            <Clock size={12} className="text-white/40" />
+            <span>Deadline: {countdown.formattedDeadline}</span>
+          </div>
+
+          <p className="text-[11px] text-white/40 font-mono">
+            Already registered with a team? Verify you are logged in with the email used during roster creation.
+          </p>
+        </div>
       ) : mode === "select" ? (
         /* ── STATE 4: THE DUAL CHOICE (CREATE TEAM vs JOIN TEAM) ───────────── */
         <div className="space-y-6 animate-fadeIn">
+          {isOnSpotLive && (
+            <div className="flex items-center gap-3 rounded-2xl border border-amber-500/40 bg-amber-500/[0.08] p-4 text-xs text-amber-200 animate-fadeIn shadow-[0_0_20px_rgba(245,158,11,0.12)]">
+              <span className="relative flex h-2.5 w-2.5 shrink-0">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75" />
+                <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-amber-400 shadow-[0_0_8px_rgba(251,191,36,0.9)]" />
+              </span>
+              <div className="flex-1 min-w-0">
+                <span className="font-bold text-amber-300 block font-mono text-[11px] uppercase tracking-wider">
+                  On-Spot Registration Live at Venue
+                </span>
+                <span className="text-[11px] text-amber-200/80 leading-relaxed">
+                  Walk-in registrations are currently open. Create your team or enter a team code to register immediately.
+                </span>
+              </div>
+              <Zap size={18} className="text-amber-400 shrink-0" />
+            </div>
+          )}
+
           <div className="text-center space-y-1">
             <h3 className="font-serif text-2xl font-bold text-white">
               Choose How to Participate
@@ -1293,7 +1415,14 @@ export default function EventRegistrationModal({
               Close
             </button>
 
-            {meetsMinCriteria && !isActuallyConfirmed && userRole === "lead" && (
+            {isRegistrationClosed && !isActuallyConfirmed && (
+              <span className="text-xs font-mono text-rose-300/90 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-rose-500/10 border border-rose-500/25">
+                <Lock size={12} className="text-rose-400" />
+                <span>Deadline Passed · Submissions Closed</span>
+              </span>
+            )}
+
+            {meetsMinCriteria && !isActuallyConfirmed && userRole === "lead" && !isRegistrationClosed && (
               <button
                 type="button"
                 disabled={submittingFinal}

@@ -9,6 +9,7 @@ export interface ITeamMember {
   joinedAt: Date;
   checkedIn?: boolean;
   checkedInAt?: Date;
+  isOnSpot?: boolean;
 }
 
 export interface ITeamLead {
@@ -19,6 +20,7 @@ export interface ITeamLead {
   roll?: string;
   checkedIn?: boolean;
   checkedInAt?: Date;
+  isOnSpot?: boolean;
 }
 
 export interface ITeam extends Document {
@@ -39,6 +41,7 @@ export interface ITeam extends Document {
   status: "confirmed" | "disqualified";
   checkedIn: boolean;
   checkedInAt?: Date;
+  isOnSpot?: boolean;
   registeredAt: Date;
   createdAt: Date;
   updatedAt: Date;
@@ -54,6 +57,7 @@ const TeamMemberSchema = new Schema<ITeamMember>(
     joinedAt: { type: Date, default: Date.now },
     checkedIn: { type: Boolean, default: false },
     checkedInAt: { type: Date },
+    isOnSpot: { type: Boolean, default: false },
   },
   { _id: false }
 );
@@ -67,6 +71,7 @@ const TeamLeadSchema = new Schema<ITeamLead>(
     roll: { type: String, default: "", trim: true },
     checkedIn: { type: Boolean, default: false },
     checkedInAt: { type: Date },
+    isOnSpot: { type: Boolean, default: false },
   },
   { _id: false }
 );
@@ -153,6 +158,11 @@ const TeamSchema = new Schema<ITeam>(
     },
     checkedInAt: {
       type: Date,
+    },
+    isOnSpot: {
+      type: Boolean,
+      default: false,
+      index: true,
     },
     registeredAt: {
       type: Date,

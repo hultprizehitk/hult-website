@@ -13,9 +13,11 @@ import {
   Eye,
   EyeOff,
   Search,
+  Zap,
 } from "lucide-react";
 
 import type { EventItem, RegisteredTeamItem } from "@/types";
+import OnSpotMasterSwitch from "./OnSpotMasterSwitch";
 
 // Helper to convert ISO/Date strings to "YYYY-MM-DDTHH:mm" for <input type="datetime-local">
 function toDatetimeLocalValue(val?: string): string {
@@ -81,6 +83,18 @@ function formatEventDateRange(startIso?: string, endIso?: string, fallback = "")
 export default function EventsManager() {
   const [events, setEvents] = useState<EventItem[]>([]);
   const [loading, setLoading] = useState(true);
+  const [isMasterAdmin, setIsMasterAdmin] = useState(false);
+
+  useEffect(() => {
+    fetch("/api/auth/session")
+      .then((res) => res.json())
+      .then((session) => {
+        if (session?.user?.role === "master_admin") {
+          setIsMasterAdmin(true);
+        }
+      })
+      .catch(() => {});
+  }, []);
   const [statusMessage, setStatusMessage] = useState<{
     type: "success" | "error";
     text: string;
@@ -442,6 +456,7 @@ export default function EventsManager() {
     const headers = [
       "Team Code",
       "Team Name",
+      "Registration Channel",
       "Team Lead",
       "Lead Email",
       "Lead Phone",
@@ -454,6 +469,7 @@ export default function EventsManager() {
     const rows = selectedEvent.registeredTeams.map((t) => [
       `"${t.teamCode || "N/A"}"`,
       `"${t.teamName.replace(/"/g, '""')}"`,
+      `"${t.isOnSpot ? "ON-SPOT" : "ONLINE"}"`,
       `"${t.leadName.replace(/"/g, '""')}"`,
       `"${t.leadEmail.replace(/"/g, '""')}"`,
       `"${(t.leadPhone || "").replace(/"/g, '""')}"`,
@@ -897,6 +913,29 @@ export default function EventsManager() {
                 </button>
               </div>
 
+              {/* On-Spot Event Registration Card */}
+              <div className="rounded-2xl border border-white/15 bg-[#16161d] p-5 sm:p-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 shadow-lg">
+                <div>
+                  <span className="text-sm font-bold text-white block">On-Spot Walk-in Registration</span>
+                  <p className="text-xs text-white/60 mt-0.5">
+                    {selectedEvent.onSpotRegistrationEnabled
+                      ? "Currently active: Walk-in attendees can register and create teams live on their phones."
+                      : "Currently closed: Walk-in registrations are disabled on the public website."}
+                  </p>
+                </div>
+
+                <OnSpotMasterSwitch
+                  eventId={selectedEvent._id}
+                  onSpotRegistrationEnabled={Boolean(selectedEvent.onSpotRegistrationEnabled)}
+                  isMasterAdmin={isMasterAdmin}
+                  onToggle={(newState) => {
+                    setEvents((prev) =>
+                      prev.map((e) => (e._id === selectedEvent._id ? { ...e, onSpotRegistrationEnabled: newState } : e))
+                    );
+                  }}
+                />
+              </div>
+
               {/* Increase Time / Extend Deadline Card */}
               <div className="rounded-2xl border border-white/15 bg-[#16161d] p-5 sm:p-6 space-y-4 shadow-lg">
                 <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2">
@@ -1215,6 +1254,12 @@ export default function EventsManager() {
                               ) : (
                                 <span className="font-mono text-[9px] font-bold text-amber-300 bg-amber-500/20 border border-amber-500/30 px-1.5 py-0.5 rounded">
                                   Forming
+                                </span>
+                              )}
+                              {team.isOnSpot && (
+                                <span className="font-mono text-[9px] font-bold text-amber-300 bg-amber-500/20 border border-amber-500/30 px-1.5 py-0.5 rounded inline-flex items-center gap-1 shadow-sm">
+                                  <Zap size={9} className="text-amber-400" />
+                                  <span>On-Spot</span>
                                 </span>
                               )}
                             </div>

@@ -25,7 +25,15 @@ export async function GET(req: Request) {
         return NextResponse.json({ success: false, error: "Event not found" }, { status: 404 });
       }
       const teamCount = await Team.countDocuments({ eventId: event._id });
-      return NextResponse.json({ success: true, event: { ...event, registeredTeamsCount: teamCount } }, { status: 200 });
+      return NextResponse.json({
+        success: true,
+        event: {
+          ...event,
+          checkinEnabled: Boolean(event.checkinEnabled),
+          onSpotRegistrationEnabled: Boolean(event.onSpotRegistrationEnabled),
+          registeredTeamsCount: teamCount,
+        },
+      }, { status: 200 });
     }
 
     const events = await Event.find({ isPublished: true })
@@ -40,6 +48,8 @@ export async function GET(req: Request) {
 
     const enrichedEvents = events.map((ev) => ({
       ...ev,
+      checkinEnabled: Boolean(ev.checkinEnabled),
+      onSpotRegistrationEnabled: Boolean(ev.onSpotRegistrationEnabled),
       registeredTeamsCount: countMap.get(String(ev._id)) ?? (ev.registeredTeamsCount || 0),
     }));
 

@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import {
   ArrowLeft,
@@ -12,11 +12,11 @@ import {
   Check,
   Layers,
   ShieldCheck,
-  Target,
   CheckCircle2,
   Gavel,
   Clock,
   Timer,
+  Zap,
 } from "lucide-react";
 import type { PublicEvent } from "@/types";
 import { useCountdown } from "@/lib/countdown";
@@ -87,15 +87,63 @@ function formatDateRange(start?: string, end?: string, fallback?: string) {
 }
 
 export default function EventInsideView({
-  event,
+  event: initialEvent,
   onBack,
 }: EventInsideViewProps) {
+  const [event, setEvent] = useState(initialEvent);
   const [copied, setCopied] = useState(false);
+
+  useEffect(() => {
+    setEvent(initialEvent);
+  }, [initialEvent]);
+
+  // Real-time synchronization when Master Admin toggles On-Spot or closes registration
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+
+    let channel: BroadcastChannel | null = null;
+    if (typeof BroadcastChannel !== "undefined") {
+      channel = new BroadcastChannel("event_onspot_sync");
+      channel.onmessage = (e) => {
+        if (e.data?.eventId === event._id) {
+          setEvent((prev) => ({
+            ...prev,
+            onSpotRegistrationEnabled: e.data.onSpotRegistrationEnabled,
+            ...(e.data.registrationStatus ? { registrationStatus: e.data.registrationStatus } : {}),
+          }));
+        }
+      };
+    }
+
+    const handleStorage = (e: StorageEvent) => {
+      if (e.key === "event_onspot_sync" && e.newValue) {
+        try {
+          const parsed = JSON.parse(e.newValue);
+          if (parsed?.eventId === event._id) {
+            setEvent((prev) => ({
+              ...prev,
+              onSpotRegistrationEnabled: parsed.onSpotRegistrationEnabled,
+              ...(parsed.registrationStatus ? { registrationStatus: parsed.registrationStatus } : {}),
+            }));
+          }
+        } catch {}
+      }
+    };
+    window.addEventListener("storage", handleStorage);
+
+    return () => {
+      if (channel) channel.close();
+      window.removeEventListener("storage", handleStorage);
+    };
+  }, [event._id]);
 
   const minMembers = event.minTeamMembers || 2;
   const maxMembers = event.maxTeamMembers || 4;
   const countdown = useCountdown(event.registrationDeadline);
-  const isClosed = event.registrationStatus === "closed" || countdown.isExpired;
+  const isOnSpotLive = Boolean(event.onSpotRegistrationEnabled);
+  const isTimeOver = countdown.hasDeadline && countdown.isExpired;
+  const isRegistrationClosed = !isOnSpotLive && (event.registrationStatus === "closed" || isTimeOver);
+  const isClosed = isRegistrationClosed;
 
   const hasRounds = Array.isArray(event.rounds) && event.rounds.length > 0;
   const hasRules = Array.isArray(event.rules) && event.rules.length > 0;
@@ -147,7 +195,16 @@ export default function EventInsideView({
                 </span>
               )}
 
-              {event.registrationStatus === "closed" ? (
+              {isOnSpotLive ? (
+                <span className="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-semibold bg-amber-500/[0.12] border border-amber-500/35 text-amber-300 shadow-[0_0_16px_rgba(245,158,11,0.2)] backdrop-blur-md">
+                  <span className="relative flex h-2 w-2 shrink-0">
+                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75" />
+                    <span className="relative inline-flex rounded-full h-2 w-2 bg-amber-400 shadow-[0_0_8px_rgba(251,191,36,0.9)]" />
+                  </span>
+                  <Zap size={12} className="text-amber-300 shrink-0" />
+                  <span>On-Spot Registration Live</span>
+                </span>
+              ) : isRegistrationClosed ? (
                 <span className="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-medium bg-rose-500/[0.08] border border-rose-500/20 text-rose-300/90 backdrop-blur-md">
                   <span className="inline-flex rounded-full h-2 w-2 bg-rose-400/80 shrink-0" />
                   <span>Registrations Closed</span>
@@ -215,29 +272,38 @@ export default function EventInsideView({
 
               <div
                 className={`rounded-2xl p-3.5 flex flex-col justify-between gap-2 shadow-md transition-all ${
-                  isClosed
+                  isOnSpotLive
+                    ? "bg-amber-500/[0.08] border border-amber-500/30 text-white shadow-[0_0_15px_rgba(245,158,11,0.15)]"
+                    : isRegistrationClosed
                     ? "bg-white/5 border border-white/10 text-white/70"
                     : "bg-rose-500/[0.08] border border-rose-500/25 text-white shadow-[0_0_15px_rgba(242,0,137,0.12)]"
                 }`}
               >
                 <span className="flex items-center gap-1.5 text-[10px] font-bold tracking-widest uppercase text-white/60">
-                  <Clock size={13} className={isClosed ? "text-white/40 shrink-0" : "text-rose-400 shrink-0"} />
-                  <span>Deadline</span>
-                  {!isClosed && countdown.hasDeadline && (
+                  <Clock size={13} className={isOnSpotLive ? "text-amber-400 shrink-0" : isRegistrationClosed ? "text-white/40 shrink-0" : "text-rose-400 shrink-0"} />
+                  <span>{isOnSpotLive ? "On-Spot Window" : "Deadline"}</span>
+                  {isOnSpotLive ? (
+                    <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse ml-auto" />
+                  ) : !isRegistrationClosed && countdown.hasDeadline ? (
                     <span className="w-1.5 h-1.5 rounded-full bg-rose-400 animate-pulse ml-auto" />
-                  )}
+                  ) : null}
                 </span>
 
                 <div className="flex flex-col gap-1.5 min-w-0">
                   <span className="text-xs sm:text-sm font-semibold text-white leading-snug">
-                    {countdown.formattedDeadline}
+                    {isOnSpotLive ? "Venue Registration Active" : countdown.formattedDeadline}
                   </span>
-                  {!isClosed && countdown.hasDeadline ? (
+                  {isOnSpotLive ? (
+                    <div className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[10px] font-mono font-bold bg-amber-500/20 border border-amber-400/40 text-amber-300 w-fit shadow-sm">
+                      <Zap size={10} className="text-amber-400 shrink-0 animate-pulse" />
+                      <span className="tracking-wide">Live at Venue</span>
+                    </div>
+                  ) : !isRegistrationClosed && countdown.hasDeadline ? (
                     <div className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[10px] font-mono font-bold bg-rose-500/15 border border-rose-400/30 text-rose-300 w-fit shadow-sm">
                       <Timer size={10} className="text-rose-400 shrink-0 animate-pulse" />
                       <span className="tabular-nums tracking-wide">{countdown.countdownText}</span>
                     </div>
-                  ) : isClosed ? (
+                  ) : isRegistrationClosed ? (
                     <span className="text-[10px] font-mono text-white/40">
                       Registration Closed
                     </span>
@@ -485,7 +551,7 @@ export default function EventInsideView({
                   </a>
                 )}
 
-                {event.registrationStatus === "closed" && (
+                {isRegistrationClosed && (
                   <span className="rounded-full bg-rose-500/[0.08] border border-rose-500/20 px-4 py-2 text-xs font-medium text-rose-300/80 inline-flex items-center gap-1.5">
                     <span className="inline-flex rounded-full h-1.5 w-1.5 bg-rose-400/80 shrink-0" />
                     <span>Registrations Closed</span>

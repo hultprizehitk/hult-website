@@ -25,10 +25,12 @@ import {
   Undo2,
   Lock,
   Unlock,
+  Zap,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import LiveCameraScannerModal from "./LiveCameraScannerModal";
 import CheckinMasterSwitch from "./CheckinMasterSwitch";
+import OnSpotMasterSwitch from "./OnSpotMasterSwitch";
 import { parseHeritageEmail } from "@/lib/heritage-parser";
 
 interface TeamMember {
@@ -40,6 +42,7 @@ interface TeamMember {
   joinedAt?: string | Date;
   checkedIn?: boolean;
   checkedInAt?: string | Date | null;
+  isOnSpot?: boolean;
 }
 
 interface TeamLead {
@@ -50,6 +53,7 @@ interface TeamLead {
   roll?: string;
   checkedIn?: boolean;
   checkedInAt?: string | Date | null;
+  isOnSpot?: boolean;
 }
 
 interface RegisteredTeam {
@@ -67,6 +71,7 @@ interface RegisteredTeam {
   submittedAt?: string | Date | null;
   checkedIn: boolean;
   checkedInAt?: string | Date | null;
+  isOnSpot?: boolean;
   registeredAt: string | Date;
 }
 
@@ -83,6 +88,7 @@ interface FlatParticipant {
   role: "Team Leader" | "Member";
   checkedIn: boolean;
   checkedInAt?: string | Date | null;
+  isOnSpot?: boolean;
   registeredAt: string | Date;
   team: RegisteredTeam;
 }
@@ -97,6 +103,7 @@ interface EventItem {
   registrationStatus: "open" | "closed" | "extended" | "upcoming";
   isPublished: boolean;
   checkinEnabled?: boolean;
+  onSpotRegistrationEnabled?: boolean;
   maxTeams: number;
   registeredTeamsCount: number;
   registeredTeams?: RegisteredTeam[];
@@ -141,6 +148,7 @@ export default function LiveEventManager({ isMasterAdmin: propIsMasterAdmin }: L
   }, [events, selectedEventId]);
 
   const isCheckinActive = Boolean(eventMeta?.checkinEnabled ?? selectedEvent?.checkinEnabled);
+  const isOnSpotActive = Boolean(eventMeta?.onSpotRegistrationEnabled ?? selectedEvent?.onSpotRegistrationEnabled);
 
   // Filter & Search
   const [searchQuery, setSearchQuery] = useState("");
@@ -640,6 +648,7 @@ export default function LiveEventManager({ isMasterAdmin: propIsMasterAdmin }: L
       const headers = [
         "Participant Name",
         "Role",
+        "Registration Channel",
         "Team Code",
         "Team Name",
         "Email",
@@ -653,6 +662,7 @@ export default function LiveEventManager({ isMasterAdmin: propIsMasterAdmin }: L
       const rows = allParticipants.map((p) => [
         `"${p.name.replace(/"/g, '""')}"`,
         `"${p.role}"`,
+        `"${p.isOnSpot ? "ON-SPOT" : "ONLINE"}"`,
         `"${p.teamCode}"`,
         `"${p.teamName.replace(/"/g, '""')}"`,
         `"${p.email}"`,
@@ -681,6 +691,7 @@ export default function LiveEventManager({ isMasterAdmin: propIsMasterAdmin }: L
     const headers = [
       "Team Code",
       "Team Name",
+      "Registration Channel",
       "Status",
       "Checked In",
       "Checked In Time",
@@ -708,6 +719,7 @@ export default function LiveEventManager({ isMasterAdmin: propIsMasterAdmin }: L
       return [
         `"${t.teamCode}"`,
         `"${t.teamName.replace(/"/g, '""')}"`,
+        `"${t.isOnSpot ? "ON-SPOT" : "ONLINE"}"`,
         `"${t.status.toUpperCase()}"`,
         `"${t.checkedIn ? "CHECKED_IN" : "ABSENT"}"`,
         `"${checkInFormatted}"`,
@@ -801,6 +813,7 @@ export default function LiveEventManager({ isMasterAdmin: propIsMasterAdmin }: L
         role: "Team Leader",
         checkedIn: isLeadChecked,
         checkedInAt: leadCheckedInAt,
+        isOnSpot: Boolean(t.isOnSpot || t.lead?.isOnSpot),
         registeredAt: t.registeredAt,
         team: t,
       });
@@ -823,6 +836,7 @@ export default function LiveEventManager({ isMasterAdmin: propIsMasterAdmin }: L
             role: "Member",
             checkedIn: isMemChecked,
             checkedInAt: memCheckedInAt,
+            isOnSpot: Boolean(t.isOnSpot || m.isOnSpot),
             registeredAt: t.registeredAt,
             team: t,
           });
@@ -1042,7 +1056,23 @@ export default function LiveEventManager({ isMasterAdmin: propIsMasterAdmin }: L
                           </span>
                         )}
 
-                        <div onClick={(e) => e.stopPropagation()}>
+                        <div onClick={(e) => e.stopPropagation()} className="flex items-center gap-1.5">
+                          <OnSpotMasterSwitch
+                            eventId={ev._id}
+                            onSpotRegistrationEnabled={Boolean(ev.onSpotRegistrationEnabled)}
+                            isMasterAdmin={isMasterAdmin}
+                            onToggle={(newState) => {
+                              setEvents((prev) =>
+                                prev.map((e) => (e._id === ev._id ? { ...e, onSpotRegistrationEnabled: newState } : e))
+                              );
+                              showToast(
+                                newState
+                                  ? `On-Spot registration is now LIVE for "${ev.title}".`
+                                  : `On-Spot registration has been CLOSED for "${ev.title}".`
+                              );
+                            }}
+                            compact={true}
+                          />
                           <CheckinMasterSwitch
                             eventId={ev._id}
                             checkinEnabled={Boolean(ev.checkinEnabled)}
@@ -1156,6 +1186,24 @@ export default function LiveEventManager({ isMasterAdmin: propIsMasterAdmin }: L
 
             {/* Quick Action Buttons & Master Admin Switch */}
             <div className="flex items-center gap-2.5 self-end md:self-auto flex-wrap">
+              {selectedEventId && (
+                <OnSpotMasterSwitch
+                  eventId={selectedEventId}
+                  onSpotRegistrationEnabled={isOnSpotActive}
+                  isMasterAdmin={isMasterAdmin}
+                  onToggle={(newState) => {
+                    setEvents((prev) =>
+                      prev.map((e) => (e._id === selectedEventId ? { ...e, onSpotRegistrationEnabled: newState } : e))
+                    );
+                    setEventMeta((prev) => (prev ? { ...prev, onSpotRegistrationEnabled: newState } : null));
+                    showToast(
+                      newState
+                        ? "On-Spot Registration is now LIVE on website."
+                        : "On-Spot Registration has been CLOSED."
+                    );
+                  }}
+                />
+              )}
               {selectedEventId && (
                 <CheckinMasterSwitch
                   eventId={selectedEventId}
@@ -1666,6 +1714,12 @@ export default function LiveEventManager({ isMasterAdmin: propIsMasterAdmin }: L
                                 >
                                   {p.role}
                                 </span>
+                                {p.isOnSpot && (
+                                  <span className="font-mono text-[10px] font-bold rounded px-1.5 py-0.5 bg-amber-500/20 text-amber-300 border border-amber-500/30 inline-flex items-center gap-1">
+                                    <Zap size={9} className="text-amber-400" />
+                                    <span>On-Spot</span>
+                                  </span>
+                                )}
                               </div>
                             </td>
 
@@ -1884,6 +1938,12 @@ export default function LiveEventManager({ isMasterAdmin: propIsMasterAdmin }: L
                                   <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-mono font-medium bg-amber-500/10 text-amber-300 border border-amber-500/20">
                                     <span className="w-1 h-1 rounded-full bg-amber-400" />
                                     <span>Forming</span>
+                                  </span>
+                                )}
+                                {team.isOnSpot && (
+                                  <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-mono font-bold bg-amber-500/15 text-amber-300 border border-amber-500/30 shadow-[0_0_8px_rgba(245,158,11,0.15)]">
+                                    <Zap size={9} className="text-amber-400" />
+                                    <span>On-Spot</span>
                                   </span>
                                 )}
                               </div>

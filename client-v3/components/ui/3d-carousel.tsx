@@ -193,7 +193,10 @@ function Event3DCard({ card, onSelectEvent, isDraggingRef }: Event3DCardProps) {
   const maxReq = event.maxTeamMembers || 4;
   const customTag = event.tag && event.tag.trim().toLowerCase() !== "flagship" ? event.tag : null;
 
-  const isClosed = event.registrationStatus === "closed" || countdown.isExpired;
+  const isOnSpotLive = Boolean(event.onSpotRegistrationEnabled);
+  const isTimeOver = countdown.hasDeadline && countdown.isExpired;
+  const isRegistrationClosed = !isOnSpotLive && (event.registrationStatus === "closed" || isTimeOver);
+  const isClosed = isRegistrationClosed;
 
   const handleAction = (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -226,14 +229,21 @@ function Event3DCard({ card, onSelectEvent, isDraggingRef }: Event3DCardProps) {
 
           <span
             className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-medium backdrop-blur-md transition-all ${
-              isClosed
+              isOnSpotLive
+                ? "bg-amber-500/[0.12] border border-amber-500/35 text-amber-300 shadow-[0_0_12px_rgba(245,158,11,0.2)]"
+                : isClosed
                 ? "bg-rose-500/[0.1] border border-rose-500/25 text-rose-300"
                 : event.registrationStatus === "extended"
                 ? "bg-amber-500/[0.1] border border-amber-500/25 text-amber-300 shadow-[0_0_12px_rgba(245,158,11,0.15)]"
                 : "bg-emerald-500/[0.1] border border-emerald-500/25 text-emerald-400 shadow-[0_0_12px_rgba(16,185,129,0.15)]"
             }`}
           >
-            {isClosed ? (
+            {isOnSpotLive ? (
+              <span className="relative flex h-1.5 w-1.5 shrink-0">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75" />
+                <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-amber-400 shadow-[0_0_6px_rgba(251,191,36,0.9)]" />
+              </span>
+            ) : isClosed ? (
               <span className="h-1.5 w-1.5 rounded-full bg-rose-400/80 shrink-0" />
             ) : (
               <span className="relative flex h-1.5 w-1.5 shrink-0">
@@ -242,7 +252,9 @@ function Event3DCard({ card, onSelectEvent, isDraggingRef }: Event3DCardProps) {
               </span>
             )}
             <span>
-              {isClosed
+              {isOnSpotLive
+                ? "On-Spot Live"
+                : isClosed
                 ? "Closed"
                 : event.registrationStatus === "extended"
                 ? "Extended"

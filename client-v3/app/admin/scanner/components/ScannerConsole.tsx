@@ -26,6 +26,7 @@ import {
   Unlock,
 } from "lucide-react";
 import CheckinMasterSwitch from "@/app/admin/components/CheckinMasterSwitch";
+import OnSpotMasterSwitch from "@/app/admin/components/OnSpotMasterSwitch";
 
 interface FlatParticipant {
   id: string;
@@ -39,6 +40,7 @@ interface FlatParticipant {
   roll?: string;
   checkedIn: boolean;
   checkedInAt?: string | null;
+  isOnSpot?: boolean;
 }
 
 interface TeamMember {
@@ -48,6 +50,7 @@ interface TeamMember {
   roll?: string;
   checkedIn?: boolean;
   checkedInAt?: string | null;
+  isOnSpot?: boolean;
 }
 
 interface TeamLead {
@@ -58,6 +61,7 @@ interface TeamLead {
   roll?: string;
   checkedIn?: boolean;
   checkedInAt?: string | null;
+  isOnSpot?: boolean;
 }
 
 interface RegisteredTeam {
@@ -74,6 +78,7 @@ interface RegisteredTeam {
   submittedAt?: string | Date | null;
   checkedIn: boolean;
   checkedInAt?: string | null;
+  isOnSpot?: boolean;
   registeredAt: string | Date;
 }
 
@@ -87,6 +92,7 @@ interface EventItem {
   registeredTeamsCount: number;
   maxTeams: number;
   checkinEnabled?: boolean;
+  onSpotRegistrationEnabled?: boolean;
 }
 
 interface SessionScanLog {
@@ -400,6 +406,7 @@ export default function ScannerConsole({
     [events, selectedEventId]
   );
   const isCheckinActive = Boolean(selectedEvent?.checkinEnabled);
+  const isOnSpotActive = Boolean(selectedEvent?.onSpotRegistrationEnabled);
 
   const handleToggleCheckin = (newState: boolean) => {
     setEvents((prev) =>
@@ -409,6 +416,17 @@ export default function ScannerConsole({
       newState
         ? "Check-in is now ACTIVE for this event."
         : "Check-in has been LOCKED for this event."
+    );
+  };
+
+  const handleToggleOnSpot = (newState: boolean) => {
+    setEvents((prev) =>
+      prev.map((e) => (e._id === selectedEventId ? { ...e, onSpotRegistrationEnabled: newState } : e))
+    );
+    triggerToast(
+      newState
+        ? "On-Spot Registration is now LIVE on website."
+        : "On-Spot Registration has been CLOSED."
     );
   };
 
@@ -1000,6 +1018,7 @@ export default function ScannerConsole({
         roll: t.lead.roll || "",
         checkedIn: isLeadChecked,
         checkedInAt: leadCheckedInAt,
+        isOnSpot: Boolean(t.isOnSpot || t.lead?.isOnSpot),
       });
 
       if (Array.isArray(t.members)) {
@@ -1019,6 +1038,7 @@ export default function ScannerConsole({
             roll: m.roll || "",
             checkedIn: isMemChecked,
             checkedInAt: memCheckedInAt,
+            isOnSpot: Boolean(t.isOnSpot || m.isOnSpot),
           });
         });
       }
@@ -1078,6 +1098,14 @@ export default function ScannerConsole({
 
         {/* Event Selector Dropdown & Master Admin Switch */}
         <div className="flex items-center gap-2 sm:gap-3 w-full sm:w-auto flex-wrap sm:flex-nowrap">
+          {selectedEventId && (
+            <OnSpotMasterSwitch
+              eventId={selectedEventId}
+              onSpotRegistrationEnabled={isOnSpotActive}
+              isMasterAdmin={isMasterAdmin}
+              onToggle={handleToggleOnSpot}
+            />
+          )}
           {selectedEventId && (
             <CheckinMasterSwitch
               eventId={selectedEventId}
@@ -1682,8 +1710,14 @@ export default function ScannerConsole({
                                   : "bg-white/10 text-neutral-300 border border-white/10"
                               }`}
                             >
-                              {p.role === "Team Leader" ? "Leader" : "Member"}
+                            {p.role === "Team Leader" ? "Leader" : "Member"}
                             </span>
+                            {p.isOnSpot && (
+                              <span className="text-[9px] px-2 py-0.5 rounded-full font-mono font-bold uppercase tracking-wider bg-amber-500/20 text-amber-300 border border-amber-500/30 inline-flex items-center gap-1">
+                                <Zap className="h-2.5 w-2.5 text-amber-400" />
+                                <span>On-Spot</span>
+                              </span>
+                            )}
                           </div>
                           <div className="font-mono text-[10px] text-neutral-400 truncate max-w-[200px]">
                             {p.email || "No email"}

@@ -26,6 +26,9 @@ export interface RegisteredTeamItem {
   status: "confirmed" | "disqualified";
   submissionStatus?: "forming" | "ready" | "submitted";
   submittedAt?: string;
+  checkedIn?: boolean;
+  checkedInAt?: string;
+  isOnSpot?: boolean;
 }
 
 export interface EventItem {
@@ -39,6 +42,8 @@ export interface EventItem {
   description: string;
   link?: string;
   isPublished: boolean;
+  checkinEnabled?: boolean;
+  onSpotRegistrationEnabled?: boolean;
   order: number;
   registrationStatus?: "open" | "closed" | "extended" | "upcoming";
   registrationDeadline?: string;
@@ -96,6 +101,8 @@ export interface PublicEvent {
   link?: string;
   registrationStatus?: "open" | "closed" | "extended" | "upcoming";
   registrationDeadline?: string;
+  checkinEnabled?: boolean;
+  onSpotRegistrationEnabled?: boolean;
   minTeamMembers?: number;
   maxTeamMembers?: number;
   rounds?: EventRound[];

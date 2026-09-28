@@ -101,7 +101,10 @@ export default function HeroThemeEvents({ scrollProgress }: HeroThemeEventsProps
 
   const featuredEvent = events.length > 0 ? (events[selectedIndex] || events[0]) : null;
   const countdown = useCountdown(featuredEvent?.registrationDeadline);
-  const isClosed = featuredEvent ? (featuredEvent.registrationStatus === "closed" || countdown.isExpired) : false;
+  const isOnSpotLive = Boolean(featuredEvent?.onSpotRegistrationEnabled);
+  const isTimeOver = countdown.hasDeadline && countdown.isExpired;
+  const isRegistrationClosed = !isOnSpotLive && Boolean(featuredEvent && (featuredEvent.registrationStatus === "closed" || isTimeOver));
+  const isClosed = isRegistrationClosed;
 
   // Scroll-driven pure opacity fade-in (ZERO vertical slide-in!) right after About Hult Prize section clears off
   const isScrollDriven = typeof scrollProgress === "number";
@@ -200,14 +203,21 @@ export default function HeroThemeEvents({ scrollProgress }: HeroThemeEventsProps
 
                 <span
                   className={`inline-flex items-center gap-2 px-3.5 py-1 rounded-full text-[10px] font-mono font-medium tracking-wider backdrop-blur-md transition-all ${
-                    isClosed
+                    isOnSpotLive
+                      ? "bg-amber-500/[0.12] border border-amber-500/35 text-amber-300 shadow-[0_0_12px_rgba(245,158,11,0.2)]"
+                      : isClosed
                       ? "bg-rose-500/[0.1] border border-rose-500/25 text-rose-300"
                       : featuredEvent.registrationStatus === "extended"
                       ? "bg-amber-500/[0.1] border border-amber-500/25 text-amber-300 shadow-[0_0_12px_rgba(245,158,11,0.15)]"
                       : "bg-emerald-500/[0.1] border border-emerald-500/25 text-emerald-300 shadow-[0_0_12px_rgba(16,185,129,0.15)]"
                   }`}
                 >
-                  {isClosed ? (
+                  {isOnSpotLive ? (
+                    <span className="relative flex h-1.5 w-1.5 shrink-0">
+                      <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75" />
+                      <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-amber-400 shadow-[0_0_6px_rgba(251,191,36,0.9)]" />
+                    </span>
+                  ) : isClosed ? (
                     <span className="h-1.5 w-1.5 rounded-full bg-rose-400 shrink-0" />
                   ) : (
                     <span className="relative flex h-1.5 w-1.5 shrink-0">
@@ -216,7 +226,9 @@ export default function HeroThemeEvents({ scrollProgress }: HeroThemeEventsProps
                     </span>
                   )}
                   <span>
-                    {isClosed
+                    {isOnSpotLive
+                      ? "ON-SPOT REGISTRATION LIVE"
+                      : isClosed
                       ? "REGISTRATIONS CLOSED"
                       : featuredEvent.registrationStatus === "extended"
                       ? "EXTENDED DEADLINE"

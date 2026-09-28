@@ -32,6 +32,7 @@ export interface IRegisteredTeam {
   leadCheckedInAt?: Date;
   checkedIn?: boolean;
   checkedInAt?: Date;
+  isOnSpot?: boolean;
 }
 
 export interface IEventRound {
@@ -59,6 +60,7 @@ export interface IEvent extends Document {
   link?: string;
   isPublished: boolean;
   checkinEnabled: boolean;
+  onSpotRegistrationEnabled: boolean;
   order: number;
   registrationStatus: "open" | "closed" | "extended" | "upcoming";
   registrationDeadline?: string;
@@ -120,6 +122,10 @@ const EventSchema = new Schema<IEvent>(
       default: true,
     },
     checkinEnabled: {
+      type: Boolean,
+      default: false,
+    },
+    onSpotRegistrationEnabled: {
       type: Boolean,
       default: false,
     },
@@ -185,6 +191,7 @@ const EventSchema = new Schema<IEvent>(
         leadCheckedInAt: { type: Date },
         checkedIn: { type: Boolean, default: false },
         checkedInAt: { type: Date },
+        isOnSpot: { type: Boolean, default: false },
       },
     ],
     rounds: [
