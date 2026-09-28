@@ -11,7 +11,7 @@ export async function POST(req: Request, ctx: { params: Promise<{ code: string }
     const { deviceId, claim } = joinSchema.parse(await req.json());
     const actor = await requireActor(req);
     // Admins skip the desk scan here as they do at sign-in (organizers rehearsing on a team).
-    const admin = await isAdminEmail(actor.email);
-    return json(await joinSession(code, actor.email, deviceId, new Date(), { claim, venueCheck: admin ? undefined : venueCheckStatus, trusted: admin }));
+    const venueCheck = (await isAdminEmail(actor.email)) ? undefined : venueCheckStatus;
+    return json(await joinSession(code, actor.email, deviceId, new Date(), { claim, venueCheck }));
   });
 }

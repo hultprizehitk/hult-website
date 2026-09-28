@@ -54,7 +54,8 @@ export function applyAction(s: SessionState, a: ControlAction, questions: Questi
       return { patch: { checkinOpen: !s.checkinOpen } };
 
     case "start":
-      requireState(s.status === "lobby");
+      // No quiz check-in step (the desk scan is the check-in): Start works straight from setup.
+      requireState(s.status === "draft" || s.status === "lobby");
       if (questions.length === 0) throw new QuizError("no_questions");
       return { patch: { status: "live", phase: "idle", currentIndex: -1, checkinOpen: false, startedAt: now } };
 

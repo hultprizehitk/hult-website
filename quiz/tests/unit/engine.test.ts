@@ -37,7 +37,8 @@ describe("engine: setup and check-in", () => {
   it("start closes check-in and shows 'quiz is starting' (idle) without opening a question", () => {
     expect(applyAction(lobby, { type: "start" }, questions, T0).patch).toEqual({ status: "live", phase: "idle", currentIndex: -1, checkinOpen: false, startedAt: T0 });
     expect(() => applyAction(lobby, { type: "start" }, [], T0)).toThrow(expect.objectContaining({ code: "no_questions" }));
-    refuse(base, { type: "start" });
+    // No quiz check-in step: Start works straight from setup.
+    expect(applyAction(base, { type: "start" }, questions, T0).patch).toMatchObject({ status: "live", phase: "idle" });
     refuse(starting, { type: "start" });
   });
 });

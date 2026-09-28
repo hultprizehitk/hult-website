@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { ArrowRight, DoorOpen, Flag, Pause, Play, RotateCcw, Square, TimerReset } from "lucide-react";
+import { ArrowRight, Flag, Play, RotateCcw, Square, TimerReset } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { CountdownRing } from "@/components/quiz/CountdownRing";
@@ -24,17 +24,16 @@ function primaryStep(s: AdminSessionSummary, questionCount: number, counts: Coun
   const nextNo = s.currentIndex + 2;
   const teams = (n: number) => `${n} ${n === 1 ? "team" : "teams"}`;
   const isLast = s.currentIndex >= questionCount - 1;
-  if (s.status === "draft") return { label: "Open check-in", action: { type: "open_lobby" }, icon: <DoorOpen />, disabled: questionCount === 0 };
-  if (s.status === "lobby") {
-    const out = counts.eligible - counts.checkedIn;
+  // No quiz check-in: players scanned at the desk join on their own, before or after Start.
+  if (s.status === "draft" || s.status === "lobby") {
     return {
       label: "Start quiz",
       action: { type: "start" },
       icon: <Play />,
-      disabled: questionCount === 0 || counts.checkedIn === 0,
+      disabled: questionCount === 0,
       confirm: {
         title: "Start the quiz?",
-        description: `${teams(counts.checkedIn)} in.${out > 0 ? ` ${teams(out)} not in yet can still join if scanned at the desk.` : ""}`,
+        description: `${teams(counts.checkedIn)} joined so far. Anyone scanned at the desk can still join after Start.`,
       },
     };
   }
@@ -59,8 +58,7 @@ function primaryStep(s: AdminSessionSummary, questionCount: number, counts: Coun
 }
 
 function stageLabel(s: AdminSessionSummary, questionCount: number, now: number): string {
-  if (s.status === "draft") return "Setup";
-  if (s.status === "lobby") return s.checkinOpen ? "Check-in open" : "Check-in paused";
+  if (s.status === "draft" || s.status === "lobby") return "Setup";
   if (s.status === "ended") return "Ended";
   if (s.phase === "idle") return "Quiz is starting";
   const q = `Question ${s.currentIndex + 1} of ${questionCount}`;
@@ -157,7 +155,7 @@ export function HostControls({
 
       {step && (
         <div className="mt-5 flex flex-col gap-2">
-          <Button size="xl" variant={s.status === "lobby" ? "emerald" : "default"} className="h-14 w-full rounded-2xl text-lg font-bold" loading={busy} disabled={step.disabled} onClick={trigger}>
+          <Button size="xl" variant={s.status === "draft" || s.status === "lobby" ? "emerald" : "default"} className="h-14 w-full rounded-2xl text-lg font-bold" loading={busy} disabled={step.disabled} onClick={trigger}>
             {step.icon}
             {step.label}
           </Button>
@@ -165,14 +163,8 @@ export function HostControls({
         </div>
       )}
 
-      {(hasCurrent || s.status === "lobby") && (
+      {hasCurrent && (
         <div className="mt-4 flex flex-wrap gap-2">
-          {s.status === "lobby" && (
-            <Button variant="outline" size="sm" disabled={busy} onClick={() => void run({ type: "toggle_checkin" })}>
-              {s.checkinOpen ? <Pause /> : <Play />}
-              {s.checkinOpen ? "Pause check-in" : "Resume check-in"}
-            </Button>
-          )}
           {hasCurrent && (
             <>
               <Button variant="outline" size="sm" disabled={busy || inLeadIn} onClick={() => void run({ type: "extend", seconds: 15 })}>
@@ -201,7 +193,6 @@ export function HostControls({
       )}
 
       {s.status === "draft" && questionCount === 0 && <p className="mt-3 text-xs text-amber-300/80">Add questions first</p>}
-      {s.status === "lobby" && counts.checkedIn === 0 && <p className="mt-3 text-xs text-amber-300/80">Waiting for the first team</p>}
 
       <Dialog open={confirming !== null} onOpenChange={(o) => !o && setConfirming(null)}>
         <DialogContent>

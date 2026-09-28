@@ -58,7 +58,7 @@ function SyncBar({ code, session }: { code: string; session: SessionDoc }) {
 function needsAttention(r: TeamBoardRow, status: SessionStatus): boolean {
   if (r.checkedIn && !r.deviceBound) return true;
   if (status === "live" && r.checkedIn && r.missedLast) return true;
-  return status === "lobby" && !r.checkedIn && r.deskScanned;
+  return (status === "draft" || status === "lobby") && !r.checkedIn && r.deskScanned;
 }
 
 function PlayerCell({ code, row, status }: { code: string; row: TeamBoardRow; status: SessionStatus }) {
@@ -71,7 +71,7 @@ function PlayerCell({ code, row, status }: { code: string; row: TeamBoardRow; st
       toast.error((e as ApiError).message);
     }
   };
-  if (!row.checkedIn) return <span className="text-white/30">{status === "lobby" && row.deskScanned ? "Scanned at desk" : "-"}</span>;
+  if (!row.checkedIn) return <span className="text-white/30">{row.deskScanned ? "Scanned at desk" : "-"}</span>;
   const nameOf = (email: string | null) => row.members.find((m) => m.email === email)?.name ?? email ?? "";
   return (
     <div className="flex flex-wrap items-center gap-2">

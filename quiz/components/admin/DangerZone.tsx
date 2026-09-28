@@ -39,7 +39,7 @@ export function DangerZone({ code, session: s }: { code: string; session: AdminS
             </div>
           )}
           <div className="flex items-center justify-between gap-3">
-            <p className="text-xs text-white/60">After the rehearsal. Clears scores, answers, check-ins and phones.</p>
+            <p className="text-xs text-white/60">After the rehearsal. Clears scores, answers, joined teams and phones.</p>
             <Button variant="destructive-outline" size="sm" onClick={() => setResetOpen(true)}>
               <RotateCcw />
               Reset for event

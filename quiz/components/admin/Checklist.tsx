@@ -2,12 +2,12 @@ import { CheckCircle2, CircleAlert } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { Counts } from "@/lib/quiz/types";
 
-/** Pre-start checks shown during setup and check-in. */
+/** Pre-start checks shown during setup. */
 export function Checklist({ questionCount, lastSyncMs, counts, attention }: { questionCount: number; lastSyncMs: number | null; counts: Counts; attention: number }) {
   const items = [
     { ok: questionCount > 0, label: questionCount > 0 ? `${questionCount} questions ready` : "No questions yet" },
     { ok: lastSyncMs !== null, label: lastSyncMs ? `Teams synced ${new Date(lastSyncMs).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}` : "Teams not synced" },
-    { ok: counts.checkedIn > 0, label: `${counts.checkedIn} of ${counts.eligible} teams in` },
+    { ok: counts.checkedIn > 0, label: `${counts.checkedIn} of ${counts.eligible} teams joined` },
     { ok: attention === 0, label: attention === 0 ? "No teams need attention" : `${attention} ${attention === 1 ? "team needs" : "teams need"} attention` },
   ];
   return (

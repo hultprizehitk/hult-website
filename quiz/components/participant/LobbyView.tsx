@@ -3,19 +3,19 @@
 import { TextShimmer } from "@/components/motion-primitives/text-shimmer";
 import type { StateResponse } from "@/lib/quiz/types";
 
-/** Checked in and holding the seat, before Start. */
+/** Joined and holding the seat, before Start. */
 export function LobbyView({ s }: { s: StateResponse }) {
   const team = s.me!.team!;
   return (
     <div className="flex flex-1 flex-col gap-6">
       <div className="text-center">
         <TextShimmer className="font-mono text-xs uppercase tracking-[0.3em]" duration={2}>
-          {s.checkinOpen ? "Waiting for start" : "Check-in paused"}
+          Waiting for start
         </TextShimmer>
         <h1 className="mt-3 text-3xl font-bold tracking-tight">{s.title}</h1>
         <p className="mt-1 inline-flex items-center gap-1.5 text-xs font-medium text-emerald-400">
           <span className="size-1.5 rounded-full bg-emerald-400 shadow-[0_0_8px_rgba(52,211,153,0.6)]" />
-          Checked in
+          Joined
         </p>
       </div>
 

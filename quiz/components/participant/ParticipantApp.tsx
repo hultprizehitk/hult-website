@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { toast } from "sonner";
-import { Clock, Loader2, Lock, LogIn, QrCode, SearchX, ShieldAlert, UserX } from "lucide-react";
+import { Clock, Loader2, LogIn, QrCode, SearchX, ShieldAlert, UserX } from "lucide-react";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { QuizShell } from "@/components/quiz/QuizShell";
 import { StateMessage } from "@/components/quiz/StateMessage";
@@ -51,9 +51,9 @@ export function ParticipantApp({ code }: { code: string }) {
   const teamLive = useDocData<TeamDoc>(join && fb.status === "signed-in" ? paths.team(code, join.teamId) : null);
   const team = teamLive.data;
 
-  // Join = check in + take the seat. Re-run when the situation changes: new login, session opening or
-  // check-in toggling (while not joined), a seat reserved for me by the admin, or an explicit retry.
-  // Admin "Reset for event" clears check-ins: such a phone goes back through check-in.
+  // Join = join the team + take the seat (the desk scan is the only check-in). Re-run when the situation changes:
+  // new login, session status (while not joined), a seat reserved for me by the admin, or an explicit retry.
+  // Admin "Reset for event" clears joined teams: such a phone joins again on its own.
   const joined = !!join && !(team && !team.checkedInAt);
   const reservedForMe = !!team && !!fb.email && team.takerEmail === fb.email && !team.deviceId && !!team.checkedInAt;
   const joinKey =
@@ -183,18 +183,10 @@ export function ParticipantApp({ code }: { code: string }) {
     }
     if (c === "ineligible") return shell(<StateMessage icon={ShieldAlert} title="Team not eligible" subtitle="Team must be confirmed and submitted" action={switchAccount} />);
     if (c === "not_checked_in") return shell(<StateMessage icon={QrCode} title="Scan your pass at the desk" subtitle="Then try again" action={retry} />);
-    if (c === "checkin_closed") {
-      return shell(
-        session.status === "lobby"
-          ? <StateMessage icon={Clock} title="Check-in paused" subtitle="This page updates on its own" />
-          : <StateMessage icon={Lock} title="Check-in closed" subtitle="The quiz has started" />,
-      );
-    }
-    if (c === "invalid_state") return shell(<StateMessage icon={Clock} title="Check-in opens soon" subtitle="This page updates on its own" />);
     if (joinError) return shell(<StateMessage icon={ShieldAlert} title={joinError.message} action={retry} />);
-    return shell(<StateMessage icon={Loader2} spin title="Checking in" />);
+    return shell(<StateMessage icon={Loader2} spin title="Joining" />);
   }
-  if (!team) return shell(<StateMessage icon={Loader2} spin title="Checking in" />);
+  if (!team) return shell(<StateMessage icon={Loader2} spin title="Joining" />);
 
 
   const s = toStateResponse({ session, counts: null, team, email: fb.email, deviceId, nowMs: now });

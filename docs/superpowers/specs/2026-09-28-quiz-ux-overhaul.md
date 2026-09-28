@@ -20,7 +20,7 @@
 | # | Topic | Decision |
 |---|---|---|
 | U1 | Desk scan | Required. Checked at Google sign-in, and again at the team's first quiz check-in (catches sessions signed in before the desk scan). Admins skip it (rehearsal). MongoDB is only touched before Start. |
-| U2 | Quiz check-in | The first eligible, desk-scanned member to open `/quiz` while check-in is open checks the team in and binds the phone. A desk scan alone does **not** check a team into the quiz. |
+| U2 | Quiz check-in | **None** (Harsh, 2026-09-28). The desk scan on the main site is the only check-in. The first desk-scanned member to open `/quiz` joins the team and binds the phone, at any time (setup, live, after a reset). The admin has no Open check-in or Pause; Start works straight from Setup. The projector QR is only a shortcut to `/quiz`. |
 | U3 | One phone | The team has one seat: `takerEmail` + `deviceId`. Other members see "Playing on X's phone", not an error. |
 | U4 | Seat recovery | Same account on a new phone: "Play here" moves the seat. Admin can **Switch player** (reserve the seat for a member) or **Free seat** (any member can tap "Play on this phone"). |
 | U5 | Late teams | The desk scan is the check-in (Harsh, 2026-09-28): a desk-scanned member, or an admin, can check the team in at any time, even after Start or while check-in is paused. Members who were not desk-scanned can only check in while check-in is open. |

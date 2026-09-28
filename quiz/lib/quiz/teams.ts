@@ -26,9 +26,9 @@ async function teamForEmail(code: string, email: string) {
 }
 
 /**
- * Quiz check-in + the team's single seat (one phone per team, spec 2026-09-28 U2-U4).
- * - The desk scan is the check-in: a desk-scanned member (or an admin) checks the team in at any time,
- *   including after Start. Anyone else can only check in while check-in is open.
+ * Joining the quiz + the team's single seat (one phone per team, spec 2026-09-28 U2-U4).
+ * - There is no quiz check-in: the desk scan on the main site is the check-in. A desk-scanned member (sign-in and
+ *   the venue check enforce it) joins the team at any time: setup, mid-quiz or after a reset.
  * - The seat is `takerEmail` + `deviceId`. A seat reserved for you (admin "Switch player") binds automatically.
  *   A free seat, or your own seat on another device, needs `claim` (an explicit "Play here" tap).
  * Idempotent; safe to call on every page load.
@@ -38,8 +38,7 @@ export async function joinSession(
   email: string,
   deviceId: string,
   now: Date = new Date(),
-  /** trusted: the caller is an admin, who skips the desk scan and counts as scanned. */
-  opts: { claim?: boolean; venueCheck?: VenueCheck; trusted?: boolean } = {},
+  opts: { claim?: boolean; venueCheck?: VenueCheck } = {},
 ): Promise<JoinResult> {
   const db = adminDb();
   // Resolve the email query before starting a transaction. Doing this query in every
@@ -47,15 +46,12 @@ export async function joinSession(
   // query range and serializes otherwise independent teams.
   const found = await teamForEmail(code, email);
   if (!found) throw new QuizError("not_registered", "No registered team for this account");
-  // Desk scan is checked once, before the team's first check-in.
-  let deskScanned = opts.trusted === true || found.team.deskScanned === true;
+  // Desk scan is checked once, before the team first joins.
   if (!found.team.checkedInAt && found.team.eligible && opts.venueCheck) {
-    const venue = await opts.venueCheck(email);
-    if (venue === "not_checked_in") throw new QuizError("not_checked_in", "Scan your pass at the desk first");
-    if (venue === "ok") deskScanned = true;
+    if ((await opts.venueCheck(email)) === "not_checked_in") throw new QuizError("not_checked_in", "Scan your pass at the desk first");
   }
   return db.runTransaction(async (tx) => {
-    const s = await readSession(tx, code);
+    await readSession(tx, code); // the session must exist
     const teamSnap = await tx.get(found.ref);
     if (!teamSnap.exists) throw new QuizError("not_registered", "No registered team for this account");
     const team = teamSnap.data() as TeamDoc;
@@ -65,11 +61,6 @@ export async function joinSession(
     const patch: Record<string, unknown> = {};
     const firstCheckIn = !team.checkedInAt;
     if (firstCheckIn) {
-      if (s.status === "draft") throw new QuizError("invalid_state", "Check-in opens soon");
-      if (!deskScanned) {
-        if (s.status !== "lobby") throw new QuizError("checkin_closed", "Check-in is closed");
-        if (!s.checkinOpen) throw new QuizError("checkin_closed", "Check-in is paused");
-      }
       patch.checkedInAt = Timestamp.fromDate(now);
       patch.checkedInBy = email;
       tx.update(db.doc(paths.counter(code, team.teamId)), { checkedIn: true });

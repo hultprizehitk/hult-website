@@ -41,35 +41,16 @@ describe("joinSession: check-in", () => {
     expect((await readCounts(code)).checkedIn).toBe(1);
   });
 
-  it("refuses new check-ins while paused, in setup, and after Start (no late teams)", async () => {
-    const code = await setup({ teams: [srcTeam(1), srcTeam(2), srcTeam(3)] });
-    await joinSession(code, mail("lead1"), DEV_A);
-    await applyControl(code, { type: "toggle_checkin" }, T0);
-    await expect(joinSession(code, mail("lead2"), DEV_B)).rejects.toMatchObject({ code: "checkin_closed" });
-    await applyControl(code, { type: "toggle_checkin" }, T0);
-    await joinSession(code, mail("lead2"), DEV_B);
+  it("has no quiz check-in: a member joins in setup, before Start and after Start", async () => {
+    const code = await setup({ status: "draft", teams: [srcTeam(1), srcTeam(2), srcTeam(3)] });
+    await expect(joinSession(code, mail("lead1"), DEV_A)).resolves.toMatchObject({ role: "taker", deviceOk: true });
     await applyControl(code, { type: "start" }, T0);
-    await expect(joinSession(code, mail("lead3"), DEV_C)).rejects.toMatchObject({ code: "checkin_closed" });
-    // Checked-in teams can come back after Start (refresh, new tab).
+    await expect(joinSession(code, mail("lead2"), DEV_B)).resolves.toMatchObject({ role: "taker", deviceOk: true });
+    await applyControl(code, { type: "next" }, T0);
+    await expect(joinSession(code, mail("lead3"), DEV_C)).resolves.toMatchObject({ role: "taker" });
+    // Joined teams can come back (refresh, new tab).
     await expect(joinSession(code, mail("lead1"), DEV_A)).resolves.toMatchObject({ deviceOk: true });
-    const draft = await setup({ status: "draft" });
-    await expect(joinSession(draft, mail("lead1"), DEV_A)).rejects.toMatchObject({ code: "invalid_state" });
-  });
-
-  it("lets a desk-scanned member check in at any time, even after Start or while paused", async () => {
-    const code = await setup({ teams: [srcTeam(1), srcTeam(2), srcTeam(3, { checkedIn: true })] });
-    const venue: VenueCheck = async (email) => (email === mail("lead2") ? "ok" : "not_checked_in");
-    await applyControl(code, { type: "toggle_checkin" }, T0);
-    await expect(joinSession(code, mail("lead2"), DEV_B, T0, { venueCheck: venue })).resolves.toMatchObject({ role: "taker" });
-    await applyControl(code, { type: "toggle_checkin" }, T0);
-    await joinSession(code, mail("lead1"), DEV_A);
-    await applyControl(code, { type: "start" }, T0);
-    // Scanned per the synced roster (no MongoDB lookup needed), and admins count as scanned.
-    await expect(joinSession(code, mail("lead3"), DEV_C)).resolves.toMatchObject({ role: "taker", deviceOk: true });
-    const other = await setup({ teams: [srcTeam(4)] });
-    await applyControl(other, { type: "start" }, T0);
-    await expect(joinSession(other, mail("lead4"), DEV_A)).rejects.toMatchObject({ code: "checkin_closed" });
-    await expect(joinSession(other, mail("lead4"), DEV_A, T0, { trusted: true })).resolves.toMatchObject({ role: "taker" });
+    expect((await readCounts(code)).checkedIn).toBe(3);
   });
 
   it("requires the desk scan before the team's first check-in only", async () => {
