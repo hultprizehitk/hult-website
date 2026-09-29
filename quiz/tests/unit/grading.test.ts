@@ -21,7 +21,7 @@ describe("rankStandings", () => {
 });
 
 describe("gradeQuestion", () => {
-  it("awards points to correct answers, clamps nothing extra, and charges full time to non-answerers", () => {
+  it("awards points to correct answers, clamps nothing extra, and charges zero time to non-answerers", () => {
     const out = gradeQuestion(Q, [
       team("t1", { currentAnswer: { qid: "q1", optionIndex: 1, responseMs: 4000 } }),
       team("t2", { currentAnswer: { qid: "q1", optionIndex: 0, responseMs: 2000 } }),
@@ -29,14 +29,14 @@ describe("gradeQuestion", () => {
     ]);
     expect(out.updates.get("t1")).toMatchObject({ score: 100, totalTimeMs: 4000, answeredCount: 1, correctCount: 1, result: { optionIndex: 1, correct: true, points: 100, ms: 4000 } });
     expect(out.updates.get("t2")).toMatchObject({ score: 0, totalTimeMs: 2000, answeredCount: 1, correctCount: 0, result: { correct: false, points: 0 } });
-    expect(out.updates.get("t3")).toMatchObject({ score: 0, totalTimeMs: 20000, answeredCount: 0, result: { optionIndex: null, correct: false, ms: 20000 } });
+    expect(out.updates.get("t3")).toMatchObject({ score: 0, totalTimeMs: 0, answeredCount: 0, result: { optionIndex: null, correct: false, ms: 0 } });
     expect(out.distribution).toEqual([1, 1, 0, 0]);
-    expect(out.standings.map((s) => [s.teamId, s.rank])).toEqual([["t1", 1], ["t2", 2], ["t3", 3]]);
+    expect(out.standings.map((s) => [s.teamId, s.rank])).toEqual([["t1", 1], ["t3", 2], ["t2", 3]]);
   });
 
   it("ignores answers that belong to another question (stale currentAnswer)", () => {
     const out = gradeQuestion(Q, [team("t1", { currentAnswer: { qid: "q0", optionIndex: 1, responseMs: 1000 } })]);
-    expect(out.updates.get("t1")).toMatchObject({ answeredCount: 0, totalTimeMs: 20000 });
+    expect(out.updates.get("t1")).toMatchObject({ answeredCount: 0, totalTimeMs: 0 });
     expect(out.distribution).toEqual([0, 0, 0, 0]);
   });
 

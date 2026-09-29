@@ -28,14 +28,14 @@ describe("computeStandings", () => {
     ]);
   });
 
-  it("charges the full time limit for unanswered closed questions", () => {
+  it("does not charge time for unanswered closed questions", () => {
     const s = computeStandings([teams[0]], closed, [ans("t1", "q1", 100, 4000)]);
-    expect(s[0]).toMatchObject({ score: 100, totalTimeMs: 4000 + 10_000, answeredCount: 1, correctCount: 1 });
+    expect(s[0]).toMatchObject({ score: 100, totalTimeMs: 4000, answeredCount: 1, correctCount: 1 });
   });
 
-  it("gives teams with no answers score 0 and full time", () => {
+  it("gives teams with no answers score 0 and zero time", () => {
     const s = computeStandings([teams[0]], closed, []);
-    expect(s[0]).toMatchObject({ rank: 1, score: 0, totalTimeMs: 30_000, answeredCount: 0 });
+    expect(s[0]).toMatchObject({ rank: 1, score: 0, totalTimeMs: 0, answeredCount: 0 });
   });
 
   it("ignores answers to questions that are not closed yet", () => {

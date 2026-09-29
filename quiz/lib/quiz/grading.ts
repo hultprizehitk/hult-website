@@ -59,7 +59,7 @@ export function gradeQuestion(q: GradeQuestionInput, teams: GradeTeam[]): GradeO
       const correct = a.optionIndex === q.correctIndex;
       result = { optionIndex: a.optionIndex, correct, points: correct ? q.points : 0, ms: Math.min(Math.max(a.responseMs, 0), limitMs) };
     } else {
-      result = { optionIndex: null, correct: false, points: 0, ms: limitMs };
+      result = { optionIndex: null, correct: false, points: 0, ms: 0 };
     }
     const p = t.previous;
     updates.set(t.teamId, {

@@ -85,7 +85,7 @@ describe("grading at results", () => {
     const t3 = await readTeam(code, 3);
     expect(t1).toMatchObject({ score: 100, totalTimeMs: 3000, correctCount: 1, rank: 1, prevRank: null, lastResult: { qid, correct: true, points: 100, optionIndex: 1, ms: 3000 } });
     expect(t2).toMatchObject({ score: 0, totalTimeMs: 1000, correctCount: 0, rank: 2, lastResult: { correct: false } });
-    expect(t3).toMatchObject({ score: 0, totalTimeMs: 20_000, answeredCount: 0, rank: 3, lastResult: { optionIndex: null } });
+    expect(t3).toMatchObject({ score: 0, totalTimeMs: 0, answeredCount: 0, rank: 3, lastResult: { optionIndex: null } });
     expect((await readTeam(code, 4)).rank).toBeNull(); // never checked in
     expect(t1.perQuestion[qid]).toEqual({ optionIndex: 1, correct: true, points: 100, ms: 3000 });
 
@@ -99,7 +99,7 @@ describe("grading at results", () => {
     const open2 = OPEN + 6000 + LEAD_IN_MS;
     await submitAnswer(code, mail("lead3"), { questionId: q2, optionIndex: 1, deviceId: "device-team-3" }, at(open2 + 500));
     await applyControl(code, { type: "show_results" }, at(open2 + 1000));
-    // Both on 100; team 3's total time (20 s + 0.5 s) beats team 1's (3 s + 20 s unanswered).
+    // Both on 100; team 3's total time (0 s + 0.5 s = 0.5 s) beats team 1's (3 s + 0 s unanswered = 3 s).
     expect(await readTeam(code, 3)).toMatchObject({ score: 100, rank: 1, prevRank: 3 });
     expect(await readTeam(code, 1)).toMatchObject({ rank: 2, prevRank: 1 });
     await applyControl(code, { type: "end" }, at(open2 + 2000));

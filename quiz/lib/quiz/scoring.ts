@@ -45,7 +45,7 @@ export function computeStandings(
         answeredCount += 1;
         if (a.isCorrect) correctCount += 1;
       } else {
-        totalTimeMs += q.timeLimitSec * 1000;
+        // Unanswered: no time added (penalty is already 0 points)
       }
     }
     return { teamId: t.teamId, teamName: t.teamName, score, totalTimeMs, answeredCount, correctCount };
