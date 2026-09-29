@@ -175,8 +175,34 @@ export default function ScannerConsole({
   const lastScannedCodeRef = useRef<{ code: string; time: number } | null>(null);
 
   // -------------------------------------------------------------
-  // Feedback & Session Logs
+  // Feedback, Scan Pop-Up Modal & Session Logs
   // -------------------------------------------------------------
+  const [scanModal, setScanModal] = useState<{
+    isOpen: boolean;
+    stage: "confirm" | "done" | "duplicate" | "error";
+    participant?: FlatParticipant | null;
+    rawCode: string;
+    isSubmitting?: boolean;
+    message?: string;
+    teamName?: string;
+    teamCode?: string;
+    participantName?: string;
+    participantRole?: string;
+    roll?: string;
+    department?: string;
+    checkedInAt?: string | null;
+    totalMembers?: number;
+    checkedInCount?: number;
+    allCheckedIn?: boolean;
+  } | null>(null);
+
+  const [requireConfirmation, setRequireConfirmation] = useState<boolean>(true);
+
+  const closeScanModal = useCallback(() => {
+    setScanModal(null);
+    setIsProcessing(false);
+  }, []);
+
   const [lastScanResult, setLastScanResult] = useState<{
     status: "success" | "duplicate" | "error";
     message: string;
@@ -220,7 +246,6 @@ export default function ScannerConsole({
         clearTimeout(scanResultTimerRef.current);
       }
       setLastScanResult(result);
-      // Auto-dismiss after 4.5 seconds for continuous hands-free scanning
       scanResultTimerRef.current = setTimeout(() => {
         setLastScanResult(null);
       }, 4500);
@@ -476,36 +501,69 @@ export default function ScannerConsole({
   };
 
   // -------------------------------------------------------------
-  // 3. Process Check-in Submission (Handles Participant QR & Team QR)
+  // 3. Team Submission & Participant Lookup Helpers
   // -------------------------------------------------------------
-  const handleCheckInCode = useCallback(
-    async (rawCode: string) => {
-      const code = String(rawCode || "").trim();
-      if (!code) return;
+  const isTeamSubmitted = useCallback((t: RegisteredTeam) => {
+    return t.submissionStatus === "submitted" || Boolean(t.submittedAt);
+  }, []);
 
-      if (!isCheckinActive) {
-        playAudioChime("error");
-        showScanResult({
-          status: "error",
-          message: "Check-in is currently locked for this event. A Master Admin must activate check-in before attendance can be recorded.",
-          teamCode: code,
+  const eligibleTeams = useMemo(
+    () => teams.filter((t) => isTeamSubmitted(t)),
+    [teams, isTeamSubmitted]
+  );
+
+  const allFlattenedParticipants = useMemo<FlatParticipant[]>(() => {
+    const list: FlatParticipant[] = [];
+    for (const t of eligibleTeams) {
+      const isLeadChecked = Boolean(t.lead?.checkedIn || (t.checkedIn && t.lead?.checkedIn !== false));
+      const leadCheckedInAt = t.lead?.checkedInAt || (isLeadChecked ? t.checkedInAt : null);
+
+      list.push({
+        id: `${t.id}_lead`,
+        teamId: t.id,
+        teamName: t.teamName,
+        teamCode: t.teamCode,
+        name: t.lead.name,
+        email: t.lead.email,
+        role: "Team Leader",
+        department: t.lead.department || t.department || "General",
+        roll: t.lead.roll || "",
+        checkedIn: isLeadChecked,
+        checkedInAt: leadCheckedInAt,
+        isOnSpot: Boolean(t.isOnSpot || t.lead?.isOnSpot),
+      });
+
+      if (Array.isArray(t.members)) {
+        t.members.forEach((m, idx) => {
+          const isMemChecked = Boolean(m.checkedIn !== undefined ? m.checkedIn : t.checkedIn);
+          const memCheckedInAt = m.checkedInAt || (isMemChecked ? t.checkedInAt : null);
+
+          list.push({
+            id: `${t.id}_mem_${idx}`,
+            teamId: t.id,
+            teamName: t.teamName,
+            teamCode: t.teamCode,
+            name: m.name,
+            email: m.email || "",
+            role: "Member",
+            department: m.department || t.department || "General",
+            roll: m.roll || "",
+            checkedIn: isMemChecked,
+            checkedInAt: memCheckedInAt,
+            isOnSpot: Boolean(t.isOnSpot || m.isOnSpot),
+          });
         });
-        setIsProcessing(false);
-        return;
       }
+    }
+    return list;
+  }, [eligibleTeams]);
 
-      // Prevent duplicate scan of the same exact code within 2 seconds
-      const now = Date.now();
-      if (
-        lastScannedCodeRef.current &&
-        lastScannedCodeRef.current.code === code &&
-        now - lastScannedCodeRef.current.time < 2000
-      ) {
-        return;
-      }
-      lastScannedCodeRef.current = { code, time: now };
-
-      setIsProcessing(true);
+  // -------------------------------------------------------------
+  // 4. Submit Check-in Execution
+  // -------------------------------------------------------------
+  const submitCheckIn = useCallback(
+    async (code: string, participant?: FlatParticipant | null) => {
+      setScanModal((prev) => (prev ? { ...prev, isSubmitting: true } : null));
 
       try {
         const res = await fetch("/api/admin/teams", {
@@ -524,15 +582,14 @@ export default function ScannerConsole({
           const isDup = Boolean(data.duplicate);
           playAudioChime(isDup ? "duplicate" : "success");
 
-          const teamCode = data.team?.teamCode || code;
-          const teamName = data.team?.teamName || "Team";
-          const participantName = data.participant?.name;
-          const participantRole = data.participant?.role;
+          const teamCode = data.team?.teamCode || participant?.teamCode || code;
+          const teamName = data.team?.teamName || participant?.teamName || "Team";
+          const participantName = data.participant?.name || participant?.name || "Participant";
+          const participantRole = data.participant?.role || participant?.role || "Member";
           const checkedInCount = data.checkedInCount ?? 1;
           const totalMembers = data.totalMembers ?? (data.team ? 1 + (data.team.members?.length || 0) : 4);
           const allCheckedIn = Boolean(data.allCheckedIn);
 
-          // Optimistically update local teams list with full updated team document
           if (data.team) {
             setTeams((prev) =>
               prev.map((t) => (t.id === data.team.id || t.teamCode === data.team.teamCode ? data.team : t))
@@ -548,25 +605,31 @@ export default function ScannerConsole({
             participantRole,
             timestamp: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", second: "2-digit" }),
             status: isDup ? "duplicate" : "success",
-            message: data.message || (isDup ? "Already checked in" : "Verified"),
+            message: data.message || (isDup ? "Already checked in" : "Verified & Checked In"),
             checkedInCount,
             totalMembers,
             allCheckedIn,
           };
 
           setSessionLogs((prev) => [logEntry, ...prev.slice(0, 49)]);
-          showScanResult({
-            status: isDup ? "duplicate" : "success",
-            message: data.message,
-            teamCode,
+
+          setScanModal({
+            isOpen: true,
+            stage: isDup ? "duplicate" : "done",
+            isSubmitting: false,
+            participant: participant || null,
+            rawCode: code,
             teamName,
-            leadName: data.team?.lead?.name,
+            teamCode,
             participantName,
             participantRole,
-            membersCount: totalMembers,
+            roll: participant?.roll || data.participant?.roll || "",
+            department: participant?.department || data.participant?.department || "",
+            checkedInAt: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
             checkedInCount,
             totalMembers,
             allCheckedIn,
+            message: data.message || (isDup ? "Pass already verified." : "Registration confirmed • Check-in is done!"),
           });
         } else {
           playAudioChime("error");
@@ -574,33 +637,280 @@ export default function ScannerConsole({
 
           const logEntry: SessionScanLog = {
             id: `${code}_${Date.now()}`,
-            teamCode: code,
-            teamName: "Verification Blocked",
+            teamCode: participant?.teamCode || code,
+            teamName: participant?.teamName || "Verification Blocked",
             timestamp: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", second: "2-digit" }),
             status: "error",
             message: errorMsg,
           };
 
           setSessionLogs((prev) => [logEntry, ...prev.slice(0, 49)]);
-          showScanResult({
-            status: "error",
+
+          setScanModal({
+            isOpen: true,
+            stage: "error",
+            isSubmitting: false,
+            rawCode: code,
             message: errorMsg,
-            teamCode: code,
+            teamCode: participant?.teamCode || code,
+            teamName: participant?.teamName,
+            participantName: participant?.name,
           });
         }
       } catch (err: unknown) {
         playAudioChime("error");
         const errMsg = err instanceof Error ? err.message : "Network error processing check-in.";
-        showScanResult({
-          status: "error",
+        setScanModal({
+          isOpen: true,
+          stage: "error",
+          isSubmitting: false,
+          rawCode: code,
           message: errMsg,
-          teamCode: code,
         });
-      } finally {
-        setTimeout(() => setIsProcessing(false), 1800);
       }
     },
-    [selectedEventId, isCheckinActive, playAudioChime, showScanResult]
+    [selectedEventId, playAudioChime]
+  );
+
+  // -------------------------------------------------------------
+  // 5. Process Check-in Submission (Handles Participant QR & Team QR)
+  // -------------------------------------------------------------
+  const handleCheckInCode = useCallback(
+    async (rawCode: string) => {
+      const code = String(rawCode || "").trim();
+      if (!code) return;
+
+      if (!isCheckinActive) {
+        playAudioChime("error");
+        setScanModal({
+          isOpen: true,
+          stage: "error",
+          rawCode: code,
+          message: "Check-in is currently locked for this event. A Master Admin must activate check-in before attendance can be recorded.",
+        });
+        setIsProcessing(true);
+        return;
+      }
+
+      // If modal is already open, do not re-trigger another scan
+      if (scanModal?.isOpen) {
+        return;
+      }
+
+      // Prevent duplicate scan of the same exact code within 2.5 seconds
+      const now = Date.now();
+      if (
+        lastScannedCodeRef.current &&
+        lastScannedCodeRef.current.code === code &&
+        now - lastScannedCodeRef.current.time < 2500
+      ) {
+        return;
+      }
+      lastScannedCodeRef.current = { code, time: now };
+
+      // Pause continuous scanning while modal or processing is active
+      setIsProcessing(true);
+
+      // Parse code components
+      let extractedEmail: string | null = null;
+      let extractedTeamCode: string | null = null;
+      let extractedRoll: string | null = null;
+
+      if (code.startsWith("{") && code.endsWith("}")) {
+        try {
+          const parsed = JSON.parse(code);
+          if (parsed.email) extractedEmail = String(parsed.email).trim().toLowerCase();
+          if (parsed.participantEmail) extractedEmail = String(parsed.participantEmail).trim().toLowerCase();
+          if (parsed.teamCode) extractedTeamCode = String(parsed.teamCode).trim().toUpperCase();
+          if (parsed.roll) extractedRoll = String(parsed.roll).trim();
+        } catch {}
+      }
+      if (!extractedEmail && !extractedTeamCode && (code.startsWith("http://") || code.startsWith("https://"))) {
+        try {
+          const urlObj = new URL(code);
+          extractedEmail = urlObj.searchParams.get("email") || urlObj.searchParams.get("participantEmail");
+          extractedTeamCode = urlObj.searchParams.get("teamCode") || urlObj.searchParams.get("code");
+          extractedRoll = urlObj.searchParams.get("roll");
+          if (extractedEmail) extractedEmail = extractedEmail.trim().toLowerCase();
+          if (extractedTeamCode) extractedTeamCode = extractedTeamCode.trim().toUpperCase();
+        } catch {}
+      }
+      if (!extractedEmail && code.includes(":")) {
+        const parts = code.split(":");
+        parts.forEach((p) => {
+          const tp = p.trim();
+          if (/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(tp)) extractedEmail = tp.toLowerCase();
+          else if (/^[A-Za-z0-9_-]{4,32}$/.test(tp)) extractedTeamCode = tp.toUpperCase();
+        });
+      }
+      if (!extractedEmail && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(code)) {
+        extractedEmail = code.toLowerCase();
+      }
+      if (!extractedEmail && !extractedTeamCode && /^[A-Za-z0-9_-]{4,32}$/.test(code)) {
+        extractedTeamCode = code.toUpperCase();
+      }
+
+      // Prioritized lookup in allFlattenedParticipants
+      let match: FlatParticipant | undefined;
+      if (extractedEmail) {
+        match = allFlattenedParticipants.find(
+          (p) => p.email && p.email.toLowerCase() === extractedEmail
+        );
+      }
+      if (!match && extractedRoll) {
+        match = allFlattenedParticipants.find(
+          (p) => p.roll && p.roll.trim().toLowerCase() === extractedRoll.toLowerCase()
+        );
+      }
+      if (!match && extractedTeamCode) {
+        match = allFlattenedParticipants.find(
+          (p) => p.teamCode?.toUpperCase() === extractedTeamCode
+        );
+      }
+
+      if (match) {
+        const matchingTeam = eligibleTeams.find(
+          (t) => t.id === match.teamId || t.teamCode?.toUpperCase() === match.teamCode?.toUpperCase()
+        );
+        const totalPax = matchingTeam ? 1 + (matchingTeam.members?.length || 0) : 4;
+        const currentCheckedPax = matchingTeam
+          ? (matchingTeam.lead?.checkedIn ? 1 : 0) +
+            (matchingTeam.members?.filter((m) => m.checkedIn).length || 0)
+          : 0;
+
+        if (match.checkedIn) {
+          // Already Checked In (Duplicate Pass)
+          playAudioChime("duplicate");
+          const logEntry: SessionScanLog = {
+            id: `${code}_${Date.now()}`,
+            teamCode: match.teamCode,
+            teamName: match.teamName,
+            participantName: match.name,
+            participantRole: match.role,
+            timestamp: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", second: "2-digit" }),
+            status: "duplicate",
+            message: `Already checked in (${match.name})`,
+            checkedInCount: currentCheckedPax,
+            totalMembers: totalPax,
+            allCheckedIn: currentCheckedPax >= totalPax,
+          };
+          setSessionLogs((prev) => [logEntry, ...prev.slice(0, 49)]);
+
+          setScanModal({
+            isOpen: true,
+            stage: "duplicate",
+            participant: match,
+            rawCode: code,
+            teamName: match.teamName,
+            teamCode: match.teamCode,
+            participantName: match.name,
+            participantRole: match.role,
+            roll: match.roll,
+            department: match.department,
+            checkedInAt: match.checkedInAt || "Earlier today",
+            totalMembers: totalPax,
+            checkedInCount: currentCheckedPax,
+            allCheckedIn: currentCheckedPax >= totalPax,
+            message: `Pass for ${match.name} has already been verified and checked in.`,
+          });
+          return;
+        }
+
+        // Fresh Pass: Show Confirmation Pop-Up Modal
+        if (requireConfirmation) {
+          playAudioChime("duplicate"); // Pleasant alert chime
+          setScanModal({
+            isOpen: true,
+            stage: "confirm",
+            participant: match,
+            rawCode: code,
+            teamName: match.teamName,
+            teamCode: match.teamCode,
+            participantName: match.name,
+            participantRole: match.role,
+            roll: match.roll,
+            department: match.department,
+            totalMembers: totalPax,
+            checkedInCount: currentCheckedPax,
+            message: "Verify attendee pass credentials and confirm check-in.",
+          });
+          return;
+        } else {
+          // Instant direct check-in
+          await submitCheckIn(code, match);
+          return;
+        }
+      }
+
+      // If not in local pre-cached list, verify through backend preview
+      if (requireConfirmation) {
+        try {
+          const res = await fetch("/api/admin/teams", {
+            method: "PUT",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              action: "preview_check_in",
+              payload: code,
+              eventId: selectedEventId,
+            }),
+          });
+          const data = await res.json();
+          if (res.ok) {
+            if (data.duplicate) {
+              playAudioChime("duplicate");
+              setScanModal({
+                isOpen: true,
+                stage: "duplicate",
+                rawCode: code,
+                teamName: data.team?.teamName || "Registered Team",
+                teamCode: data.team?.teamCode || extractedTeamCode || code,
+                participantName: data.participant?.name || "Attendee",
+                participantRole: data.participant?.role || "Participant",
+                checkedInAt: data.checkedInAt || "Earlier today",
+                totalMembers: data.totalMembers,
+                checkedInCount: data.checkedInCount,
+                allCheckedIn: data.allCheckedIn,
+                message: data.message || "Pass already verified.",
+              });
+              return;
+            }
+
+            playAudioChime("duplicate");
+            setScanModal({
+              isOpen: true,
+              stage: "confirm",
+              rawCode: code,
+              teamName: data.team?.teamName || "Registered Team",
+              teamCode: data.team?.teamCode || extractedTeamCode || code,
+              participantName: data.participant?.name || "Attendee",
+              participantRole: data.participant?.role || "Participant",
+              roll: data.participant?.roll || extractedRoll || "",
+              department: data.participant?.department || data.team?.department || "General",
+              totalMembers: data.totalMembers,
+              checkedInCount: data.checkedInCount,
+              message: "Verify attendee pass credentials and confirm check-in.",
+            });
+            return;
+          } else {
+            playAudioChime("error");
+            setScanModal({
+              isOpen: true,
+              stage: "error",
+              rawCode: code,
+              message: data.error || `Invalid pass or verification failed (${code})`,
+            });
+            return;
+          }
+        } catch {
+          await submitCheckIn(code, null);
+          return;
+        }
+      } else {
+        await submitCheckIn(code, null);
+        return;
+      }
+    },
+    [allFlattenedParticipants, eligibleTeams, isCheckinActive, requireConfirmation, scanModal, playAudioChime, submitCheckIn, selectedEventId]
   );
 
   // -------------------------------------------------------------
@@ -1096,23 +1406,18 @@ export default function ScannerConsole({
       }
     };
 
-    if (isCameraActive && !isProcessing) {
+    if (isCameraActive && !isProcessing && !scanModal?.isOpen) {
       animId = requestAnimationFrame(scanFrame);
     }
 
     return () => {
       if (animId) cancelAnimationFrame(animId);
     };
-  }, [isCameraActive, isProcessing, handleCheckInCode]);
+  }, [isCameraActive, isProcessing, scanModal?.isOpen, handleCheckInCode]);
 
   // -------------------------------------------------------------
   // Computed Stats (Only fully registered teams & participants, exclude forming)
   // -------------------------------------------------------------
-  const isTeamSubmitted = (t: RegisteredTeam) => {
-    return t.submissionStatus === "submitted" || Boolean(t.submittedAt);
-  };
-
-  const eligibleTeams = teams.filter((t) => isTeamSubmitted(t));
   const totalRegistered = eligibleTeams.length;
   const checkedInCount = eligibleTeams.filter((t) => t.checkedIn).length;
   const remainingCount = totalRegistered - checkedInCount;
@@ -1143,53 +1448,6 @@ export default function ScannerConsole({
       t.members.some((m) => m.name.toLowerCase().includes(q) || m.email?.toLowerCase().includes(q))
     );
   });
-
-  // Flattened Participants for Participants View across eligible teams
-  const allFlattenedParticipants = useMemo<FlatParticipant[]>(() => {
-    const list: FlatParticipant[] = [];
-    for (const t of eligibleTeams) {
-      const isLeadChecked = Boolean(t.lead?.checkedIn || (t.checkedIn && t.lead?.checkedIn !== false));
-      const leadCheckedInAt = t.lead?.checkedInAt || (isLeadChecked ? t.checkedInAt : null);
-
-      list.push({
-        id: `${t.id}_lead`,
-        teamId: t.id,
-        teamName: t.teamName,
-        teamCode: t.teamCode,
-        name: t.lead.name,
-        email: t.lead.email,
-        role: "Team Leader",
-        department: t.lead.department || t.department || "General",
-        roll: t.lead.roll || "",
-        checkedIn: isLeadChecked,
-        checkedInAt: leadCheckedInAt,
-        isOnSpot: Boolean(t.isOnSpot || t.lead?.isOnSpot),
-      });
-
-      if (Array.isArray(t.members)) {
-        t.members.forEach((m, idx) => {
-          const isMemChecked = Boolean(m.checkedIn !== undefined ? m.checkedIn : t.checkedIn);
-          const memCheckedInAt = m.checkedInAt || (isMemChecked ? t.checkedInAt : null);
-
-          list.push({
-            id: `${t.id}_mem_${idx}`,
-            teamId: t.id,
-            teamName: t.teamName,
-            teamCode: t.teamCode,
-            name: m.name,
-            email: m.email || "",
-            role: "Member",
-            department: m.department || t.department || "General",
-            roll: m.roll || "",
-            checkedIn: isMemChecked,
-            checkedInAt: memCheckedInAt,
-            isOnSpot: Boolean(t.isOnSpot || m.isOnSpot),
-          });
-        });
-      }
-    }
-    return list;
-  }, [eligibleTeams]);
 
   const filteredParticipants = useMemo(() => {
     return allFlattenedParticipants.filter((p) => {
@@ -1350,11 +1608,13 @@ export default function ScannerConsole({
         </div>
       )}
 
-      {/* Main Camera Scanner Section */}
-      <div className="max-w-4xl mx-auto space-y-4">
+      {/* Scanner & Live Session Feed Grid */}
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+        {/* Left Column: Camera Scanner (7 Cols on desktop) */}
+        <div className="lg:col-span-7 space-y-4">
           <div className="relative overflow-hidden rounded-3xl sm:rounded-[2.5rem] border border-white/15 bg-[#0e0e12] p-4 sm:p-7 shadow-2xl space-y-4 sm:space-y-5">
-            {/* Header with Prominent Scan Button */}
-            <div className="flex items-center justify-between gap-3 pb-3 border-b border-white/10">
+            {/* Header with Camera Status & Action Controls */}
+            <div className="flex items-center justify-between gap-2.5 pb-3 border-b border-white/10 flex-wrap">
               <div className="flex items-center gap-2.5 sm:gap-3 min-w-0">
                 <div className="h-9 w-9 sm:h-10 sm:w-10 rounded-2xl bg-emerald-500/20 border border-emerald-500/40 flex items-center justify-center text-emerald-300 shadow-inner shrink-0">
                   <Camera className="h-4 w-4 sm:h-5 sm:w-5" />
@@ -1365,35 +1625,53 @@ export default function ScannerConsole({
                 </div>
               </div>
 
-              {/* Responsive Camera Toggle Button */}
-              {isCameraActive ? (
+              <div className="flex items-center gap-2 shrink-0">
+                {/* Mode Switch: Confirm on Scan vs Direct */}
                 <button
                   type="button"
-                  onClick={toggleCamera}
-                  className="rounded-full bg-rose-500/20 hover:bg-rose-500/30 border border-rose-500/40 px-3.5 sm:px-5 py-2 text-xs font-bold text-rose-300 transition-all flex items-center gap-1.5 cursor-pointer shrink-0"
-                  title="Pause Camera"
-                >
-                  <Pause className="h-3.5 w-3.5" />
-                  <span>Pause</span>
-                </button>
-              ) : (
-                <button
-                  type="button"
-                  onClick={toggleCamera}
-                  className={`hidden sm:inline-flex rounded-full px-4 sm:px-5 py-2 text-xs font-bold text-white transition-all items-center gap-1.5 cursor-pointer shrink-0 ${
-                    isCheckinActive
-                      ? "bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-400 hover:to-teal-500 shadow-lg shadow-emerald-600/30 hover:scale-105"
-                      : "bg-red-500/30 border border-red-500/50 text-red-200 hover:bg-red-500/40"
+                  onClick={() => setRequireConfirmation((prev) => !prev)}
+                  className={`inline-flex items-center gap-1.5 rounded-full px-2.5 sm:px-3 py-1.5 text-[11px] font-mono border transition-all cursor-pointer ${
+                    requireConfirmation
+                      ? "bg-emerald-500/15 text-emerald-300 border-emerald-500/30"
+                      : "bg-white/5 text-neutral-400 border-white/10 hover:text-white"
                   }`}
+                  title="Toggle confirmation pop-up before check-in"
                 >
-                  {isCheckinActive ? <Camera className="h-3.5 w-3.5" /> : <Lock className="h-3.5 w-3.5" />}
-                  <span>{isCheckinActive ? "Scan QR" : "Check-in Locked"}</span>
+                  <CheckCircle2 className="h-3 w-3" />
+                  <span className="hidden sm:inline">{requireConfirmation ? "Confirm Pop-up: ON" : "Instant Scan: ON"}</span>
+                  <span className="sm:hidden">{requireConfirmation ? "Confirm: ON" : "Instant"}</span>
                 </button>
-              )}
+
+                {/* Camera Toggle Button */}
+                {isCameraActive ? (
+                  <button
+                    type="button"
+                    onClick={toggleCamera}
+                    className="rounded-full bg-rose-500/20 hover:bg-rose-500/30 border border-rose-500/40 px-3.5 sm:px-5 py-2 text-xs font-bold text-rose-300 transition-all flex items-center gap-1.5 cursor-pointer shrink-0"
+                    title="Pause Camera"
+                  >
+                    <Pause className="h-3.5 w-3.5" />
+                    <span>Pause</span>
+                  </button>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={toggleCamera}
+                    className={`inline-flex rounded-full px-4 sm:px-5 py-2 text-xs font-bold text-white transition-all items-center gap-1.5 cursor-pointer shrink-0 ${
+                      isCheckinActive
+                        ? "bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-400 hover:to-teal-500 shadow-lg shadow-emerald-600/30 hover:scale-105"
+                        : "bg-red-500/30 border border-red-500/50 text-red-200 hover:bg-red-500/40"
+                    }`}
+                  >
+                    {isCheckinActive ? <Camera className="h-3.5 w-3.5" /> : <Lock className="h-3.5 w-3.5" />}
+                    <span>{isCheckinActive ? "Scan QR" : "Check-in Locked"}</span>
+                  </button>
+                )}
+              </div>
             </div>
 
             {/* Viewfinder Canvas Stage */}
-            <div className="relative rounded-2xl sm:rounded-3xl overflow-hidden border border-white/15 bg-black min-h-[300px] sm:min-h-[380px] aspect-[4/3] sm:aspect-video flex items-center justify-center">
+            <div className="relative rounded-2xl sm:rounded-3xl overflow-hidden border border-white/15 bg-black min-h-[280px] sm:min-h-[380px] aspect-[4/3] sm:aspect-video flex items-center justify-center">
               {isCameraActive ? (
                 <>
                   <video
@@ -1516,145 +1794,105 @@ export default function ScannerConsole({
                   )}
                 </div>
               )}
-
-              {/* Instant Scan Feedback Glass Modal Overlay */}
-              {lastScanResult && (
-                <div className="absolute inset-0 z-30 flex items-center justify-center p-3 sm:p-4 bg-black/80 backdrop-blur-md animate-fadeIn">
-                  <div
-                    className={`relative w-full max-w-sm rounded-2xl border backdrop-blur-2xl p-4 sm:p-5 shadow-2xl flex flex-col justify-between max-h-[95%] overflow-y-auto ${
-                      lastScanResult.status === "success"
-                        ? "bg-[#091510]/95 border-emerald-500/40 shadow-[0_0_40px_rgba(16,185,129,0.25)] text-emerald-100"
-                        : lastScanResult.status === "duplicate"
-                        ? "bg-[#181308]/95 border-amber-500/40 shadow-[0_0_40px_rgba(245,158,11,0.25)] text-amber-100"
-                        : "bg-[#1a080c]/95 border-rose-500/40 shadow-[0_0_40px_rgba(244,63,94,0.25)] text-rose-100"
-                    }`}
-                  >
-                    {/* Header: Status & Dismiss Button */}
-                    <div className="flex items-center justify-between gap-3 border-b border-white/10 pb-2.5 mb-2.5">
-                      <div className="flex items-center gap-2.5 min-w-0">
-                        <div
-                          className={`h-8 w-8 rounded-xl flex items-center justify-center shrink-0 ${
-                            lastScanResult.status === "success"
-                              ? "bg-emerald-500/20 text-emerald-400 border border-emerald-500/30"
-                              : lastScanResult.status === "duplicate"
-                              ? "bg-amber-500/20 text-amber-400 border border-amber-500/30"
-                              : "bg-rose-500/20 text-rose-400 border border-rose-500/30"
-                          }`}
-                        >
-                          {lastScanResult.status === "success" ? (
-                            <CheckCircle2 className="h-4 w-4" />
-                          ) : (
-                            <AlertCircle className="h-4 w-4" />
-                          )}
-                        </div>
-                        <div className="min-w-0">
-                          <h4 className="text-sm font-bold tracking-tight text-white truncate">
-                            {lastScanResult.status === "success"
-                              ? lastScanResult.allCheckedIn
-                                ? "All Members Verified!"
-                                : "Participant Verified!"
-                              : lastScanResult.status === "duplicate"
-                              ? "Already Checked In"
-                              : "Check-In Blocked"}
-                          </h4>
-                          <p className="text-[11px] font-mono text-neutral-400 truncate">
-                            Code: {lastScanResult.teamCode}
-                          </p>
-                        </div>
-                      </div>
-
-                      {/* Instant Dismiss Button */}
-                      <button
-                        type="button"
-                        onClick={dismissScanResult}
-                        className="h-7 w-7 rounded-full bg-white/10 hover:bg-white/20 active:scale-95 text-neutral-300 hover:text-white flex items-center justify-center transition-all cursor-pointer shrink-0"
-                        title="Dismiss overlay"
-                        aria-label="Dismiss overlay"
-                      >
-                        <X className="h-4 w-4" />
-                      </button>
-                    </div>
-
-                    {/* Middle: Attendee Details & Attendance Stats */}
-                    <div className="space-y-2 py-0.5 text-left">
-                      {lastScanResult.participantName && (
-                        <div className="flex items-center justify-between gap-2 bg-white/5 border border-white/10 rounded-xl px-3 py-1.5">
-                          <span className="text-xs font-bold text-white truncate">
-                            {lastScanResult.participantName}
-                          </span>
-                          {lastScanResult.participantRole && (
-                            <span className="text-[10px] font-mono font-medium px-2 py-0.5 rounded bg-white/10 text-neutral-300 shrink-0">
-                              {lastScanResult.participantRole}
-                            </span>
-                          )}
-                        </div>
-                      )}
-
-                      {lastScanResult.teamName && (
-                        <div className="flex items-center justify-between text-xs px-1">
-                          <span className="text-neutral-400 font-medium">Team</span>
-                          <span className="text-white font-bold truncate max-w-[200px]">
-                            {lastScanResult.teamName}
-                          </span>
-                        </div>
-                      )}
-
-                      {lastScanResult.totalMembers !== undefined && (
-                        <div className="rounded-xl bg-black/40 border border-white/10 p-2.5 text-xs font-mono">
-                          <div className="flex items-center justify-between">
-                            <span className="text-neutral-400">Team Attendance:</span>
-                            <strong className="text-white font-bold">
-                              {lastScanResult.checkedInCount || 0} of {lastScanResult.totalMembers} Present
-                            </strong>
-                          </div>
-                          {lastScanResult.allCheckedIn && (
-                            <p className="text-[10px] font-bold text-emerald-400 mt-1 flex items-center gap-1">
-                              <Check className="h-3 w-3 inline shrink-0" />
-                              <span>Full team verified — Team marked Checked In!</span>
-                            </p>
-                          )}
-                        </div>
-                      )}
-
-                      {lastScanResult.message && (
-                        <p className="text-[11px] text-neutral-300 leading-snug px-1">
-                          {lastScanResult.message}
-                        </p>
-                      )}
-                    </div>
-
-                    {/* Footer: Scan Next & Undo */}
-                    <div className="flex items-center gap-2 pt-2.5 mt-2 border-t border-white/10">
-                      <button
-                        type="button"
-                        onClick={dismissScanResult}
-                        className="flex-1 py-2 px-3 rounded-xl bg-white hover:bg-neutral-200 active:scale-98 text-black text-xs font-bold transition-all cursor-pointer flex items-center justify-center gap-1.5 shadow-md"
-                      >
-                        <Camera className="h-3.5 w-3.5" />
-                        <span>Scan Next Pass</span>
-                      </button>
-
-                      {lastScanResult.status === "success" && (
-                        <button
-                          type="button"
-                          onClick={() => {
-                            handleUndoCheckIn(lastScanResult.teamCode);
-                            dismissScanResult();
-                          }}
-                          className="py-2 px-3 rounded-xl bg-white/10 hover:bg-white/20 active:scale-98 border border-white/15 text-white text-xs font-semibold transition-all cursor-pointer flex items-center justify-center gap-1.5 shrink-0"
-                          title="Undo check-in"
-                        >
-                          <Undo2 className="h-3.5 w-3.5" />
-                          <span>Undo</span>
-                        </button>
-                      )}
-                    </div>
-                  </div>
-                </div>
-              )}
             </div>
           </div>
         </div>
+
+        {/* Right Column: Live Session Activity Feed ("The Side Thing") */}
+        <div className="lg:col-span-5 space-y-4">
+          <div className="rounded-3xl sm:rounded-[2.5rem] border border-white/15 bg-[#0e0e12] p-4 sm:p-6 shadow-2xl space-y-4">
+            <div className="flex items-center justify-between pb-3 border-b border-white/10">
+              <div className="flex items-center gap-2.5">
+                <span className="relative flex h-2.5 w-2.5">
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                  <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500"></span>
+                </span>
+                <h3 className="text-base font-bold text-white">Live Session Feed</h3>
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="text-[11px] font-mono px-2 py-0.5 rounded-full bg-white/10 text-neutral-300">
+                  {sessionLogs.length} scans
+                </span>
+                {sessionLogs.length > 0 && (
+                  <button
+                    type="button"
+                    onClick={() => setSessionLogs([])}
+                    className="text-[10px] font-mono text-neutral-400 hover:text-rose-400 transition-colors cursor-pointer"
+                    title="Clear session feed"
+                  >
+                    Clear
+                  </button>
+                )}
+              </div>
+            </div>
+
+            {sessionLogs.length > 0 ? (
+              <div className="space-y-2.5 max-h-[460px] overflow-y-auto pr-1">
+                {sessionLogs.map((log) => (
+                  <div
+                    key={log.id}
+                    className={`rounded-2xl p-3 border transition-all text-xs flex items-center justify-between gap-3 ${
+                      log.status === "success"
+                        ? "bg-[#16161d] border-emerald-500/25"
+                        : log.status === "duplicate"
+                        ? "bg-[#16161d] border-amber-500/25"
+                        : "bg-[#16161d] border-rose-500/25"
+                    }`}
+                  >
+                    <div className="space-y-0.5 min-w-0 flex-1">
+                      <div className="flex items-center gap-2">
+                        <span className="font-bold text-white truncate">{log.teamName}</span>
+                        <span className="font-mono text-[10px] text-rose-400 font-bold">
+                          {log.teamCode}
+                        </span>
+                      </div>
+                      <div className="text-[11px] text-neutral-400 flex items-center gap-2 flex-wrap">
+                        {log.participantName ? (
+                          <span className="text-white/90 font-medium">
+                            {log.participantName} {log.participantRole ? `(${log.participantRole})` : ""}
+                          </span>
+                        ) : log.leadName ? (
+                          <span>Lead: {log.leadName}</span>
+                        ) : null}
+                        <span>•</span>
+                        <span className="font-mono">{log.timestamp}</span>
+                        {log.checkedInCount && log.totalMembers ? (
+                          <>
+                            <span>•</span>
+                            <span className="font-mono text-emerald-400 font-semibold">
+                              {log.checkedInCount}/{log.totalMembers} Present
+                            </span>
+                          </>
+                        ) : null}
+                      </div>
+                    </div>
+
+                    {log.status === "success" && (
+                      <button
+                        type="button"
+                        onClick={() => handleUndoCheckIn(log.teamCode)}
+                        className="rounded-xl border border-white/10 bg-white/5 hover:bg-white/15 px-2.5 py-1 text-[10px] font-mono font-semibold text-neutral-300 hover:text-white transition-all cursor-pointer flex items-center gap-1 shrink-0"
+                        title="Revert check in"
+                      >
+                        <Undo2 className="h-3 w-3" />
+                        <span>Undo</span>
+                      </button>
+                    )}
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="py-16 text-center text-xs text-neutral-500 font-mono space-y-1">
+                <ScanLine className="h-8 w-8 mx-auto text-neutral-600 mb-2" />
+                <p>No scans recorded this session yet.</p>
+                <p className="text-[10px] text-neutral-600">
+                  Scanned passes will appear here in real-time.
+                </p>
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
 
       {/* Event Roster Quick-Check Table (Only appears automatically when check-in is active) */}
       {isCheckinActive && (
@@ -2170,6 +2408,317 @@ export default function ScannerConsole({
                 )}
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* ========================================================================= */}
+      {/* Dedicated Scan Confirmation & Check-In Pop-Up Modal (Global Fixed Dialog) */}
+      {/* ========================================================================= */}
+      {scanModal && scanModal.isOpen && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/85 backdrop-blur-md animate-fadeIn"
+          onClick={(e) => {
+            if (e.target === e.currentTarget && !scanModal.isSubmitting) {
+              closeScanModal();
+            }
+          }}
+        >
+          <div className="relative w-full max-w-md rounded-3xl border border-white/20 bg-[#0e0e12] p-5 sm:p-7 shadow-2xl overflow-hidden animate-scaleIn">
+            {/* Close / Dismiss Button */}
+            <button
+              type="button"
+              disabled={Boolean(scanModal.isSubmitting)}
+              onClick={closeScanModal}
+              className="absolute right-4 top-4 h-8 w-8 rounded-full bg-white/10 hover:bg-white/20 text-white/70 hover:text-white flex items-center justify-center transition-colors cursor-pointer disabled:opacity-40"
+              title="Close modal (Scan Next)"
+            >
+              <X className="h-4 w-4" />
+            </button>
+
+            {/* STAGE 1: CONFIRM (Before Check-In) */}
+            {scanModal.stage === "confirm" && (
+              <div className="space-y-4">
+                <div className="flex items-start gap-3.5">
+                  <div className="h-11 w-11 rounded-2xl flex items-center justify-center shrink-0 border bg-emerald-500/15 border-emerald-500/30 text-emerald-400">
+                    <UserCheck className="h-6 w-6" />
+                  </div>
+                  <div className="min-w-0 pr-6">
+                    <span className="inline-block text-[10px] font-mono font-bold uppercase tracking-wider px-2 py-0.5 rounded-full border mb-1 bg-emerald-500/10 border-emerald-500/30 text-emerald-300">
+                      Pass Detected • Confirm Check-In
+                    </span>
+                    <h3 className="text-lg font-black text-white font-[family-name:var(--font-google-sans)] leading-snug">
+                      Confirm Registration
+                    </h3>
+                    <p className="text-xs text-white/60 mt-0.5">
+                      Verify attendee credentials before admitting to auditorium.
+                    </p>
+                  </div>
+                </div>
+
+                {/* Attendee Details Card */}
+                <div className="rounded-2xl border border-white/10 bg-[#16161d] p-4 space-y-3">
+                  <div className="flex items-center justify-between gap-2 border-b border-white/10 pb-2.5">
+                    <div className="min-w-0 flex-1">
+                      <span className="text-[10px] uppercase font-mono tracking-wider text-white/40 block">
+                        Participant
+                      </span>
+                      <span className="text-base font-bold text-white block truncate">
+                        {scanModal.participantName || "Attendee"}
+                      </span>
+                    </div>
+                    <span
+                      className={`text-[10px] font-mono font-bold px-2.5 py-1 rounded-full border shrink-0 ${
+                        scanModal.participantRole === "Team Leader"
+                          ? "bg-pink-500/20 text-pink-300 border-pink-500/30"
+                          : "bg-white/10 text-white/80 border-white/15"
+                      }`}
+                    >
+                      {scanModal.participantRole || "Member"}
+                    </span>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-2 text-xs">
+                    <div>
+                      <span className="text-[10px] uppercase font-mono text-white/40 block">Team</span>
+                      <span className="text-white font-medium truncate block">
+                        {scanModal.teamName || "Registered Team"}
+                      </span>
+                    </div>
+                    <div>
+                      <span className="text-[10px] uppercase font-mono text-white/40 block">Team Code</span>
+                      <span className="text-white font-mono font-bold text-rose-400 block">
+                        {scanModal.teamCode}
+                      </span>
+                    </div>
+                  </div>
+
+                  {(scanModal.roll || scanModal.department) && (
+                    <div className="pt-2 border-t border-white/5 text-[11px] font-mono text-white/60 flex items-center justify-between">
+                      <span>Roll: <strong className="text-white">{scanModal.roll || "Registered"}</strong></span>
+                      <span>Dept: <strong className="text-white">{scanModal.department || "General"}</strong></span>
+                    </div>
+                  )}
+
+                  {scanModal.totalMembers !== undefined && (
+                    <div className="pt-2 border-t border-white/5 flex items-center justify-between text-[11px] font-mono">
+                      <span className="text-neutral-400">Current Team Attendance:</span>
+                      <span className="text-emerald-400 font-bold">
+                        {scanModal.checkedInCount || 0} of {scanModal.totalMembers} Present
+                      </span>
+                    </div>
+                  )}
+                </div>
+
+                {/* Modal Action Buttons */}
+                <div className="flex items-center justify-end gap-3 pt-2">
+                  <button
+                    type="button"
+                    disabled={Boolean(scanModal.isSubmitting)}
+                    onClick={closeScanModal}
+                    className="rounded-xl border border-white/20 bg-white/[0.08] hover:bg-white/15 px-4 py-2.5 text-xs font-semibold text-white transition-all cursor-pointer disabled:opacity-40"
+                  >
+                    Cancel
+                  </button>
+
+                  <button
+                    type="button"
+                    disabled={Boolean(scanModal.isSubmitting)}
+                    onClick={() => submitCheckIn(scanModal.rawCode, scanModal.participant)}
+                    className="flex-1 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-400 hover:to-teal-400 text-black px-5 py-2.5 text-xs font-bold transition-all cursor-pointer flex items-center justify-center gap-1.5 shadow-lg shadow-emerald-500/25 disabled:opacity-50"
+                  >
+                    {scanModal.isSubmitting ? (
+                      <>
+                        <RefreshCw className="h-4 w-4 animate-spin" />
+                        <span>Confirming Check-In...</span>
+                      </>
+                    ) : (
+                      <>
+                        <Check className="h-4 w-4" />
+                        <span>Confirm Registration & Check In</span>
+                      </>
+                    )}
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {/* STAGE 2: DONE (Check-In Complete!) */}
+            {scanModal.stage === "done" && (
+              <div className="space-y-4 text-center">
+                <div className="mx-auto h-14 w-14 rounded-full bg-emerald-500/20 border-2 border-emerald-400 flex items-center justify-center text-emerald-400 shadow-[0_0_30px_rgba(16,185,129,0.35)] animate-bounce">
+                  <CheckCircle2 className="h-8 w-8" />
+                </div>
+
+                <div>
+                  <span className="inline-block text-[10px] font-mono font-bold uppercase tracking-wider px-2.5 py-0.5 rounded-full border mb-1 bg-emerald-500/15 border-emerald-500/40 text-emerald-300">
+                    Registration Verified • Check-In Done
+                  </span>
+                  <h3 className="text-xl font-black text-white font-[family-name:var(--font-google-sans)] mt-1">
+                    Check-In Complete!
+                  </h3>
+                  <p className="text-xs text-emerald-300/90 mt-0.5">
+                    {scanModal.message || "Attendee marked present for HULT ASCEND."}
+                  </p>
+                </div>
+
+                {/* Attendee Confirmation Card */}
+                <div className="rounded-2xl border border-emerald-500/20 bg-emerald-950/20 p-4 text-left space-y-2">
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm font-bold text-white">
+                      {scanModal.participantName || "Attendee"}
+                    </span>
+                    <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
+                      {scanModal.participantRole || "Verified"}
+                    </span>
+                  </div>
+
+                  <div className="flex items-center justify-between text-xs text-neutral-300">
+                    <span>Team: <strong className="text-white">{scanModal.teamName}</strong></span>
+                    <span className="font-mono text-rose-300 font-bold">{scanModal.teamCode}</span>
+                  </div>
+
+                  {scanModal.totalMembers !== undefined && (
+                    <div className="pt-2 border-t border-white/10 flex items-center justify-between text-xs font-mono">
+                      <span className="text-neutral-400">Team Attendance:</span>
+                      <strong className="text-emerald-300 font-bold">
+                        {scanModal.checkedInCount} of {scanModal.totalMembers} Present
+                      </strong>
+                    </div>
+                  )}
+
+                  {scanModal.allCheckedIn && (
+                    <div className="text-[11px] font-bold text-emerald-300 flex items-center gap-1 mt-1">
+                      <Check className="h-3.5 w-3.5 shrink-0" />
+                      <span>All Team Members Verified — Full Team Checked In!</span>
+                    </div>
+                  )}
+                </div>
+
+                {/* Footer Buttons */}
+                <div className="flex items-center gap-2 pt-2">
+                  <button
+                    type="button"
+                    onClick={closeScanModal}
+                    className="flex-1 py-3 px-4 rounded-xl bg-white hover:bg-neutral-200 active:scale-98 text-black text-xs font-bold transition-all cursor-pointer flex items-center justify-center gap-2 shadow-lg"
+                  >
+                    <Camera className="h-4 w-4" />
+                    <span>Scan Next Pass</span>
+                  </button>
+
+                  {scanModal.teamCode && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        handleUndoCheckIn(scanModal.teamCode!);
+                        closeScanModal();
+                      }}
+                      className="py-3 px-3.5 rounded-xl bg-white/10 hover:bg-white/20 active:scale-98 border border-white/15 text-white text-xs font-semibold transition-all cursor-pointer flex items-center justify-center gap-1.5 shrink-0"
+                      title="Undo check-in"
+                    >
+                      <Undo2 className="h-3.5 w-3.5" />
+                      <span>Undo</span>
+                    </button>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {/* STAGE 3: DUPLICATE (Already Checked In) */}
+            {scanModal.stage === "duplicate" && (
+              <div className="space-y-4 text-center">
+                <div className="mx-auto h-12 w-12 rounded-2xl bg-amber-500/20 border border-amber-500/40 flex items-center justify-center text-amber-400 shadow-[0_0_25px_rgba(245,158,11,0.25)]">
+                  <AlertCircle className="h-7 w-7" />
+                </div>
+
+                <div>
+                  <span className="inline-block text-[10px] font-mono font-bold uppercase tracking-wider px-2.5 py-0.5 rounded-full border mb-1 bg-amber-500/15 border-amber-500/30 text-amber-300">
+                    Already Checked In
+                  </span>
+                  <h3 className="text-lg font-black text-white font-[family-name:var(--font-google-sans)] mt-0.5">
+                    Duplicate Pass Detected
+                  </h3>
+                  <p className="text-xs text-amber-300/80 mt-0.5">
+                    {scanModal.message || "This attendee was already checked in earlier."}
+                  </p>
+                </div>
+
+                <div className="rounded-2xl border border-amber-500/20 bg-[#16161d] p-4 text-left space-y-2">
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm font-bold text-white">
+                      {scanModal.participantName || "Attendee"}
+                    </span>
+                    <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-amber-500/20 text-amber-300 border border-amber-500/30">
+                      Checked In
+                    </span>
+                  </div>
+                  <div className="flex items-center justify-between text-xs text-neutral-300">
+                    <span>Team: <strong className="text-white">{scanModal.teamName}</strong></span>
+                    <span className="font-mono text-rose-300 font-bold">{scanModal.teamCode}</span>
+                  </div>
+                  {scanModal.checkedInAt && (
+                    <div className="text-[11px] font-mono text-neutral-400">
+                      Verified at: <span className="text-amber-300 font-bold">{scanModal.checkedInAt}</span>
+                    </div>
+                  )}
+                </div>
+
+                <div className="flex items-center gap-2 pt-2">
+                  <button
+                    type="button"
+                    onClick={closeScanModal}
+                    className="flex-1 py-2.5 px-4 rounded-xl bg-white hover:bg-neutral-200 text-black text-xs font-bold transition-all cursor-pointer flex items-center justify-center gap-1.5"
+                  >
+                    <Camera className="h-4 w-4" />
+                    <span>Scan Next Pass</span>
+                  </button>
+                  {scanModal.teamCode && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        handleUndoCheckIn(scanModal.teamCode!);
+                        closeScanModal();
+                      }}
+                      className="py-2.5 px-3 rounded-xl bg-rose-500/20 hover:bg-rose-500/30 border border-rose-500/40 text-rose-300 text-xs font-semibold transition-all cursor-pointer flex items-center gap-1"
+                    >
+                      <Undo2 className="h-3.5 w-3.5" />
+                      <span>Undo</span>
+                    </button>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {/* STAGE 4: ERROR (Blocked or Invalid) */}
+            {scanModal.stage === "error" && (
+              <div className="space-y-4 text-center">
+                <div className="mx-auto h-12 w-12 rounded-2xl bg-rose-500/20 border border-rose-500/40 flex items-center justify-center text-rose-400 shadow-[0_0_25px_rgba(244,63,94,0.25)]">
+                  <AlertCircle className="h-7 w-7" />
+                </div>
+
+                <div>
+                  <span className="inline-block text-[10px] font-mono font-bold uppercase tracking-wider px-2.5 py-0.5 rounded-full border mb-1 bg-rose-500/15 border-rose-500/30 text-rose-300">
+                    Check-In Blocked
+                  </span>
+                  <h3 className="text-lg font-black text-white font-[family-name:var(--font-google-sans)] mt-0.5">
+                    Verification Error
+                  </h3>
+                  <p className="text-xs text-rose-300/90 mt-1 leading-relaxed">
+                    {scanModal.message || "Invalid pass or attendee registration issue."}
+                  </p>
+                </div>
+
+                <div className="pt-2">
+                  <button
+                    type="button"
+                    onClick={closeScanModal}
+                    className="w-full py-2.5 px-4 rounded-xl bg-white hover:bg-neutral-200 text-black text-xs font-bold transition-all cursor-pointer flex items-center justify-center gap-1.5"
+                  >
+                    <span>Dismiss & Resume Scanning</span>
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
         </div>
       )}

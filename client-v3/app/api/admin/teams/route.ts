@@ -401,7 +401,7 @@ export async function PUT(req: Request) {
     // GUARD: Check-in must be enabled by Master Admin for the event
     // Applies when eventId is provided upfront
     // -------------------------------------------------------------
-    const isCheckInAction = ["scan_check_in", "toggle_participant_check_in", "toggle_check_in"].includes(action);
+    const isCheckInAction = ["scan_check_in", "preview_check_in", "toggle_participant_check_in", "toggle_check_in"].includes(action);
     const isTryingToCheckIn = action === "scan_check_in" || body.checkedIn === true || body.checkedIn === undefined;
     if (isCheckInAction && isTryingToCheckIn && eventId) {
       const allowed = await isCheckinAllowedForEvent(eventId);
@@ -414,9 +414,10 @@ export async function PUT(req: Request) {
     }
 
     // -------------------------------------------------------------
-    // Action: SCAN CHECK-IN (Handles participant QR, email, roll, team)
+    // Action: SCAN CHECK-IN & PREVIEW (Handles participant QR, email, roll, team)
     // -------------------------------------------------------------
-    if (action === "scan_check_in") {
+    if (action === "scan_check_in" || action === "preview_check_in") {
+      const isPreview = action === "preview_check_in";
       const rawInput = String(body.payload || body.rawCode || teamCode || "").trim();
       let extractedEmail: string | null = null;
       let extractedTeamCode: string | null = null;
@@ -560,7 +561,7 @@ export async function PUT(req: Request) {
         if (targetTeam.lead.checkedIn) {
           isDuplicate = true;
           priorCheckInTime = targetTeam.lead.checkedInAt || null;
-        } else {
+        } else if (!isPreview) {
           targetTeam.lead.checkedIn = true;
           targetTeam.lead.checkedInAt = new Date();
         }
@@ -577,7 +578,7 @@ export async function PUT(req: Request) {
           if (m.checkedIn) {
             isDuplicate = true;
             priorCheckInTime = m.checkedInAt || null;
-          } else {
+          } else if (!isPreview) {
             m.checkedIn = true;
             m.checkedInAt = new Date();
           }
@@ -591,7 +592,7 @@ export async function PUT(req: Request) {
         if (targetTeam.lead.checkedIn) {
           isDuplicate = true;
           priorCheckInTime = targetTeam.lead.checkedInAt || null;
-        } else {
+        } else if (!isPreview) {
           targetTeam.lead.checkedIn = true;
           targetTeam.lead.checkedInAt = new Date();
         }
@@ -607,7 +608,7 @@ export async function PUT(req: Request) {
           if (m.checkedIn) {
             isDuplicate = true;
             priorCheckInTime = m.checkedInAt || null;
-          } else {
+          } else if (!isPreview) {
             m.checkedIn = true;
             m.checkedInAt = new Date();
           }
@@ -622,7 +623,7 @@ export async function PUT(req: Request) {
         if (targetTeam.checkedIn) {
           isDuplicate = true;
           priorCheckInTime = targetTeam.checkedInAt || null;
-        } else {
+        } else if (!isPreview) {
           targetTeam.lead.checkedIn = true;
           targetTeam.lead.checkedInAt = targetTeam.lead.checkedInAt || new Date();
           targetTeam.members.forEach((m: any) => {
@@ -640,6 +641,32 @@ export async function PUT(req: Request) {
         : 0;
       const checkedInCount = leadChecked + membersChecked;
       const allMembersCheckedIn = checkedInCount >= totalRoster;
+
+      // PREVIEW RESPONSE: Return verified registration data without saving
+      if (isPreview) {
+        return NextResponse.json({
+          success: true,
+          preview: true,
+          duplicate: isDuplicate,
+          team: {
+            id: targetTeam._id.toString(),
+            teamName: targetTeam.teamName,
+            teamCode: targetTeam.teamCode,
+            lead: targetTeam.lead,
+            members: targetTeam.members,
+            checkedIn: Boolean(targetTeam.checkedIn),
+            checkedInAt: targetTeam.checkedInAt,
+          },
+          participant: scannedParticipant,
+          checkedInCount,
+          totalMembers: totalRoster,
+          allCheckedIn: allMembersCheckedIn,
+          checkedInAt: priorCheckInTime ? new Date(priorCheckInTime).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }) : null,
+          message: isDuplicate
+            ? `${scannedParticipant?.name || "Attendee"} is already checked in${priorCheckInTime ? ` (at ${new Date(priorCheckInTime).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })})` : ""}.`
+            : `Registration confirmed for ${scannedParticipant?.name || "Attendee"}.`,
+        });
+      }
 
       // Auto Team Check-In Trigger
       if (allMembersCheckedIn) {
