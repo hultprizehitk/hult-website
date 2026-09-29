@@ -37,13 +37,17 @@ export function ResultsView({ s, answer }: { s: StateResponse; answer: AnswerVie
         {lastMs !== null && <span className="font-mono text-xs opacity-80">Answered in {formatMs(lastMs)}</span>}
       </motion.div>
 
-      {graded && <StandingCard standing={me.standing} />}
-
-
+      {graded && <StandingCard standing={me.standing} of={s.counts.checkedIn || undefined} />}
 
       <div className="flex flex-col gap-2">
         <p className="font-mono text-[11px] uppercase tracking-wider text-white/50">Top 10</p>
-        <Leaderboard rows={s.leaderboard ?? []} highlightTeamId={me.team?.id} time="last" />
+        <Leaderboard
+          rows={s.leaderboard ?? []}
+          highlightTeamId={me.team?.id}
+          userStanding={me.standing}
+          time="both"
+          showHeader
+        />
       </div>
     </div>
   );

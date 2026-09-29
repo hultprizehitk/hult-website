@@ -23,7 +23,14 @@ export function StandingCard({ standing, of }: { standing: Standing | null; of?:
         </div>
         <div className="text-right">
           <AnimatedNumber value={standing.score} className="block text-2xl font-black" springOptions={{ bounce: 0, duration: 1000 }} />
-          <p className="font-mono text-[11px] text-white/50 tabular-nums">{formatMs(standing.totalTimeMs)} total</p>
+          <p className="font-mono text-[11px] text-white/50 tabular-nums">
+            {standing.lastMs != null ? (
+              <span className={standing.lastCorrect ? "text-emerald-300" : "text-neutral-400"}>
+                {formatMs(standing.lastMs)} Q &middot;{" "}
+              </span>
+            ) : null}
+            {formatMs(standing.totalTimeMs)} total
+          </p>
         </div>
       </div>
     </div>

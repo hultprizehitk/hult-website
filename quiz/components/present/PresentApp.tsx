@@ -1,7 +1,8 @@
 "use client";
 
+import { useMemo, useState } from "react";
 import Image from "next/image";
-import { Loader2, SearchX } from "lucide-react";
+import { Loader2, SearchX, Trophy, User, Users } from "lucide-react";
 import { TextEffect } from "@/components/motion-primitives/text-effect";
 import { DotPattern } from "@/components/ui/dot-pattern";
 import { LeadIn } from "@/components/quiz/LeadIn";
@@ -13,16 +14,31 @@ import { useServerClock } from "@/hooks/useServerClock";
 import { useServerNow } from "@/hooks/useServerNow";
 import { toStateResponse } from "@/lib/quiz/client-state";
 import { paths, type CounterDoc, type CountsDoc, type SessionDoc } from "@/lib/quiz/fs-types";
+import { cn } from "@/lib/utils";
 import { PresentLobby } from "./PresentLobby";
 import { PresentQuestion, PresentResults } from "./PresentQuestion";
 import { Podium } from "./Podium";
 
 export function PresentApp({ code }: { code: string }) {
+  const [endedView, setEndedView] = useState<"side" | "team" | "player">("side");
   const valid = /^\d{6}$/.test(code);
   // Public docs only (no login): the session and the live counters.
   const sessionLive = useDocData<SessionDoc>(valid ? paths.session(code) : null);
   const countsLive = useCollectionData<CounterDoc>(valid ? paths.counts(code) : null, "teamId");
   const now = useServerNow(useServerClock());
+
+  const playerMap = useMemo(() => {
+    const m = new Map<string, string>();
+    for (const c of countsLive.data) {
+      if (c.playerName) {
+        m.set(c.teamId, c.playerName);
+      } else if (c.playerEmail) {
+        m.set(c.teamId, c.playerEmail.split("@")[0]);
+      }
+    }
+    return m;
+  }, [countsLive.data]);
+
   const counts: CountsDoc | null = sessionLive.data
     ? {
         checkedIn: countsLive.data.filter((c) => c.eligible && c.checkedIn).length,
@@ -42,25 +58,106 @@ export function PresentApp({ code }: { code: string }) {
   else if (s.status === "ended") {
     const board = s.leaderboard ?? [];
     body = (
-      <div className="mx-auto flex w-full max-w-5xl flex-1 flex-col gap-8 pb-12">
+      <div className={cn("mx-auto flex w-full flex-1 flex-col gap-8 pb-12", endedView === "side" ? "max-w-7xl" : "max-w-5xl")}>
         <div className="text-center">
           <TextEffect per="word" preset="fade" as="h1" className="text-5xl lg:text-6xl font-black tracking-tight">
             Final results
           </TextEffect>
           <p className="mt-2 font-mono text-sm uppercase tracking-[0.25em] text-emerald-400">
-            Top 10 Teams
+            Top 10 Teams &amp; Players
           </p>
         </div>
-        {board.length > 0 && <Podium rows={board} />}
-        <div className="mt-4 flex flex-col gap-3 rounded-3xl border border-white/10 bg-[#0c0c10]/95 p-6 shadow-2xl">
-          <div className="flex items-center justify-between border-b border-white/10 pb-3">
-            <h2 className="font-mono text-sm uppercase tracking-wider text-white/60">
-              Top 10 Leaderboard
-            </h2>
-            <span className="font-mono text-xs text-white/40">Rank &bull; Total Time &bull; Score</span>
+        {board.length > 0 && <Podium rows={board} playerNames={playerMap} />}
+
+        {/* View Switcher Controls */}
+        <div className="flex justify-center">
+          <div className="flex items-center gap-1 rounded-2xl border border-white/10 bg-[#0c0c10]/90 p-1.5 shadow-xl backdrop-blur-md">
+            <button
+              type="button"
+              onClick={() => setEndedView("side")}
+              className={cn(
+                "flex items-center gap-2 rounded-xl px-4 py-2 font-mono text-xs font-bold uppercase tracking-wider transition-all",
+                endedView === "side" ? "bg-white/20 text-white shadow-md" : "text-white/45 hover:text-white/70",
+              )}
+            >
+              <Trophy className="size-4" />
+              Side by Side
+            </button>
+            <button
+              type="button"
+              onClick={() => setEndedView("team")}
+              className={cn(
+                "flex items-center gap-2 rounded-xl px-4 py-2 font-mono text-xs font-bold uppercase tracking-wider transition-all",
+                endedView === "team" ? "bg-white/20 text-white shadow-md" : "text-white/45 hover:text-white/70",
+              )}
+            >
+              <Users className="size-4" />
+              Teams
+            </button>
+            <button
+              type="button"
+              onClick={() => setEndedView("player")}
+              className={cn(
+                "flex items-center gap-2 rounded-xl px-4 py-2 font-mono text-xs font-bold uppercase tracking-wider transition-all",
+                endedView === "player" ? "bg-white/20 text-white shadow-md" : "text-white/45 hover:text-white/70",
+              )}
+            >
+              <User className="size-4" />
+              Players
+            </button>
           </div>
-          <Leaderboard rows={board} large />
         </div>
+
+        {/* Leaderboards Display */}
+        {endedView === "side" ? (
+          <div className="grid grid-cols-1 gap-6 xl:grid-cols-2">
+            {/* Team Leaderboard */}
+            <div className="flex flex-col gap-3 rounded-3xl border border-white/10 bg-[#0c0c10]/95 p-6 shadow-2xl">
+              <div className="flex items-center justify-between border-b border-white/10 pb-3">
+                <div className="flex items-center gap-2 font-mono text-sm font-semibold uppercase tracking-wider text-white/70">
+                  <Users className="size-4 text-hult" />
+                  <span>Team Leaderboard</span>
+                </div>
+                <span className="font-mono text-xs text-white/40">Rank &bull; Q Time &bull; Total &bull; Score</span>
+              </div>
+              <Leaderboard rows={board} large time="both" playerNames={playerMap} displayMode="team" showHeader />
+            </div>
+
+            {/* Player Leaderboard */}
+            <div className="flex flex-col gap-3 rounded-3xl border border-white/10 bg-[#0c0c10]/95 p-6 shadow-2xl">
+              <div className="flex items-center justify-between border-b border-white/10 pb-3">
+                <div className="flex items-center gap-2 font-mono text-sm font-semibold uppercase tracking-wider text-white/70">
+                  <User className="size-4 text-emerald-400" />
+                  <span>Player Leaderboard</span>
+                </div>
+                <span className="font-mono text-xs text-white/40">Rank &bull; Q Time &bull; Total &bull; Score</span>
+              </div>
+              <Leaderboard rows={board} large time="both" playerNames={playerMap} displayMode="player" showHeader />
+            </div>
+          </div>
+        ) : endedView === "team" ? (
+          <div className="flex flex-col gap-3 rounded-3xl border border-white/10 bg-[#0c0c10]/95 p-6 shadow-2xl">
+            <div className="flex items-center justify-between border-b border-white/10 pb-3">
+              <div className="flex items-center gap-2 font-mono text-sm font-semibold uppercase tracking-wider text-white/70">
+                <Users className="size-4 text-hult" />
+                <span>Team Leaderboard</span>
+              </div>
+              <span className="font-mono text-xs text-white/40">Rank &bull; Q Time &bull; Total &bull; Score</span>
+            </div>
+            <Leaderboard rows={board} large time="both" playerNames={playerMap} displayMode="team" showHeader />
+          </div>
+        ) : (
+          <div className="flex flex-col gap-3 rounded-3xl border border-white/10 bg-[#0c0c10]/95 p-6 shadow-2xl">
+            <div className="flex items-center justify-between border-b border-white/10 pb-3">
+              <div className="flex items-center gap-2 font-mono text-sm font-semibold uppercase tracking-wider text-white/70">
+                <User className="size-4 text-emerald-400" />
+                <span>Player Leaderboard</span>
+              </div>
+              <span className="font-mono text-xs text-white/40">Rank &bull; Q Time &bull; Total &bull; Score</span>
+            </div>
+            <Leaderboard rows={board} large time="both" playerNames={playerMap} displayMode="player" showHeader />
+          </div>
+        )}
       </div>
     );
   } else if (s.phase === "question" && s.question && (now < s.question.openedAt || !s.question.text)) {
@@ -68,7 +165,7 @@ export function PresentApp({ code }: { code: string }) {
   } else if (s.phase === "question" && s.question) {
     body = <PresentQuestion s={s} now={now} />;
   } else if (s.phase === "results" && s.question) {
-    body = <PresentResults s={s} />;
+    body = <PresentResults s={s} playerNames={playerMap} />;
   } else {
     const isFirst = s.currentIndex < 0;
     const targetNo = isFirst ? 1 : s.currentIndex + 2;

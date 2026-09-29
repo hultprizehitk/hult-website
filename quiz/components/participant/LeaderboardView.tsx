@@ -12,8 +12,14 @@ export function LeaderboardView({ s, title }: { s: StateResponse; title: string 
       <TextEffect per="word" preset="fade" as="h2" className="text-center text-3xl font-bold tracking-tight">
         {title}
       </TextEffect>
-      <StandingCard standing={s.me?.standing ?? null} />
-      <Leaderboard rows={s.leaderboard ?? []} highlightTeamId={s.me?.team?.id} />
+      <StandingCard standing={s.me?.standing ?? null} of={s.counts.checkedIn || undefined} />
+      <Leaderboard
+        rows={s.leaderboard ?? []}
+        highlightTeamId={s.me?.team?.id}
+        userStanding={s.me?.standing}
+        time="both"
+        showHeader
+      />
     </div>
   );
 }

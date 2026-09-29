@@ -1,5 +1,7 @@
 "use client";
 
+import { useState } from "react";
+import { User, Users } from "lucide-react";
 import { CountdownRing } from "@/components/quiz/CountdownRing";
 import { Leaderboard } from "@/components/quiz/Leaderboard";
 import { OptionButton } from "@/components/quiz/OptionButton";
@@ -53,12 +55,20 @@ export function PresentQuestion({ s, now }: { s: StateResponse; now: number }) {
   );
 }
 
-/** After each question (spec U7): correct answer + distribution beside the top 10 with time on this question. */
-export function PresentResults({ s }: { s: StateResponse }) {
+/** After each question (spec U7): correct answer + distribution beside the top 10 with time on this question and total time. */
+export function PresentResults({
+  s,
+  playerNames,
+}: {
+  s: StateResponse;
+  playerNames?: Map<string, string>;
+}) {
+  const [viewMode, setViewMode] = useState<"team" | "player">("team");
   const q = s.question!;
   const options = q.options ?? [];
   const dist = s.distribution ?? options.map(() => 0);
   const total = dist.reduce((a, b) => a + b, 0);
+
   return (
     <div className="grid flex-1 gap-10 xl:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
       <div className="flex flex-col gap-5">
@@ -73,11 +83,43 @@ export function PresentResults({ s }: { s: StateResponse }) {
         </div>
       </div>
       <div className="flex flex-col gap-4">
-        <div className="flex items-baseline justify-between font-mono uppercase tracking-widest text-white/50">
+        <div className="flex items-center justify-between font-mono uppercase tracking-widest text-white/50">
           <span className="text-lg">Top 10</span>
-          <span className="text-sm">Time on this question</span>
+          {playerNames && playerNames.size > 0 && (
+            <div className="flex items-center gap-1 rounded-xl border border-white/10 bg-white/5 p-1">
+              <button
+                type="button"
+                onClick={() => setViewMode("team")}
+                className={cn(
+                  "flex items-center gap-1.5 rounded-lg px-3 py-1 font-mono text-xs font-semibold uppercase tracking-wider transition-all",
+                  viewMode === "team" ? "bg-white/15 text-white shadow-sm" : "text-white/40 hover:text-white/70",
+                )}
+              >
+                <Users className="size-3.5" />
+                Teams
+              </button>
+              <button
+                type="button"
+                onClick={() => setViewMode("player")}
+                className={cn(
+                  "flex items-center gap-1.5 rounded-lg px-3 py-1 font-mono text-xs font-semibold uppercase tracking-wider transition-all",
+                  viewMode === "player" ? "bg-white/15 text-white shadow-sm" : "text-white/40 hover:text-white/70",
+                )}
+              >
+                <User className="size-3.5" />
+                Players
+              </button>
+            </div>
+          )}
         </div>
-        <Leaderboard rows={s.leaderboard ?? []} large time="last" />
+        <Leaderboard
+          rows={s.leaderboard ?? []}
+          large
+          time="both"
+          playerNames={playerNames}
+          displayMode={viewMode}
+          showHeader
+        />
       </div>
     </div>
   );
