@@ -43,6 +43,12 @@ service cloud.firestore {
         allow read: if isAdmin();
         allow write: if false;
       }
+
+      // Saved results archive
+      match /savedResults/{resultId} {
+        allow read: if isAdmin();
+        allow write: if false;
+      }
     }
 
     match /quizAdmins/{email} {

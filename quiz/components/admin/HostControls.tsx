@@ -25,29 +25,43 @@ function primaryStep(s: AdminSessionSummary, questionCount: number, counts: Coun
   const nextNo = s.currentIndex + 2;
   const teams = (n: number) => `${n} ${n === 1 ? "team" : "teams"}`;
   const isLast = s.currentIndex >= questionCount - 1;
-  // No quiz check-in: players scanned at the desk join on their own, before or after Start.
-  if (s.status === "draft" || s.status === "lobby") {
+  // In draft: open the lobby. In lobby: ready the first question.
+  if (s.status === "draft") {
     return {
-      label: "Start quiz",
-      action: { type: "start" },
+      label: "Open lobby",
+      action: { type: "open_lobby" },
       icon: <Play />,
       disabled: questionCount === 0,
       confirm: {
-        title: "Are you sure you want to start the quiz?",
-        description: `${teams(counts.checkedIn)} joined so far. Once started, the live quiz room will begin.`,
+        title: "Open the quiz lobby?",
+        description: "This allows teams to scan the QR code and join the live lobby.",
       },
     };
   }
+
+  if (s.status === "lobby") {
+    return {
+      label: "Ready Question 1",
+      action: { type: "start" },
+      icon: <Sparkles className="size-5 text-amber-300" />,
+      disabled: questionCount === 0,
+      confirm: {
+        title: `Show "Are you ready for Question 1?"`,
+        description: `${teams(counts.checkedIn)} joined so far. This will show "Are you ready for Question 1?" on the projector and student devices so you can get everyone ready before launching.`,
+      },
+    };
+  }
+
   if (s.status !== "live") return null;
 
   if (s.phase === "idle") {
     const targetQ = s.currentIndex < 0 ? 1 : nextNo;
     return {
-      label: `Question ${targetQ}`,
+      label: `Launch Question ${targetQ}`,
       action: { type: "next" },
       icon: <ArrowRight />,
       confirm: {
-        title: `Are you sure you want to start Question ${targetQ}?`,
+        title: `Are you sure you want to launch Question ${targetQ}?`,
         description: `This will immediately reveal Question ${targetQ} on the projector and start the live countdown for all teams.`,
       },
     };
@@ -103,7 +117,7 @@ function stageLabel(s: AdminSessionSummary, questionCount: number, now: number):
   if (s.status === "draft" || s.status === "lobby") return "Setup";
   if (s.status === "ended") return "Ended";
   if (s.phase === "idle") {
-    return s.currentIndex < 0 ? "Quiz is starting" : `Ready for Question ${s.currentIndex + 2}`;
+    return s.currentIndex < 0 ? "Ready for Question 1" : `Ready for Question ${s.currentIndex + 2}`;
   }
   const q = `Question ${s.currentIndex + 1} of ${questionCount}`;
   if (s.phase === "results") return `${q} · Results`;

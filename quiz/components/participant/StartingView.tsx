@@ -19,13 +19,13 @@ export function StartingView({ s }: { s: StateResponse }) {
       </div>
       <div className="space-y-2">
         <TextShimmer className="font-mono text-xs uppercase tracking-[0.3em] text-emerald-400" duration={2}>
-          {isFirst ? "Get ready" : "Next question coming"}
+          Get ready
         </TextShimmer>
         <h2 className="text-3xl font-bold tracking-tight">
-          {isFirst ? "Quiz is starting" : `Are you ready for Question ${nextNo}?`}
+          {`Are you ready for Question ${isFirst ? 1 : nextNo}?`}
         </h2>
         <p className="font-mono text-xs text-white/50">
-          {s.me?.team?.name} &middot; Watch the big screen
+          Keep your device ready &middot; Question {isFirst ? 1 : nextNo} is launching next
         </p>
       </div>
     </div>

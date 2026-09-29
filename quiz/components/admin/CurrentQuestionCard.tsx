@@ -21,6 +21,7 @@ interface TeamResponseItem {
   responseMs: number | null;
   isCorrect: boolean | null;
   deviceId: string | null;
+  clickRank?: number | null;
 }
 
 /**
@@ -77,7 +78,11 @@ export function CurrentQuestionCard({
         if (!a.answered && b.answered) return 1;
         if (a.responseMs != null && b.responseMs != null) return a.responseMs - b.responseMs;
         return a.teamName.localeCompare(b.teamName);
-      });
+      })
+      .map((item, idx) => ({
+        ...item,
+        clickRank: item.answered ? idx + 1 : null,
+      }));
   }, [teams, q.id, q.correctIndex]);
 
   const answeredList = useMemo(() => teamResponses.filter((r) => r.answered), [teamResponses]);
@@ -180,7 +185,7 @@ export function CurrentQuestionCard({
         </div>
         <div>
           <span className="text-white/40 block text-[10px] uppercase">Avg Speed</span>
-          <span className="font-bold text-sky-400 text-sm">{avgResponseTimeMs > 0 ? formatMs(avgResponseTimeMs) : "-"}</span>
+          <span className="font-bold text-sky-400 text-sm">{answeredList.length > 0 ? formatMs(avgResponseTimeMs) : "-"}</span>
         </div>
         <div className="col-span-2 sm:col-span-1">
           <span className="text-white/40 block text-[10px] uppercase">Fastest Click</span>
@@ -289,7 +294,7 @@ export function CurrentQuestionCard({
                     {/* Rank & Team */}
                     <div className="flex items-center gap-2.5 min-w-0">
                       <span className="font-mono text-xs text-white/30 tabular-nums w-6 text-right shrink-0">
-                        {r.answered ? `#${idx + 1}` : "-"}
+                        {r.clickRank != null ? `#${r.clickRank}` : "-"}
                       </span>
                       <div className="min-w-0">
                         <div className="flex items-center gap-1.5">

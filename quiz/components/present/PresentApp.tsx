@@ -71,20 +71,18 @@ export function PresentApp({ code }: { code: string }) {
     body = <PresentResults s={s} />;
   } else {
     const isFirst = s.currentIndex < 0;
-    const nextNo = s.currentIndex + 2;
+    const targetNo = isFirst ? 1 : s.currentIndex + 2;
     body = (
       <div className="flex flex-1 flex-col items-center justify-center gap-6 text-center">
         {isFirst && (
           <p className="font-mono text-2xl uppercase tracking-[0.3em] text-white/50">{s.questionCount} questions</p>
         )}
         <TextEffect per="word" preset="fade" as="h1" className="text-6xl lg:text-8xl font-black tracking-tight">
-          {isFirst ? "Quiz is starting" : `Are you ready for Question ${nextNo}?`}
+          {`Are you ready for Question ${targetNo}?`}
         </TextEffect>
-        {!isFirst && (
-          <p className="font-mono text-xl text-white/50 animate-pulse">
-            Keep your device ready &middot; Question {nextNo} is launching next
-          </p>
-        )}
+        <p className="font-mono text-xl text-white/50 animate-pulse">
+          Keep your device ready &middot; Question {targetNo} is launching next
+        </p>
       </div>
     );
   }
