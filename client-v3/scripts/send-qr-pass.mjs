@@ -179,7 +179,6 @@ function getPassEmailHtml({
                     </div>
                     <ul style="margin: 0; padding-left: 18px; font-size: 12.5px; line-height: 1.6; color: #d1d5db;">
                       <li>Present this QR code on your mobile device at the <strong>SV Auditorium entrance desk</strong> for instant check-in.</li>
-                      <li>Check-in verification authorizes your team seat for the <strong>Live Quiz Round</strong> at <strong>${ORIGIN}/quiz</strong>.</li>
                       <li>If you ever misplace this email, log into <strong>${ORIGIN}/events</strong> or <strong>${ORIGIN}/profile</strong> to view your live QR pass anytime.</li>
                     </ul>
                   </td>
@@ -402,7 +401,10 @@ async function main() {
     console.log("==========================================================");
 
     const teams = await db.collection("teams").find({
-      eventId: HULT_ASCEND_EVENT_ID,
+      $or: [
+        { eventId: HULT_ASCEND_EVENT_ID },
+        { eventId: new mongoose.Types.ObjectId(HULT_ASCEND_EVENT_ID) },
+      ],
       status: "confirmed",
       submissionStatus: "submitted",
     }).toArray();
@@ -433,17 +435,18 @@ async function main() {
       ];
 
       for (const r of recipients) {
-        if (!r.email) continue;
+        const cleanEmail = (r.email || "").trim().toLowerCase();
+        if (!cleanEmail || !cleanEmail.includes("@")) continue;
 
         const qrPayload = JSON.stringify({
           teamCode: team.teamCode.toUpperCase(),
-          participantEmail: r.email.toLowerCase().trim(),
+          participantEmail: cleanEmail,
           roll: r.roll || "",
         });
 
         const html = getPassEmailHtml({
           recipientName: r.name,
-          recipientEmail: r.email,
+          recipientEmail: cleanEmail,
           recipientRole: r.role,
           roll: r.roll,
           department: r.dept,
@@ -456,7 +459,7 @@ async function main() {
 
         try {
           await sendRawTlsEmail({
-            toAddress: r.email,
+            toAddress: cleanEmail,
             recipientName: r.name,
             subject,
             htmlContent: html,
