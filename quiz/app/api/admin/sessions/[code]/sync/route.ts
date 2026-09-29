@@ -7,7 +7,7 @@ import { readAdminEmails, readEventTeams } from "@/lib/sync/mongo-read";
 import { syncTeamsToFirestore } from "@/lib/sync/sync-teams";
 
 /** Auto-sync from an open console is skipped if any sync ran this recently (two admin tabs, fast reloads). */
-const AUTO_MIN_GAP_MS = 60_000;
+const AUTO_MIN_GAP_MS = 15_000;
 
 // Copies the event's registered teams (and site admins) from MongoDB into Firestore. Safe to re-run; refused after Start.
 // Body {auto: true} = the console's periodic sync. Cost per run: 2 MongoDB queries, Firestore writes only for changes.

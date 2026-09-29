@@ -172,6 +172,37 @@ export function CurrentQuestionCard({
         </div>
       </div>
 
+      {/* Live Answering Progress Bar */}
+      <div className="flex flex-col gap-1.5 -mt-1">
+        <div className="flex items-center justify-between text-xs font-mono">
+          <span className="flex items-center gap-1.5 text-white/70">
+            <Users className="size-3.5 text-white/50" />
+            <span>Response progress: <strong className="text-white font-bold">{answeredList.length}</strong> of <strong className="text-white font-bold">{teamResponses.length}</strong> teams</span>
+          </span>
+          {teamResponses.length > 0 && answeredList.length >= teamResponses.length ? (
+            <span className="flex items-center gap-1 text-[11px] font-semibold text-emerald-400">
+              <CheckCircle2 className="size-3" />
+              100% Locked in
+            </span>
+          ) : (
+            <span className="text-[11px] text-white/50 tabular-nums">
+              {teamResponses.length > 0 ? Math.round((answeredList.length / teamResponses.length) * 100) : 0}%
+            </span>
+          )}
+        </div>
+        <div className="h-2 w-full overflow-hidden rounded-full bg-white/10 p-0.5">
+          <div
+            className={cn(
+              "h-full rounded-full transition-all duration-300",
+              teamResponses.length > 0 && answeredList.length >= teamResponses.length
+                ? "bg-emerald-400 shadow-[0_0_12px_rgba(52,211,153,0.6)]"
+                : "bg-gradient-to-r from-sky-500 via-indigo-500 to-emerald-400"
+            )}
+            style={{ width: `${teamResponses.length > 0 ? Math.min(100, Math.round((answeredList.length / teamResponses.length) * 100)) : 0}%` }}
+          />
+        </div>
+      </div>
+
       {/* Question Text */}
       <p className="break-words text-lg font-bold tracking-tight text-white">{q.text || "Loading..."}</p>
 

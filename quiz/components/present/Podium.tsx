@@ -4,6 +4,7 @@ import { motion } from "motion/react";
 import { cn } from "@/lib/utils";
 import { formatMs } from "@/lib/format";
 import type { Standing } from "@/lib/quiz/types";
+import { ConfettiCanvas } from "./ConfettiCanvas";
 
 const ORDER = [1, 0, 2]; // 2nd, 1st, 3rd
 const HEIGHT = ["h-64", "h-48", "h-36"];
@@ -12,7 +13,9 @@ const DELAY = [0.6, 1.2, 0];
 export function Podium({ rows }: { rows: Standing[] }) {
   const top = rows.slice(0, 3);
   return (
-    <div className="flex items-end justify-center gap-6">
+    <>
+      <ConfettiCanvas delayMs={1300} />
+      <div className="flex items-end justify-center gap-6">
       {ORDER.filter((i) => top[i]).map((i) => (
         <motion.div
           key={top[i].teamId}
@@ -36,6 +39,7 @@ export function Podium({ rows }: { rows: Standing[] }) {
           </div>
         </motion.div>
       ))}
-    </div>
+      </div>
+    </>
   );
 }

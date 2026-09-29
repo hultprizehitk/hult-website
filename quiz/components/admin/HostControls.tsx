@@ -162,10 +162,12 @@ export function HostControls({
     setConfirming({ ...step, confirm: confirmInfo });
   }, [step, busy]);
 
-  // "N" = primary action (with its confirmation if any). Ignored while typing or when a dialog is open.
+  // Advance hotkey: "N", "PageDown", or clicker right-arrow. Ignored while typing or when a dialog is open.
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
-      if (e.key.toLowerCase() !== "n" || e.metaKey || e.ctrlKey || e.altKey) return;
+      if (e.metaKey || e.ctrlKey || e.altKey) return;
+      const isNextKey = e.key.toLowerCase() === "n" || e.key === "PageDown" || e.key === "ArrowRight";
+      if (!isNextKey) return;
       const el = e.target as HTMLElement | null;
       if (el && (el.isContentEditable || ["INPUT", "TEXTAREA", "SELECT"].includes(el.tagName))) return;
       if (document.querySelector("[role=dialog]")) return;
@@ -222,7 +224,7 @@ export function HostControls({
             {step.icon}
             {step.label}
           </Button>
-          <p className="text-center font-mono text-[10px] uppercase tracking-wider text-white/35">Press N</p>
+          <p className="text-center font-mono text-[10px] uppercase tracking-wider text-white/35">Press N or Clicker &rarr;</p>
         </div>
       )}
 

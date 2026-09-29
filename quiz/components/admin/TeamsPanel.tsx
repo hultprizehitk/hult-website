@@ -2,7 +2,7 @@
 
 import { memo, useMemo, useState } from "react";
 import { toast } from "sonner";
-import { CheckCircle2, Circle, RefreshCw, Search, Smartphone, UserRoundX } from "lucide-react";
+import { CheckCircle2, Circle, RefreshCw, Search, Smartphone, UserRoundX, Users } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -39,15 +39,18 @@ function SyncBar({ code, session }: { code: string; session: SessionDoc }) {
   };
   const last = session.lastSyncAt?.toMillis() ?? null;
   return (
-    <div className="flex items-center justify-between gap-3 border-b border-white/10 px-4 py-3">
-      <p className="min-w-0 truncate text-xs text-white/60">
-        {last ? <>Synced {ago(last)}</> : <span className="text-amber-300">Not synced</span>}
-        {canSync ? <span className="text-white/35"> · auto every 3 min</span> : <span className="text-white/35"> · locked after start</span>}
-      </p>
+    <div className="flex items-center justify-between gap-3 border-b border-white/10 bg-white/[0.02] px-4 py-2.5">
+      <div className="flex min-w-0 items-center gap-2">
+        <span className={cn("size-2 rounded-full", canSync ? "bg-emerald-400 animate-pulse" : "bg-white/30")} />
+        <p className="min-w-0 truncate text-xs text-white/70">
+          {last ? <>Synced {ago(last)}</> : <span className="text-amber-300">Not synced</span>}
+          {canSync ? <span className="text-white/40"> · Live sync active (20s)</span> : <span className="text-white/40"> · Locked after start</span>}
+        </p>
+      </div>
       {canSync && (
-        <Button variant="outline" size="xs" loading={busy} onClick={() => void sync()}>
-          <RefreshCw />
-          Sync
+        <Button variant="outline" size="xs" loading={busy} onClick={() => void sync()} className="h-7 border-white/15 bg-white/5 text-xs text-white hover:bg-white/10">
+          <RefreshCw className={cn("size-3.5", busy && "animate-spin")} />
+          Sync MongoDB
         </Button>
       )}
     </div>
@@ -71,28 +74,45 @@ function PlayerCell({ code, row, status }: { code: string; row: TeamBoardRow; st
       toast.error((e as ApiError).message);
     }
   };
-  if (!row.checkedIn) return <span className="text-white/30">{row.deskScanned ? "Scanned at desk" : "-"}</span>;
-  const nameOf = (email: string | null) => row.members.find((m) => m.email === email)?.name ?? email ?? "";
+
+  if (!row.checkedIn) {
+    return (
+      <div className="text-[11px] font-mono">
+        {row.deskScanned ? (
+          <span className="text-emerald-400/90 font-medium">✓ Pass scanned at desk · Awaiting player to open quiz and join</span>
+        ) : (
+          <span className="text-white/35">Pass not scanned yet · Must scan QR pass at auditorium desk before joining</span>
+        )}
+      </div>
+    );
+  }
+
+  const nameOf = (email: string | null) => row.members.find((m) => m.email.toLowerCase() === email?.toLowerCase())?.name ?? email ?? "";
+
   return (
-    <div className="flex flex-wrap items-center gap-2">
+    <div className="flex flex-wrap items-center gap-2 pt-0.5">
+      <span className="text-[11px] font-mono text-white/50">Active Player:</span>
       <Select value={row.takerEmail ?? ""} onValueChange={(email) => setPending(email)} disabled={status === "ended"}>
-        <SelectTrigger size="sm" className="w-44 text-xs" aria-label={`Player for ${row.teamName}`}>
-          <SelectValue placeholder="No player" />
+        <SelectTrigger size="sm" className="h-7 w-48 text-xs border-white/15 bg-[#16161d]" aria-label={`Player for ${row.teamName}`}>
+          <SelectValue placeholder="No player assigned" />
         </SelectTrigger>
-        <SelectContent>
+        <SelectContent className="border-white/15 bg-[#16161d] text-white">
           {row.members.map((m) => (
             <SelectItem key={m.email} value={m.email}>
-              {m.name}
+              {m.name} {m.email.toLowerCase() === row.leadEmail.toLowerCase() ? "(Lead)" : ""}
             </SelectItem>
           ))}
         </SelectContent>
       </Select>
       <span
-        className={cn("inline-flex items-center gap-1 font-mono text-[10px] uppercase", row.deviceBound ? "text-emerald-400" : "text-amber-300")}
-        title={row.deviceBound ? "Device connected" : "No device"}
+        className={cn(
+          "inline-flex items-center gap-1 rounded-md px-2 py-0.5 font-mono text-[10px] font-semibold uppercase tracking-wider",
+          row.deviceBound ? "border border-emerald-500/30 bg-emerald-500/15 text-emerald-300" : "border border-amber-500/30 bg-amber-500/15 text-amber-300"
+        )}
+        title={row.deviceBound ? "Device connected" : "No device connected"}
       >
-        <Smartphone className="size-3.5" />
-        {row.deviceBound ? "On" : "None"}
+        <Smartphone className="size-3" />
+        {row.deviceBound ? "Phone Active" : "No Phone"}
       </span>
       {(row.takerEmail || row.deviceBound) && status !== "ended" && (
         <ConfirmButton
@@ -100,16 +120,18 @@ function PlayerCell({ code, row, status }: { code: string; row: TeamBoardRow; st
           variant="ghost"
           label="Free seat"
           title={`Free ${row.teamName}'s seat?`}
-          description="The current device stops playing. Any member can then tap Play on this device."
-          icon={<UserRoundX />}
+          description="The current device stops playing. Any checked-in team member can then tap 'Play on this device'."
+          icon={<UserRoundX className="size-3.5" />}
           onConfirm={() => act({ action: "free_seat", teamId: row.teamId })}
         />
       )}
       <Dialog open={pending !== null} onOpenChange={(o) => !o && setPending(null)}>
-        <DialogContent>
+        <DialogContent className="border-white/15 bg-[#16161d] text-white">
           <DialogHeader>
             <DialogTitle>Switch player to {nameOf(pending)}?</DialogTitle>
-            <DialogDescription>Their device takes over on its own. Answers already given stay.</DialogDescription>
+            <DialogDescription className="text-white/60">
+              Only one device can play per team. Their phone will take over the seat immediately.
+            </DialogDescription>
           </DialogHeader>
           <DialogFooter>
             <Button variant="outline" onClick={() => setPending(null)}>
@@ -131,7 +153,7 @@ function PlayerCell({ code, row, status }: { code: string; row: TeamBoardRow; st
   );
 }
 
-/** Help desk: find a team fast and fix its seat without leaving the Run view. */
+/** Help desk: find a team fast, view member roster, and fix its seat in real time. */
 export const TeamsPanel = memo(function TeamsPanel({ code, session, rows: all, loading }: { code: string; session: SessionDoc; rows: TeamBoardRow[]; loading: boolean }) {
   const [filter, setFilter] = useState<Filter>("all");
   const [query, setQuery] = useState("");
@@ -159,61 +181,160 @@ export const TeamsPanel = memo(function TeamsPanel({ code, session, rows: all, l
 
   return (
     <div className="overflow-hidden rounded-3xl border border-white/15 bg-[#0e0e12] shadow-2xl">
-      <div className="flex items-center justify-between px-4 pt-4">
-        <p className="font-mono text-xs uppercase tracking-wider text-white/60">Teams</p>
-        <p className="font-mono text-xs text-white/50 tabular-nums">
-          <span className="text-emerald-400 font-semibold">{inCount}</span> in · <span className="text-sky-400 font-semibold">{playingCount}</span> playing · {eligible.length} eligible
-        </p>
+      {/* Header with live summary stats */}
+      <div className="flex flex-wrap items-center justify-between gap-3 border-b border-white/10 px-5 py-4">
+        <div className="flex items-center gap-2">
+          <Users className="size-4 text-white/60" />
+          <p className="font-mono text-xs font-semibold uppercase tracking-wider text-white/80">Teams Roster</p>
+        </div>
+        <div className="flex flex-wrap items-center gap-2 text-xs font-mono">
+          <span className="inline-flex items-center gap-1 rounded-full border border-emerald-500/30 bg-emerald-500/10 px-2.5 py-0.5 text-emerald-300">
+            <span className="size-1.5 rounded-full bg-emerald-400" />
+            <strong className="font-bold">{inCount}</strong> in quiz
+          </span>
+          <span className="inline-flex items-center gap-1 rounded-full border border-sky-500/30 bg-sky-500/10 px-2.5 py-0.5 text-sky-300">
+            <Smartphone className="size-3" />
+            <strong className="font-bold">{playingCount}</strong> playing
+          </span>
+          <span className="inline-flex items-center gap-1 rounded-full border border-white/10 bg-white/5 px-2.5 py-0.5 text-white/60">
+            <strong className="font-bold text-white/90">{eligible.length}</strong> eligible
+          </span>
+          {attention > 0 && (
+            <span className="inline-flex items-center gap-1 rounded-full border border-amber-500/40 bg-amber-500/15 px-2.5 py-0.5 font-bold text-amber-300 animate-pulse">
+              {attention} needs help
+            </span>
+          )}
+        </div>
       </div>
+
+      {/* Search and Filters */}
       <div className="flex flex-col gap-3 p-4">
         <div className="relative">
           <Search className="absolute top-1/2 left-3.5 size-4 -translate-y-1/2 text-white/40" />
           <input
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            placeholder="Team, code, member name or email"
+            placeholder="Search by team name, code, member name, or email..."
             className="w-full rounded-2xl border border-white/15 bg-[#16161d] py-2.5 pr-4 pl-10 text-xs text-white shadow-inner placeholder:text-white/40 focus:border-white/50 focus:ring-1 focus:ring-white/20 focus:outline-none"
           />
         </div>
-        <SegmentedControl
-          value={filter}
-          onChange={setFilter}
-          options={[
-            { value: "all", label: "All", count: eligible.length },
-            { value: "in", label: "In", count: inCount },
-            { value: "playing", label: "Playing", count: playingCount },
-            { value: "out", label: "Not in", count: eligible.length - inCount },
-            { value: "attention", label: "Attention", count: attention },
-          ]}
-        />
+        <div className="overflow-x-auto">
+          <SegmentedControl
+            value={filter}
+            onChange={setFilter}
+            options={[
+              { value: "all", label: "All", count: eligible.length },
+              { value: "in", label: "In Quiz", count: inCount },
+              { value: "playing", label: "Playing", count: playingCount },
+              { value: "out", label: "Not In", count: eligible.length - inCount },
+              { value: "attention", label: "Attention", count: attention },
+            ]}
+          />
+        </div>
       </div>
+
       <SyncBar code={code} session={session} />
 
       {loading ? (
-        <div className="py-16 text-center font-mono text-xs text-neutral-500">Loading teams</div>
+        <div className="py-16 text-center font-mono text-xs text-neutral-500">Loading live teams...</div>
       ) : eligible.length === 0 ? (
-        <div className="py-16 text-center font-mono text-xs text-neutral-400">No teams yet. Sync.</div>
+        <div className="py-16 text-center font-mono text-xs text-neutral-400">No teams synced yet. Click &quot;Sync MongoDB&quot;.</div>
       ) : rows.length === 0 ? (
-        <div className="py-16 text-center font-mono text-xs text-neutral-400">No teams match</div>
+        <div className="py-16 text-center font-mono text-xs text-neutral-400">No teams match your search or filter</div>
       ) : (
-        <ul className="max-h-[70vh] divide-y divide-white/5 overflow-y-auto">
+        <ul className="max-h-[68vh] divide-y divide-white/5 overflow-y-auto px-2">
           {rows.map((r) => (
-            <li key={r.teamId} className="flex flex-col gap-2 px-4 py-3">
-              <div className="flex items-center justify-between gap-3">
-                <div className="min-w-0">
-                  <p className="truncate text-sm font-semibold tracking-tight">{r.teamName}</p>
-                  <p className="font-mono text-[11px] text-white/40">
-                    <span className="font-bold text-rose-400">{r.teamCode}</span>
-                    {live && r.rank !== null && <span> · #{r.rank} · {r.score} pts</span>}
-                  </p>
+            <li key={r.teamId} className="flex flex-col gap-2 rounded-xl p-3 transition-colors hover:bg-white/[0.02]">
+              {/* Row Header: Name, Code, Status Badges */}
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <div className="flex flex-wrap items-center gap-2">
+                  <p className="text-sm font-semibold tracking-tight text-white">{r.teamName}</p>
+                  <span className="rounded-md border border-rose-500/30 bg-rose-500/10 px-2 py-0.5 font-mono text-xs font-semibold text-rose-400">
+                    {r.teamCode}
+                  </span>
+                  {live && r.rank !== null && (
+                    <span className="font-mono text-xs text-white/50">
+                      #{r.rank} · {r.score} pts
+                    </span>
+                  )}
                 </div>
+
                 <div className="flex shrink-0 items-center gap-2">
-                  {live && r.checkedIn && (r.answeredCurrent ? <CheckCircle2 className="size-4 text-emerald-400" aria-label="Answered" /> : <Circle className="size-4 text-white/20" aria-label="Not answered" />)}
-                  <span className={cn("rounded-full px-2 py-0.5 font-mono text-[10px] font-bold uppercase", r.checkedIn ? "bg-emerald-500/15 text-emerald-300" : "bg-white/5 text-white/40")}>
-                    {r.checkedIn ? "In" : "Not in"}
+                  {live && r.checkedIn && (
+                    r.answeredCurrent ? (
+                      <CheckCircle2 className="size-4 text-emerald-400" aria-label="Answered current question" />
+                    ) : (
+                      <Circle className="size-4 text-white/20" aria-label="Not answered yet" />
+                    )
+                  )}
+
+                  {/* Desk check-in badge */}
+                  <span
+                    className={cn(
+                      "rounded-full px-2.5 py-0.5 font-mono text-[10px] font-semibold",
+                      r.deskScanned
+                        ? "border border-emerald-500/25 bg-emerald-500/15 text-emerald-300"
+                        : "border border-white/10 bg-white/5 text-white/40"
+                    )}
+                    title={r.deskScanned ? "Pass scanned at SV Auditorium registration desk" : "Desk pass pending"}
+                  >
+                    {r.deskScanned ? "Desk: Scanned" : "Desk: Pending"}
+                  </span>
+
+                  {/* Quiz check-in badge */}
+                  <span
+                    className={cn(
+                      "rounded-full px-2.5 py-0.5 font-mono text-[10px] font-bold uppercase tracking-wider",
+                      r.checkedIn
+                        ? "border border-emerald-500/40 bg-emerald-500/25 text-emerald-200"
+                        : "border border-white/10 bg-white/5 text-white/40"
+                    )}
+                  >
+                    {r.checkedIn ? "In Quiz" : "Not In"}
                   </span>
                 </div>
               </div>
+
+              {/* Members Roster List */}
+              <div className="flex flex-wrap items-center gap-1.5 pt-0.5">
+                <span className="text-[11px] font-mono text-white/40">Members:</span>
+                {r.members.length === 0 ? (
+                  <span className="text-xs text-white/40 italic">No members listed</span>
+                ) : (
+                  r.members.map((m) => {
+                    const isLead = m.email.toLowerCase() === r.leadEmail.toLowerCase();
+                    const isTaker = r.takerEmail && m.email.toLowerCase() === r.takerEmail.toLowerCase();
+                    return (
+                      <span
+                        key={m.email}
+                        className={cn(
+                          "inline-flex items-center gap-1 rounded-md px-2 py-0.5 text-xs transition-colors",
+                          isTaker
+                            ? "border border-emerald-500/40 bg-emerald-500/20 text-emerald-200 font-semibold shadow-sm"
+                            : isLead
+                            ? "border border-white/20 bg-white/10 text-white/90 font-medium"
+                            : "border border-white/5 bg-white/5 text-white/60"
+                        )}
+                        title={m.email}
+                      >
+                        <span>{m.name || m.email.split("@")[0]}</span>
+                        {isLead && (
+                          <span className="rounded bg-amber-400/20 px-1 py-0.2 text-[9px] font-mono font-bold uppercase tracking-wider text-amber-300">
+                            Lead
+                          </span>
+                        )}
+                        {isTaker && (
+                          <span className="rounded bg-emerald-400/25 px-1 py-0.2 text-[9px] font-mono font-bold uppercase tracking-wider text-emerald-200">
+                            Playing
+                          </span>
+                        )}
+                      </span>
+                    );
+                  })
+                )}
+              </div>
+
+              {/* Active Player Controls or Check-in Guidance */}
               <PlayerCell code={code} row={r} status={session.status} />
             </li>
           ))}
@@ -222,3 +343,4 @@ export const TeamsPanel = memo(function TeamsPanel({ code, session, rows: all, l
     </div>
   );
 });
+

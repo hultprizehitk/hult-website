@@ -4,6 +4,7 @@ import { CountdownRing } from "@/components/quiz/CountdownRing";
 import { Leaderboard } from "@/components/quiz/Leaderboard";
 import { OptionButton } from "@/components/quiz/OptionButton";
 import { ResultBar } from "@/components/quiz/ResultBar";
+import { cn } from "@/lib/utils";
 import type { StateResponse } from "@/lib/quiz/types";
 
 /** Open question: text, options, countdown, answered bar. */
@@ -21,11 +22,27 @@ export function PresentQuestion({ s, now }: { s: StateResponse; now: number }) {
           </p>
           <h1 className="mt-4 break-words text-5xl font-black leading-tight tracking-tight">{q.text}</h1>
         </div>
-        {closed ? (
-          <span className="rounded-2xl border border-white/15 bg-white/5 px-5 py-3 font-mono text-2xl font-bold uppercase tracking-widest text-white/70">Time up</span>
-        ) : (
-          <CountdownRing openedAt={q.openedAt} closesAt={q.closesAt} now={now} size={140} />
-        )}
+        <div className="flex flex-col items-end gap-3 shrink-0">
+          {closed ? (
+            <span className="rounded-2xl border border-white/15 bg-white/5 px-6 py-4 font-mono text-2xl font-bold uppercase tracking-widest text-white/70">
+              Time up
+            </span>
+          ) : (
+            <CountdownRing openedAt={q.openedAt} closesAt={q.closesAt} now={now} size={140} />
+          )}
+
+          {s.counts.checkedIn > 0 && (
+            <div className="flex items-center gap-2.5 rounded-full border border-white/15 bg-white/5 px-4 py-1.5 shadow-lg backdrop-blur-md">
+              <span className="relative flex size-2.5">
+                <span className={cn("size-full rounded-full", closed ? "bg-white/30" : "bg-emerald-400 animate-ping opacity-75")} />
+                <span className={cn("relative inline-flex size-2.5 rounded-full", closed ? "bg-white/40" : "bg-emerald-400")} />
+              </span>
+              <span className="font-mono text-sm font-semibold text-white/80 tabular-nums">
+                <span className="text-white font-bold">{s.counts.answered}</span> / {s.counts.checkedIn} {closed ? "locked in" : "answered"}
+              </span>
+            </div>
+          )}
+        </div>
       </div>
       <div className="grid gap-4 md:grid-cols-2">
         {options.map((opt, i) => (

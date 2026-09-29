@@ -3,7 +3,7 @@
 import { useMemo, useState } from "react";
 import Link from "next/link";
 import { toast } from "sonner";
-import { CheckCircle2, Copy, Database, Download, ListChecks, Loader2, MonitorPlay, Radio, SearchX, ShieldAlert, Smartphone, Trophy, Users } from "lucide-react";
+import { CheckCircle2, Copy, Database, Download, ListChecks, Loader2, MonitorPlay, Radio, SearchX, Share2, ShieldAlert, Smartphone, Trophy, Users } from "lucide-react";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { saveQuizData } from "@/lib/client/control";
 import { ReconnectingPill } from "@/components/quiz/ReconnectingPill";
@@ -100,12 +100,15 @@ export function AdminConsole({ code }: { code: string }) {
   const questionList: QuestionLite[] = questionsLive.data.map((q) => ({ id: q.id, order: q.order, text: q.text, options: q.options, correctIndex: q.correctIndex, points: q.points, timeLimitSec: q.timeLimitSec }));
 
   const presentUrl = `${origin}/present/${code}`;
-  const copyProjector = async () => {
+  const boardUrl = `${origin}/present/${code}/board`;
+  const studentUrl = `${origin}/s/${code}`;
+
+  const copyLink = async (url: string, label: string) => {
     try {
-      await navigator.clipboard.writeText(presentUrl);
-      toast.success("Projector link copied");
+      await navigator.clipboard.writeText(url);
+      toast.success(`${label} copied`);
     } catch {
-      toast.error(presentUrl);
+      toast.error(url);
     }
   };
 
@@ -128,17 +131,6 @@ export function AdminConsole({ code }: { code: string }) {
         }
         right={
           <>
-            <Link href={`/present/${code}`} target="_blank" className={buttonVariants({ variant: "outline", size: "sm", className: "rounded-full text-xs" })}>
-              <MonitorPlay />
-              Projector
-            </Link>
-            <Button variant="ghost" size="sm" className="rounded-full text-xs" onClick={() => void copyProjector()} aria-label="Copy projector link">
-              <Copy />
-            </Button>
-            <Link href={`/present/${code}/board`} target="_blank" className={buttonVariants({ variant: "ghost", size: "sm", className: "rounded-full text-xs" })}>
-              <Trophy />
-              Board
-            </Link>
             {(s.status === "live" || s.status === "ended") && (
               <a href={`/api/admin/sessions/${code}/export`} className={buttonVariants({ variant: "outline", size: "sm", className: "rounded-full text-xs" })}>
                 <Download />
@@ -170,6 +162,78 @@ export function AdminConsole({ code }: { code: string }) {
           </>
         }
       />
+
+      {/* Quick Links Hub */}
+      <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-white/10 bg-[#0e0e12] px-4 py-2.5 shadow-lg">
+        <div className="flex items-center gap-2 font-mono text-xs text-white/50">
+          <Share2 className="size-3.5 text-white/40" />
+          <span className="uppercase tracking-wider">Quick Link Hub</span>
+        </div>
+        <div className="flex flex-wrap items-center gap-2">
+          {/* Projector */}
+          <div className="inline-flex items-center rounded-xl border border-white/10 bg-white/[0.03] p-1">
+            <Link
+              href={`/present/${code}`}
+              target="_blank"
+              className="flex items-center gap-1.5 rounded-lg px-2.5 py-1 text-xs font-semibold text-white/80 hover:bg-white/10 hover:text-white transition-all"
+            >
+              <MonitorPlay className="size-3 text-sky-400" />
+              <span>Projector</span>
+            </Link>
+            <button
+              type="button"
+              onClick={() => void copyLink(presentUrl, "Projector link")}
+              className="rounded-lg p-1.5 text-white/40 hover:bg-white/10 hover:text-white transition-all"
+              title="Copy projector link"
+              aria-label="Copy projector link"
+            >
+              <Copy className="size-3" />
+            </button>
+          </div>
+
+          {/* Leaderboard */}
+          <div className="inline-flex items-center rounded-xl border border-white/10 bg-white/[0.03] p-1">
+            <Link
+              href={`/present/${code}/board`}
+              target="_blank"
+              className="flex items-center gap-1.5 rounded-lg px-2.5 py-1 text-xs font-semibold text-white/80 hover:bg-white/10 hover:text-white transition-all"
+            >
+              <Trophy className="size-3 text-amber-400" />
+              <span>Board</span>
+            </Link>
+            <button
+              type="button"
+              onClick={() => void copyLink(boardUrl, "Leaderboard link")}
+              className="rounded-lg p-1.5 text-white/40 hover:bg-white/10 hover:text-white transition-all"
+              title="Copy leaderboard link"
+              aria-label="Copy leaderboard link"
+            >
+              <Copy className="size-3" />
+            </button>
+          </div>
+
+          {/* Student Join */}
+          <div className="inline-flex items-center rounded-xl border border-white/10 bg-white/[0.03] p-1">
+            <Link
+              href={`/s/${code}`}
+              target="_blank"
+              className="flex items-center gap-1.5 rounded-lg px-2.5 py-1 text-xs font-semibold text-white/80 hover:bg-white/10 hover:text-white transition-all"
+            >
+              <Smartphone className="size-3 text-emerald-400" />
+              <span>Student Join</span>
+            </Link>
+            <button
+              type="button"
+              onClick={() => void copyLink(studentUrl, "Student join link")}
+              className="rounded-lg p-1.5 text-white/40 hover:bg-white/10 hover:text-white transition-all"
+              title="Copy student join link"
+              aria-label="Copy student join link"
+            >
+              <Copy className="size-3" />
+            </button>
+          </div>
+        </div>
+      </div>
 
       <nav aria-label="Console tabs" className="flex items-center gap-2 overflow-x-auto border-b border-white/10 pb-4">
         <TabButton active={tab === "run"} onClick={() => setTab("run")}>

@@ -168,16 +168,7 @@ export function ParticipantApp({ code }: { code: string }) {
           icon={UserX}
           title="No team found"
           subtitle={`${fb.email} is not on a registered team`}
-          action={
-            <div className="flex gap-2">
-              {switchAccount}
-              {fb.admin && (
-                <Link href="/admin" className={buttonVariants({ variant: "outline", className: "rounded-full" })}>
-                  Admin console
-                </Link>
-              )}
-            </div>
-          }
+          action={switchAccount}
         />,
       );
     }

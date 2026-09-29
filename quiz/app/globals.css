@@ -43,6 +43,7 @@
 }
 
 :root {
+  color-scheme: dark;
   /* Admin dashboard design system (client-v3/app/admin): black, neutral surfaces, white primary. */
   --radius: 0.75rem;
   --background: #000000;
@@ -73,6 +74,27 @@
   --opt-3: #f59e0b;
   --opt-4: #6366f1;
   --opt-5: #d946ef;
+}
+
+/* Custom sleek dark scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.15);
+  border-radius: 9999px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.28);
+}
+
+* {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255, 255, 255, 0.18) transparent;
 }
 
 @layer base {
