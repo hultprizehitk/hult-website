@@ -16,3 +16,16 @@ export async function sendControl(code: string, action: ControlAction & { confir
     return false;
   }
 }
+
+export async function saveQuizData(code: string): Promise<boolean> {
+  try {
+    const res = await api<{ ok: boolean; result: { totalTeams: number; totalQuestions: number } }>(`/api/admin/sessions/${code}/save`, { body: {} });
+    toast.success(`Saved to Firebase DB (${res.result.totalTeams} teams, ${res.result.totalQuestions} questions)`);
+    return true;
+  } catch (e) {
+    const err = e as ApiError;
+    toast.error(err.message || "Failed to save quiz data to database");
+    return false;
+  }
+}
+

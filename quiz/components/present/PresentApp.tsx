@@ -82,7 +82,7 @@ export function PresentApp({ code }: { code: string }) {
         </TextEffect>
         {!isFirst && (
           <p className="font-mono text-xl text-white/50 animate-pulse">
-            Keep your phones ready &middot; Question {nextNo} is launching next
+            Keep your device ready &middot; Question {nextNo} is launching next
           </p>
         )}
       </div>

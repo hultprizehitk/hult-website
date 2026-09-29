@@ -89,7 +89,7 @@ function PlayerCell({ code, row, status }: { code: string; row: TeamBoardRow; st
       </Select>
       <span
         className={cn("inline-flex items-center gap-1 font-mono text-[10px] uppercase", row.deviceBound ? "text-emerald-400" : "text-amber-300")}
-        title={row.deviceBound ? "Phone connected" : "No phone"}
+        title={row.deviceBound ? "Device connected" : "No device"}
       >
         <Smartphone className="size-3.5" />
         {row.deviceBound ? "On" : "None"}
@@ -100,7 +100,7 @@ function PlayerCell({ code, row, status }: { code: string; row: TeamBoardRow; st
           variant="ghost"
           label="Free seat"
           title={`Free ${row.teamName}'s seat?`}
-          description="The current phone stops playing. Any member can then tap Play on this phone."
+          description="The current device stops playing. Any member can then tap Play on this device."
           icon={<UserRoundX />}
           onConfirm={() => act({ action: "free_seat", teamId: row.teamId })}
         />
@@ -109,7 +109,7 @@ function PlayerCell({ code, row, status }: { code: string; row: TeamBoardRow; st
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Switch player to {nameOf(pending)}?</DialogTitle>
-            <DialogDescription>Their phone takes over on its own. Answers already given stay.</DialogDescription>
+            <DialogDescription>Their device takes over on its own. Answers already given stay.</DialogDescription>
           </DialogHeader>
           <DialogFooter>
             <Button variant="outline" onClick={() => setPending(null)}>

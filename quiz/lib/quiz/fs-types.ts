@@ -18,6 +18,8 @@ export const paths = {
   team: (code: string, teamId: string) => `${SESSIONS}/${code}/teams/${teamId}`,
   answers: (code: string) => `${SESSIONS}/${code}/answers`,
   answer: (code: string, teamId: string, questionId: string) => `${SESSIONS}/${code}/answers/${teamId}_${questionId}`,
+  savedResults: (code: string) => `${SESSIONS}/${code}/savedResults`,
+  savedResult: (code: string, id: string) => `${SESSIONS}/${code}/savedResults/${id}`,
   admin: (email: string) => `${ADMINS}/${email}`,
 };
 
@@ -71,6 +73,8 @@ export interface SessionDoc<T = Ts> {
   createdAt: T;
   lastSyncAt: T | null;
   lastSync: SyncSummary | null;
+  lastSavedAt?: T | null;
+  lastSavedBy?: string | null;
 }
 
 /** Aggregated counts returned to views; Firestore stores one shard per team instead. */
@@ -170,3 +174,31 @@ export function emptyTeamState<T = Ts>(): Pick<
     perQuestion: {},
   };
 }
+
+export interface SavedQuizSnapshot<T = Ts> {
+  code: string;
+  title: string;
+  eventId: string;
+  eventTitle: string;
+  status: SessionStatus;
+  savedAt: T;
+  savedBy: string;
+  totalQuestions: number;
+  totalTeams: number;
+  checkedInTeams: number;
+  standings: Standing[];
+  questions: (QuestionDoc & { id: string })[];
+  teamsSummary: {
+    teamId: string;
+    teamName: string;
+    teamCode: string;
+    score: number;
+    totalTimeMs: number;
+    rank: number | null;
+    takerEmail: string | null;
+    answeredCount: number;
+    correctCount: number;
+    answers: Record<string, QuestionResult>;
+  }[];
+}
+

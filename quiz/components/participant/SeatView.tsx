@@ -14,7 +14,7 @@ export function SeatView({ me, onClaim, claiming }: { me: MeView; onClaim: () =>
       <StateMessage
         icon={Smartphone}
         title="Playing on another device"
-        subtitle="Your account is active on another phone or browser"
+        subtitle="Your account is active on another device or browser"
         action={
           <Button size="lg" className="rounded-2xl px-6 font-bold" loading={claiming} onClick={onClaim}>
             Play here
@@ -28,14 +28,14 @@ export function SeatView({ me, onClaim, claiming }: { me: MeView; onClaim: () =>
       <StateMessage
         icon={UserRound}
         title={`No one is playing for ${team}`}
-        subtitle="One phone per team"
+        subtitle="One device per team"
         action={
           <Button size="lg" className="rounded-2xl px-6 font-bold" loading={claiming} onClick={onClaim}>
-            Play on this phone
+            Play on this device
           </Button>
         }
       />
     );
   }
-  return <StateMessage icon={Smartphone} title={`Playing on ${me.takerName ?? "a teammate"}'s phone`} subtitle={`One phone per team. Follow ${team} on the screen.`} />;
+  return <StateMessage icon={Smartphone} title={`Playing on ${me.takerName ?? "a teammate"}'s device`} subtitle={`One device per team. Follow ${team} on the screen.`} />;
 }

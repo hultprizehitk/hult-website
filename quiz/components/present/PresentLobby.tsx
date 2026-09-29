@@ -64,7 +64,7 @@ export function PresentLobby({ s, joinedCounters = [] }: PresentLobbyProps) {
               <Smartphone className="size-8 text-emerald-400" />
             </div>
             <p className="text-sm font-semibold text-white/60">Waiting for teams to join the lobby...</p>
-            <p className="font-mono text-xs text-white/40">Scan the QR code above from your phone to take your seat</p>
+            <p className="font-mono text-xs text-white/40">Scan the QR code above from your device to take your seat</p>
           </div>
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-3 max-h-[380px] overflow-y-auto pr-1">
@@ -104,7 +104,7 @@ export function PresentLobby({ s, joinedCounters = [] }: PresentLobbyProps) {
                     <>
                       <Smartphone className="size-3.5 text-amber-400 shrink-0" />
                       <span className="truncate text-white/50 text-[11px] font-mono">
-                        Connecting phone...
+                        Connecting device...
                       </span>
                     </>
                   )}

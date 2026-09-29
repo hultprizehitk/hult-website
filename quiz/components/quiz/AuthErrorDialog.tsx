@@ -50,7 +50,7 @@ const ERROR_MAP: Record<string, ErrorMeta> = {
   },
   team_already_active: {
     title: "Your team is already playing",
-    badge: "One phone per team",
+    badge: "One device per team",
     description: "Follow along on the screen.",
     icon: Smartphone,
     color: "purple",

@@ -91,7 +91,7 @@ function primaryStep(s: AdminSessionSummary, questionCount: number, counts: Coun
       icon: <Sparkles className="size-5 text-amber-300" />,
       confirm: {
         title: `Show "Are you ready for Question ${nextNo}?"`,
-        description: `This will dismiss the leaderboard on the projector and student phones, showing "Are you ready for Question ${nextNo}?" so you can get everyone ready before launching.`,
+        description: `This will dismiss the leaderboard on the projector and student devices, showing "Are you ready for Question ${nextNo}?" so you can get everyone ready before launching.`,
       },
     };
   }

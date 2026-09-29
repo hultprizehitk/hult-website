@@ -3,8 +3,9 @@
 import { useMemo, useState } from "react";
 import Link from "next/link";
 import { toast } from "sonner";
-import { CheckCircle2, Copy, Download, ListChecks, Loader2, MonitorPlay, Radio, SearchX, ShieldAlert, Smartphone, Trophy, Users } from "lucide-react";
+import { CheckCircle2, Copy, Database, Download, ListChecks, Loader2, MonitorPlay, Radio, SearchX, ShieldAlert, Smartphone, Trophy, Users } from "lucide-react";
 import { Button, buttonVariants } from "@/components/ui/button";
+import { saveQuizData } from "@/lib/client/control";
 import { ReconnectingPill } from "@/components/quiz/ReconnectingPill";
 import { StateMessage } from "@/components/quiz/StateMessage";
 import { useAutoSync } from "@/hooks/useAutoSync";
@@ -53,8 +54,20 @@ export function AdminConsole({ code }: { code: string }) {
   const fb = useFirebaseUser();
   const ready = fb.status === "signed-in" && fb.admin;
   const [tab, setTab] = useState<Tab>("run");
+  const [isSaving, setIsSaving] = useState(false);
+  const [savedJustNow, setSavedJustNow] = useState(false);
   const clock = useServerClock();
   const origin = useOrigin();
+
+  const handleSave = async () => {
+    setIsSaving(true);
+    const ok = await saveQuizData(code);
+    setIsSaving(false);
+    if (ok) {
+      setSavedJustNow(true);
+      setTimeout(() => setSavedJustNow(false), 4000);
+    }
+  };
 
   const sessionLive = useDocData<SessionDoc>(paths.session(code));
   const teamsLive = useCollectionData<TeamDoc>(ready ? paths.teams(code) : null, "teamName");
@@ -132,6 +145,28 @@ export function AdminConsole({ code }: { code: string }) {
                 CSV
               </a>
             )}
+            <Button
+              variant="outline"
+              size="sm"
+              className={cn(
+                "rounded-full text-xs font-semibold gap-1.5 transition-all",
+                savedJustNow
+                  ? "border-emerald-500/50 bg-emerald-500/10 text-emerald-300"
+                  : "border-sky-500/30 bg-sky-500/10 text-sky-300 hover:bg-sky-500/20",
+              )}
+              disabled={isSaving}
+              onClick={() => void handleSave()}
+              title="Save all questions, answers, teams, and standings permanently to Firebase DB"
+            >
+              {isSaving ? (
+                <Loader2 className="size-3.5 animate-spin" />
+              ) : savedJustNow ? (
+                <CheckCircle2 className="size-3.5 text-emerald-400" />
+              ) : (
+                <Database className="size-3.5 text-sky-400" />
+              )}
+              <span>{isSaving ? "Saving..." : savedJustNow ? "Saved to DB" : "Save to DB"}</span>
+            </Button>
           </>
         }
       />
@@ -171,7 +206,7 @@ export function AdminConsole({ code }: { code: string }) {
 
           <div
             className="inline-flex items-center gap-1.5 rounded-full border border-sky-500/25 bg-sky-500/10 px-2.5 py-1 text-xs font-medium text-sky-300 shadow-sm"
-            title="Teams actively connected with a phone ready to answer"
+            title="Teams actively connected with a device ready to answer"
           >
             <Smartphone className="size-3 text-sky-400" />
             <span className="font-mono font-bold">{playingCount}</span>
@@ -194,7 +229,15 @@ export function AdminConsole({ code }: { code: string }) {
                 Answered {counts.answered}/{counts.checkedIn}
               </p>
             )}
-            {currentQuestion && s.phase !== "idle" && <CurrentQuestionCard key={`${currentId}-${s.questionOpenedAt?.toMillis()}`} session={summary} question={currentQuestion} distribution={distribution} />}
+            {currentQuestion && s.phase !== "idle" && (
+              <CurrentQuestionCard
+                key={`${currentId}-${s.questionOpenedAt?.toMillis()}`}
+                session={summary}
+                question={currentQuestion}
+                distribution={distribution}
+                teams={teams}
+              />
+            )}
             {!setupPhase && (
               <div className="overflow-hidden rounded-3xl border border-white/15 bg-[#0e0e12] shadow-2xl">
                 <div className="border-b border-white/10 px-4 py-3 font-mono text-xs uppercase tracking-wider text-white/60">Standings</div>
