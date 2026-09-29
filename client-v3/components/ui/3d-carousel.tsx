@@ -117,9 +117,62 @@ interface Event3DCardProps {
 }
 
 function Event3DCard({ card, onSelectEvent, isDraggingRef }: Event3DCardProps) {
-  const countdown = useCountdown(card.event?.registrationDeadline);
+  const [liveEvent, setLiveEvent] = useState(card.event);
 
-  if (card.isDummy || !card.event) {
+  useEffect(() => {
+    setLiveEvent(card.event);
+  }, [card.event]);
+
+  useEffect(() => {
+    if (!card.event?._id || typeof window === "undefined") return;
+
+    let channel: BroadcastChannel | null = null;
+    if (typeof BroadcastChannel !== "undefined") {
+      channel = new BroadcastChannel("event_onspot_sync");
+      channel.onmessage = (e) => {
+        if (e.data?.eventId === card.event?._id) {
+          setLiveEvent((prev) =>
+            prev
+              ? {
+                  ...prev,
+                  onSpotRegistrationEnabled: e.data.onSpotRegistrationEnabled,
+                  ...(e.data.registrationStatus ? { registrationStatus: e.data.registrationStatus } : {}),
+                }
+              : prev
+          );
+        }
+      };
+    }
+
+    const handleStorage = (e: StorageEvent) => {
+      if (e.key === "event_onspot_sync" && e.newValue) {
+        try {
+          const parsed = JSON.parse(e.newValue);
+          if (parsed?.eventId === card.event?._id) {
+            setLiveEvent((prev) =>
+              prev
+                ? {
+                    ...prev,
+                    onSpotRegistrationEnabled: parsed.onSpotRegistrationEnabled,
+                    ...(parsed.registrationStatus ? { registrationStatus: parsed.registrationStatus } : {}),
+                  }
+                : prev
+            );
+          }
+        } catch {}
+      }
+    };
+    window.addEventListener("storage", handleStorage);
+
+    return () => {
+      if (channel) channel.close();
+      window.removeEventListener("storage", handleStorage);
+    };
+  }, [card.event?._id]);
+
+  const countdown = useCountdown(liveEvent?.registrationDeadline);
+
+  if (card.isDummy || !liveEvent) {
     // Premium Coming Soon Glass Card
     return (
       <article className="relative overflow-hidden rounded-2xl border border-white/20 bg-gradient-to-b from-[#1a1728]/95 via-[#120e1f]/95 to-[#0b0914]/95 backdrop-blur-3xl p-4 sm:p-4.5 flex flex-col justify-between w-full h-[345px] sm:h-[355px] shadow-[0_20px_50px_rgba(0,0,0,0.85),inset_0_1px_0_rgba(255,255,255,0.2)] select-none group transition-all duration-300">
@@ -187,7 +240,7 @@ function Event3DCard({ card, onSelectEvent, isDraggingRef }: Event3DCardProps) {
   }
 
   // Active Real Event Card
-  const event = card.event;
+  const event = liveEvent;
   const dateLabel = formatDateRange(event.startDate, event.endDate, event.date);
   const minReq = event.minTeamMembers || 2;
   const maxReq = event.maxTeamMembers || 4;
@@ -255,7 +308,7 @@ function Event3DCard({ card, onSelectEvent, isDraggingRef }: Event3DCardProps) {
               {isOnSpotLive
                 ? "On-Spot Live"
                 : isClosed
-                ? "Closed"
+                ? "Registrations Closed"
                 : event.registrationStatus === "extended"
                 ? "Extended"
                 : "Registrations Open"}
@@ -345,7 +398,7 @@ function Event3DCard({ card, onSelectEvent, isDraggingRef }: Event3DCardProps) {
           onClick={handleAction}
           className="w-full flex items-center justify-between rounded-full bg-white hover:bg-neutral-100 px-4 py-2.5 text-[11px] font-bold text-neutral-950 uppercase tracking-wider shadow-[0_4px_20px_rgba(255,255,255,0.2)] hover:shadow-[0_0_25px_rgba(255,255,255,0.45)] transition-all hover:scale-[1.02] cursor-pointer"
         >
-          <span>VIEW EVENT &amp; REGISTER</span>
+          <span>{isClosed ? "VIEW EVENT DETAILS" : "VIEW EVENT & REGISTER"}</span>
           <ArrowRight size={13} className="text-neutral-950" />
         </button>
       </div>

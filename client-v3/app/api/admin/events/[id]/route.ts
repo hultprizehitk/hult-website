@@ -84,6 +84,11 @@ export async function PUT(req: Request, { params }: RouteParams) {
       }
     }
 
+    // When turning off On-Spot, guarantee registrationStatus is explicitly set to "closed"
+    if (body.onSpotRegistrationEnabled === false && body.registrationStatus === undefined) {
+      body.registrationStatus = "closed";
+    }
+
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const updateData: Record<string, any> = {};
     for (const field of updatableFields) {

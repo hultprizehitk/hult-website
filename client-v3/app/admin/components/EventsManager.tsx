@@ -930,7 +930,15 @@ export default function EventsManager() {
                   isMasterAdmin={isMasterAdmin}
                   onToggle={(newState) => {
                     setEvents((prev) =>
-                      prev.map((e) => (e._id === selectedEvent._id ? { ...e, onSpotRegistrationEnabled: newState } : e))
+                      prev.map((e) =>
+                        e._id === selectedEvent._id
+                          ? {
+                              ...e,
+                              onSpotRegistrationEnabled: newState,
+                              ...(newState ? {} : { registrationStatus: "closed" }),
+                            }
+                          : e
+                      )
                     );
                   }}
                 />

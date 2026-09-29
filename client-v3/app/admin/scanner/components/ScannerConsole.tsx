@@ -421,12 +421,20 @@ export default function ScannerConsole({
 
   const handleToggleOnSpot = (newState: boolean) => {
     setEvents((prev) =>
-      prev.map((e) => (e._id === selectedEventId ? { ...e, onSpotRegistrationEnabled: newState } : e))
+      prev.map((e) =>
+        e._id === selectedEventId
+          ? {
+              ...e,
+              onSpotRegistrationEnabled: newState,
+              ...(newState ? {} : { registrationStatus: "closed" }),
+            }
+          : e
+      )
     );
     triggerToast(
       newState
         ? "On-Spot Registration is now LIVE on website."
-        : "On-Spot Registration has been CLOSED."
+        : "On-Spot Registration has been CLOSED. Registrations are now closed."
     );
   };
 

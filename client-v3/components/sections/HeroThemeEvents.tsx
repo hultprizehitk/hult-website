@@ -94,8 +94,53 @@ export default function HeroThemeEvents({ scrollProgress }: HeroThemeEventsProps
       }
     };
     fetchEvents();
+
+    let channel: BroadcastChannel | null = null;
+    if (typeof BroadcastChannel !== "undefined") {
+      channel = new BroadcastChannel("event_onspot_sync");
+      channel.onmessage = (e) => {
+        if (e.data?.eventId) {
+          setEvents((prev) =>
+            prev.map((ev) =>
+              ev._id === e.data.eventId
+                ? {
+                    ...ev,
+                    onSpotRegistrationEnabled: e.data.onSpotRegistrationEnabled,
+                    ...(e.data.registrationStatus ? { registrationStatus: e.data.registrationStatus } : {}),
+                  }
+                : ev
+            )
+          );
+        }
+      };
+    }
+
+    const handleStorage = (e: StorageEvent) => {
+      if (e.key === "event_onspot_sync" && e.newValue) {
+        try {
+          const parsed = JSON.parse(e.newValue);
+          if (parsed?.eventId) {
+            setEvents((prev) =>
+              prev.map((ev) =>
+                ev._id === parsed.eventId
+                  ? {
+                      ...ev,
+                      onSpotRegistrationEnabled: parsed.onSpotRegistrationEnabled,
+                      ...(parsed.registrationStatus ? { registrationStatus: parsed.registrationStatus } : {}),
+                    }
+                  : ev
+              )
+            );
+          }
+        } catch {}
+      }
+    };
+    window.addEventListener("storage", handleStorage);
+
     return () => {
       isMounted = false;
+      if (channel) channel.close();
+      window.removeEventListener("storage", handleStorage);
     };
   }, []);
 

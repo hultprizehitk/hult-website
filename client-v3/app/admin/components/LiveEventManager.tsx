@@ -1063,12 +1063,20 @@ export default function LiveEventManager({ isMasterAdmin: propIsMasterAdmin }: L
                             isMasterAdmin={isMasterAdmin}
                             onToggle={(newState) => {
                               setEvents((prev) =>
-                                prev.map((e) => (e._id === ev._id ? { ...e, onSpotRegistrationEnabled: newState } : e))
+                                prev.map((e) =>
+                                  e._id === ev._id
+                                    ? {
+                                        ...e,
+                                        onSpotRegistrationEnabled: newState,
+                                        ...(newState ? {} : { registrationStatus: "closed" }),
+                                      }
+                                    : e
+                                )
                               );
                               showToast(
                                 newState
                                   ? `On-Spot registration is now LIVE for "${ev.title}".`
-                                  : `On-Spot registration has been CLOSED for "${ev.title}".`
+                                  : `On-Spot registration has been CLOSED for "${ev.title}". Registrations closed.`
                               );
                             }}
                             compact={true}
@@ -1193,13 +1201,29 @@ export default function LiveEventManager({ isMasterAdmin: propIsMasterAdmin }: L
                   isMasterAdmin={isMasterAdmin}
                   onToggle={(newState) => {
                     setEvents((prev) =>
-                      prev.map((e) => (e._id === selectedEventId ? { ...e, onSpotRegistrationEnabled: newState } : e))
+                      prev.map((e) =>
+                        e._id === selectedEventId
+                          ? {
+                              ...e,
+                              onSpotRegistrationEnabled: newState,
+                              ...(newState ? {} : { registrationStatus: "closed" }),
+                            }
+                          : e
+                      )
                     );
-                    setEventMeta((prev) => (prev ? { ...prev, onSpotRegistrationEnabled: newState } : null));
+                    setEventMeta((prev) =>
+                      prev
+                        ? {
+                            ...prev,
+                            onSpotRegistrationEnabled: newState,
+                            ...(newState ? {} : { registrationStatus: "closed" }),
+                          }
+                        : null
+                    );
                     showToast(
                       newState
                         ? "On-Spot Registration is now LIVE on website."
-                        : "On-Spot Registration has been CLOSED."
+                        : "On-Spot Registration has been CLOSED. Registrations are now closed."
                     );
                   }}
                 />
