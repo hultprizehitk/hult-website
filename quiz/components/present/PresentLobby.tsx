@@ -52,7 +52,7 @@ export function PresentLobby({ s, joinedCounters = [] }: PresentLobbyProps) {
               <span className="relative inline-flex size-2.5 rounded-full bg-emerald-500" />
             </div>
             <h2 className="text-base font-bold uppercase tracking-wider text-white">
-              Joined Teams & Players ({joinedTeams.length} / {s.counts.eligible})
+              Joined Teams &amp; Players
             </h2>
           </div>
           <span className="font-mono text-xs text-white/40">Real-time room synchronization</span>

@@ -56,13 +56,18 @@ function primaryStep(s: AdminSessionSummary, questionCount: number, counts: Coun
 
   if (s.phase === "idle") {
     const targetQ = s.currentIndex < 0 ? 1 : nextNo;
+    const isTargetLast = targetQ >= questionCount;
     return {
-      label: `Launch Question ${targetQ}`,
+      label: isTargetLast ? `Launch Final Question ${targetQ}` : `Launch Question ${targetQ}`,
       action: { type: "next" },
       icon: <ArrowRight />,
       confirm: {
-        title: `Are you sure you want to launch Question ${targetQ}?`,
-        description: `This will immediately reveal Question ${targetQ} on the projector and start the live countdown for all teams.`,
+        title: isTargetLast
+          ? `Launch Final Question ${targetQ} of ${questionCount}?`
+          : `Are you sure you want to launch Question ${targetQ}?`,
+        description: isTargetLast
+          ? `This is the final question of the quiz. It will reveal Question ${targetQ} on the projector and start the live countdown for all teams.`
+          : `This will immediately reveal Question ${targetQ} on the projector and start the live countdown for all teams.`,
       },
     };
   }
@@ -71,6 +76,23 @@ function primaryStep(s: AdminSessionSummary, questionCount: number, counts: Coun
     const inLeadIn = s.questionOpenedAt !== null && now < s.questionOpenedAt;
     const open = s.questionClosesAt !== null && now < s.questionClosesAt;
     const waiting = counts.checkedIn - counts.answered;
+
+    if (isLast) {
+      return {
+        label: "Direct Final Results",
+        action: { type: "end" },
+        icon: <Flag className="size-5 text-amber-300" />,
+        disabled: inLeadIn,
+        confirm: {
+          title: "End quiz and show direct final results?",
+          description:
+            open && waiting > 0
+              ? `This is the final question (${currentNo} of ${questionCount}). The timer is running and ${teams(waiting)} have not answered yet. This will close the question, grade all teams, and immediately present the Final Results and winner podium on the big screen.`
+              : `This is the final question (${currentNo} of ${questionCount}). This will grade all teams, compute final rankings, and immediately present the Final Results and winner podium on the big screen.`,
+        },
+      };
+    }
+
     return {
       label: "Show results",
       action: { type: "show_results" },
@@ -89,11 +111,11 @@ function primaryStep(s: AdminSessionSummary, questionCount: number, counts: Coun
   if (s.phase === "results") {
     if (isLast) {
       return {
-        label: "Final results",
+        label: "Direct Final Results",
         action: { type: "end" },
-        icon: <Flag />,
+        icon: <Flag className="size-5 text-amber-300" />,
         confirm: {
-          title: "Are you sure you want to end the quiz and show final results?",
+          title: "Show Direct Final Results & End Quiz?",
           description: "This will officially end the quiz session and present the winner podium on the big screen.",
         },
       };
@@ -116,14 +138,17 @@ function primaryStep(s: AdminSessionSummary, questionCount: number, counts: Coun
 function stageLabel(s: AdminSessionSummary, questionCount: number, now: number): string {
   if (s.status === "draft" || s.status === "lobby") return "Setup";
   if (s.status === "ended") return "Ended";
+  const isLast = s.currentIndex >= questionCount - 1;
   if (s.phase === "idle") {
-    return s.currentIndex < 0 ? "Ready for Question 1" : `Ready for Question ${s.currentIndex + 2}`;
+    const nextQ = s.currentIndex < 0 ? 1 : s.currentIndex + 2;
+    const isNextLast = nextQ >= questionCount;
+    return isNextLast ? `Ready for Final Question ${nextQ}` : `Ready for Question ${nextQ}`;
   }
-  const q = `Question ${s.currentIndex + 1} of ${questionCount}`;
-  if (s.phase === "results") return `${q} · Results`;
-  if (s.questionOpenedAt !== null && now < s.questionOpenedAt) return `${q} · Starting`;
-  if (s.questionClosesAt !== null && now < s.questionClosesAt) return `${q} · Answering`;
-  return `${q} · Time up`;
+  const qPrefix = isLast ? `Final Question (${s.currentIndex + 1} of ${questionCount})` : `Question ${s.currentIndex + 1} of ${questionCount}`;
+  if (s.phase === "results") return `${qPrefix} · Results`;
+  if (s.questionOpenedAt !== null && now < s.questionOpenedAt) return `${qPrefix} · Starting`;
+  if (s.questionClosesAt !== null && now < s.questionClosesAt) return `${qPrefix} · Answering`;
+  return `${qPrefix} · Time up`;
 }
 
 export function HostControls({
@@ -220,7 +245,17 @@ export function HostControls({
 
       {step && (
         <div className="mt-5 flex flex-col gap-2">
-          <Button size="xl" variant={s.status === "draft" || s.status === "lobby" ? "emerald" : "default"} className="h-14 w-full rounded-2xl text-lg font-bold" loading={busy} disabled={step.disabled} onClick={trigger}>
+          <Button
+            size="xl"
+            variant={s.status === "draft" || s.status === "lobby" ? "emerald" : "default"}
+            className={cn(
+              "h-14 w-full rounded-2xl text-lg font-bold transition-all",
+              step.action.type === "end" && "border-none bg-gradient-to-r from-amber-500 via-amber-400 to-amber-500 text-black shadow-lg shadow-amber-500/25 hover:opacity-95",
+            )}
+            loading={busy}
+            disabled={step.disabled}
+            onClick={trigger}
+          >
             {step.icon}
             {step.label}
           </Button>
@@ -246,6 +281,18 @@ export function HostControls({
                   disabled={busy || !open || inLeadIn}
                   icon={<Square />}
                   onConfirm={() => run({ type: "close_now" })}
+                />
+              )}
+              {inQuestion && isLast && (
+                <ConfirmButton
+                  variant="outline"
+                  size="sm"
+                  label="Show Q results only"
+                  title={`Show Question ${s.currentIndex + 1} results only?`}
+                  description="This will reveal this question's answer and interim standings without ending the quiz yet."
+                  disabled={busy || inLeadIn}
+                  icon={<ArrowRight />}
+                  onConfirm={() => run({ type: "show_results" })}
                 />
               )}
               <ConfirmButton
