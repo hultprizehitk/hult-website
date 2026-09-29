@@ -63,7 +63,7 @@ function formatDateRange(start?: string, end?: string, fallback?: string) {
     const e = formatDate(end);
     return `${s} – ${e}`;
   }
-  return fallback ? formatDate(fallback) : "Wed, Sep 30, 2026 · 12:00 PM – 6:00 PM";
+  return fallback ? formatDate(fallback) : "Wed, Sep 30, 2026 · 2:00 PM – 6:00 PM";
 }
 
 interface HeroThemeEventsProps {

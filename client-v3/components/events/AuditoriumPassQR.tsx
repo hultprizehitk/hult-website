@@ -241,7 +241,10 @@ export default function AuditoriumPassQR({
                 <span className="truncate">{venue}</span>
               </div>
               <span className="text-[9.5px] font-mono text-white/50 block truncate pt-0.5">
-                {date.split("·")[0]}
+                {(date || "Sep 30, 2026, 2:00 PM")
+                  .replace(/12:00\s*PM/gi, "2:00 PM")
+                  .split("·")[0]
+                  .trim()}
               </span>
             </div>
           </div>
