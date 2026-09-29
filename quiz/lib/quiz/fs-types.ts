@@ -68,6 +68,7 @@ export interface SessionDoc<T = Ts> {
   plan: PlanItem[];
   current: CurrentQuestion | null;
   leaderboard: Standing[] | null;
+  totalRanked?: number;
   gradedThrough: number;
   createdBy: string;
   createdAt: T;

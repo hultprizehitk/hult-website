@@ -37,7 +37,12 @@ export function ResultsView({ s, answer }: { s: StateResponse; answer: AnswerVie
         {lastMs !== null && <span className="font-mono text-xs opacity-80">Answered in {formatMs(lastMs)}</span>}
       </motion.div>
 
-      {graded && <StandingCard standing={me.standing} of={s.counts.checkedIn || undefined} />}
+      {graded && (
+        <StandingCard
+          standing={me.standing}
+          of={s.totalRanked ?? (s.counts.checkedIn > 0 ? s.counts.checkedIn : undefined)}
+        />
+      )}
 
       <div className="flex flex-col gap-2">
         <p className="font-mono text-[11px] uppercase tracking-wider text-white/50">Top 10</p>

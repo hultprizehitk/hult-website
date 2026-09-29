@@ -128,4 +128,26 @@ describe("Leaderboard standings time and ranking", () => {
     expect(standings[14].teamName).toBe("Team 15");
     expect(standings[14].rank).toBe(15);
   });
+
+  it("resolves playerName and teamCode in standingsFromTeams", () => {
+    const t = team({
+      teamId: "team-test",
+      teamName: "Alpha Squad",
+      teamCode: "HULT-ALPH",
+      score: 100,
+      totalTimeMs: 2500,
+      takerEmail: "player@college.edu",
+      members: [
+        { name: "Team Lead", email: "lead@college.edu" },
+        { name: "Quiz Player", email: "player@college.edu" },
+      ],
+      lastResult: { qid: "q1", optionIndex: 1, correct: true, points: 100, ms: 2500 },
+    });
+
+    const [s] = standingsFromTeams([t]);
+    expect(s.teamCode).toBe("HULT-ALPH");
+    expect(s.playerName).toBe("Quiz Player");
+    expect(s.rank).toBe(1);
+    expect(s.score).toBe(100);
+  });
 });

@@ -7,11 +7,13 @@ import { UserNav } from "@/components/quiz/UserNav";
 /** Page frame shared by every quiz screen; mirrors the admin dashboard layout + header (client-v3/app/admin). */
 export function QuizShell({
   right,
+  headerBadge,
   wide = false,
   lockSignOut = false,
   children,
 }: {
   right?: React.ReactNode;
+  headerBadge?: React.ReactNode;
   wide?: boolean;
   lockSignOut?: boolean;
   children: React.ReactNode;
@@ -41,6 +43,7 @@ export function QuizShell({
           </span>
         </Link>
         <div className="flex items-center gap-2">
+          {headerBadge}
           {right ?? <UserNav lockSignOut={lockSignOut} />}
         </div>
       </header>

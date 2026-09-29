@@ -41,7 +41,7 @@ export function publicQuestionFromDoc(s: SessionDoc, nowMs: number): PublicQuest
 }
 
 function teamStanding(t: TeamDoc): Standing | null {
-  if (t.rank === null) return null;
+  if (t.rank == null) return null;
   const last = t.lastResult;
   return {
     rank: t.rank,
@@ -127,6 +127,7 @@ export function toStateResponse(input: {
     counts: c,
     distribution: s.phase === "results" ? (s.current?.distribution ?? null) : null,
     leaderboard: s.phase === "results" || s.status === "ended" ? (s.leaderboard ?? []) : null,
+    totalRanked: s.totalRanked ?? (s.leaderboard ? s.leaderboard.length : undefined),
     me,
   };
 }
@@ -151,18 +152,25 @@ export function adminSummary(s: SessionDoc): AdminSessionSummary {
 export function standingsFromTeams(teams: TeamDoc[]): Standing[] {
   return rankStandings(
     teams
-      .filter((t) => t.checkedInAt)
-      .map((t) => ({
-        teamId: t.teamId,
-        teamName: t.teamName,
-        score: t.score,
-        totalTimeMs: t.totalTimeMs,
-        answeredCount: t.answeredCount,
-        correctCount: t.correctCount,
-        lastMs: t.lastResult && t.lastResult.optionIndex !== null ? (t.lastResult.ms ?? null) : null,
-        lastCorrect: t.lastResult ? t.lastResult.correct : null,
-        prevRank: t.prevRank ?? null,
-      })),
+      .filter((t) => t.checkedInAt || t.score > 0 || t.rank != null || t.answeredCount > 0)
+      .map((t) => {
+        const player = t.takerEmail
+          ? t.members?.find((m) => m.email.toLowerCase() === t.takerEmail?.toLowerCase())?.name ?? t.takerEmail
+          : null;
+        return {
+          teamId: t.teamId,
+          teamName: t.teamName,
+          teamCode: t.teamCode,
+          playerName: player,
+          score: t.score,
+          totalTimeMs: t.totalTimeMs,
+          answeredCount: t.answeredCount,
+          correctCount: t.correctCount,
+          lastMs: t.lastResult && t.lastResult.optionIndex !== null ? (t.lastResult.ms ?? null) : null,
+          lastCorrect: t.lastResult ? t.lastResult.correct : null,
+          prevRank: t.prevRank ?? null,
+        };
+      }),
   );
 }
 

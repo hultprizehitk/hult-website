@@ -12,7 +12,10 @@ export function LeaderboardView({ s, title }: { s: StateResponse; title: string 
       <TextEffect per="word" preset="fade" as="h2" className="text-center text-3xl font-bold tracking-tight">
         {title}
       </TextEffect>
-      <StandingCard standing={s.me?.standing ?? null} of={s.counts.checkedIn || undefined} />
+      <StandingCard
+        standing={s.me?.standing ?? null}
+        of={s.totalRanked ?? (s.counts.checkedIn > 0 ? s.counts.checkedIn : undefined)}
+      />
       <Leaderboard
         rows={s.leaderboard ?? []}
         highlightTeamId={s.me?.team?.id}

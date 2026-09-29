@@ -61,6 +61,8 @@ export interface Standing {
   lastCorrect?: boolean | null;
   /** Rank before the last graded question; null = first ranking. */
   prevRank?: number | null;
+  teamCode?: string;
+  playerName?: string | null;
 }
 
 export interface PublicQuestion {
@@ -135,6 +137,7 @@ export interface StateResponse {
   counts: Counts;
   distribution: number[] | null;
   leaderboard: Standing[] | null;
+  totalRanked?: number;
   me: MeView | null;
 }
 

@@ -193,6 +193,7 @@ export async function applyControl(
       }
       update.current = null;
       update.leaderboard = null;
+      update.totalRanked = 0;
       update.gradedThrough = -1;
     }
 
@@ -227,6 +228,7 @@ export async function applyControl(
       }
       update.gradedThrough = Math.max(s.gradedThrough, gradeIndex);
       update.leaderboard = out.standings.slice(0, LEADERBOARD_SIZE);
+      update.totalRanked = out.standings.length;
       // A question closed by End keeps its public fields; reveal the answer on it either way.
       const current = (update.current as SessionDoc["current"]) ?? s.current;
       if (current && current.id === gradeQid) update.current = { ...current, correctIndex: gradeQ.correctIndex, distribution: out.distribution };

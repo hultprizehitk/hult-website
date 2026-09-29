@@ -27,7 +27,7 @@ import { StandingsTable } from "./StandingsTable";
 import { StatusBadge } from "./StatusBadge";
 import { TeamsPanel } from "./TeamsPanel";
 
-type Tab = "run" | "questions";
+type Tab = "run" | "standings" | "questions";
 
 // Pill tabs from client-v3/app/admin/components/DashboardNav.tsx.
 function TabButton({ active, onClick, children }: { active: boolean; onClick: () => void; children: React.ReactNode }) {
@@ -243,6 +243,10 @@ export function AdminConsole({ code }: { code: string }) {
           </span>
           Run
         </TabButton>
+        <TabButton active={tab === "standings"} onClick={() => setTab("standings")}>
+          <Trophy className="size-3.5 text-amber-400" />
+          All Ranks ({standings.length})
+        </TabButton>
         <TabButton active={tab === "questions"} onClick={() => setTab("questions")}>
           <ListChecks className="size-3.5" />
           Questions ({s.plan.length})
@@ -304,13 +308,55 @@ export function AdminConsole({ code }: { code: string }) {
             )}
             {!setupPhase && (
               <div className="overflow-hidden rounded-3xl border border-white/15 bg-[#0e0e12] shadow-2xl">
-                <div className="border-b border-white/10 px-4 py-3 font-mono text-xs uppercase tracking-wider text-white/60">Standings</div>
-                <StandingsTable rows={standings} />
+                <div className="flex items-center justify-between border-b border-white/10 px-4 py-3">
+                  <div className="flex items-center gap-2 font-mono text-xs uppercase tracking-wider text-white/60">
+                    <Trophy className="size-3.5 text-amber-400" />
+                    <span>Standings ({standings.length})</span>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setTab("standings")}
+                    className="flex items-center gap-1 font-mono text-xs text-amber-400 hover:text-amber-300 transition-colors"
+                  >
+                    <span>View all ranks</span>
+                    <span aria-hidden="true">&rarr;</span>
+                  </button>
+                </div>
+                <StandingsTable rows={standings} compact onViewAll={() => setTab("standings")} />
               </div>
             )}
             <DangerZone code={code} session={summary} />
           </div>
           <TeamsPanel code={code} session={s} rows={rows} loading={teamsLive.loading} />
+        </div>
+      )}
+      {tab === "standings" && (
+        <div className="space-y-4">
+          <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-white/10 bg-[#0e0e12] p-4 shadow-lg">
+            <div className="flex items-center gap-3">
+              <div className="flex size-10 items-center justify-center rounded-xl bg-amber-500/15 border border-amber-500/30 text-amber-400">
+                <Trophy className="size-5" />
+              </div>
+              <div>
+                <h2 className="text-sm font-bold tracking-tight text-white">Full Leaderboard &amp; Standings</h2>
+                <p className="font-mono text-xs text-white/50">
+                  {standings.length} total ranked teams &middot; Live standings across all competing teams
+                </p>
+              </div>
+            </div>
+            {(s.status === "live" || s.status === "ended") && (
+              <a
+                href={`/api/admin/sessions/${code}/export`}
+                className={buttonVariants({ variant: "outline", size: "sm", className: "rounded-xl text-xs gap-1.5 border-white/15 bg-white/5 hover:bg-white/10" })}
+              >
+                <Download className="size-3.5" />
+                <span>Export CSV</span>
+              </a>
+            )}
+          </div>
+          <div className="overflow-hidden rounded-3xl border border-white/15 bg-[#0e0e12] shadow-2xl">
+            <StandingsTable rows={standings} />
+          </div>
         </div>
       )}
       {tab === "questions" && (

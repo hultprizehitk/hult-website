@@ -41,7 +41,7 @@ export function Leaderboard({
   const showPinnedUser = !isUserInTop && userStanding && userStanding.rank != null;
 
   const renderRow = (r: Standing, isHighlight: boolean) => {
-    const rawPlayer = playerNames?.get(r.teamId);
+    const rawPlayer = playerNames?.get(r.teamId) ?? r.playerName;
     const player = rawPlayer?.trim() || null;
     const primaryTitle = displayMode === "player" ? (player || r.teamName) : r.teamName;
     const subtitle = displayMode === "player" ? (player ? r.teamName : null) : player;

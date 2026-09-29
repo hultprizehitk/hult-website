@@ -2,7 +2,7 @@
 
 import { memo, useMemo, useState } from "react";
 import { toast } from "sonner";
-import { CheckCircle2, Circle, RefreshCw, Search, Smartphone, UserRoundX, Users } from "lucide-react";
+import { ArrowUpDown, CheckCircle2, Circle, RefreshCw, Search, Smartphone, Trophy, UserRoundX, Users } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -15,6 +15,7 @@ import { ConfirmButton } from "./ConfirmButton";
 import { SegmentedControl } from "./SegmentedControl";
 
 type Filter = "all" | "in" | "playing" | "out" | "attention";
+type TeamSort = "default" | "rank" | "score" | "name";
 
 function ago(ms: number): string {
   const s = Math.max(0, Math.round((Date.now() - ms) / 1000));
@@ -156,8 +157,10 @@ function PlayerCell({ code, row, status }: { code: string; row: TeamBoardRow; st
 /** Help desk: find a team fast, view member roster, and fix its seat in real time. */
 export const TeamsPanel = memo(function TeamsPanel({ code, session, rows: all, loading }: { code: string; session: SessionDoc; rows: TeamBoardRow[]; loading: boolean }) {
   const [filter, setFilter] = useState<Filter>("all");
+  const [sort, setSort] = useState<TeamSort>("default");
   const [query, setQuery] = useState("");
   const live = session.status === "live";
+  const hasStarted = session.status === "live" || session.status === "ended";
 
   const eligible = useMemo(() => all.filter((r) => r.eligible), [all]);
   const needle = query.trim().toLowerCase();
@@ -165,19 +168,36 @@ export const TeamsPanel = memo(function TeamsPanel({ code, session, rows: all, l
   const playingCount = eligible.filter((r) => r.checkedIn && r.deviceBound).length;
   const attention = eligible.filter((r) => needsAttention(r, session.status)).length;
 
-  const rows = eligible
-    .filter((r) =>
-      filter === "all"
-        ? true
-        : filter === "in"
-        ? r.checkedIn
-        : filter === "playing"
-        ? r.checkedIn && r.deviceBound
-        : filter === "out"
-        ? !r.checkedIn
-        : needsAttention(r, session.status),
-    )
-    .filter((r) => !needle || `${r.teamName} ${r.teamCode} ${r.members.map((m) => `${m.name} ${m.email}`).join(" ")}`.toLowerCase().includes(needle));
+  const rows = useMemo(() => {
+    const list = eligible
+      .filter((r) =>
+        filter === "all"
+          ? true
+          : filter === "in"
+          ? r.checkedIn
+          : filter === "playing"
+          ? r.checkedIn && r.deviceBound
+          : filter === "out"
+          ? !r.checkedIn
+          : needsAttention(r, session.status),
+      )
+      .filter((r) => !needle || `${r.teamName} ${r.teamCode} ${r.members.map((m) => `${m.name} ${m.email}`).join(" ")}`.toLowerCase().includes(needle));
+
+    const sorted = [...list];
+    if (sort === "rank") {
+      sorted.sort((a, b) => {
+        if (a.rank !== null && b.rank !== null) return a.rank - b.rank;
+        if (a.rank !== null) return -1;
+        if (b.rank !== null) return 1;
+        return a.teamName.localeCompare(b.teamName);
+      });
+    } else if (sort === "score") {
+      sorted.sort((a, b) => b.score - a.score || a.teamName.localeCompare(b.teamName));
+    } else if (sort === "name") {
+      sorted.sort((a, b) => a.teamName.localeCompare(b.teamName));
+    }
+    return sorted;
+  }, [eligible, filter, needle, sort, session.status]);
 
   return (
     <div className="overflow-hidden rounded-3xl border border-white/15 bg-[#0e0e12] shadow-2xl">
@@ -231,6 +251,22 @@ export const TeamsPanel = memo(function TeamsPanel({ code, session, rows: all, l
             ]}
           />
         </div>
+        <div className="flex items-center justify-between gap-2 pt-1 text-xs">
+          <span className="font-mono text-[11px] text-white/40">Showing {rows.length} teams</span>
+          <div className="inline-flex items-center gap-1 rounded-xl border border-white/10 bg-[#16161d] px-2 py-1 text-xs text-white/60">
+            <ArrowUpDown className="size-3 text-white/40" />
+            <select
+              value={sort}
+              onChange={(e) => setSort(e.target.value as TeamSort)}
+              className="bg-transparent text-xs text-white/80 focus:outline-none cursor-pointer"
+            >
+              <option value="default" className="bg-[#16161d]">Sort: Status</option>
+              <option value="rank" className="bg-[#16161d]">Sort: Rank (1 &rarr; N)</option>
+              <option value="score" className="bg-[#16161d]">Sort: Score (High &rarr; Low)</option>
+              <option value="name" className="bg-[#16161d]">Sort: Name (A &rarr; Z)</option>
+            </select>
+          </div>
+        </div>
       </div>
 
       <SyncBar code={code} session={session} />
@@ -252,9 +288,10 @@ export const TeamsPanel = memo(function TeamsPanel({ code, session, rows: all, l
                   <span className="rounded-md border border-rose-500/30 bg-rose-500/10 px-2 py-0.5 font-mono text-xs font-semibold text-rose-400">
                     {r.teamCode}
                   </span>
-                  {live && r.rank !== null && (
-                    <span className="font-mono text-xs text-white/50">
-                      #{r.rank} · {r.score} pts
+                  {hasStarted && r.rank !== null && (
+                    <span className="inline-flex items-center gap-1 rounded-md border border-amber-500/20 bg-amber-500/10 px-1.5 py-0.5 font-mono text-[11px] font-semibold text-amber-300">
+                      <Trophy className="size-2.5 text-amber-400" />
+                      #{r.rank} &middot; {r.score} pts
                     </span>
                   )}
                 </div>

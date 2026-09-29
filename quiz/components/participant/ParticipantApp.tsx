@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { toast } from "sonner";
-import { Clock, Loader2, LogIn, QrCode, SearchX, ShieldAlert, UserX } from "lucide-react";
+import { Clock, Loader2, LogIn, QrCode, SearchX, ShieldAlert, Trophy, UserX } from "lucide-react";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { QuizShell } from "@/components/quiz/QuizShell";
 import { StateMessage } from "@/components/quiz/StateMessage";
@@ -121,8 +121,20 @@ export function ParticipantApp({ code }: { code: string }) {
     void fetch(`/api/s/${code}/answer`, { cache: "no-store" }).catch(() => {});
   }, [seatMine, questionKey, session?.phase, code]);
 
+  const rankBadge = team && team.rank != null ? (
+    <div
+      className="inline-flex items-center gap-1.5 rounded-full border border-hult/40 bg-hult/15 px-2.5 py-1 text-xs font-bold text-white shadow-sm"
+      title={`Rank ${team.rank}${session?.totalRanked ? ` of ${session.totalRanked}` : ""} (${team.score} pts)`}
+    >
+      <Trophy className="size-3 text-hult" />
+      <span className="font-mono tabular-nums">#{team.rank}</span>
+      {session?.totalRanked ? <span className="font-mono text-[10px] text-white/50">/{session.totalRanked}</span> : null}
+      <span className="hidden font-mono text-[10px] text-white/70 xs:inline">&middot; {team.score} pts</span>
+    </div>
+  ) : null;
+
   const shell = (children: React.ReactNode) => (
-    <QuizShell lockSignOut={status === "live"}>
+    <QuizShell lockSignOut={status === "live"} headerBadge={rankBadge}>
       {children}
       <ReconnectingPill show={sessionLive.offline} />
     </QuizShell>
