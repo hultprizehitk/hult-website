@@ -25,10 +25,12 @@ import {
   Loader2,
   Trash2,
   UserMinus,
+  QrCode,
 } from "lucide-react";
 import SiteHeader from "@/components/layout/SiteHeader";
 import GrainOverlay from "@/components/hero/GrainOverlay";
 import EventHeroBackground from "@/components/events/EventHeroBackground";
+import AuditoriumPassQR from "@/components/events/AuditoriumPassQR";
 
 interface TeamMember {
   name: string;
@@ -88,6 +90,7 @@ export default function StudentProfilePage() {
   const [teams, setTeams] = useState<UserTeam[]>([]);
   const [loadingTeams, setLoadingTeams] = useState(false);
   const [copiedCode, setCopiedCode] = useState<string | null>(null);
+  const [activePassTeamId, setActivePassTeamId] = useState<string | null>(null);
 
   // Profile Edit State (Phone & Roll only)
   const [isEditing, setIsEditing] = useState(false);
@@ -887,6 +890,29 @@ export default function StudentProfilePage() {
                                     </span>
                                   )
                                 )}
+
+                                {t.submissionStatus === "submitted" && (
+                                  <button
+                                    type="button"
+                                    onClick={() =>
+                                      setActivePassTeamId(
+                                        activePassTeamId === t._id ? null : t._id
+                                      )
+                                    }
+                                    className={`inline-flex items-center gap-1.5 rounded-xl border px-3 py-1.5 text-[11px] font-medium transition-all cursor-pointer font-mono ${
+                                      activePassTeamId === t._id
+                                        ? "bg-rose-500/20 border-rose-500/40 text-rose-300 shadow-md shadow-rose-950/40"
+                                        : "bg-white/10 hover:bg-white/20 border-white/20 text-white"
+                                    }`}
+                                  >
+                                    <QrCode size={12} className="text-[#f20089]" />
+                                    <span>
+                                      {activePassTeamId === t._id
+                                        ? "Hide QR Pass"
+                                        : "View Auditorium Pass & QR"}
+                                    </span>
+                                  </button>
+                                )}
                               </div>
 
                               <Link
@@ -897,6 +923,19 @@ export default function StudentProfilePage() {
                                 <ArrowRight size={11} />
                               </Link>
                             </div>
+
+                            {/* Auditorium Entry Pass & QR Section */}
+                            {t.submissionStatus === "submitted" && activePassTeamId === t._id && (
+                              <div className="pt-2 animate-fadeIn">
+                                <AuditoriumPassQR
+                                  team={t as any}
+                                  currentUserEmail={session?.user?.email || ""}
+                                  eventName={t.eventId?.title || "HULT ASCEND : The Rise Begins"}
+                                  venue={t.eventId?.venue || "SV Auditorium"}
+                                  date={t.eventId?.date}
+                                />
+                              </div>
+                            )}
 
                             {/* Inline Edit Form when editingTeamId === t._id */}
                             {editingTeamId === t._id && (

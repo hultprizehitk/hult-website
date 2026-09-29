@@ -191,6 +191,43 @@ export default function ScannerConsole({
     allCheckedIn?: boolean;
   } | null>(null);
 
+  const scanResultTimerRef = useRef<NodeJS.Timeout | null>(null);
+
+  const dismissScanResult = useCallback(() => {
+    if (scanResultTimerRef.current) {
+      clearTimeout(scanResultTimerRef.current);
+      scanResultTimerRef.current = null;
+    }
+    setLastScanResult(null);
+    setIsProcessing(false);
+  }, []);
+
+  const showScanResult = useCallback(
+    (result: {
+      status: "success" | "duplicate" | "error";
+      message: string;
+      teamCode: string;
+      teamName?: string;
+      leadName?: string;
+      participantName?: string;
+      participantRole?: string;
+      membersCount?: number;
+      checkedInCount?: number;
+      totalMembers?: number;
+      allCheckedIn?: boolean;
+    }) => {
+      if (scanResultTimerRef.current) {
+        clearTimeout(scanResultTimerRef.current);
+      }
+      setLastScanResult(result);
+      // Auto-dismiss after 4.5 seconds for continuous hands-free scanning
+      scanResultTimerRef.current = setTimeout(() => {
+        setLastScanResult(null);
+      }, 4500);
+    },
+    []
+  );
+
   const [sessionLogs, setSessionLogs] = useState<SessionScanLog[]>([]);
   const [rosterSearch, setRosterSearch] = useState<string>("");
   const [rosterFilter, setRosterFilter] = useState<"all" | "checked_in" | "not_checked_in">("all");
@@ -448,7 +485,7 @@ export default function ScannerConsole({
 
       if (!isCheckinActive) {
         playAudioChime("error");
-        setLastScanResult({
+        showScanResult({
           status: "error",
           message: "Check-in is currently locked for this event. A Master Admin must activate check-in before attendance can be recorded.",
           teamCode: code,
@@ -518,7 +555,7 @@ export default function ScannerConsole({
           };
 
           setSessionLogs((prev) => [logEntry, ...prev.slice(0, 49)]);
-          setLastScanResult({
+          showScanResult({
             status: isDup ? "duplicate" : "success",
             message: data.message,
             teamCode,
@@ -545,7 +582,7 @@ export default function ScannerConsole({
           };
 
           setSessionLogs((prev) => [logEntry, ...prev.slice(0, 49)]);
-          setLastScanResult({
+          showScanResult({
             status: "error",
             message: errorMsg,
             teamCode: code,
@@ -554,7 +591,7 @@ export default function ScannerConsole({
       } catch (err: unknown) {
         playAudioChime("error");
         const errMsg = err instanceof Error ? err.message : "Network error processing check-in.";
-        setLastScanResult({
+        showScanResult({
           status: "error",
           message: errMsg,
           teamCode: code,
@@ -563,7 +600,7 @@ export default function ScannerConsole({
         setTimeout(() => setIsProcessing(false), 1800);
       }
     },
-    [selectedEventId, isCheckinActive, playAudioChime]
+    [selectedEventId, isCheckinActive, playAudioChime, showScanResult]
   );
 
   // -------------------------------------------------------------
@@ -756,124 +793,209 @@ export default function ScannerConsole({
   // -------------------------------------------------------------
   // 6. Camera Lifecycle & Frame Scanner
   // -------------------------------------------------------------
-  const startCamera = useCallback(async () => {
-    setCameraError(null);
-    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-      setCameraError("Camera access is not supported on this browser.");
-      return;
-    }
-
-    try {
-      if (streamRef.current) {
-        streamRef.current.getTracks().forEach((t) => t.stop());
-        streamRef.current = null;
-        // Brief pause to allow the hardware camera sensor pipeline to release cleanly
-        await new Promise((r) => setTimeout(r, 60));
+  const startCamera = useCallback(
+    async (overrideFacing?: "environment" | "user") => {
+      const facing = overrideFacing || cameraFacing;
+      setCameraError(null);
+      if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+        setCameraError("Camera access is not supported on this browser.");
+        return;
       }
 
-      let mediaStream: MediaStream | null = null;
-
-      // Primary Strategy: Mobile standard ideal facingMode (avoids OverconstrainedError on multi-lens devices)
       try {
-        mediaStream = await navigator.mediaDevices.getUserMedia({
-          video: {
-            facingMode: { ideal: cameraFacing },
-            width: { ideal: 1280 },
-            height: { ideal: 720 },
-          },
-          audio: false,
-        });
-      } catch (err1) {
-        console.warn("Primary camera acquisition with ideal facingMode failed:", err1);
-      }
+        if (streamRef.current) {
+          streamRef.current.getTracks().forEach((t) => t.stop());
+          streamRef.current = null;
+          // Brief pause to allow the hardware camera sensor pipeline to release cleanly
+          await new Promise((r) => setTimeout(r, 60));
+        }
 
-      // Secondary Strategy: Device enumeration lookup (works when camera permissions are already granted)
-      if (!mediaStream && navigator.mediaDevices.enumerateDevices) {
-        try {
-          const devices = await navigator.mediaDevices.enumerateDevices();
-          const videoInputs = devices.filter((d) => d.kind === "videoinput");
+        let mediaStream: MediaStream | null = null;
 
-          let targetDevice: MediaDeviceInfo | undefined;
-          if (cameraFacing === "environment") {
-            targetDevice = videoInputs.find((d) =>
-              /back|rear|environment|facing\s*back|camera2\s*0/i.test(d.label)
-            );
-            if (!targetDevice && videoInputs.length > 1) {
-              targetDevice = videoInputs[videoInputs.length - 1];
+        // Strategy 0: If camera permissions were already granted previously, inspect device labels
+        // to directly target the designated hardware camera sensor.
+        if (navigator.mediaDevices.enumerateDevices) {
+          try {
+            const devices = await navigator.mediaDevices.enumerateDevices();
+            const videoInputs = devices.filter((d) => d.kind === "videoinput");
+            if (videoInputs.length > 0 && videoInputs[0].label) {
+              let matchedDevice: MediaDeviceInfo | undefined;
+              if (facing === "environment") {
+                matchedDevice =
+                  videoInputs.find((d) =>
+                    /back|rear|environment|facing\s*back|camera2\s*0|main/i.test(d.label)
+                  ) || (videoInputs.length > 1 ? videoInputs[videoInputs.length - 1] : undefined);
+              } else {
+                matchedDevice =
+                  videoInputs.find((d) => /front|user|selfie|facing\s*front|camera2\s*1/i.test(d.label)) ||
+                  videoInputs[0];
+              }
+
+              if (matchedDevice?.deviceId) {
+                try {
+                  mediaStream = await navigator.mediaDevices.getUserMedia({
+                    video: {
+                      deviceId: { exact: matchedDevice.deviceId },
+                      width: { ideal: 1280 },
+                      height: { ideal: 720 },
+                    },
+                    audio: false,
+                  });
+                } catch (devErr) {
+                  console.warn("Direct deviceId acquisition failed, falling back:", devErr);
+                  mediaStream = null;
+                }
+              }
             }
-          } else {
-            targetDevice = videoInputs.find((d) => /front|user|selfie/i.test(d.label));
+          } catch (enumErr) {
+            console.warn("Pre-enumeration failed:", enumErr);
           }
+        }
 
-          if (targetDevice?.deviceId) {
+        // Strategy 1: Exact facingMode constraint.
+        // On mobile Android Chrome & iOS Safari, { facingMode: { exact: "environment" } } enforces the back camera!
+        if (!mediaStream) {
+          try {
             mediaStream = await navigator.mediaDevices.getUserMedia({
               video: {
-                deviceId: { exact: targetDevice.deviceId },
+                facingMode: { exact: facing },
                 width: { ideal: 1280 },
                 height: { ideal: 720 },
               },
               audio: false,
             });
+          } catch (exactErr) {
+            console.warn("Exact facingMode acquisition failed (typical on desktops with 1 webcam):", exactErr);
           }
-        } catch (err2) {
-          console.warn("Secondary camera device enumeration failed:", err2);
         }
-      }
 
-      // Tertiary Strategy: Permissive fallback to any available video stream
-      if (!mediaStream) {
-        mediaStream = await navigator.mediaDevices.getUserMedia({
-          video: true,
-          audio: false,
-        });
-      }
+        // Strategy 2: Direct string facingMode (e.g. { video: { facingMode: "environment" } })
+        if (!mediaStream) {
+          try {
+            mediaStream = await navigator.mediaDevices.getUserMedia({
+              video: {
+                facingMode: facing,
+                width: { ideal: 1280 },
+                height: { ideal: 720 },
+              },
+              audio: false,
+            });
+          } catch (directErr) {
+            console.warn("Direct facingMode acquisition failed:", directErr);
+          }
+        }
 
-      streamRef.current = mediaStream;
+        // Strategy 3: Mobile standard ideal facingMode
+        if (!mediaStream) {
+          try {
+            mediaStream = await navigator.mediaDevices.getUserMedia({
+              video: {
+                facingMode: { ideal: facing },
+                width: { ideal: 1280 },
+                height: { ideal: 720 },
+              },
+              audio: false,
+            });
+          } catch (idealErr) {
+            console.warn("Ideal facingMode acquisition failed:", idealErr);
+          }
+        }
 
-      const track = mediaStream.getVideoTracks()[0];
-      const capabilities = track?.getCapabilities ? (track.getCapabilities() as { torch?: boolean }) : undefined;
-      setHasTorch(Boolean(capabilities?.torch));
-
-      // Attempt continuous autofocus if supported on mobile
-      try {
-        const trackWithApply = track as MediaStreamTrack & {
-          applyConstraints: (c: MediaTrackConstraints) => Promise<void>;
-        };
-        if (trackWithApply?.applyConstraints) {
-          await trackWithApply.applyConstraints({
-            advanced: [{ focusMode: "continuous" } as unknown as MediaTrackConstraintSet],
+        // Strategy 4: Permissive fallback to any available video stream
+        if (!mediaStream) {
+          mediaStream = await navigator.mediaDevices.getUserMedia({
+            video: true,
+            audio: false,
           });
         }
-      } catch {}
 
-      if (videoRef.current) {
-        videoRef.current.srcObject = mediaStream;
-        videoRef.current.setAttribute("playsinline", "true");
-        videoRef.current.muted = true;
-        try {
-          await videoRef.current.play();
-        } catch (playErr) {
-          console.warn("Video play interrupted:", playErr);
+        // Critical Safeguard: Verify actual stream facingMode on mobile.
+        // Some Android Chrome devices may satisfy an ideal or direct constraint using the front camera (camera 0).
+        // Now that camera permissions are definitely granted, enumerateDevices() has real labels!
+        if (mediaStream && facing === "environment") {
+          const track = mediaStream.getVideoTracks()[0];
+          const settings = track?.getSettings ? track.getSettings() : {};
+          const trackLabel = track?.label || "";
+          const isWronglyFront =
+            settings.facingMode === "user" ||
+            /front|user|selfie|facing\s*front/i.test(trackLabel);
+
+          if (isWronglyFront && navigator.mediaDevices.enumerateDevices) {
+            console.warn("Acquired camera is front-facing despite environment request. Auto-switching to rear camera...");
+            try {
+              const allDevices = await navigator.mediaDevices.enumerateDevices();
+              const videoInputs = allDevices.filter((d) => d.kind === "videoinput");
+              const rearCamera =
+                videoInputs.find((d) =>
+                  /back|rear|environment|facing\s*back|camera2\s*0|main/i.test(d.label)
+                ) ||
+                videoInputs.find((d) => d.deviceId !== settings.deviceId);
+
+              if (rearCamera && rearCamera.deviceId !== settings.deviceId) {
+                track.stop();
+                mediaStream = await navigator.mediaDevices.getUserMedia({
+                  video: {
+                    deviceId: { exact: rearCamera.deviceId },
+                    width: { ideal: 1280 },
+                    height: { ideal: 720 },
+                  },
+                  audio: false,
+                });
+              }
+            } catch (correctErr) {
+              console.warn("Rear camera auto-correction fallback encountered error:", correctErr);
+            }
+          }
         }
-      }
 
-      setIsCameraActive(true);
-    } catch (err: unknown) {
-      console.error("Camera start error:", err);
-      const isNamedError = err && typeof err === "object" && "name" in err;
-      const errName = isNamedError ? String((err as { name: unknown }).name) : "";
-      const errMsg = err instanceof Error ? err.message : "Failed to initialize camera.";
+        streamRef.current = mediaStream;
 
-      if (errName === "NotAllowedError" || errName === "PermissionDeniedError") {
-        setCameraError("Camera permission was denied in browser settings.");
-      } else if (errName === "NotFoundError") {
-        setCameraError("No camera hardware found on this machine.");
-      } else {
-        setCameraError(errMsg);
+        const track = mediaStream.getVideoTracks()[0];
+        const capabilities = track?.getCapabilities ? (track.getCapabilities() as { torch?: boolean }) : undefined;
+        setHasTorch(Boolean(capabilities?.torch));
+
+        // Attempt continuous autofocus if supported on mobile
+        try {
+          const trackWithApply = track as MediaStreamTrack & {
+            applyConstraints: (c: MediaTrackConstraints) => Promise<void>;
+          };
+          if (trackWithApply?.applyConstraints) {
+            await trackWithApply.applyConstraints({
+              advanced: [{ focusMode: "continuous" } as unknown as MediaTrackConstraintSet],
+            });
+          }
+        } catch {}
+
+        if (videoRef.current) {
+          videoRef.current.srcObject = mediaStream;
+          videoRef.current.setAttribute("playsinline", "true");
+          videoRef.current.muted = true;
+          try {
+            await videoRef.current.play();
+          } catch (playErr) {
+            console.warn("Video play interrupted:", playErr);
+          }
+        }
+
+        setIsCameraActive(true);
+      } catch (err: unknown) {
+        console.error("Camera start error:", err);
+        const isNamedError = err && typeof err === "object" && "name" in err;
+        const errName = isNamedError ? String((err as { name: unknown }).name) : "";
+        const errMsg = err instanceof Error ? err.message : "Failed to initialize camera.";
+
+        if (errName === "NotAllowedError" || errName === "PermissionDeniedError") {
+          setCameraError("Camera permission was denied in browser settings.");
+        } else if (errName === "NotFoundError") {
+          setCameraError("No camera hardware found on this machine.");
+        } else {
+          setCameraError(errMsg);
+        }
+        setIsCameraActive(false);
       }
-      setIsCameraActive(false);
-    }
-  }, [cameraFacing]);
+    },
+    [cameraFacing]
+  );
 
   const stopCamera = useCallback(() => {
     if (streamRef.current) {
@@ -913,21 +1035,21 @@ export default function ScannerConsole({
   };
 
   const switchCameraFacing = () => {
-    setCameraFacing((prev) => (prev === "environment" ? "user" : "environment"));
+    const nextFacing = cameraFacing === "environment" ? "user" : "environment";
+    setCameraFacing(nextFacing);
+    if (isCameraActive) {
+      startCamera(nextFacing);
+    }
   };
 
-  // Restart camera when facing changes if already active
-  useEffect(() => {
-    if (isCameraActive) {
-      startCamera();
-    }
-  }, [cameraFacing]);
-
-  // Clean up camera stream on unmount
+  // Clean up camera stream and timers on unmount
   useEffect(() => {
     return () => {
       if (streamRef.current) {
         streamRef.current.getTracks().forEach((t) => t.stop());
+      }
+      if (scanResultTimerRef.current) {
+        clearTimeout(scanResultTimerRef.current);
       }
     };
   }, []);
@@ -1271,7 +1393,7 @@ export default function ScannerConsole({
             </div>
 
             {/* Viewfinder Canvas Stage */}
-            <div className="relative rounded-2xl sm:rounded-3xl overflow-hidden border border-white/15 bg-black min-h-[240px] sm:min-h-[280px] aspect-[4/3] sm:aspect-video flex items-center justify-center">
+            <div className="relative rounded-2xl sm:rounded-3xl overflow-hidden border border-white/15 bg-black min-h-[300px] sm:min-h-[380px] aspect-[4/3] sm:aspect-video flex items-center justify-center">
               {isCameraActive ? (
                 <>
                   <video
@@ -1349,7 +1471,7 @@ export default function ScannerConsole({
                       <p className="text-[11px] sm:text-xs text-neutral-400 leading-relaxed">{cameraError}</p>
                       <button
                         type="button"
-                        onClick={startCamera}
+                        onClick={() => startCamera()}
                         className="rounded-xl bg-white/10 hover:bg-white/20 border border-white/20 px-3.5 py-1.5 text-xs font-bold text-white transition-all cursor-pointer inline-flex items-center gap-1.5"
                       >
                         <RefreshCw className="h-3.5 w-3.5" />
@@ -1379,7 +1501,7 @@ export default function ScannerConsole({
                       </div>
                       <button
                         type="button"
-                        onClick={startCamera}
+                        onClick={() => startCamera()}
                         disabled={!isCheckinActive}
                         className={`rounded-full px-5 sm:px-6 py-2 sm:py-2.5 text-xs font-bold transition-all inline-flex items-center gap-2 font-[family-name:var(--font-google-sans)] ${
                           isCheckinActive
@@ -1395,88 +1517,139 @@ export default function ScannerConsole({
                 </div>
               )}
 
-              {/* Instant Scan Feedback Overlay */}
+              {/* Instant Scan Feedback Glass Modal Overlay */}
               {lastScanResult && (
-                <div
-                  className={`absolute inset-0 flex flex-col items-center justify-center p-6 text-center backdrop-blur-xl animate-fadeIn ${
-                    lastScanResult.status === "success"
-                      ? "bg-emerald-950/95 text-emerald-200"
-                      : lastScanResult.status === "duplicate"
-                      ? "bg-amber-950/95 text-amber-200"
-                      : "bg-rose-950/95 text-rose-200"
-                  }`}
-                >
+                <div className="absolute inset-0 z-30 flex items-center justify-center p-3 sm:p-4 bg-black/80 backdrop-blur-md animate-fadeIn">
                   <div
-                    className={`h-16 w-16 rounded-full border-2 flex items-center justify-center mb-3 shadow-xl ${
+                    className={`relative w-full max-w-sm rounded-2xl border backdrop-blur-2xl p-4 sm:p-5 shadow-2xl flex flex-col justify-between max-h-[95%] overflow-y-auto ${
                       lastScanResult.status === "success"
-                        ? "bg-emerald-500/30 border-emerald-400 text-emerald-300 shadow-[0_0_30px_rgba(16,185,129,0.5)]"
+                        ? "bg-[#091510]/95 border-emerald-500/40 shadow-[0_0_40px_rgba(16,185,129,0.25)] text-emerald-100"
                         : lastScanResult.status === "duplicate"
-                        ? "bg-amber-500/30 border-amber-400 text-amber-300 shadow-[0_0_30px_rgba(245,158,11,0.5)]"
-                        : "bg-rose-500/30 border-rose-400 text-rose-300 shadow-[0_0_30px_rgba(244,63,94,0.5)]"
+                        ? "bg-[#181308]/95 border-amber-500/40 shadow-[0_0_40px_rgba(245,158,11,0.25)] text-amber-100"
+                        : "bg-[#1a080c]/95 border-rose-500/40 shadow-[0_0_40px_rgba(244,63,94,0.25)] text-rose-100"
                     }`}
                   >
-                    {lastScanResult.status === "success" ? (
-                      <CheckCircle2 className="h-8 w-8" />
-                    ) : (
-                      <AlertCircle className="h-8 w-8" />
-                    )}
+                    {/* Header: Status & Dismiss Button */}
+                    <div className="flex items-center justify-between gap-3 border-b border-white/10 pb-2.5 mb-2.5">
+                      <div className="flex items-center gap-2.5 min-w-0">
+                        <div
+                          className={`h-8 w-8 rounded-xl flex items-center justify-center shrink-0 ${
+                            lastScanResult.status === "success"
+                              ? "bg-emerald-500/20 text-emerald-400 border border-emerald-500/30"
+                              : lastScanResult.status === "duplicate"
+                              ? "bg-amber-500/20 text-amber-400 border border-amber-500/30"
+                              : "bg-rose-500/20 text-rose-400 border border-rose-500/30"
+                          }`}
+                        >
+                          {lastScanResult.status === "success" ? (
+                            <CheckCircle2 className="h-4 w-4" />
+                          ) : (
+                            <AlertCircle className="h-4 w-4" />
+                          )}
+                        </div>
+                        <div className="min-w-0">
+                          <h4 className="text-sm font-bold tracking-tight text-white truncate">
+                            {lastScanResult.status === "success"
+                              ? lastScanResult.allCheckedIn
+                                ? "All Members Verified!"
+                                : "Participant Verified!"
+                              : lastScanResult.status === "duplicate"
+                              ? "Already Checked In"
+                              : "Check-In Blocked"}
+                          </h4>
+                          <p className="text-[11px] font-mono text-neutral-400 truncate">
+                            Code: {lastScanResult.teamCode}
+                          </p>
+                        </div>
+                      </div>
+
+                      {/* Instant Dismiss Button */}
+                      <button
+                        type="button"
+                        onClick={dismissScanResult}
+                        className="h-7 w-7 rounded-full bg-white/10 hover:bg-white/20 active:scale-95 text-neutral-300 hover:text-white flex items-center justify-center transition-all cursor-pointer shrink-0"
+                        title="Dismiss overlay"
+                        aria-label="Dismiss overlay"
+                      >
+                        <X className="h-4 w-4" />
+                      </button>
+                    </div>
+
+                    {/* Middle: Attendee Details & Attendance Stats */}
+                    <div className="space-y-2 py-0.5 text-left">
+                      {lastScanResult.participantName && (
+                        <div className="flex items-center justify-between gap-2 bg-white/5 border border-white/10 rounded-xl px-3 py-1.5">
+                          <span className="text-xs font-bold text-white truncate">
+                            {lastScanResult.participantName}
+                          </span>
+                          {lastScanResult.participantRole && (
+                            <span className="text-[10px] font-mono font-medium px-2 py-0.5 rounded bg-white/10 text-neutral-300 shrink-0">
+                              {lastScanResult.participantRole}
+                            </span>
+                          )}
+                        </div>
+                      )}
+
+                      {lastScanResult.teamName && (
+                        <div className="flex items-center justify-between text-xs px-1">
+                          <span className="text-neutral-400 font-medium">Team</span>
+                          <span className="text-white font-bold truncate max-w-[200px]">
+                            {lastScanResult.teamName}
+                          </span>
+                        </div>
+                      )}
+
+                      {lastScanResult.totalMembers !== undefined && (
+                        <div className="rounded-xl bg-black/40 border border-white/10 p-2.5 text-xs font-mono">
+                          <div className="flex items-center justify-between">
+                            <span className="text-neutral-400">Team Attendance:</span>
+                            <strong className="text-white font-bold">
+                              {lastScanResult.checkedInCount || 0} of {lastScanResult.totalMembers} Present
+                            </strong>
+                          </div>
+                          {lastScanResult.allCheckedIn && (
+                            <p className="text-[10px] font-bold text-emerald-400 mt-1 flex items-center gap-1">
+                              <Check className="h-3 w-3 inline shrink-0" />
+                              <span>Full team verified — Team marked Checked In!</span>
+                            </p>
+                          )}
+                        </div>
+                      )}
+
+                      {lastScanResult.message && (
+                        <p className="text-[11px] text-neutral-300 leading-snug px-1">
+                          {lastScanResult.message}
+                        </p>
+                      )}
+                    </div>
+
+                    {/* Footer: Scan Next & Undo */}
+                    <div className="flex items-center gap-2 pt-2.5 mt-2 border-t border-white/10">
+                      <button
+                        type="button"
+                        onClick={dismissScanResult}
+                        className="flex-1 py-2 px-3 rounded-xl bg-white hover:bg-neutral-200 active:scale-98 text-black text-xs font-bold transition-all cursor-pointer flex items-center justify-center gap-1.5 shadow-md"
+                      >
+                        <Camera className="h-3.5 w-3.5" />
+                        <span>Scan Next Pass</span>
+                      </button>
+
+                      {lastScanResult.status === "success" && (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            handleUndoCheckIn(lastScanResult.teamCode);
+                            dismissScanResult();
+                          }}
+                          className="py-2 px-3 rounded-xl bg-white/10 hover:bg-white/20 active:scale-98 border border-white/15 text-white text-xs font-semibold transition-all cursor-pointer flex items-center justify-center gap-1.5 shrink-0"
+                          title="Undo check-in"
+                        >
+                          <Undo2 className="h-3.5 w-3.5" />
+                          <span>Undo</span>
+                        </button>
+                      )}
+                    </div>
                   </div>
-
-                  <h3 className="text-xl font-black font-[family-name:var(--font-google-sans)] mb-1">
-                    {lastScanResult.status === "success"
-                      ? lastScanResult.allCheckedIn
-                        ? "All Team Members Verified!"
-                        : "Participant Verified!"
-                      : lastScanResult.status === "duplicate"
-                      ? "Already Checked In"
-                      : "Check-In Blocked"}
-                  </h3>
-
-                  {lastScanResult.participantName && (
-                    <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/10 text-white font-mono text-xs font-bold mb-1">
-                      <span>{lastScanResult.participantName}</span>
-                      {lastScanResult.participantRole && (
-                        <span className="opacity-70 font-normal">({lastScanResult.participantRole})</span>
-                      )}
-                    </div>
-                  )}
-
-                  {lastScanResult.teamName && (
-                    <p className="text-sm font-bold text-white mb-0.5">
-                      Team: {lastScanResult.teamName}
-                    </p>
-                  )}
-
-                  {lastScanResult.totalMembers && (
-                    <div className="mt-2 mb-2 px-3 py-1.5 rounded-xl bg-black/40 border border-white/15 text-xs font-mono">
-                      <span>Team Attendance: </span>
-                      <strong className="text-white font-bold">
-                        {lastScanResult.checkedInCount || 0} of {lastScanResult.totalMembers} Present
-                      </strong>
-                      {lastScanResult.allCheckedIn && (
-                        <span className="block text-[11px] text-emerald-300 font-bold mt-0.5">
-                          Full team verified — Team marked Checked In!
-                        </span>
-                      )}
-                    </div>
-                  )}
-
-                  <p className="text-xs font-mono font-bold tracking-wider opacity-90 mb-1">
-                    Code: {lastScanResult.teamCode}
-                  </p>
-
-                  <p className="text-xs opacity-80 max-w-sm">{lastScanResult.message}</p>
-
-                  {lastScanResult.status === "success" && (
-                    <button
-                      type="button"
-                      onClick={() => handleUndoCheckIn(lastScanResult.teamCode)}
-                      className="mt-3 inline-flex items-center gap-1.5 rounded-xl border border-white/20 bg-white/10 hover:bg-white/20 px-3.5 py-1.5 text-xs font-semibold text-white transition-all cursor-pointer"
-                    >
-                      <Undo2 className="h-3.5 w-3.5" />
-                      <span>Undo Scan</span>
-                    </button>
-                  )}
                 </div>
               )}
             </div>

@@ -31,6 +31,7 @@ import type { PublicEvent } from "@/types";
 import { useCountdown } from "@/lib/countdown";
 import CreateTeamForm from "./registration/CreateTeamForm";
 import JoinTeamForm from "./registration/JoinTeamForm";
+import AuditoriumPassQR from "./AuditoriumPassQR";
 
 interface EventRegistrationModalProps {
   event: PublicEvent;
@@ -930,6 +931,17 @@ export default function EventRegistrationModal({
                   </p>
                 )}
               </div>
+
+              {/* Official Auditorium Entry & Check-In QR Pass */}
+              {isSubmitted && (
+                <AuditoriumPassQR
+                  team={existingTeam}
+                  currentUserEmail={session?.user?.email || ""}
+                  eventName={event.title}
+                  venue={event.venue || "SV Auditorium"}
+                  date={event.date}
+                />
+              )}
 
               {/* Full Team Roster Dossier & Open Slots */}
               <div className="rounded-2xl border border-white/15 bg-white/[0.04] backdrop-blur-xl p-5 sm:p-7 space-y-4 shadow-xl">
