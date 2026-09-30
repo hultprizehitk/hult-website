@@ -1609,7 +1609,7 @@ export default function ScannerConsole({
       )}
 
       {/* Scanner & Live Session Feed Grid */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+      <div className="flex flex-col lg:grid lg:grid-cols-12 gap-4 lg:gap-6 items-start">
         {/* Left Column: Camera Scanner (7 Cols on desktop) */}
         <div className="lg:col-span-7 space-y-4">
           <div className="relative overflow-hidden rounded-3xl sm:rounded-[2.5rem] border border-white/15 bg-[#0e0e12] p-4 sm:p-7 shadow-2xl space-y-4 sm:space-y-5">
@@ -1671,7 +1671,7 @@ export default function ScannerConsole({
             </div>
 
             {/* Viewfinder Canvas Stage */}
-            <div className="relative rounded-2xl sm:rounded-3xl overflow-hidden border border-white/15 bg-black min-h-[280px] sm:min-h-[380px] aspect-[4/3] sm:aspect-video flex items-center justify-center">
+            <div className="relative rounded-2xl sm:rounded-3xl overflow-hidden border border-white/15 bg-black min-h-[220px] sm:min-h-[380px] aspect-[3/4] sm:aspect-video flex items-center justify-center">
               {isCameraActive ? (
                 <>
                   <video
@@ -1799,7 +1799,7 @@ export default function ScannerConsole({
         </div>
 
         {/* Right Column: Live Session Activity Feed ("The Side Thing") */}
-        <div className="lg:col-span-5 space-y-4">
+        <div className="lg:col-span-5 space-y-4 order-first lg:order-none">
           <div className="rounded-3xl sm:rounded-[2.5rem] border border-white/15 bg-[#0e0e12] p-4 sm:p-6 shadow-2xl space-y-4">
             <div className="flex items-center justify-between pb-3 border-b border-white/10">
               <div className="flex items-center gap-2.5">
@@ -1827,7 +1827,7 @@ export default function ScannerConsole({
             </div>
 
             {sessionLogs.length > 0 ? (
-              <div className="space-y-2.5 max-h-[460px] overflow-y-auto pr-1">
+              <div className="space-y-2.5 max-h-[200px] sm:max-h-[460px] overflow-y-auto pr-1">
                 {sessionLogs.map((log) => (
                   <div
                     key={log.id}
