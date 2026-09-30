@@ -26,6 +26,9 @@ export interface TeamMember {
     instagram?: string;
     email?: string;
     portfolio?: string;
+    x?: string;
+    snapchat?: string;
+    behance?: string;
   };
   featured?: boolean;
 }

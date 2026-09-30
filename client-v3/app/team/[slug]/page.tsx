@@ -4,8 +4,7 @@ import Image from "next/image";
 import { getProfileBySlug, getAllProfileSlugs, getAllProfiles } from "@/lib/profile-data";
 import ProfileLanyardCard from "@/components/profile/ProfileLanyardCard";
 import SiteHeader from "@/components/layout/SiteHeader";
-import KolkataHero from "@/components/hero/KolkataHero";
-import GrainOverlay from "@/components/hero/GrainOverlay";
+import EventHeroBackground from "@/components/events/EventHeroBackground";
 
 interface TeamDetailPageProps {
   params: Promise<{
@@ -76,12 +75,9 @@ export default async function TeamMemberDetailPage({ params }: TeamDetailPagePro
   }
 
   return (
-    <main className="relative min-h-screen w-full bg-black text-white font-sans overflow-x-hidden flex flex-col justify-between selection:bg-[#f20089] selection:text-white">
-      {/* Kolkata Ambient Hero Background (Same as Events page) */}
-      <div className="fixed inset-0 z-0 pointer-events-none">
-        <KolkataHero mouseOffset={{ x: 0, y: 0 }} isRevealed={true} hideText={true} hideForeground={true} />
-        <GrainOverlay opacity={0.65} zIndex={1} />
-      </div>
+    <main className="relative min-h-screen w-full bg-[#0a0c14] text-white font-sans overflow-x-hidden flex flex-col justify-between selection:bg-[#f20089] selection:text-white">
+      {/* Kolkata Ambient / Event Hero Background (Consistent with other pages) */}
+      <EventHeroBackground />
 
       {/* Top Header Navbar */}
       <SiteHeader />
@@ -104,7 +100,7 @@ export default async function TeamMemberDetailPage({ params }: TeamDetailPagePro
       {/* Main Layout: Unified 3D lanyard space and frosted info card */}
       <div className="relative z-10 mx-auto w-full max-w-7xl px-4 sm:px-8 py-2 flex-1 flex flex-col lg:flex-row items-center justify-between min-h-none lg:min-h-[820px]">
         {/* 3D Canvas Layer: Top relative box on mobile, Full inset-0 canvas on desktop */}
-        <div className="relative w-full h-[340px] sm:h-[400px] lg:h-full lg:absolute lg:inset-0 lg:w-full z-20 pointer-events-none overflow-visible">
+        <div className="relative w-full h-[340px] sm:h-[400px] lg:h-full lg:absolute lg:inset-0 lg:w-full z-10 pointer-events-none overflow-visible">
           <ProfileLanyardCard profile={profile} />
         </div>
 
@@ -112,7 +108,7 @@ export default async function TeamMemberDetailPage({ params }: TeamDetailPagePro
         <div className="hidden lg:block w-1/2 pointer-events-none shrink-0" />
 
         {/* Right: Frosted Profile Card */}
-        <div className="relative z-10 w-full lg:w-1/2 flex justify-center lg:justify-end py-4 lg:py-6 pointer-events-auto">
+        <div className="relative z-30 w-full lg:w-1/2 flex justify-center lg:justify-end py-4 lg:py-6 pointer-events-auto">
           <div className="w-full max-w-lg rounded-[36px] border border-white/10 bg-gradient-to-b from-white/[0.07] via-white/[0.03] to-black/70 p-7 sm:p-10 backdrop-blur-2xl shadow-[0_20px_70px_rgba(0,0,0,0.8)] relative overflow-hidden flex flex-col items-center text-center">
             {/* Subtle top inner glow */}
             <div className="absolute top-0 left-1/2 -translate-x-1/2 w-48 h-1.5 bg-gradient-to-r from-transparent via-[#f20089]/60 to-transparent blur-sm pointer-events-none" />
@@ -186,7 +182,7 @@ export default async function TeamMemberDetailPage({ params }: TeamDetailPagePro
             </div>
 
             {/* Social Media Rounded App Icons */}
-            <div className="flex items-center justify-center gap-3 sm:gap-4 flex-wrap mb-4">
+            <div className="flex items-center justify-center gap-3 sm:gap-4 flex-wrap mb-4 relative z-40 pointer-events-auto">
               {/* LinkedIn Button */}
               {profile.socialLinks?.linkedin && (
                 <a
@@ -194,9 +190,9 @@ export default async function TeamMemberDetailPage({ params }: TeamDetailPagePro
                   target="_blank"
                   rel="noopener noreferrer"
                   aria-label={`${profile.name} LinkedIn`}
-                  className="h-11 w-11 sm:h-12 sm:w-12 rounded-[16px] bg-[#0077b5] flex items-center justify-center shadow-lg hover:scale-110 active:scale-95 transition-all text-white"
+                  className="h-11 w-11 sm:h-12 sm:w-12 rounded-[16px] bg-[#0077b5] flex items-center justify-center shadow-lg hover:scale-110 active:scale-95 transition-all text-white cursor-pointer pointer-events-auto"
                 >
-                  <svg className="w-5 h-5 fill-current" viewBox="0 0 24 24">
+                  <svg className="w-5 h-5 fill-current pointer-events-none" viewBox="0 0 24 24">
                     <path d="M19 3a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h14m-.5 15.5v-5.3a3.26 3.26 0 0 0-3.26-3.26c-.85 0-1.84.52-2.28 1.3v-1.11h-2.79v8.37h2.79v-4.93c0-.77.62-1.4 1.39-1.4a1.4 1.4 0 0 1 1.4 1.4v4.93h2.75M6.88 8.56a1.68 1.68 0 0 0 1.68-1.68c0-.93-.75-1.69-1.68-1.69a1.69 1.69 0 0 0-1.69 1.69c0 .93.76 1.68 1.69 1.68m1.39 9.94v-8.37H5.5v8.37h2.77z" />
                   </svg>
                 </a>
@@ -209,9 +205,9 @@ export default async function TeamMemberDetailPage({ params }: TeamDetailPagePro
                   target="_blank"
                   rel="noopener noreferrer"
                   aria-label={`${profile.name} Instagram`}
-                  className="h-11 w-11 sm:h-12 sm:w-12 rounded-[16px] bg-gradient-to-tr from-[#f09433] via-[#dc2743] to-[#bc1888] flex items-center justify-center shadow-lg hover:scale-110 active:scale-95 transition-all text-white"
+                  className="h-11 w-11 sm:h-12 sm:w-12 rounded-[16px] bg-gradient-to-tr from-[#f09433] via-[#dc2743] to-[#bc1888] flex items-center justify-center shadow-lg hover:scale-110 active:scale-95 transition-all text-white cursor-pointer pointer-events-auto"
                 >
-                  <svg className="h-5 w-5 sm:h-6 sm:w-6 text-white fill-none stroke-current stroke-2" viewBox="0 0 24 24">
+                  <svg className="h-5 w-5 sm:h-6 sm:w-6 text-white fill-none stroke-current stroke-2 pointer-events-none" viewBox="0 0 24 24">
                     <rect x="2" y="2" width="20" height="20" rx="5" ry="5" />
                     <path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z" />
                     <line x1="17.5" y1="6.5" x2="17.51" y2="6.5" />
@@ -226,9 +222,9 @@ export default async function TeamMemberDetailPage({ params }: TeamDetailPagePro
                   target="_blank"
                   rel="noopener noreferrer"
                   aria-label={`${profile.name} Snapchat`}
-                  className="h-11 w-11 sm:h-12 sm:w-12 rounded-[16px] bg-[#fffc00] flex items-center justify-center shadow-lg hover:scale-110 active:scale-95 transition-all text-black"
+                  className="h-11 w-11 sm:h-12 sm:w-12 rounded-[16px] bg-[#fffc00] flex items-center justify-center shadow-lg hover:scale-110 active:scale-95 transition-all text-black cursor-pointer pointer-events-auto"
                 >
-                  <svg className="h-6 w-6 sm:h-7 sm:w-7 fill-black" viewBox="0 0 24 24">
+                  <svg className="h-6 w-6 sm:h-7 sm:w-7 fill-black pointer-events-none" viewBox="0 0 24 24">
                     <path d="M12.003 2c-3.79 0-6.195 2.766-6.195 5.922 0 1.25.447 2.628.784 3.493.125.322-.055.49-.317.575-.526.17-1.46.543-1.892 1.348-.308.577-.075 1.157.391 1.433 1.05.623 2.502.43 3.018 1.127.34.46.126 1.137-.96 1.875-.365.249-.556.55-.556.883 0 .782.95 1.205 2.146 1.312.39.035.795.052 1.218.052.41 0 .805-.017 1.185-.052 1.196-.107 2.146-.53 2.146-1.312 0-.333-.19-.634-.556-.883-1.086-.738-1.3-1.415-.96-1.875.516-.697 1.968-.504 3.018-1.127.466-.276.699-.856.39-1.433-.431-.805-1.365-1.178-1.891-1.348-.262-.085-.442-.253-.317-.575.337-.865.784-2.243.784-3.493 0-3.156-2.404-5.922-6.195-5.922z" />
                   </svg>
                 </a>
@@ -241,9 +237,9 @@ export default async function TeamMemberDetailPage({ params }: TeamDetailPagePro
                   target="_blank"
                   rel="noopener noreferrer"
                   aria-label={`${profile.name} GitHub`}
-                  className="h-11 w-11 sm:h-12 sm:w-12 rounded-[16px] bg-[#24292e] border border-white/10 flex items-center justify-center shadow-lg hover:scale-110 active:scale-95 transition-all text-white"
+                  className="h-11 w-11 sm:h-12 sm:w-12 rounded-[16px] bg-[#24292e] border border-white/10 flex items-center justify-center shadow-lg hover:scale-110 active:scale-95 transition-all text-white cursor-pointer pointer-events-auto"
                 >
-                  <svg className="w-5 h-5 fill-current" viewBox="0 0 24 24">
+                  <svg className="w-5 h-5 fill-current pointer-events-none" viewBox="0 0 24 24">
                     <path d="M12 2A10 10 0 0 0 2 12c0 4.42 2.87 8.17 6.84 9.5.5.08.66-.23.66-.5v-1.69c-2.77.6-3.36-1.34-3.36-1.34-.46-1.16-1.11-1.47-1.11-1.47-.91-.62.07-.6.07-.6 1 .07 1.53 1.03 1.53 1.03.87 1.52 2.34 1.07 2.91.83.1-.65.35-1.09.63-1.34-2.22-.25-4.55-1.11-4.55-4.92 0-1.11.38-2 1.03-2.71-.1-.25-.45-1.29.1-2.64 0 0 .84-.27 2.75 1.02.79-.22 1.65-.33 2.5-.33.85 0 1.71.11 2.5.33 1.91-1.29 2.75-1.02 2.75-1.02.55 1.35.2 2.39.1 2.64.65.71 1.03 1.6 1.03 2.71 0 3.82-2.34 4.66-4.57 4.91.36.31.69.92.69 1.85V21c0 .27.16.59.67.5C19.14 20.16 22 16.42 22 12A10 10 0 0 0 12 2z" />
                   </svg>
                 </a>
@@ -256,10 +252,38 @@ export default async function TeamMemberDetailPage({ params }: TeamDetailPagePro
                   target="_blank"
                   rel="noopener noreferrer"
                   aria-label={`${profile.name} X`}
-                  className="h-11 w-11 sm:h-12 sm:w-12 rounded-[16px] bg-black border border-white/20 flex items-center justify-center shadow-lg hover:scale-110 active:scale-95 transition-all text-white"
+                  className="h-11 w-11 sm:h-12 sm:w-12 rounded-[16px] bg-black border border-white/20 flex items-center justify-center shadow-lg hover:scale-110 active:scale-95 transition-all text-white cursor-pointer pointer-events-auto"
                 >
-                  <svg className="h-4 w-4 sm:h-5 sm:w-5 fill-current" viewBox="0 0 24 24">
+                  <svg className="h-4 w-4 sm:h-5 sm:w-5 fill-current pointer-events-none" viewBox="0 0 24 24">
                     <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" />
+                  </svg>
+                </a>
+              )}
+
+              {/* Behance Button */}
+              {profile.socialLinks?.behance && (
+                <a
+                  href={profile.socialLinks.behance}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  aria-label={`${profile.name} Behance`}
+                  className="h-11 w-11 sm:h-12 sm:w-12 rounded-[16px] bg-[#1769ff] flex items-center justify-center shadow-lg hover:scale-110 active:scale-95 transition-all text-white font-bold text-sm cursor-pointer pointer-events-auto"
+                >
+                  Bē
+                </a>
+              )}
+
+              {/* Portfolio Button */}
+              {profile.socialLinks?.portfolio && (
+                <a
+                  href={profile.socialLinks.portfolio}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  aria-label={`${profile.name} Portfolio`}
+                  className="h-11 w-11 sm:h-12 sm:w-12 rounded-[16px] bg-[#f20089]/20 hover:bg-[#f20089]/35 border border-[#f20089]/50 flex items-center justify-center shadow-lg hover:scale-110 active:scale-95 transition-all text-white cursor-pointer pointer-events-auto"
+                >
+                  <svg className="w-5 h-5 fill-none stroke-current pointer-events-none" strokeWidth="2" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M12 21a9 9 0 100-18 9 9 0 000 18zM3.6 9h16.8M3.6 15h16.8" />
                   </svg>
                 </a>
               )}
@@ -269,9 +293,9 @@ export default async function TeamMemberDetailPage({ params }: TeamDetailPagePro
                 <a
                   href={`mailto:${profile.socialLinks.email}`}
                   aria-label={`Email ${profile.name}`}
-                  className="h-11 w-11 sm:h-12 sm:w-12 rounded-[16px] bg-[#f20089]/20 hover:bg-[#f20089]/35 border border-[#f20089]/50 flex items-center justify-center shadow-lg hover:scale-110 active:scale-95 transition-all text-white"
+                  className="h-11 w-11 sm:h-12 sm:w-12 rounded-[16px] bg-[#f20089]/20 hover:bg-[#f20089]/35 border border-[#f20089]/50 flex items-center justify-center shadow-lg hover:scale-110 active:scale-95 transition-all text-white cursor-pointer pointer-events-auto"
                 >
-                  <svg className="w-5 h-5 fill-none stroke-current" strokeWidth="2" viewBox="0 0 24 24">
+                  <svg className="w-5 h-5 fill-none stroke-current pointer-events-none" strokeWidth="2" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" d="M21.75 6.75v10.5a2.25 2.25 0 01-2.25 2.25h-15a2.25 2.25 0 01-2.25-2.25V6.75m19.5 0A2.25 2.25 0 0019.5 4.5h-15a2.25 2.25 0 00-2.25 2.25m19.5 0v.243a2.25 2.25 0 01-1.07 1.916l-7.5 4.615a2.25 2.25 0 01-2.36 0L3.32 8.91a2.25 2.25 0 01-1.07-1.916V6.75" />
                   </svg>
                 </a>

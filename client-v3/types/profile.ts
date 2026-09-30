@@ -7,6 +7,7 @@ export interface ProfileSocialLinks {
   twitter?: string;
   email?: string;
   portfolio?: string;
+  behance?: string;
 }
 
 export interface ProfileData {

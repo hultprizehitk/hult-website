@@ -4,8 +4,7 @@ import React, { useState, useEffect, useRef, useCallback } from "react";
 import Link from "next/link";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import SiteHeader from "@/components/layout/SiteHeader";
-import KolkataHero from "@/components/hero/KolkataHero";
-import GrainOverlay from "@/components/hero/GrainOverlay";
+import EventHeroBackground from "@/components/events/EventHeroBackground";
 import { TEAM_SECTIONS, INITIAL_TEAM_MEMBERS } from "@/lib/team-data";
 import type { TeamCategory, TeamMember } from "@/types";
 
@@ -155,11 +154,11 @@ export default function TeamPage() {
                 className={`relative h-16 w-16 sm:h-18 sm:w-18 shrink-0 rounded-2xl p-[2px] bg-gradient-to-tr ${style.ring} shadow-md overflow-hidden hover:scale-105 transition-transform`}
                 title={`View ${member.name}'s 3D ID Profile`}
               >
-                {member.image ? (
+                {member.image && member.image !== "/team/placeholder.png" ? (
                   <img
                     src={member.image}
                     alt={member.name}
-                    className="h-full w-full rounded-2xl object-cover"
+                    className="h-full w-full rounded-2xl object-cover object-top"
                   />
                 ) : (
                   <div className="h-full w-full rounded-2xl bg-neutral-950/90 flex items-center justify-center font-[family-name:var(--font-google-sans)] text-lg sm:text-xl font-black text-white">
@@ -171,11 +170,11 @@ export default function TeamPage() {
               <div
                 className={`relative h-16 w-16 sm:h-18 sm:w-18 shrink-0 rounded-2xl p-[2px] bg-gradient-to-tr ${style.ring} shadow-md overflow-hidden`}
               >
-                {member.image ? (
+                {member.image && member.image !== "/team/placeholder.png" ? (
                   <img
                     src={member.image}
                     alt={member.name}
-                    className="h-full w-full rounded-2xl object-cover"
+                    className="h-full w-full rounded-2xl object-cover object-top"
                   />
                 ) : (
                   <div className="h-full w-full rounded-2xl bg-neutral-950/90 flex items-center justify-center font-[family-name:var(--font-google-sans)] text-lg sm:text-xl font-black text-white">
@@ -232,7 +231,7 @@ export default function TeamPage() {
         </div>
 
         {/* Social / Contact Links */}
-        <div className="relative z-10 pt-3 border-t border-white/5 flex items-center gap-2">
+        <div className="relative z-10 pt-3 border-t border-white/5 flex items-center gap-2 flex-wrap">
           {member.socials?.linkedin && (
             <a
               href={member.socials.linkedin}
@@ -275,6 +274,60 @@ export default function TeamPage() {
             </a>
           )}
 
+          {member.socials?.x && (
+            <a
+              href={member.socials.x}
+              target="_blank"
+              rel="noopener noreferrer"
+              aria-label={`${member.name} X`}
+              className="h-8 w-8 rounded-xl bg-white/[0.05] hover:bg-black border border-white/10 hover:border-white/40 flex items-center justify-center text-white/70 hover:text-white transition-all"
+            >
+              <svg className="w-3.5 h-3.5 fill-current" viewBox="0 0 24 24">
+                <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" />
+              </svg>
+            </a>
+          )}
+
+          {member.socials?.snapchat && (
+            <a
+              href={member.socials.snapchat}
+              target="_blank"
+              rel="noopener noreferrer"
+              aria-label={`${member.name} Snapchat`}
+              className="h-8 w-8 rounded-xl bg-white/[0.05] hover:bg-[#fffc00]/30 border border-white/10 hover:border-[#fffc00]/50 flex items-center justify-center text-white/70 hover:text-white transition-all"
+            >
+              <svg className="w-3.5 h-3.5 fill-current" viewBox="0 0 24 24">
+                <path d="M12.003 2c-3.79 0-6.195 2.766-6.195 5.922 0 1.25.447 2.628.784 3.493.125.322-.055.49-.317.575-.526.17-1.46.543-1.892 1.348-.308.577-.075 1.157.391 1.433 1.05.623 2.502.43 3.018 1.127.34.46.126 1.137-.96 1.875-.365.249-.556.55-.556.883 0 .782.95 1.205 2.146 1.312.39.035.795.052 1.218.052.41 0 .805-.017 1.185-.052 1.196-.107 2.146-.53 2.146-1.312 0-.333-.19-.634-.556-.883-1.086-.738-1.3-1.415-.96-1.875.516-.697 1.968-.504 3.018-1.127.466-.276.699-.856.39-1.433-.431-.805-1.365-1.178-1.891-1.348-.262-.085-.442-.253-.317-.575.337-.865.784-2.243.784-3.493 0-3.156-2.404-5.922-6.195-5.922z" />
+              </svg>
+            </a>
+          )}
+
+          {member.socials?.behance && (
+            <a
+              href={member.socials.behance}
+              target="_blank"
+              rel="noopener noreferrer"
+              aria-label={`${member.name} Behance`}
+              className="h-8 w-8 rounded-xl bg-white/[0.05] hover:bg-[#1769ff]/30 border border-white/10 hover:border-[#1769ff]/50 flex items-center justify-center text-white/70 hover:text-white transition-all font-bold text-[10px]"
+            >
+              Bē
+            </a>
+          )}
+
+          {member.socials?.portfolio && (
+            <a
+              href={member.socials.portfolio}
+              target="_blank"
+              rel="noopener noreferrer"
+              aria-label={`${member.name} Portfolio`}
+              className="h-8 w-8 rounded-xl bg-white/[0.05] hover:bg-[#f20089]/30 border border-white/10 hover:border-[#f20089]/50 flex items-center justify-center text-white/70 hover:text-white transition-all"
+            >
+              <svg className="w-3.5 h-3.5 fill-none stroke-current" strokeWidth="2" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M12 21a9 9 0 100-18 9 9 0 000 18zM3.6 9h16.8M3.6 15h16.8" />
+              </svg>
+            </a>
+          )}
+
           {member.socials?.email && (
             <a
               href={`mailto:${member.socials.email}`}
@@ -292,12 +345,9 @@ export default function TeamPage() {
   };
 
   return (
-    <div className="relative min-h-screen w-full bg-black font-sans text-white selection:bg-[#f20089] selection:text-white overflow-x-hidden flex flex-col justify-between">
-      {/* Kolkata Ambient Hero Background (Same as Events page) */}
-      <div className="fixed inset-0 z-0 pointer-events-none">
-        <KolkataHero mouseOffset={{ x: 0, y: 0 }} isRevealed={true} hideText={true} hideForeground={true} />
-        <GrainOverlay opacity={0.65} zIndex={1} />
-      </div>
+    <div className="relative min-h-screen w-full bg-[#0a0c14] font-sans text-white selection:bg-[#f20089] selection:text-white overflow-x-hidden flex flex-col justify-between">
+      {/* Kolkata Ambient / Event Hero Background (Consistent with other pages) */}
+      <EventHeroBackground />
 
       <SiteHeader />
 
@@ -429,11 +479,11 @@ export default function TeamPage() {
                             className="h-24 w-24 rounded-3xl p-[2px] bg-gradient-to-tr from-sky-400 via-blue-500 to-indigo-600 shadow-xl overflow-hidden shrink-0 hover:scale-105 transition-transform"
                             title={`View ${fac.name}'s 3D ID Profile`}
                           >
-                            {fac.image ? (
+                            {fac.image && fac.image !== "/team/placeholder.png" ? (
                               <img
                                 src={fac.image}
                                 alt={fac.name}
-                                className="h-full w-full rounded-3xl object-cover"
+                                className="h-full w-full rounded-3xl object-cover object-top"
                               />
                             ) : (
                               <div className="h-full w-full rounded-3xl bg-neutral-950 flex items-center justify-center font-[family-name:var(--font-google-sans)] text-2xl font-black text-sky-300">
@@ -443,11 +493,11 @@ export default function TeamPage() {
                           </Link>
                         ) : (
                           <div className="h-24 w-24 rounded-3xl p-[2px] bg-gradient-to-tr from-sky-400 via-blue-500 to-indigo-600 shadow-xl overflow-hidden shrink-0">
-                            {fac.image ? (
+                            {fac.image && fac.image !== "/team/placeholder.png" ? (
                               <img
                                 src={fac.image}
                                 alt={fac.name}
-                                className="h-full w-full rounded-3xl object-cover"
+                                className="h-full w-full rounded-3xl object-cover object-top"
                               />
                             ) : (
                               <div className="h-full w-full rounded-3xl bg-neutral-950 flex items-center justify-center font-[family-name:var(--font-google-sans)] text-2xl font-black text-sky-300">
@@ -573,11 +623,11 @@ export default function TeamPage() {
                                 className="h-24 w-24 rounded-3xl p-[2px] bg-gradient-to-tr from-amber-400 via-[#f20089] to-purple-600 shadow-xl overflow-hidden shrink-0 hover:scale-105 transition-transform"
                                 title={`View ${cd.name}'s 3D ID Profile`}
                               >
-                                {cd.image ? (
+                                {cd.image && cd.image !== "/team/placeholder.png" ? (
                                   <img
                                     src={cd.image}
                                     alt={cd.name}
-                                    className="h-full w-full rounded-3xl object-cover"
+                                    className="h-full w-full rounded-3xl object-cover object-top"
                                   />
                                 ) : (
                                   <div className="h-full w-full rounded-3xl bg-neutral-950 flex items-center justify-center font-[family-name:var(--font-google-sans)] text-2xl font-black text-amber-300">
@@ -587,11 +637,11 @@ export default function TeamPage() {
                               </Link>
                             ) : (
                               <div className="h-24 w-24 rounded-3xl p-[2px] bg-gradient-to-tr from-amber-400 via-[#f20089] to-purple-600 shadow-xl overflow-hidden shrink-0">
-                                {cd.image ? (
+                                {cd.image && cd.image !== "/team/placeholder.png" ? (
                                   <img
                                     src={cd.image}
                                     alt={cd.name}
-                                    className="h-full w-full rounded-3xl object-cover"
+                                    className="h-full w-full rounded-3xl object-cover object-top"
                                   />
                                 ) : (
                                   <div className="h-full w-full rounded-3xl bg-neutral-950 flex items-center justify-center font-[family-name:var(--font-google-sans)] text-2xl font-black text-amber-300">
@@ -642,23 +692,81 @@ export default function TeamPage() {
                         </div>
 
                         {/* Socials */}
-                        <div className="relative z-10 pt-4 border-t border-white/10 flex items-center gap-3">
+                        <div className="relative z-10 pt-4 border-t border-white/10 flex items-center gap-2 flex-wrap">
                           {cd.socials?.linkedin && (
                             <a
                               href={cd.socials.linkedin}
                               target="_blank"
                               rel="noopener noreferrer"
-                              className="rounded-xl bg-white/[0.05] hover:bg-[#0077b5]/30 border border-white/10 hover:border-[#0077b5]/50 px-3 py-1.5 text-xs font-semibold text-white/80 hover:text-white transition-all flex items-center gap-1.5"
+                              aria-label={`${cd.name} LinkedIn`}
+                              className="h-9 w-9 rounded-xl bg-white/[0.05] hover:bg-[#0077b5]/30 border border-white/10 hover:border-[#0077b5]/50 flex items-center justify-center text-white/70 hover:text-white transition-all"
                             >
-                              <span>LinkedIn</span>
+                              <svg className="w-4 h-4 fill-current" viewBox="0 0 24 24">
+                                <path d="M19 3a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h14m-.5 15.5v-5.3a3.26 3.26 0 0 0-3.26-3.26c-.85 0-1.84.52-2.28 1.3v-1.11h-2.79v8.37h2.79v-4.93c0-.77.62-1.4 1.39-1.4a1.4 1.4 0 0 1 1.4 1.4v4.93h2.75M6.88 8.56a1.68 1.68 0 0 0 1.68-1.68c0-.93-.75-1.69-1.68-1.69a1.69 1.69 0 0 0-1.69 1.69c0 .93.76 1.68 1.69 1.68m1.39 9.94v-8.37H5.5v8.37h2.77z" />
+                              </svg>
+                            </a>
+                          )}
+                          {cd.socials?.github && (
+                            <a
+                              href={cd.socials.github}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              aria-label={`${cd.name} GitHub`}
+                              className="h-9 w-9 rounded-xl bg-white/[0.05] hover:bg-purple-600/30 border border-white/10 hover:border-purple-500/50 flex items-center justify-center text-white/70 hover:text-white transition-all"
+                            >
+                              <svg className="w-4 h-4 fill-current" viewBox="0 0 24 24">
+                                <path d="M12 2A10 10 0 0 0 2 12c0 4.42 2.87 8.17 6.84 9.5.5.08.66-.23.66-.5v-1.69c-2.77.6-3.36-1.34-3.36-1.34-.46-1.16-1.11-1.47-1.11-1.47-.91-.62.07-.6.07-.6 1 .07 1.53 1.03 1.53 1.03.87 1.52 2.34 1.07 2.91.83.1-.65.35-1.09.63-1.34-2.22-.25-4.55-1.11-4.55-4.92 0-1.11.38-2 1.03-2.71-.1-.25-.45-1.29.1-2.64 0 0 .84-.27 2.75 1.02.79-.22 1.65-.33 2.5-.33.85 0 1.71.11 2.5.33 1.91-1.29 2.75-1.02 2.75-1.02.55 1.35.2 2.39.1 2.64.65.71 1.03 1.6 1.03 2.71 0 3.82-2.34 4.66-4.57 4.91.36.31.69.92.69 1.85V21c0 .27.16.59.67.5C19.14 20.16 22 16.42 22 12A10 10 0 0 0 12 2z" />
+                              </svg>
+                            </a>
+                          )}
+                          {cd.socials?.instagram && (
+                            <a
+                              href={cd.socials.instagram}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              aria-label={`${cd.name} Instagram`}
+                              className="h-9 w-9 rounded-xl bg-white/[0.05] hover:bg-[#e1306c]/30 border border-white/10 hover:border-[#e1306c]/50 flex items-center justify-center text-white/70 hover:text-white transition-all"
+                            >
+                              <svg className="w-4 h-4 fill-current" viewBox="0 0 24 24">
+                                <path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z" />
+                              </svg>
+                            </a>
+                          )}
+                          {cd.socials?.x && (
+                            <a
+                              href={cd.socials.x}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              aria-label={`${cd.name} X`}
+                              className="h-9 w-9 rounded-xl bg-white/[0.05] hover:bg-black border border-white/10 hover:border-white/40 flex items-center justify-center text-white/70 hover:text-white transition-all"
+                            >
+                              <svg className="w-4 h-4 fill-current" viewBox="0 0 24 24">
+                                <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" />
+                              </svg>
+                            </a>
+                          )}
+                          {cd.socials?.portfolio && (
+                            <a
+                              href={cd.socials.portfolio}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              aria-label={`${cd.name} Portfolio`}
+                              className="h-9 w-9 rounded-xl bg-white/[0.05] hover:bg-[#f20089]/30 border border-white/10 hover:border-[#f20089]/50 flex items-center justify-center text-white/70 hover:text-white transition-all"
+                            >
+                              <svg className="w-4 h-4 fill-none stroke-current" strokeWidth="2" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" d="M12 21a9 9 0 100-18 9 9 0 000 18zM3.6 9h16.8M3.6 15h16.8" />
+                              </svg>
                             </a>
                           )}
                           {cd.socials?.email && (
                             <a
                               href={`mailto:${cd.socials.email}`}
-                              className="rounded-xl bg-white/[0.05] hover:bg-[#f20089]/30 border border-white/10 hover:border-[#f20089]/50 px-3 py-1.5 text-xs font-semibold text-white/80 hover:text-white transition-all flex items-center gap-1.5"
+                              aria-label={`Email ${cd.name}`}
+                              className="h-9 w-9 rounded-xl bg-white/[0.05] hover:bg-[#f20089]/30 border border-white/10 hover:border-[#f20089]/50 flex items-center justify-center text-white/70 hover:text-white transition-all"
                             >
-                              <span>Email</span>
+                              <svg className="w-4 h-4 fill-none stroke-current" strokeWidth="2" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" d="M21.75 6.75v10.5a2.25 2.25 0 01-2.25 2.25h-15a2.25 2.25 0 01-2.25-2.25V6.75m19.5 0A2.25 2.25 0 0019.5 4.5h-15a2.25 2.25 0 00-2.25 2.25m19.5 0v.243a2.25 2.25 0 01-1.07 1.916l-7.5 4.615a2.25 2.25 0 01-2.36 0L3.32 8.91a2.25 2.25 0 01-1.07-1.916V6.75" />
+                              </svg>
                             </a>
                           )}
                         </div>
@@ -707,11 +815,11 @@ export default function TeamPage() {
                                 className="h-24 w-24 rounded-3xl p-[2px] bg-gradient-to-tr from-sky-400 via-blue-500 to-[#f20089] shadow-xl overflow-hidden shrink-0 hover:scale-105 transition-transform"
                                 title={`View ${dcd.name}'s 3D ID Profile`}
                               >
-                                {dcd.image ? (
+                                {dcd.image && dcd.image !== "/team/placeholder.png" ? (
                                   <img
                                     src={dcd.image}
                                     alt={dcd.name}
-                                    className="h-full w-full rounded-3xl object-cover"
+                                    className="h-full w-full rounded-3xl object-cover object-top"
                                   />
                                 ) : (
                                   <div className="h-full w-full rounded-3xl bg-neutral-950 flex items-center justify-center font-[family-name:var(--font-google-sans)] text-2xl font-black text-sky-300">
@@ -721,11 +829,11 @@ export default function TeamPage() {
                               </Link>
                             ) : (
                               <div className="h-24 w-24 rounded-3xl p-[2px] bg-gradient-to-tr from-sky-400 via-blue-500 to-[#f20089] shadow-xl overflow-hidden shrink-0">
-                                {dcd.image ? (
+                                {dcd.image && dcd.image !== "/team/placeholder.png" ? (
                                   <img
                                     src={dcd.image}
                                     alt={dcd.name}
-                                    className="h-full w-full rounded-3xl object-cover"
+                                    className="h-full w-full rounded-3xl object-cover object-top"
                                   />
                                 ) : (
                                   <div className="h-full w-full rounded-3xl bg-neutral-950 flex items-center justify-center font-[family-name:var(--font-google-sans)] text-2xl font-black text-sky-300">
@@ -776,23 +884,68 @@ export default function TeamPage() {
                         </div>
 
                         {/* Socials */}
-                        <div className="relative z-10 pt-4 border-t border-white/10 flex items-center gap-3">
+                        <div className="relative z-10 pt-4 border-t border-white/10 flex items-center gap-2 flex-wrap">
                           {dcd.socials?.linkedin && (
                             <a
                               href={dcd.socials.linkedin}
                               target="_blank"
                               rel="noopener noreferrer"
-                              className="rounded-xl bg-white/[0.05] hover:bg-[#0077b5]/30 border border-white/10 hover:border-[#0077b5]/50 px-3 py-1.5 text-xs font-semibold text-white/80 hover:text-white transition-all flex items-center gap-1.5"
+                              aria-label={`${dcd.name} LinkedIn`}
+                              className="h-9 w-9 rounded-xl bg-white/[0.05] hover:bg-[#0077b5]/30 border border-white/10 hover:border-[#0077b5]/50 flex items-center justify-center text-white/70 hover:text-white transition-all"
                             >
-                              <span>LinkedIn</span>
+                              <svg className="w-4 h-4 fill-current" viewBox="0 0 24 24">
+                                <path d="M19 3a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h14m-.5 15.5v-5.3a3.26 3.26 0 0 0-3.26-3.26c-.85 0-1.84.52-2.28 1.3v-1.11h-2.79v8.37h2.79v-4.93c0-.77.62-1.4 1.39-1.4a1.4 1.4 0 0 1 1.4 1.4v4.93h2.75M6.88 8.56a1.68 1.68 0 0 0 1.68-1.68c0-.93-.75-1.69-1.68-1.69a1.69 1.69 0 0 0-1.69 1.69c0 .93.76 1.68 1.69 1.68m1.39 9.94v-8.37H5.5v8.37h2.77z" />
+                              </svg>
+                            </a>
+                          )}
+                          {dcd.socials?.github && (
+                            <a
+                              href={dcd.socials.github}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              aria-label={`${dcd.name} GitHub`}
+                              className="h-9 w-9 rounded-xl bg-white/[0.05] hover:bg-purple-600/30 border border-white/10 hover:border-purple-500/50 flex items-center justify-center text-white/70 hover:text-white transition-all"
+                            >
+                              <svg className="w-4 h-4 fill-current" viewBox="0 0 24 24">
+                                <path d="M12 2A10 10 0 0 0 2 12c0 4.42 2.87 8.17 6.84 9.5.5.08.66-.23.66-.5v-1.69c-2.77.6-3.36-1.34-3.36-1.34-.46-1.16-1.11-1.47-1.11-1.47-.91-.62.07-.6.07-.6 1 .07 1.53 1.03 1.53 1.03.87 1.52 2.34 1.07 2.91.83.1-.65.35-1.09.63-1.34-2.22-.25-4.55-1.11-4.55-4.92 0-1.11.38-2 1.03-2.71-.1-.25-.45-1.29.1-2.64 0 0 .84-.27 2.75 1.02.79-.22 1.65-.33 2.5-.33.85 0 1.71.11 2.5.33 1.91-1.29 2.75-1.02 2.75-1.02.55 1.35.2 2.39.1 2.64.65.71 1.03 1.6 1.03 2.71 0 3.82-2.34 4.66-4.57 4.91.36.31.69.92.69 1.85V21c0 .27.16.59.67.5C19.14 20.16 22 16.42 22 12A10 10 0 0 0 12 2z" />
+                              </svg>
+                            </a>
+                          )}
+                          {dcd.socials?.instagram && (
+                            <a
+                              href={dcd.socials.instagram}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              aria-label={`${dcd.name} Instagram`}
+                              className="h-9 w-9 rounded-xl bg-white/[0.05] hover:bg-[#e1306c]/30 border border-white/10 hover:border-[#e1306c]/50 flex items-center justify-center text-white/70 hover:text-white transition-all"
+                            >
+                              <svg className="w-4 h-4 fill-current" viewBox="0 0 24 24">
+                                <path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z" />
+                              </svg>
+                            </a>
+                          )}
+                          {dcd.socials?.x && (
+                            <a
+                              href={dcd.socials.x}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              aria-label={`${dcd.name} X`}
+                              className="h-9 w-9 rounded-xl bg-white/[0.05] hover:bg-black border border-white/10 hover:border-white/40 flex items-center justify-center text-white/70 hover:text-white transition-all"
+                            >
+                              <svg className="w-4 h-4 fill-current" viewBox="0 0 24 24">
+                                <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" />
+                              </svg>
                             </a>
                           )}
                           {dcd.socials?.email && (
                             <a
                               href={`mailto:${dcd.socials.email}`}
-                              className="rounded-xl bg-white/[0.05] hover:bg-[#f20089]/30 border border-white/10 hover:border-[#f20089]/50 px-3 py-1.5 text-xs font-semibold text-white/80 hover:text-white transition-all flex items-center gap-1.5"
+                              aria-label={`Email ${dcd.name}`}
+                              className="h-9 w-9 rounded-xl bg-white/[0.05] hover:bg-[#f20089]/30 border border-white/10 hover:border-[#f20089]/50 flex items-center justify-center text-white/70 hover:text-white transition-all"
                             >
-                              <span>Email</span>
+                              <svg className="w-4 h-4 fill-none stroke-current" strokeWidth="2" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" d="M21.75 6.75v10.5a2.25 2.25 0 01-2.25 2.25h-15a2.25 2.25 0 01-2.25-2.25V6.75m19.5 0A2.25 2.25 0 0019.5 4.5h-15a2.25 2.25 0 00-2.25 2.25m19.5 0v.243a2.25 2.25 0 01-1.07 1.916l-7.5 4.615a2.25 2.25 0 01-2.36 0L3.32 8.91a2.25 2.25 0 01-1.07-1.916V6.75" />
+                              </svg>
                             </a>
                           )}
                         </div>

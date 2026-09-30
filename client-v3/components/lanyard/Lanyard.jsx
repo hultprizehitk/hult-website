@@ -109,10 +109,57 @@ function Band({
   const segmentProps = { type: 'dynamic', canSleep: true, colliders: false, angularDamping: 4, linearDamping: 4 };
   const { nodes, materials } = useGLTF(cardGLB);
   const texture = useTexture(lanyardImage || lanyard);
-  // useTexture must be called unconditionally; use a blank pixel when an image
-  // isn't supplied for a given face, then skip compositing it below.
-  const frontTex = useTexture(frontImage || BLANK_PIXEL);
-  const backTex = useTexture(backImage || BLANK_PIXEL);
+  
+  const [loadedFrontTex, setLoadedFrontTex] = useState(null);
+  const [loadedBackTex, setLoadedBackTex] = useState(null);
+
+  useEffect(() => {
+    let isMounted = true;
+    if (!frontImage) {
+      setLoadedFrontTex(null);
+      return;
+    }
+    const img = new Image();
+    img.crossOrigin = 'anonymous';
+    img.onload = () => {
+      if (!isMounted) return;
+      const tex = new THREE.Texture(img);
+      tex.colorSpace = THREE.SRGBColorSpace;
+      tex.needsUpdate = true;
+      setLoadedFrontTex(tex);
+    };
+    img.onerror = () => {
+      console.warn('Failed to load front image for 3D card:', frontImage);
+      if (!isMounted) return;
+      setLoadedFrontTex(null);
+    };
+    img.src = frontImage;
+    return () => { isMounted = false; };
+  }, [frontImage]);
+
+  useEffect(() => {
+    let isMounted = true;
+    if (!backImage) {
+      setLoadedBackTex(null);
+      return;
+    }
+    const img = new Image();
+    img.crossOrigin = 'anonymous';
+    img.onload = () => {
+      if (!isMounted) return;
+      const tex = new THREE.Texture(img);
+      tex.colorSpace = THREE.SRGBColorSpace;
+      tex.needsUpdate = true;
+      setLoadedBackTex(tex);
+    };
+    img.onerror = () => {
+      console.warn('Failed to load back image for 3D card:', backImage);
+      if (!isMounted) return;
+      setLoadedBackTex(null);
+    };
+    img.src = backImage;
+    return () => { isMounted = false; };
+  }, [backImage]);
 
   // Composite the front/back images into the card's texture atlas (front = left
   // half, back = right half). Each image is drawn aspect-preserving (no stretch).
@@ -125,7 +172,7 @@ function Band({
     const H = baseImg.height || 1024;
     if (!W || !H) return baseMap;
 
-    if (!frontImage && !backImage) return baseMap;
+    if (!loadedFrontTex && !loadedBackTex) return baseMap;
 
     try {
       const canvas = document.createElement('canvas');
@@ -157,11 +204,11 @@ function Band({
         ctx.restore();
       };
 
-      if (frontImage && frontTex?.image && frontTex.image.width > 0) {
-        drawFitted(frontTex.image, FRONT_UV_RECT);
+      if (loadedFrontTex?.image && loadedFrontTex.image.width > 0) {
+        drawFitted(loadedFrontTex.image, FRONT_UV_RECT);
       }
-      if (backImage && backTex?.image && backTex.image.width > 0) {
-        drawFitted(backTex.image, BACK_UV_RECT);
+      if (loadedBackTex?.image && loadedBackTex.image.width > 0) {
+        drawFitted(loadedBackTex.image, BACK_UV_RECT);
       }
 
       const composite = new THREE.CanvasTexture(canvas);
@@ -174,7 +221,7 @@ function Band({
       console.warn('Could not composite card texture, using base:', err);
       return baseMap;
     }
-  }, [frontImage, backImage, imageFit, frontTex, backTex, materials?.base?.map]);
+  }, [loadedFrontTex, loadedBackTex, imageFit, materials?.base?.map]);
 
   const [curveLeft] = useState(
     () =>
@@ -210,7 +257,19 @@ function Band({
         dom.style.pointerEvents = 'auto';
         if (target) {
           const clickable = target.closest('a, button, [role="button"]');
-          if (clickable) clickable.click();
+          if (clickable) {
+            const href = clickable.getAttribute('href');
+            if (href) {
+              const targetAttr = clickable.getAttribute('target');
+              if (targetAttr === '_blank') {
+                window.open(href, '_blank', 'noopener,noreferrer');
+              } else {
+                window.location.href = href;
+              }
+            } else {
+              clickable.click();
+            }
+          }
         }
       }
     };
