@@ -88,7 +88,7 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Associated event not found." }, { status: 404 });
     }
 
-    const isOnSpot = Boolean(event.onSpotRegistrationEnabled);
+    const isOnSpot = Boolean(event.onSpotRegistrationEnabled || team.isOnSpot);
 
     // 1b. Check if Team registration is already submitted and locked
     // When On-Spot registration is active for the event, teammates are permitted to join their on-spot team at the venue up to maxMembers.
@@ -207,6 +207,11 @@ export async function POST(req: Request) {
       team.submittedAt = team.submittedAt || new Date();
       team.checkedIn = true;
       team.checkedInAt = team.checkedInAt || new Date();
+      if (team.lead && !team.lead.checkedIn) {
+        team.lead.checkedIn = true;
+        team.lead.checkedInAt = team.lead.checkedInAt || new Date();
+        team.lead.isOnSpot = true;
+      }
     } else {
       team.submissionStatus = currentTotal >= minMembers ? "ready" : "forming";
     }
@@ -231,6 +236,8 @@ export async function POST(req: Request) {
           eventTeam.checkedIn = true;
           eventTeam.checkedInAt = eventTeam.checkedInAt || new Date();
           eventTeam.isOnSpot = true;
+          eventTeam.submissionStatus = "submitted";
+          eventTeam.submittedAt = eventTeam.submittedAt || new Date();
         }
         await event.save();
       }

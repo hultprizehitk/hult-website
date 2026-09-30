@@ -70,6 +70,7 @@ interface ExistingTeam {
   members: TeamMember[];
   status: string;
   checkedIn?: boolean;
+  isOnSpot?: boolean;
 }
 
 type RegistrationMode = "select" | "create" | "join";
@@ -751,6 +752,13 @@ export default function EventRegistrationModal({
                           <span className="relative inline-flex rounded-full h-2 w-2 bg-amber-400 shadow-[0_0_8px_rgba(251,191,36,0.8)]" />
                         </span>
                         <span>Pending Submission ({currentMembersCount} Joined)</span>
+                      </span>
+                    )}
+
+                    {Boolean(existingTeam.checkedIn || existingTeam.isOnSpot) && (
+                      <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium bg-cyan-500/[0.1] border border-cyan-500/30 text-cyan-300 shadow-[0_0_12px_rgba(6,182,212,0.15)] backdrop-blur-md">
+                        <CheckCircle2 size={12} className="text-cyan-400" />
+                        <span>{existingTeam.isOnSpot ? "On-Spot Checked In" : "Checked In"}</span>
                       </span>
                     )}
                   </div>

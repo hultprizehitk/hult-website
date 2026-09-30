@@ -603,6 +603,8 @@ export default function LiveEventManager({ isMasterAdmin: propIsMasterAdmin }: L
           membersCount: validMembers.length + 1,
           members: validMembers,
           status: newTeam.status,
+          isOnSpot: true,
+          checkedIn: true,
         }),
       });
 

@@ -504,7 +504,11 @@ export default function ScannerConsole({
   // 3. Team Submission & Participant Lookup Helpers
   // -------------------------------------------------------------
   const isTeamSubmitted = useCallback((t: RegisteredTeam) => {
-    return t.submissionStatus === "submitted" || Boolean(t.submittedAt);
+    return (
+      t.submissionStatus === "submitted" ||
+      Boolean(t.submittedAt) ||
+      Boolean(t.isOnSpot || t.lead?.isOnSpot)
+    );
   }, []);
 
   const eligibleTeams = useMemo(
@@ -515,8 +519,11 @@ export default function ScannerConsole({
   const allFlattenedParticipants = useMemo<FlatParticipant[]>(() => {
     const list: FlatParticipant[] = [];
     for (const t of eligibleTeams) {
-      const isLeadChecked = Boolean(t.lead?.checkedIn || (t.checkedIn && t.lead?.checkedIn !== false));
-      const leadCheckedInAt = t.lead?.checkedInAt || (isLeadChecked ? t.checkedInAt : null);
+      const isTeamOnSpot = Boolean(t.isOnSpot || t.lead?.isOnSpot);
+      const isLeadChecked = Boolean(
+        t.lead?.checkedIn || (t.checkedIn && t.lead?.checkedIn !== false) || isTeamOnSpot
+      );
+      const leadCheckedInAt = t.lead?.checkedInAt || (isLeadChecked ? (t.checkedInAt || "On-Spot Check-in") : null);
 
       list.push({
         id: `${t.id}_lead`,
@@ -530,13 +537,16 @@ export default function ScannerConsole({
         roll: t.lead.roll || "",
         checkedIn: isLeadChecked,
         checkedInAt: leadCheckedInAt,
-        isOnSpot: Boolean(t.isOnSpot || t.lead?.isOnSpot),
+        isOnSpot: isTeamOnSpot,
       });
 
       if (Array.isArray(t.members)) {
         t.members.forEach((m, idx) => {
-          const isMemChecked = Boolean(m.checkedIn !== undefined ? m.checkedIn : t.checkedIn);
-          const memCheckedInAt = m.checkedInAt || (isMemChecked ? t.checkedInAt : null);
+          const isMemOnSpot = Boolean(m.isOnSpot ?? isTeamOnSpot);
+          const isMemChecked = Boolean(
+            m.checkedIn !== undefined ? m.checkedIn : (t.checkedIn || isMemOnSpot)
+          );
+          const memCheckedInAt = m.checkedInAt || (isMemChecked ? (t.checkedInAt || "On-Spot Check-in") : null);
 
           list.push({
             id: `${t.id}_mem_${idx}`,
@@ -550,7 +560,7 @@ export default function ScannerConsole({
             roll: m.roll || "",
             checkedIn: isMemChecked,
             checkedInAt: memCheckedInAt,
-            isOnSpot: Boolean(t.isOnSpot || m.isOnSpot),
+            isOnSpot: isMemOnSpot,
           });
         });
       }
@@ -1419,7 +1429,8 @@ export default function ScannerConsole({
   // Computed Stats (Only fully registered teams & participants, exclude forming)
   // -------------------------------------------------------------
   const totalRegistered = eligibleTeams.length;
-  const checkedInCount = eligibleTeams.filter((t) => t.checkedIn).length;
+  const isTeamCheckedHelper = (t: RegisteredTeam) => Boolean(t.checkedIn || t.isOnSpot || t.lead?.isOnSpot);
+  const checkedInCount = eligibleTeams.filter(isTeamCheckedHelper).length;
   const remainingCount = totalRegistered - checkedInCount;
   const attendanceRate = totalRegistered > 0 ? Math.round((checkedInCount / totalRegistered) * 100) : 0;
 
@@ -1427,7 +1438,7 @@ export default function ScannerConsole({
     1 + (Array.isArray(t.members) ? t.members.length : 0);
   const totalParticipants = eligibleTeams.reduce((acc, t) => acc + getParticipantCount(t), 0);
   const checkedInParticipants = eligibleTeams
-    .filter((t) => t.checkedIn)
+    .filter(isTeamCheckedHelper)
     .reduce((acc, t) => acc + getParticipantCount(t), 0);
   const remainingParticipants = totalParticipants - checkedInParticipants;
   const participantRate =
@@ -1435,8 +1446,9 @@ export default function ScannerConsole({
 
   const filteredTeams = teams.filter((t) => {
     const isSubmitted = isTeamSubmitted(t);
-    if (rosterFilter === "checked_in" && (!t.checkedIn || !isSubmitted)) return false;
-    if (rosterFilter === "not_checked_in" && (t.checkedIn || !isSubmitted)) return false;
+    const isTeamChecked = isTeamCheckedHelper(t);
+    if (rosterFilter === "checked_in" && (!isTeamChecked || !isSubmitted)) return false;
+    if (rosterFilter === "not_checked_in" && (isTeamChecked || !isSubmitted)) return false;
     if (rosterFilter === "all" && !isSubmitted) return false;
     if (!rosterSearch.trim()) return true;
     const q = rosterSearch.toLowerCase();

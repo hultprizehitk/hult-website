@@ -93,6 +93,13 @@ export async function GET(req: Request) {
         const leadDept = t.lead?.department || u?.department || t.department || "General";
         const leadYear = t.lead?.year || u?.year || "";
 
+        const isTeamOnSpot = Boolean(t.isOnSpot || t.lead?.isOnSpot);
+        const isTeamCheckedIn = Boolean(t.checkedIn || isTeamOnSpot);
+        const effectiveCheckInTime = t.checkedInAt || (isTeamOnSpot ? (t.registeredAt || t.createdAt || new Date()) : null);
+
+        const isLeadChecked = Boolean(t.lead?.checkedIn || (t.checkedIn && t.lead?.checkedIn !== false) || isTeamOnSpot);
+        const leadCheckInTime = t.lead?.checkedInAt || (isLeadChecked ? effectiveCheckInTime : null);
+
         return {
           id: t._id.toString(),
           _id: t._id.toString(),
@@ -101,8 +108,8 @@ export async function GET(req: Request) {
           ventureName: t.ventureName || "",
           ventureDescription: t.ventureDescription || "",
           pitchDeckUrl: t.pitchDeckUrl || "",
-          submissionStatus: t.submissionStatus || "forming",
-          submittedAt: t.submittedAt || null,
+          submissionStatus: t.submissionStatus || (isTeamOnSpot ? "submitted" : "forming"),
+          submittedAt: t.submittedAt || (isTeamOnSpot ? (t.registeredAt || t.createdAt || new Date()) : null),
           lead: {
             name: t.lead?.name || "Team Leader",
             email: t.lead?.email || t.leadEmail || "",
@@ -110,28 +117,33 @@ export async function GET(req: Request) {
             department: leadDept,
             roll: leadRoll,
             year: leadYear,
-            checkedIn: Boolean(t.lead?.checkedIn || t.checkedIn),
-            checkedInAt: t.lead?.checkedInAt || (t.checkedIn ? t.checkedInAt : null),
-            isOnSpot: Boolean(t.lead?.isOnSpot ?? t.isOnSpot),
+            checkedIn: isLeadChecked,
+            checkedInAt: leadCheckInTime,
+            isOnSpot: isTeamOnSpot,
           },
           membersCount: t.membersCount || (1 + (Array.isArray(t.members) ? t.members.length : 0)),
           department: t.department || leadDept,
           members: Array.isArray(t.members)
-            ? t.members.map((m: any) => ({
-                name: m.name || "",
-                email: m.email || "",
-                phone: m.phone || "",
-                department: m.department || t.department || "General",
-                roll: m.roll || "",
-                checkedIn: Boolean(m.checkedIn !== undefined ? m.checkedIn : t.checkedIn),
-                checkedInAt: m.checkedInAt || (t.checkedIn ? t.checkedInAt : null),
-                isOnSpot: Boolean(m.isOnSpot ?? t.isOnSpot),
-              }))
+            ? t.members.map((m: any) => {
+                const isMemOnSpot = Boolean(m.isOnSpot ?? isTeamOnSpot);
+                const isMemChecked = Boolean(m.checkedIn !== undefined ? m.checkedIn : (isTeamCheckedIn || isMemOnSpot));
+                const memCheckInTime = m.checkedInAt || (isMemChecked ? (m.joinedAt || effectiveCheckInTime) : null);
+                return {
+                  name: m.name || "",
+                  email: m.email || "",
+                  phone: m.phone || "",
+                  department: m.department || t.department || "General",
+                  roll: m.roll || "",
+                  checkedIn: isMemChecked,
+                  checkedInAt: memCheckInTime,
+                  isOnSpot: isMemOnSpot,
+                };
+              })
             : [],
           status: t.status || "confirmed",
-          checkedIn: Boolean(t.checkedIn),
-          checkedInAt: t.checkedInAt || null,
-          isOnSpot: Boolean(t.isOnSpot),
+          checkedIn: isTeamCheckedIn,
+          checkedInAt: effectiveCheckInTime,
+          isOnSpot: isTeamOnSpot,
           registeredAt: t.registeredAt || t.createdAt || new Date(),
           createdAt: t.createdAt || t.registeredAt || null,
         };
@@ -257,6 +269,17 @@ export async function POST(req: Request) {
       attempts++;
     }
 
+    // Determine on-spot / walk-in status:
+    // If explicitly specified in body.isOnSpot, or event onSpotRegistrationEnabled is true,
+    // or if created via stage walk-in registration (defaults to on-spot)
+    const isOnSpot = body.isOnSpot !== undefined
+      ? Boolean(body.isOnSpot)
+      : Boolean(event.onSpotRegistrationEnabled || true);
+
+    // On-spot & walk-in teams registered at venue are automatically checked in
+    const isCheckedIn = body.checkedIn !== undefined ? Boolean(body.checkedIn) : true;
+    const checkInTime = isCheckedIn ? new Date() : undefined;
+
     const membersList = Array.isArray(members)
       ? members.map((m: { name?: unknown; email?: unknown; phone?: unknown; department?: unknown; roll?: unknown }) => ({
           name: String(m.name || "").trim(),
@@ -264,6 +287,9 @@ export async function POST(req: Request) {
           phone: String(m.phone || "").trim(),
           department: String(m.department || department || "General").trim(),
           roll: String(m.roll || "").trim(),
+          checkedIn: isCheckedIn,
+          checkedInAt: checkInTime,
+          isOnSpot: isOnSpot,
           joinedAt: new Date(),
         }))
       : [];
@@ -279,15 +305,20 @@ export async function POST(req: Request) {
         phone: leadPhone?.trim() || "",
         department: department?.trim() || "General",
         roll: roll?.trim() || "",
+        checkedIn: isCheckedIn,
+        checkedInAt: checkInTime,
+        isOnSpot: isOnSpot,
       },
       leadEmail: leadEmail.trim().toLowerCase(),
-      membersCount: Number(membersCount) || 4,
+      membersCount: Number(membersCount) || (1 + membersList.length),
       department: department?.trim() || "General",
       members: membersList,
       status: status || "confirmed",
       submissionStatus: "submitted",
       submittedAt: new Date(),
-      checkedIn: false,
+      checkedIn: isCheckedIn,
+      checkedInAt: checkInTime,
+      isOnSpot: isOnSpot,
       registeredAt: new Date(),
     });
 
@@ -307,10 +338,30 @@ export async function POST(req: Request) {
       submittedAt: new Date(),
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       status: newTeam.status as any,
-      checkedIn: false,
+      checkedIn: isCheckedIn,
+      checkedInAt: checkInTime,
+      isOnSpot: isOnSpot,
     });
     event.registeredTeamsCount = event.registeredTeams.length;
     await event.save();
+
+    // Synchronize User profile records with on-spot flag
+    if (isOnSpot) {
+      if (newTeam.lead.email) {
+        await User.updateOne(
+          { email: newTeam.lead.email },
+          { $set: { isOnSpotRegistered: true, onSpotRegisteredAt: checkInTime } }
+        );
+      }
+      for (const m of membersList) {
+        if (m.email) {
+          await User.updateOne(
+            { email: m.email },
+            { $set: { isOnSpotRegistered: true, onSpotRegisteredAt: checkInTime } }
+          );
+        }
+      }
+    }
 
     await logAdminAction({
       adminEmail: session?.user?.email || "admin",
@@ -373,12 +424,14 @@ export async function PUT(req: Request) {
             match.checkedInAt = tDoc.checkedInAt;
             match.leadCheckedIn = Boolean(tDoc.lead?.checkedIn);
             match.leadCheckedInAt = tDoc.lead?.checkedInAt;
+            if (tDoc.isOnSpot !== undefined) match.isOnSpot = Boolean(tDoc.isOnSpot);
             if (Array.isArray(tDoc.members) && Array.isArray(match.members)) {
               match.members.forEach((m: any) => {
                 const docMem = tDoc.members.find((tm: any) => tm.email?.toLowerCase() === m.email?.toLowerCase());
                 if (docMem) {
                   m.checkedIn = Boolean(docMem.checkedIn);
                   m.checkedInAt = docMem.checkedInAt;
+                  if (docMem.isOnSpot !== undefined) m.isOnSpot = Boolean(docMem.isOnSpot);
                 }
               });
             }
