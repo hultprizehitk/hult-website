@@ -168,3 +168,18 @@ export function getAuctionRequestSession(req: NextRequest): AdminSessionPayload 
   const token = req.cookies.get(COOKIE_NAME)?.value;
   return verifyAdminToken(token);
 }
+
+/**
+ * Reads the signed admin cookie from a plain Request (Route Handlers that
+ * take `Request` rather than `NextRequest`) and verifies its signature.
+ */
+export function getSessionFromRawRequest(req: Request): AdminSessionPayload | null {
+  const header = req.headers.get("cookie") || "";
+  const pair = header
+    .split(";")
+    .map((c) => c.trim())
+    .find((c) => c.startsWith(`${COOKIE_NAME}=`));
+  if (!pair) return null;
+  const token = pair.slice(COOKIE_NAME.length + 1);
+  return verifyAdminToken(token ? decodeURIComponent(token) : null);
+}

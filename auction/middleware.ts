@@ -4,9 +4,15 @@ import type { NextRequest } from "next/server";
 export function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
+  const isPublicApi =
+    pathname === "/api/auction/team" || /^\/api\/auction\/team\/[^/]+$/.test(pathname);
+
   // Whitelist public assets and auth endpoints
   if (
     pathname.startsWith("/login") ||
+    pathname === "/team" ||
+    pathname.startsWith("/team/") ||
+    isPublicApi ||
     pathname.startsWith("/api/auth") ||
     pathname.startsWith("/api/auction/auth") ||
     pathname.startsWith("/_next") ||

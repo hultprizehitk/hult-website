@@ -1,8 +1,13 @@
 import { NextResponse } from "next/server";
 import connectDB from "@/lib/mongodb";
 import AuctionSession from "@/models/AuctionSession";
+import { logAction } from "@/lib/audit";
+import { requireAdmin } from "@/lib/require-admin";
 
 export async function POST(req: Request) {
+  const guard = requireAdmin(req);
+  if (!guard.ok) return guard.response;
+
   try {
     await connectDB();
     const { teamId, action, reason } = await req.json();
@@ -35,6 +40,18 @@ export async function POST(req: Request) {
 
     session.markModified("teams");
     await session.save();
+
+    const isDisqualify = action === "disqualify";
+    await logAction(req, {
+      action: isDisqualify ? "disqualify" : "reinstate",
+      teamId: team.teamId,
+      teamName: team.teamName,
+      teamCode: team.teamCode,
+      amount: null,
+      detail: isDisqualify
+        ? `Disqualified ${team.teamName}${team.disqualificationReason ? ` - ${team.disqualificationReason}` : ""}`
+        : `Reinstated ${team.teamName} back into evaluation`,
+    });
 
     return NextResponse.json({
       success: true,

@@ -1,8 +1,13 @@
 import { NextResponse } from "next/server";
 import connectDB from "@/lib/mongodb";
 import AuctionSession from "@/models/AuctionSession";
+import { logAction } from "@/lib/audit";
+import { requireAdmin } from "@/lib/require-admin";
 
 export async function POST(req: Request) {
+  const guard = requireAdmin(req);
+  if (!guard.ok) return guard.response;
+
   try {
     await connectDB();
     const { lotId, action, votingTeamId } = await req.json();
@@ -54,6 +59,20 @@ export async function POST(req: Request) {
     session.markModified("lots");
     session.markModified("reAuctionVotes");
     await session.save();
+
+    const lot = session.lots.find((l) => l.lotId === lotId);
+
+    await logAction(req, {
+      action: `reauction_${action}`,
+      lotId,
+      lotName: lot?.name || lotId,
+      lotType: lot?.type || "",
+      amount: null,
+      detail:
+        action === "reopen"
+          ? `Re-opened ${lot?.name || lotId} for bidding after ${currentVotes.length} team votes. Previous holder was NOT refunded.`
+          : `Re-auction vote ${action} recorded for ${lot?.name || lotId} (${currentVotes.length} vote(s))`,
+    });
 
     return NextResponse.json({
       success: true,

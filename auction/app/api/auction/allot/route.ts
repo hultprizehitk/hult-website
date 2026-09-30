@@ -1,8 +1,13 @@
 import { NextResponse } from "next/server";
 import connectDB from "@/lib/mongodb";
 import AuctionSession from "@/models/AuctionSession";
+import { logAction } from "@/lib/audit";
+import { requireAdmin } from "@/lib/require-admin";
 
 export async function POST(req: Request) {
+  const guard = requireAdmin(req);
+  if (!guard.ok) return guard.response;
+
   try {
     await connectDB();
     const { lotId, teamId, price } = await req.json();
@@ -115,6 +120,18 @@ export async function POST(req: Request) {
     session.markModified("history");
     session.markModified("lastSoldLot");
     await session.save();
+
+    await logAction(req, {
+      action: "allot",
+      teamId: team.teamId,
+      teamName: team.teamName,
+      teamCode: team.teamCode,
+      lotId: lot.lotId,
+      lotName: lot.name,
+      lotType: lot.type,
+      amount: price,
+      detail: `Sold ${lot.name} to ${team.teamName} for ₹${price} Cr`,
+    });
 
     return NextResponse.json({
       success: true,

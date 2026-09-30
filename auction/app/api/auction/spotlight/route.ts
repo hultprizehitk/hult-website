@@ -1,8 +1,12 @@
 import { NextResponse } from "next/server";
 import connectDB from "@/lib/mongodb";
 import AuctionSession from "@/models/AuctionSession";
+import { requireAdmin } from "@/lib/require-admin";
 
 export async function POST(req: Request) {
+  const guard = requireAdmin(req);
+  if (!guard.ok) return guard.response;
+
   try {
     await connectDB();
     const { lotId, stageMode, viewerMode } = await req.json();

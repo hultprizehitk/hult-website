@@ -1,8 +1,13 @@
 import { NextResponse } from "next/server";
 import connectDB from "@/lib/mongodb";
 import AuctionSession from "@/models/AuctionSession";
+import { logAction } from "@/lib/audit";
+import { requireAdmin } from "@/lib/require-admin";
 
 export async function POST(req: Request) {
+  const guard = requireAdmin(req);
+  if (!guard.ok) return guard.response;
+
   try {
     await connectDB();
     const { lotId } = await req.json();
@@ -28,12 +33,14 @@ export async function POST(req: Request) {
 
     const winningTeamId = lot.winningTeamId;
     const soldPrice = lot.soldPrice || 0;
+    let prevTeamCode = "";
 
     // Refund team and remove asset from inventory
     if (winningTeamId) {
       const teamIndex = session.teams.findIndex((t) => t.teamId === winningTeamId);
       if (teamIndex !== -1) {
         const team = session.teams[teamIndex];
+        prevTeamCode = team.teamCode || "";
         team.currentBalance = Math.round((team.currentBalance + soldPrice) * 100) / 100;
 
         if (lot.type === "industry") {
@@ -55,10 +62,46 @@ export async function POST(req: Request) {
     // Remove from history
     session.history = session.history.filter((h) => !(h.lotId === lot.lotId && h.teamId === winningTeamId));
 
+    // Undo the stage pointers so a revoked sale never stays on the projector
+    if (session.activeLotId === lot.lotId) {
+      session.activeLotId = null;
+    }
+    if (session.lastSoldLot?.lotId === lot.lotId) {
+      const latest = session.history[0];
+      session.lastSoldLot = latest
+        ? {
+            lotId: latest.lotId,
+            name: latest.lotName,
+            type: latest.type,
+            winningTeamId: latest.teamId,
+            winningTeamName: latest.teamName,
+            price: latest.price,
+            soldAt: latest.timestamp,
+          }
+        : null;
+      if (!session.lastSoldLot) {
+        session.stageMode = "auto";
+        session.viewerMode = "stage";
+      }
+    }
+
     session.markModified("teams");
     session.markModified("lots");
     session.markModified("history");
+    session.markModified("lastSoldLot");
     await session.save();
+
+    await logAction(req, {
+      action: "revoke",
+      teamId: winningTeamId || "",
+      teamName: prevTeamName || "",
+      teamCode: prevTeamCode,
+      lotId: lot.lotId,
+      lotName: lot.name,
+      lotType: lot.type,
+      amount: soldPrice,
+      detail: `Revoked sale of ${lot.name}${prevTeamName ? ` from ${prevTeamName}` : ""} and refunded ₹${soldPrice} Cr`,
+    });
 
     return NextResponse.json({
       success: true,

@@ -3,8 +3,13 @@ import connectDB from "@/lib/mongodb";
 import AuctionSession from "@/models/AuctionSession";
 import { INDUSTRIES, STATES, INITIAL_TEAM_BUDGET } from "@/lib/auction-data";
 import mongoose from "mongoose";
+import { logAction } from "@/lib/audit";
+import { requireAdmin } from "@/lib/require-admin";
 
 export async function POST(req: Request) {
+  const guard = requireAdmin(req);
+  if (!guard.ok) return guard.response;
+
   try {
     await connectDB();
     const body = await req.json().catch(() => ({}));
@@ -113,6 +118,12 @@ export async function POST(req: Request) {
       },
       { upsert: true, new: true }
     );
+
+    await logAction(req, {
+      action: "init",
+      amount: null,
+      detail: `Auction reset with ${auctionTeams.length} teams, ${lots.length} lots. All balances cleared.`,
+    });
 
     return NextResponse.json({
       success: true,

@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { ShieldCheck, Monitor, Trophy, ArrowRight } from "lucide-react";
+import { ShieldCheck, Monitor, Trophy, Users, ArrowRight } from "lucide-react";
 import { DotPattern } from "@/components/ui/DotPattern";
 
 export default function HomePage() {
@@ -17,7 +17,7 @@ export default function HomePage() {
           Tourism &amp; Industry <span className="text-[#f20089]">Auction</span>
         </h1>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 w-full pt-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 w-full pt-4">
           <Link
             href="/admin"
             className="group p-6 rounded-3xl border border-white/10 bg-[#0e0e12] hover:border-[#f20089]/50 transition-all text-left flex flex-col justify-between"
@@ -76,6 +76,27 @@ export default function HomePage() {
               </div>
             </div>
             <div className="mt-6 flex items-center gap-1 font-mono text-xs font-bold text-amber-400">
+              <span>Enter</span>
+              <ArrowRight className="size-3" />
+            </div>
+          </Link>
+
+          <Link
+            href="/team"
+            className="group p-6 rounded-3xl border border-white/10 bg-[#0e0e12] hover:border-emerald-500/50 transition-all text-left flex flex-col justify-between"
+          >
+            <div className="space-y-3">
+              <div className="size-10 rounded-xl bg-white/[0.05] border border-white/10 flex items-center justify-center text-emerald-400">
+                <Users className="size-5" />
+              </div>
+              <div>
+                <h2 className="text-base font-bold text-white group-hover:text-emerald-400 transition-colors">
+                  Team Portal
+                </h2>
+                <p className="font-mono text-xs text-white/40 mt-0.5">Track by team code</p>
+              </div>
+            </div>
+            <div className="mt-6 flex items-center gap-1 font-mono text-xs font-bold text-emerald-400">
               <span>Enter</span>
               <ArrowRight className="size-3" />
             </div>

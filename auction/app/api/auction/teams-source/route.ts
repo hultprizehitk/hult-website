@@ -1,8 +1,12 @@
 import { NextResponse } from "next/server";
 import connectDB from "@/lib/mongodb";
 import mongoose from "mongoose";
+import { requireAdmin } from "@/lib/require-admin";
 
-export async function GET() {
+export async function GET(req: Request) {
+  const guard = requireAdmin(req);
+  if (!guard.ok) return guard.response;
+
   try {
     await connectDB();
     const db = mongoose.connection.db;

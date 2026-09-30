@@ -23,6 +23,8 @@ import {
   Monitor,
   FileSpreadsheet,
   Tv,
+  ClipboardList,
+  Undo2,
 } from "lucide-react";
 import { INDUSTRIES, STATES, MINIMUM_BALANCE_THRESHOLD } from "@/lib/auction-data";
 import { DotPattern } from "@/components/ui/DotPattern";
@@ -62,6 +64,19 @@ interface AuctionHistoryItem {
   timestamp: string;
 }
 
+interface ActivityLogRow {
+  _id: string;
+  action: string;
+  actorName: string;
+  actorEmail: string;
+  teamName: string;
+  teamCode: string;
+  lotName: string;
+  amount: number | null;
+  detail: string;
+  createdAt: string;
+}
+
 interface SessionData {
   sessionId: string;
   currentRound: "setup" | "round1" | "intermission" | "round2" | "results";
@@ -73,6 +88,18 @@ interface SessionData {
   lots: AuctionLot[];
   history: AuctionHistoryItem[];
 }
+
+const ACTIVITY_STYLE: Record<string, { label: string; cls: string }> = {
+  allot: { label: "SOLD", cls: "text-emerald-300 bg-emerald-500/10 border-emerald-500/30" },
+  revoke: { label: "UNDONE", cls: "text-rose-300 bg-rose-500/10 border-rose-500/30" },
+  disqualify: { label: "DQ", cls: "text-rose-300 bg-rose-500/10 border-rose-500/30" },
+  reinstate: { label: "BACK", cls: "text-emerald-300 bg-emerald-500/10 border-emerald-500/30" },
+  init: { label: "RESET", cls: "text-amber-300 bg-amber-500/10 border-amber-500/30" },
+  reauction_reopen: {
+    label: "REOPEN",
+    cls: "text-purple-300 bg-purple-500/10 border-purple-500/30",
+  },
+};
 
 export default function AdminPage() {
   const [session, setSession] = useState<SessionData | null>(null);
@@ -89,6 +116,9 @@ export default function AdminPage() {
 
   const [showLedger, setShowLedger] = useState(false);
   const [showMatrix, setShowMatrix] = useState(false);
+  const [showActivity, setShowActivity] = useState(false);
+  const [activity, setActivity] = useState<ActivityLogRow[]>([]);
+  const [activityLoading, setActivityLoading] = useState(false);
 
   const [activeTab, setActiveTab] = useState<"allotment" | "teams" | "setup">("allotment");
   const [selectedLotId, setSelectedLotId] = useState<string | null>(null);
@@ -383,6 +413,27 @@ export default function AdminPage() {
     }
   };
 
+  const loadActivity = async () => {
+    setActivityLoading(true);
+    try {
+      const res = await fetch("/api/auction/logs");
+      const data = await res.json();
+      if (data.success) {
+        setActivity(data.logs || []);
+      } else {
+        setErrorMessage(data.error || "Could not load activity log");
+      }
+    } catch (err: any) {
+      setErrorMessage(err.message);
+    } finally {
+      setActivityLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    if (showActivity) loadActivity();
+  }, [showActivity]);
+
   if (loading) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-[#000000] text-white/40 font-mono text-xs">
@@ -539,6 +590,15 @@ export default function AdminPage() {
                 <span className="hidden sm:inline">Clear Stage</span>
               </button>
             )}
+
+            <button
+              type="button"
+              onClick={() => setShowActivity(true)}
+              className="px-3 py-1.5 rounded-xl border border-white/10 bg-[#0e0e12] hover:bg-white/[0.08] text-xs font-mono font-semibold text-white/90 flex items-center gap-1.5 cursor-pointer transition-all"
+            >
+              <ClipboardList className="size-3.5 text-amber-400" />
+              <span>Activity</span>
+            </button>
 
             <button
               type="button"
@@ -1171,6 +1231,104 @@ export default function AdminPage() {
                   className="px-4 py-2 rounded-xl bg-white/10 hover:bg-white/15 text-white font-mono text-xs font-bold uppercase transition-colors cursor-pointer"
                 >
                   Close Ledger
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* MODAL 3: ACTIVITY LOG (permanent audit trail) */}
+        {showActivity && (
+          <div className="fixed inset-0 z-50 bg-black/85 backdrop-blur-md flex items-center justify-center p-4">
+            <div className="relative w-full max-w-3xl max-h-[85vh] bg-[#0e0e12] border border-white/10 rounded-3xl p-6 flex flex-col shadow-2xl overflow-hidden font-sans">
+              <div className="flex items-start justify-between border-b border-white/10 pb-4 mb-4">
+                <div>
+                  <div className="flex items-center gap-2 font-mono text-xs text-amber-400 uppercase tracking-wider font-bold">
+                    <ClipboardList className="size-4" />
+                    <span>Activity Log</span>
+                  </div>
+                  <p className="text-xs text-white/50 font-mono mt-1">
+                    {activity.length} recorded action{activity.length === 1 ? "" : "s"} &bull; survives
+                    resets and undos
+                  </p>
+                </div>
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={loadActivity}
+                    disabled={activityLoading}
+                    className="p-1.5 rounded-xl border border-white/10 text-white/60 hover:text-white hover:bg-white/10 transition-colors cursor-pointer"
+                    title="Refresh"
+                  >
+                    <RefreshCw className={`size-4 ${activityLoading ? "animate-spin" : ""}`} />
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setShowActivity(false)}
+                    className="p-1.5 rounded-xl border border-white/10 text-white/60 hover:text-white hover:bg-white/10 transition-colors cursor-pointer"
+                  >
+                    <X className="size-4" />
+                  </button>
+                </div>
+              </div>
+
+              <div className="flex-1 overflow-y-auto space-y-2 pr-1">
+                {activity.length > 0 ? (
+                  activity.map((row) => {
+                    const meta = ACTIVITY_STYLE[row.action] || {
+                      label: row.action.replace("reauction_", "").toUpperCase().slice(0, 8),
+                      cls: "text-white/60 bg-white/[0.04] border-white/10",
+                    };
+                    return (
+                      <div
+                        key={row._id}
+                        className="p-3 rounded-2xl bg-black border border-white/5 font-mono text-xs flex items-start gap-3"
+                      >
+                        <span
+                          className={`px-1.5 py-0.5 rounded border font-bold text-[9px] shrink-0 ${meta.cls}`}
+                        >
+                          {meta.label}
+                        </span>
+
+                        <div className="min-w-0 flex-1 space-y-1">
+                          <p className="text-white/80">{row.detail}</p>
+                          <p className="text-[10px] text-white/30">
+                            {row.actorName}
+                            {row.actorEmail ? ` \u00b7 ${row.actorEmail}` : " \u00b7 unverified session"}
+                          </p>
+                        </div>
+
+                        {row.action === "revoke" ? (
+                          <span className="shrink-0 font-mono text-[9px] uppercase text-white/20 flex items-center gap-1">
+                            <Undo2 className="size-2.5" />
+                            restorable
+                          </span>
+                        ) : row.amount != null ? (
+                          <span className="shrink-0 text-emerald-400 font-bold">
+                            Rs {row.amount} Cr
+                          </span>
+                        ) : null}
+
+                        <span className="shrink-0 text-[10px] text-white/30">
+                          {new Date(row.createdAt).toLocaleTimeString()}
+                        </span>
+                      </div>
+                    );
+                  })
+                ) : (
+                  <div className="py-12 text-center text-white/30 font-mono text-xs">
+                    No activity recorded yet.
+                  </div>
+                )}
+              </div>
+
+              <div className="pt-4 border-t border-white/10 mt-4 flex justify-end">
+                <button
+                  type="button"
+                  onClick={() => setShowActivity(false)}
+                  className="px-4 py-2 rounded-xl bg-white/10 hover:bg-white/15 text-white font-mono text-xs font-bold uppercase transition-colors cursor-pointer"
+                >
+                  Close
                 </button>
               </div>
             </div>
