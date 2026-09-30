@@ -41,6 +41,7 @@ export function ResultsView({ s, answer }: { s: StateResponse; answer: AnswerVie
         <StandingCard
           standing={me.standing}
           of={s.totalRanked ?? (s.counts.checkedIn > 0 ? s.counts.checkedIn : undefined)}
+          totalQuestions={Math.min(s.currentIndex + 1, s.questionCount)}
         />
       )}
 
@@ -52,6 +53,7 @@ export function ResultsView({ s, answer }: { s: StateResponse; answer: AnswerVie
           userStanding={me.standing}
           time="both"
           showHeader
+          totalQuestions={Math.min(s.currentIndex + 1, s.questionCount)}
         />
       </div>
     </div>

@@ -7,7 +7,15 @@ import { formatMs } from "@/lib/format";
 import type { Standing } from "@/lib/quiz/types";
 
 /** The team's own rank, score and movement since the previous question. */
-export function StandingCard({ standing, of }: { standing: Standing | null; of?: number }) {
+export function StandingCard({
+  standing,
+  of,
+  totalQuestions,
+}: {
+  standing: Standing | null;
+  of?: number;
+  totalQuestions?: number;
+}) {
   if (!standing) return null;
   return (
     <div className="rounded-3xl border border-hult/40 bg-[#1f0a17] p-5 shadow-2xl">
@@ -29,7 +37,10 @@ export function StandingCard({ standing, of }: { standing: Standing | null; of?:
                 {formatMs(standing.lastMs)} Q &middot;{" "}
               </span>
             ) : null}
-            {formatMs(standing.totalTimeMs)} total
+            <span>{formatMs(standing.totalTimeMs)} total</span>
+            {totalQuestions ? (
+              <span> &middot; {standing.answeredCount ?? 0}/{totalQuestions} ans</span>
+            ) : null}
           </p>
         </div>
       </div>

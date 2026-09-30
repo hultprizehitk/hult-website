@@ -23,6 +23,7 @@ export function BoardApp({ code }: { code: string }) {
   const s = live.data;
   const rows = s?.leaderboard ?? [];
   const questionLabel = s && s.gradedThrough >= 0 ? `After question ${s.gradedThrough + 1} of ${s.plan.length}` : "Scores appear after the first reveal";
+  const totalQ = s ? (s.status === "ended" ? s.plan.length : Math.max(s.gradedThrough + 1, 1)) : 1;
 
   const playerMap = useMemo(() => {
     const m = new Map<string, string>();
@@ -101,9 +102,9 @@ export function BoardApp({ code }: { code: string }) {
                   <Users className="size-4 text-hult" />
                   <span>Team Leaderboard</span>
                 </div>
-                <span className="font-mono text-xs text-white/40">Rank &bull; Q Time &bull; Total &bull; Score</span>
+                <span className="font-mono text-xs text-white/40">Rank &bull; Q Time &bull; Total &bull; Ans &bull; Score</span>
               </div>
-              <Leaderboard rows={rows} large time="both" playerNames={playerMap} displayMode="team" showHeader />
+              <Leaderboard rows={rows} large time="both" playerNames={playerMap} displayMode="team" showHeader totalQuestions={totalQ} />
             </div>
 
             {/* Player Leaderboard */}
@@ -113,9 +114,9 @@ export function BoardApp({ code }: { code: string }) {
                   <User className="size-4 text-emerald-400" />
                   <span>Player Leaderboard</span>
                 </div>
-                <span className="font-mono text-xs text-white/40">Rank &bull; Q Time &bull; Total &bull; Score</span>
+                <span className="font-mono text-xs text-white/40">Rank &bull; Q Time &bull; Total &bull; Ans &bull; Score</span>
               </div>
-              <Leaderboard rows={rows} large time="both" playerNames={playerMap} displayMode="player" showHeader />
+              <Leaderboard rows={rows} large time="both" playerNames={playerMap} displayMode="player" showHeader totalQuestions={totalQ} />
             </div>
           </div>
         ) : endedView === "team" ? (
@@ -125,9 +126,9 @@ export function BoardApp({ code }: { code: string }) {
                 <Users className="size-4 text-hult" />
                 <span>Team Leaderboard</span>
               </div>
-              <span className="font-mono text-xs text-white/40">Rank &bull; Q Time &bull; Total &bull; Score</span>
+              <span className="font-mono text-xs text-white/40">Rank &bull; Q Time &bull; Total &bull; Ans &bull; Score</span>
             </div>
-            <Leaderboard rows={rows} large time="both" playerNames={playerMap} displayMode="team" showHeader />
+            <Leaderboard rows={rows} large time="both" playerNames={playerMap} displayMode="team" showHeader totalQuestions={totalQ} />
           </div>
         ) : (
           <div className="flex flex-col gap-3 rounded-3xl border border-white/10 bg-[#0c0c10]/95 p-6 shadow-2xl">
@@ -136,9 +137,9 @@ export function BoardApp({ code }: { code: string }) {
                 <User className="size-4 text-emerald-400" />
                 <span>Player Leaderboard</span>
               </div>
-              <span className="font-mono text-xs text-white/40">Rank &bull; Q Time &bull; Total &bull; Score</span>
+              <span className="font-mono text-xs text-white/40">Rank &bull; Q Time &bull; Total &bull; Ans &bull; Score</span>
             </div>
-            <Leaderboard rows={rows} large time="both" playerNames={playerMap} displayMode="player" showHeader />
+            <Leaderboard rows={rows} large time="both" playerNames={playerMap} displayMode="player" showHeader totalQuestions={totalQ} />
           </div>
         )}
       </div>
@@ -185,6 +186,7 @@ export function BoardApp({ code }: { code: string }) {
           playerNames={playerMap}
           displayMode={liveView}
           showHeader
+          totalQuestions={totalQ}
         />
       </div>
     );

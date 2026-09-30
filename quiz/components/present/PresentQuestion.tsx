@@ -119,6 +119,7 @@ export function PresentResults({
           playerNames={playerNames}
           displayMode={viewMode}
           showHeader
+          totalQuestions={Math.min(s.currentIndex + 1, s.questionCount)}
         />
       </div>
     </div>

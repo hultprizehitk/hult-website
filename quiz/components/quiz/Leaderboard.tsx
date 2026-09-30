@@ -23,6 +23,7 @@ export function Leaderboard({
   displayMode = "team",
   showHeader = false,
   userStanding,
+  totalQuestions,
 }: {
   rows: Standing[];
   highlightTeamId?: string;
@@ -32,6 +33,7 @@ export function Leaderboard({
   displayMode?: "team" | "player";
   showHeader?: boolean;
   userStanding?: Standing | null;
+  totalQuestions?: number;
 }) {
   if (rows.length === 0 && !userStanding) {
     return <p className="py-8 text-center font-mono text-xs text-neutral-500">No scores yet</p>;
@@ -39,6 +41,11 @@ export function Leaderboard({
 
   const isUserInTop = highlightTeamId && rows.some((r) => r.teamId === highlightTeamId);
   const showPinnedUser = !isUserInTop && userStanding && userStanding.rank != null;
+
+  const totalQ =
+    totalQuestions && totalQuestions > 0
+      ? totalQuestions
+      : Math.max(...rows.map((r) => r.answeredCount || 0), userStanding?.answeredCount || 0, 1);
 
   const renderRow = (r: Standing, isHighlight: boolean) => {
     const rawPlayer = playerNames?.get(r.teamId) ?? r.playerName;
@@ -143,6 +150,16 @@ export function Leaderboard({
             {formatMs(r.totalTimeMs ?? 0)}
           </span>
         )}
+        <span
+          className={cn(
+            "shrink-0 font-mono text-right tabular-nums",
+            large ? "w-20 text-base" : "w-12 text-[11px]",
+          )}
+          title={`${r.answeredCount ?? 0} of ${totalQ} answered (${r.correctCount ?? 0} correct)`}
+        >
+          <span className="font-semibold text-neutral-200">{r.answeredCount ?? 0}</span>
+          <span className="text-white/35">/{totalQ}</span>
+        </span>
         <AnimatedNumber
           value={r.score}
           className={cn("shrink-0 text-right font-black tabular-nums", large ? "w-28 text-2xl" : "w-16 text-sm")}
@@ -173,6 +190,7 @@ export function Leaderboard({
           ) : (
             <span className={cn("shrink-0 text-right", large ? "w-24" : "w-14")}>Total</span>
           )}
+          <span className={cn("shrink-0 text-right", large ? "w-20" : "w-12")}>Ans</span>
           <span className={cn("shrink-0 text-right", large ? "w-28" : "w-16")}>Score</span>
         </div>
       )}

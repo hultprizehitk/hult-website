@@ -57,6 +57,7 @@ export function PresentApp({ code }: { code: string }) {
   else if (s.status === "draft" || s.status === "lobby") body = <PresentLobby s={s} joinedCounters={countsLive.data} />;
   else if (s.status === "ended") {
     const board = s.leaderboard ?? [];
+    const totalQ = s.questionCount;
     body = (
       <div className={cn("mx-auto flex w-full flex-1 flex-col gap-8 pb-12", endedView === "side" ? "max-w-7xl" : "max-w-5xl")}>
         <div className="text-center">
@@ -118,9 +119,9 @@ export function PresentApp({ code }: { code: string }) {
                   <Users className="size-4 text-hult" />
                   <span>Team Leaderboard</span>
                 </div>
-                <span className="font-mono text-xs text-white/40">Rank &bull; Q Time &bull; Total &bull; Score</span>
+                <span className="font-mono text-xs text-white/40">Rank &bull; Q Time &bull; Total &bull; Ans &bull; Score</span>
               </div>
-              <Leaderboard rows={board} large time="both" playerNames={playerMap} displayMode="team" showHeader />
+              <Leaderboard rows={board} large time="both" playerNames={playerMap} displayMode="team" showHeader totalQuestions={totalQ} />
             </div>
 
             {/* Player Leaderboard */}
@@ -130,9 +131,9 @@ export function PresentApp({ code }: { code: string }) {
                   <User className="size-4 text-emerald-400" />
                   <span>Player Leaderboard</span>
                 </div>
-                <span className="font-mono text-xs text-white/40">Rank &bull; Q Time &bull; Total &bull; Score</span>
+                <span className="font-mono text-xs text-white/40">Rank &bull; Q Time &bull; Total &bull; Ans &bull; Score</span>
               </div>
-              <Leaderboard rows={board} large time="both" playerNames={playerMap} displayMode="player" showHeader />
+              <Leaderboard rows={board} large time="both" playerNames={playerMap} displayMode="player" showHeader totalQuestions={totalQ} />
             </div>
           </div>
         ) : endedView === "team" ? (
@@ -142,9 +143,9 @@ export function PresentApp({ code }: { code: string }) {
                 <Users className="size-4 text-hult" />
                 <span>Team Leaderboard</span>
               </div>
-              <span className="font-mono text-xs text-white/40">Rank &bull; Q Time &bull; Total &bull; Score</span>
+              <span className="font-mono text-xs text-white/40">Rank &bull; Q Time &bull; Total &bull; Ans &bull; Score</span>
             </div>
-            <Leaderboard rows={board} large time="both" playerNames={playerMap} displayMode="team" showHeader />
+            <Leaderboard rows={board} large time="both" playerNames={playerMap} displayMode="team" showHeader totalQuestions={totalQ} />
           </div>
         ) : (
           <div className="flex flex-col gap-3 rounded-3xl border border-white/10 bg-[#0c0c10]/95 p-6 shadow-2xl">
@@ -153,9 +154,9 @@ export function PresentApp({ code }: { code: string }) {
                 <User className="size-4 text-emerald-400" />
                 <span>Player Leaderboard</span>
               </div>
-              <span className="font-mono text-xs text-white/40">Rank &bull; Q Time &bull; Total &bull; Score</span>
+              <span className="font-mono text-xs text-white/40">Rank &bull; Q Time &bull; Total &bull; Ans &bull; Score</span>
             </div>
-            <Leaderboard rows={board} large time="both" playerNames={playerMap} displayMode="player" showHeader />
+            <Leaderboard rows={board} large time="both" playerNames={playerMap} displayMode="player" showHeader totalQuestions={totalQ} />
           </div>
         )}
       </div>
