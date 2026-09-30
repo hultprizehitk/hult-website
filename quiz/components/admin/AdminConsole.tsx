@@ -3,8 +3,9 @@
 import { useMemo, useState } from "react";
 import Link from "next/link";
 import { toast } from "sonner";
-import { CheckCircle2, Copy, Database, Download, ListChecks, Loader2, MonitorPlay, Radio, SearchX, Share2, ShieldAlert, Smartphone, Trophy, Users } from "lucide-react";
+import { CheckCircle2, Copy, Database, Download, ListChecks, Loader2, MonitorPlay, Radio, SearchX, Send, Share2, ShieldAlert, Smartphone, Trophy, Users } from "lucide-react";
 import { Button, buttonVariants } from "@/components/ui/button";
+import { api, ApiError } from "@/lib/client/api";
 import { saveQuizData } from "@/lib/client/control";
 import { ReconnectingPill } from "@/components/quiz/ReconnectingPill";
 import { StateMessage } from "@/components/quiz/StateMessage";
@@ -56,6 +57,7 @@ export function AdminConsole({ code }: { code: string }) {
   const [tab, setTab] = useState<Tab>("run");
   const [isSaving, setIsSaving] = useState(false);
   const [savedJustNow, setSavedJustNow] = useState(false);
+  const [isPublishing, setIsPublishing] = useState(false);
   const clock = useServerClock();
   const origin = useOrigin();
 
@@ -66,6 +68,24 @@ export function AdminConsole({ code }: { code: string }) {
     if (ok) {
       setSavedJustNow(true);
       setTimeout(() => setSavedJustNow(false), 4000);
+    }
+  };
+
+  // Seeds the auction's top 10. Also runs automatically when the quiz ends; this is the manual retry.
+  const handlePublish = async () => {
+    setIsPublishing(true);
+    try {
+      const { result } = await api<{ result: { published: boolean; count: number; reason?: string } }>(
+        `/api/admin/sessions/${code}/publish`,
+        { body: {} },
+      );
+      if (result.published) toast.success(`Sent top ${result.count} to the auction`);
+      else if (result.reason === "no_mongodb") toast.error("MongoDB is not configured on the quiz server");
+      else toast.error("No graded standings to send yet");
+    } catch (e) {
+      toast.error((e as ApiError).message);
+    } finally {
+      setIsPublishing(false);
     }
   };
 
@@ -132,10 +152,23 @@ export function AdminConsole({ code }: { code: string }) {
         right={
           <>
             {(s.status === "live" || s.status === "ended") && (
-              <a href={`/api/admin/sessions/${code}/export`} className={buttonVariants({ variant: "outline", size: "sm", className: "rounded-full text-xs" })}>
-                <Download />
-                CSV
-              </a>
+              <>
+                <a href={`/api/admin/sessions/${code}/export`} className={buttonVariants({ variant: "outline", size: "sm", className: "rounded-full text-xs" })}>
+                  <Download />
+                  CSV
+                </a>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="gap-1.5 rounded-full border-amber-500/30 bg-amber-500/10 text-xs font-semibold text-amber-300 hover:bg-amber-500/20"
+                  disabled={isPublishing}
+                  onClick={() => void handlePublish()}
+                  title="Send the current top 10 to the auction app (MongoDB). Runs automatically when the quiz ends."
+                >
+                  {isPublishing ? <Loader2 className="size-3.5 animate-spin" /> : <Send className="size-3.5 text-amber-400" />}
+                  <span>{isPublishing ? "Sending..." : "Send to Auction"}</span>
+                </Button>
+              </>
             )}
             <Button
               variant="outline"

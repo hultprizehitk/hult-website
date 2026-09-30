@@ -11,13 +11,25 @@ describe("lib/sync/mongo-read.ts", () => {
     const src = readFileSync("lib/sync/mongo-read.ts", "utf8");
     expect(src.match(WRITE_METHODS)?.[0] ?? null).toBeNull();
   });
+});
 
-  it("is the only runtime module importing the Mongo models or connection", () => {
-    const hits = execSync('git -c safe.directory=* grep --untracked -l -E "@/models/mirror|@/lib/db\\"" -- app components hooks lib', { encoding: "utf8" })
+// The reader stays read-only. Publishing the final top 10 to the auction needs one deliberate writer.
+describe("MongoDB write surface", () => {
+  const MONGO_IMPORTS = '-l -E "@/models/mirror|@/lib/db\\"" -- app components hooks lib';
+
+  const mongoModules = () =>
+    execSync(`git -c safe.directory=* grep --untracked ${MONGO_IMPORTS}`, { encoding: "utf8" })
       .trim()
       .split("\n")
       .filter(Boolean)
       .map((p) => p.replace(/^quiz\//, ""));
-    expect(hits.sort()).toEqual(["lib/sync/mongo-read.ts"]);
+
+  it("touches MongoDB only from the reader and the publisher", () => {
+    expect(mongoModules().sort()).toEqual(["lib/sync/mongo-publish.ts", "lib/sync/mongo-read.ts"]);
+  });
+
+  it("confines every write call to the publisher", () => {
+    const writers = mongoModules().filter((p) => readFileSync(p, "utf8").match(WRITE_METHODS));
+    expect(writers).toEqual(["lib/sync/mongo-publish.ts"]);
   });
 });

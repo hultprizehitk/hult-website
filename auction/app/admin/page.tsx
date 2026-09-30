@@ -128,7 +128,7 @@ export default function AdminPage() {
   const [lotFilter, setLotFilter] = useState<"all" | "industries" | "states" | "unsold">("all");
 
   const [customTeams, setCustomTeams] = useState<
-    { teamName: string; teamCode: string; quizRank: number }[]
+    { teamId?: string; teamName: string; teamCode: string; quizRank: number }[]
   >([]);
 
   const checkAdminAuth = async () => {
@@ -364,7 +364,7 @@ export default function AdminPage() {
       const payload: any = {};
       if (customTeams.length > 0) {
         payload.teams = customTeams.map((t, idx) => ({
-          teamId: `team-${idx + 1}`,
+          teamId: t.teamId || `team-${idx + 1}`,
           teamName: t.teamName,
           teamCode: t.teamCode,
           quizRank: t.quizRank,
@@ -397,12 +397,17 @@ export default function AdminPage() {
       const data = await res.json();
       if (data.success && data.teams?.length > 0) {
         const top10 = data.teams.slice(0, 10).map((t: any, idx: number) => ({
+          teamId: t.id,
           teamName: t.name || `Team ${idx + 1}`,
           teamCode: t.code || `T0${idx + 1}`,
-          quizRank: idx + 1,
+          quizRank: t.quizRank ?? idx + 1,
         }));
         setCustomTeams(top10);
-        setSuccessMessage(`Loaded ${top10.length} teams`);
+        setSuccessMessage(
+          data.source === "quiz"
+            ? `Loaded final top ${top10.length} from quiz ${data.quizCode}`
+            : `Loaded ${top10.length} teams (no quiz results published yet)`
+        );
       } else {
         setErrorMessage("No registered teams found");
       }

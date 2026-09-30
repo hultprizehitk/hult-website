@@ -5,6 +5,7 @@ import { INDUSTRIES, STATES, INITIAL_TEAM_BUDGET } from "@/lib/auction-data";
 import mongoose from "mongoose";
 import { logAction } from "@/lib/audit";
 import { requireAdmin } from "@/lib/require-admin";
+import { readPublishedQuizTop10, toSeedTeams } from "@/lib/quiz-standings";
 
 export async function POST(req: Request) {
   const guard = requireAdmin(req);
@@ -18,7 +19,18 @@ export async function POST(req: Request) {
       | { teamId: string; teamName: string; teamCode: string; quizRank: number }[]
       | undefined;
 
-    // If no teams passed, query the main database's teams collection for confirmed teams
+    // If no teams passed, prefer the quiz's published top 10, then fall back to confirmed registrations.
+    if (!inputTeams || inputTeams.length === 0) {
+      try {
+        const standings = await readPublishedQuizTop10();
+        if (standings) {
+          inputTeams = toSeedTeams(standings);
+        }
+      } catch (err) {
+        console.warn("Could not read published quiz standings:", err);
+      }
+    }
+
     if (!inputTeams || inputTeams.length === 0) {
       try {
         const db = mongoose.connection.db;
