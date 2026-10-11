@@ -94,10 +94,11 @@ export async function GET(req: Request) {
         const leadYear = t.lead?.year || u?.year || "";
 
         const isTeamOnSpot = Boolean(t.isOnSpot || t.lead?.isOnSpot);
-        const isTeamCheckedIn = Boolean(t.checkedIn || isTeamOnSpot);
-        const effectiveCheckInTime = t.checkedInAt || (isTeamOnSpot ? (t.registeredAt || t.createdAt || new Date()) : null);
+        // On-spot is a registration tag only; check-in and submission come from stored state
+        const isTeamCheckedIn = Boolean(t.checkedIn);
+        const effectiveCheckInTime = t.checkedInAt || null;
 
-        const isLeadChecked = Boolean(t.lead?.checkedIn || (t.checkedIn && t.lead?.checkedIn !== false) || isTeamOnSpot);
+        const isLeadChecked = Boolean(t.lead?.checkedIn || (t.checkedIn && t.lead?.checkedIn !== false));
         const leadCheckInTime = t.lead?.checkedInAt || (isLeadChecked ? effectiveCheckInTime : null);
 
         return {
@@ -108,8 +109,8 @@ export async function GET(req: Request) {
           ventureName: t.ventureName || "",
           ventureDescription: t.ventureDescription || "",
           pitchDeckUrl: t.pitchDeckUrl || "",
-          submissionStatus: t.submissionStatus || (isTeamOnSpot ? "submitted" : "forming"),
-          submittedAt: t.submittedAt || (isTeamOnSpot ? (t.registeredAt || t.createdAt || new Date()) : null),
+          submissionStatus: t.submissionStatus || "forming",
+          submittedAt: t.submittedAt || null,
           lead: {
             name: t.lead?.name || "Team Leader",
             email: t.lead?.email || t.leadEmail || "",
@@ -126,7 +127,7 @@ export async function GET(req: Request) {
           members: Array.isArray(t.members)
             ? t.members.map((m: any) => {
                 const isMemOnSpot = Boolean(m.isOnSpot ?? isTeamOnSpot);
-                const isMemChecked = Boolean(m.checkedIn !== undefined ? m.checkedIn : (isTeamCheckedIn || isMemOnSpot));
+                const isMemChecked = Boolean(m.checkedIn !== undefined ? m.checkedIn : isTeamCheckedIn);
                 const memCheckInTime = m.checkedInAt || (isMemChecked ? (m.joinedAt || effectiveCheckInTime) : null);
                 return {
                   name: m.name || "",

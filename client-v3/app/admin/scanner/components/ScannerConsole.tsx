@@ -506,8 +506,7 @@ export default function ScannerConsole({
   const isTeamSubmitted = useCallback((t: RegisteredTeam) => {
     return (
       t.submissionStatus === "submitted" ||
-      Boolean(t.submittedAt) ||
-      Boolean(t.isOnSpot || t.lead?.isOnSpot)
+      Boolean(t.submittedAt)
     );
   }, []);
 
@@ -521,9 +520,9 @@ export default function ScannerConsole({
     for (const t of eligibleTeams) {
       const isTeamOnSpot = Boolean(t.isOnSpot || t.lead?.isOnSpot);
       const isLeadChecked = Boolean(
-        t.lead?.checkedIn || (t.checkedIn && t.lead?.checkedIn !== false) || isTeamOnSpot
+        t.lead?.checkedIn || (t.checkedIn && t.lead?.checkedIn !== false)
       );
-      const leadCheckedInAt = t.lead?.checkedInAt || (isLeadChecked ? (t.checkedInAt || "On-Spot Check-in") : null);
+      const leadCheckedInAt = t.lead?.checkedInAt || (isLeadChecked ? (t.checkedInAt || null) : null);
 
       list.push({
         id: `${t.id}_lead`,
@@ -544,9 +543,9 @@ export default function ScannerConsole({
         t.members.forEach((m, idx) => {
           const isMemOnSpot = Boolean(m.isOnSpot ?? isTeamOnSpot);
           const isMemChecked = Boolean(
-            m.checkedIn !== undefined ? m.checkedIn : (t.checkedIn || isMemOnSpot)
+            m.checkedIn !== undefined ? m.checkedIn : t.checkedIn
           );
-          const memCheckedInAt = m.checkedInAt || (isMemChecked ? (t.checkedInAt || "On-Spot Check-in") : null);
+          const memCheckedInAt = m.checkedInAt || (isMemChecked ? (t.checkedInAt || null) : null);
 
           list.push({
             id: `${t.id}_mem_${idx}`,
@@ -1429,7 +1428,7 @@ export default function ScannerConsole({
   // Computed Stats (Only fully registered teams & participants, exclude forming)
   // -------------------------------------------------------------
   const totalRegistered = eligibleTeams.length;
-  const isTeamCheckedHelper = (t: RegisteredTeam) => Boolean(t.checkedIn || t.isOnSpot || t.lead?.isOnSpot);
+  const isTeamCheckedHelper = (t: RegisteredTeam) => Boolean(t.checkedIn);
   const checkedInCount = eligibleTeams.filter(isTeamCheckedHelper).length;
   const remainingCount = totalRegistered - checkedInCount;
   const attendanceRate = totalRegistered > 0 ? Math.round((checkedInCount / totalRegistered) * 100) : 0;

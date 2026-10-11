@@ -158,6 +158,8 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Event not found." }, { status: 404 });
     }
 
+    // On-spot registration only reopens registration at the venue (bypasses closed status
+    // and deadline). Teams still follow the normal forming -> ready -> submitted flow.
     const isOnSpot = Boolean(event.onSpotRegistrationEnabled);
 
     // 2. Validate Event Registration Status & Deadline
@@ -242,8 +244,7 @@ export async function POST(req: Request) {
         phone: cleanPhone,
         department: userDept,
         roll: cleanRoll,
-        checkedIn: isOnSpot,
-        checkedInAt: isOnSpot ? new Date() : undefined,
+        checkedIn: false,
         isOnSpot,
       },
       leadEmail: userEmail,
@@ -251,10 +252,8 @@ export async function POST(req: Request) {
       department: userDept,
       members: [],
       status: "confirmed",
-      submissionStatus: isOnSpot ? "submitted" : initialSubmissionStatus,
-      submittedAt: isOnSpot ? new Date() : undefined,
-      checkedIn: isOnSpot,
-      checkedInAt: isOnSpot ? new Date() : undefined,
+      submissionStatus: initialSubmissionStatus,
+      checkedIn: false,
       isOnSpot,
       registeredAt: new Date(),
     });
@@ -277,10 +276,8 @@ export async function POST(req: Request) {
       members: [],
       registeredAt: new Date(),
       status: "confirmed",
-      submissionStatus: isOnSpot ? "submitted" : initialSubmissionStatus,
-      submittedAt: isOnSpot ? new Date() : undefined,
-      checkedIn: isOnSpot,
-      checkedInAt: isOnSpot ? new Date() : undefined,
+      submissionStatus: initialSubmissionStatus,
+      checkedIn: false,
       isOnSpot,
     });
     event.registeredTeamsCount = event.registeredTeams.length;

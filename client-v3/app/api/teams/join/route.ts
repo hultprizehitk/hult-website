@@ -88,11 +88,11 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Associated event not found." }, { status: 404 });
     }
 
-    const isOnSpot = Boolean(event.onSpotRegistrationEnabled || team.isOnSpot);
+    // On-spot only reopens registration while the master switch is live; it never unlocks submitted rosters.
+    const isOnSpot = Boolean(event.onSpotRegistrationEnabled);
 
     // 1b. Check if Team registration is already submitted and locked
-    // When On-Spot registration is active for the event, teammates are permitted to join their on-spot team at the venue up to maxMembers.
-    if (team.submissionStatus === "submitted" && !isOnSpot) {
+    if (team.submissionStatus === "submitted") {
       return NextResponse.json(
         {
           error: `Registration for team "${team.teamName}" has already been finalized and submitted by the team leader. The team roster is locked and no additional members can join.`,
@@ -190,8 +190,7 @@ export async function POST(req: Request) {
       phone: cleanPhone,
       department: userDept,
       roll: cleanRoll,
-      checkedIn: isOnSpot,
-      checkedInAt: isOnSpot ? new Date() : undefined,
+      checkedIn: false,
       isOnSpot,
       joinedAt: new Date(),
     };
@@ -201,20 +200,7 @@ export async function POST(req: Request) {
 
     const minMembers = event.minTeamMembers || 3;
     const currentTotal = 1 + team.members.length;
-    if (isOnSpot) {
-      team.isOnSpot = true;
-      team.submissionStatus = "submitted";
-      team.submittedAt = team.submittedAt || new Date();
-      team.checkedIn = true;
-      team.checkedInAt = team.checkedInAt || new Date();
-      if (team.lead && !team.lead.checkedIn) {
-        team.lead.checkedIn = true;
-        team.lead.checkedInAt = team.lead.checkedInAt || new Date();
-        team.lead.isOnSpot = true;
-      }
-    } else {
-      team.submissionStatus = currentTotal >= minMembers ? "ready" : "forming";
-    }
+    team.submissionStatus = currentTotal >= minMembers ? "ready" : "forming";
 
     await team.save();
 
@@ -232,13 +218,6 @@ export async function POST(req: Request) {
         }
         eventTeam.members.push(newMember);
         eventTeam.submissionStatus = team.submissionStatus;
-        if (isOnSpot) {
-          eventTeam.checkedIn = true;
-          eventTeam.checkedInAt = eventTeam.checkedInAt || new Date();
-          eventTeam.isOnSpot = true;
-          eventTeam.submissionStatus = "submitted";
-          eventTeam.submittedAt = eventTeam.submittedAt || new Date();
-        }
         await event.save();
       }
     }

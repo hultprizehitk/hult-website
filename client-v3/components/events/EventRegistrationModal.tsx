@@ -755,10 +755,17 @@ export default function EventRegistrationModal({
                       </span>
                     )}
 
-                    {Boolean(existingTeam.checkedIn || existingTeam.isOnSpot) && (
+                    {existingTeam.isOnSpot && (
+                      <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium bg-amber-500/[0.08] border border-amber-500/25 text-amber-300 backdrop-blur-md">
+                        <Zap size={12} className="text-amber-400" />
+                        <span>On-Spot</span>
+                      </span>
+                    )}
+
+                    {Boolean(existingTeam.checkedIn) && (
                       <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium bg-cyan-500/[0.1] border border-cyan-500/30 text-cyan-300 shadow-[0_0_12px_rgba(6,182,212,0.15)] backdrop-blur-md">
                         <CheckCircle2 size={12} className="text-cyan-400" />
-                        <span>{existingTeam.isOnSpot ? "On-Spot Checked In" : "Checked In"}</span>
+                        <span>Checked In</span>
                       </span>
                     )}
                   </div>
@@ -1200,7 +1207,7 @@ export default function EventRegistrationModal({
                   On-Spot Registration Live at Venue
                 </span>
                 <span className="text-[11px] text-amber-200/80 leading-relaxed">
-                  Walk-in registrations are currently open. Create your team or enter a team code to register immediately.
+                  Walk-in registration open. Create a team or join with a code, then submit once your team meets the minimum size.
                 </span>
               </div>
               <Zap size={18} className="text-amber-400 shrink-0" />
