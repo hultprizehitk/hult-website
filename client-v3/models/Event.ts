@@ -58,6 +58,7 @@ export interface IEvent extends Document {
   venue: string;
   description: string;
   link?: string;
+  posterUrl?: string;
   isPublished: boolean;
   checkinEnabled: boolean;
   onSpotRegistrationEnabled: boolean;
@@ -113,6 +114,11 @@ const EventSchema = new Schema<IEvent>(
       trim: true,
     },
     link: {
+      type: String,
+      default: "",
+      trim: true,
+    },
+    posterUrl: {
       type: String,
       default: "",
       trim: true,

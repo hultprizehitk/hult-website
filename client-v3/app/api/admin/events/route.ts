@@ -65,6 +65,7 @@ export async function POST(req: Request) {
       venue,
       description,
       link,
+      posterUrl,
       isPublished,
       order,
       registrationStatus,
@@ -93,6 +94,7 @@ export async function POST(req: Request) {
       venue: venue.trim(),
       description: description.trim(),
       link: link?.trim() || "",
+      posterUrl: posterUrl ? String(posterUrl).trim() : "",
       isPublished: isPublished !== false,
       order: Number(order) || 0,
       registrationStatus: registrationStatus || "open",
@@ -140,6 +142,7 @@ export async function PUT(req: Request) {
       venue,
       description,
       link,
+      posterUrl,
       isPublished,
       order,
       registrationStatus,
@@ -290,6 +293,7 @@ export async function PUT(req: Request) {
     if (venue !== undefined) existing.venue = String(venue).trim();
     if (description !== undefined) existing.description = String(description).trim();
     if (link !== undefined) existing.link = String(link).trim();
+    if (posterUrl !== undefined) existing.posterUrl = String(posterUrl).trim();
     if (isPublished !== undefined) existing.isPublished = Boolean(isPublished);
     if (order !== undefined) existing.order = Number(order);
     if (registrationStatus !== undefined) existing.registrationStatus = registrationStatus;

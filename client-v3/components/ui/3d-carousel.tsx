@@ -8,8 +8,9 @@ import {
   useMotionValue,
   useTransform,
 } from "framer-motion";
-import { Calendar, MapPin, Users, ArrowRight, Lock, Sparkles, Clock, Timer } from "lucide-react";
+import { Calendar, MapPin, Users, ArrowRight, Lock, Sparkles, Timer } from "lucide-react";
 import type { PublicEvent } from "@/types";
+import Image from "next/image";
 import { useCountdown } from "@/lib/countdown";
 
 export const useIsomorphicLayoutEffect =
@@ -61,6 +62,19 @@ export function useMediaQuery(
   return matches;
 }
 
+function useViewportWidth(fallback = 1024): number {
+  const [width, setWidth] = useState<number>(() => (IS_SERVER ? fallback : window.innerWidth));
+
+  useIsomorphicLayoutEffect(() => {
+    const update = () => setWidth(window.innerWidth);
+    update();
+    window.addEventListener("resize", update);
+    return () => window.removeEventListener("resize", update);
+  }, []);
+
+  return width;
+}
+
 export interface CarouselEventCardData {
   id: string;
   isDummy?: boolean;
@@ -73,42 +87,35 @@ export interface CarouselEventCardData {
   description?: string;
 }
 
-function formatDateRange(start?: string, end?: string, fallback?: string) {
+// Splits the schedule into a day label and a time range so each fits its own slot.
+function formatSchedule(start?: string, end?: string, fallback?: string): { day: string; time?: string } {
   if (start && end) {
-    try {
-      const s = new Date(start);
-      const e = new Date(end);
-      if (!isNaN(s.getTime()) && !isNaN(e.getTime())) {
-        const isSameDay =
-          s.getFullYear() === e.getFullYear() &&
-          s.getMonth() === e.getMonth() &&
-          s.getDate() === e.getDate();
-        if (isSameDay) {
-          const datePart = s.toLocaleDateString("en-US", {
-            weekday: "short",
-            month: "short",
-            day: "numeric",
-          });
-          const startTime = s.toLocaleTimeString("en-US", {
-            hour: "numeric",
-            minute: "2-digit",
-            hour12: true,
-          });
-          const endTime = e.toLocaleTimeString("en-US", {
-            hour: "numeric",
-            minute: "2-digit",
-            hour12: true,
-          });
-          return `${datePart} · ${startTime} – ${endTime}`;
-        }
+    const s = new Date(start);
+    const e = new Date(end);
+    if (!isNaN(s.getTime()) && !isNaN(e.getTime())) {
+      const dayOpts: Intl.DateTimeFormatOptions = { weekday: "short", month: "short", day: "numeric" };
+      const timeOpts: Intl.DateTimeFormatOptions = { hour: "numeric", minute: "2-digit", hour12: true };
+      const isSameDay =
+        s.getFullYear() === e.getFullYear() &&
+        s.getMonth() === e.getMonth() &&
+        s.getDate() === e.getDate();
+      if (isSameDay) {
+        return {
+          day: s.toLocaleDateString("en-US", dayOpts),
+          time: `${s.toLocaleTimeString("en-US", timeOpts)} – ${e.toLocaleTimeString("en-US", timeOpts)}`,
+        };
       }
-    } catch {
-      // fallback
+      const shortOpts: Intl.DateTimeFormatOptions = { month: "short", day: "numeric" };
+      return { day: `${s.toLocaleDateString("en-US", shortOpts)} – ${e.toLocaleDateString("en-US", shortOpts)}` };
     }
-    return `${start} – ${end}`;
+    return { day: `${start} – ${end}` };
   }
-  return fallback || "TBD";
+  return { day: fallback || "TBD" };
 }
+
+const CARD_HEIGHT = "h-[396px]";
+// Hardcoded poster for HULT ASCEND; an admin-set posterUrl still takes priority.
+const HULT_ASCEND_POSTER = "/events/hult-ascend.png";
 
 interface Event3DCardProps {
   card: CarouselEventCardData;
@@ -175,7 +182,7 @@ function Event3DCard({ card, onSelectEvent, isDraggingRef }: Event3DCardProps) {
   if (card.isDummy || !liveEvent) {
     // Premium Coming Soon Glass Card
     return (
-      <article className="relative overflow-hidden rounded-2xl border border-white/20 bg-gradient-to-b from-[#1a1728]/95 via-[#120e1f]/95 to-[#0b0914]/95 backdrop-blur-3xl p-4 sm:p-4.5 flex flex-col justify-between w-full h-[345px] sm:h-[355px] shadow-[0_20px_50px_rgba(0,0,0,0.85),inset_0_1px_0_rgba(255,255,255,0.2)] select-none group transition-all duration-300">
+      <article className={`relative overflow-hidden rounded-2xl border border-white/15 bg-gradient-to-b from-[#16161d] via-[#121217] to-[#0e0e12] p-4 sm:p-4.5 flex flex-col justify-between w-full ${CARD_HEIGHT} shadow-[0_20px_50px_rgba(0,0,0,0.85),inset_0_1px_0_rgba(255,255,255,0.12)] select-none group transition-all duration-300`}>
         {/* Top Iridescent Glow Line */}
         <div className="pointer-events-none absolute inset-x-0 top-0 h-[1.5px] bg-gradient-to-r from-transparent via-amber-400/50 to-transparent" />
         <div className="pointer-events-none absolute -top-12 -right-12 h-32 w-32 rounded-full bg-amber-500/10 blur-2xl group-hover:bg-amber-500/20 transition-all" />
@@ -241,10 +248,11 @@ function Event3DCard({ card, onSelectEvent, isDraggingRef }: Event3DCardProps) {
 
   // Active Real Event Card
   const event = liveEvent;
-  const dateLabel = formatDateRange(event.startDate, event.endDate, event.date);
+  const schedule = formatSchedule(event.startDate, event.endDate, event.date);
   const minReq = event.minTeamMembers || 2;
   const maxReq = event.maxTeamMembers || 4;
   const customTag = event.tag && event.tag.trim().toLowerCase() !== "flagship" ? event.tag : null;
+  const posterUrl = event.posterUrl || (/hult\s*ascend/i.test(event.title) ? HULT_ASCEND_POSTER : "");
 
   const isOnSpotLive = Boolean(event.onSpotRegistrationEnabled);
   const isTimeOver = countdown.hasDeadline && countdown.isExpired;
@@ -257,149 +265,118 @@ function Event3DCard({ card, onSelectEvent, isDraggingRef }: Event3DCardProps) {
     if (event) onSelectEvent?.(event);
   };
 
+  const status = isOnSpotLive
+    ? { label: "On-spot live", tone: "text-amber-200", dot: "bg-amber-400", pulse: true }
+    : isClosed
+    ? { label: "Registration closed", tone: "text-zinc-300", dot: "", pulse: false }
+    : event.registrationStatus === "extended"
+    ? { label: "Deadline extended", tone: "text-amber-200", dot: "bg-amber-400", pulse: false }
+    : { label: "Registration open", tone: "text-emerald-200", dot: "bg-emerald-400", pulse: false };
+
+  const hasCountdown = !isClosed && countdown.hasDeadline;
+
   return (
     <article
-      className="relative overflow-hidden rounded-2xl border border-white/20 bg-gradient-to-b from-[#1c182a]/95 via-[#130f21]/95 to-[#0b0914]/95 backdrop-blur-3xl p-4.5 sm:p-5 flex flex-col justify-between w-full h-[390px] sm:h-[400px] shadow-[0_25px_60px_rgba(0,0,0,0.9),inset_0_1px_0_rgba(255,255,255,0.2)] select-none group hover:border-rose-400/50 transition-all cursor-pointer"
+      className={`relative overflow-hidden rounded-2xl border border-white/[0.08] bg-[#0c0c10] p-5 flex flex-col w-full ${
+        posterUrl ? CARD_HEIGHT : ""
+      } shadow-[0_16px_40px_rgba(0,0,0,0.6),inset_0_1px_0_rgba(255,255,255,0.06)] select-none group hover:border-white/20 transition-colors duration-300 cursor-pointer`}
       onClick={handleAction}
     >
-      {/* Top Iridescent Glow Line */}
-      <div className="pointer-events-none absolute inset-x-0 top-0 h-[1.5px] bg-gradient-to-r from-transparent via-rose-400/60 to-transparent" />
-      <div className="pointer-events-none absolute -top-12 -right-12 h-32 w-32 rounded-full bg-rose-500/10 blur-2xl group-hover:bg-rose-500/20 transition-all" />
+      {/* Poster artwork, anchored to its top edge so the title art is never clipped */}
+      {posterUrl && (
+        <div className="pointer-events-none absolute inset-x-0 top-0 aspect-[4/5]">
+          <Image
+            src={posterUrl}
+            alt={`${event.title} poster`}
+            fill
+            sizes="350px"
+            draggable={false}
+            className="object-cover object-top origin-top transition-transform duration-700 ease-out group-hover:scale-[1.04]"
+          />
+          <div className="absolute inset-0 bg-[linear-gradient(to_bottom,rgba(12,12,16,0)_0%,rgba(12,12,16,0)_32%,rgba(12,12,16,0.7)_52%,rgba(12,12,16,0.96)_66%,#0c0c10_80%)]" />
+        </div>
+      )}
 
-      <div className="flex flex-col gap-2">
-        {/* Status Badges Row */}
-        <div className="flex items-center justify-between gap-1.5 pt-0.5">
-          {customTag ? (
-            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-medium bg-white/[0.08] border border-white/20 text-white/90 backdrop-blur-md">
-              {customTag}
-            </span>
-          ) : (
-            <span className="inline-flex items-center gap-1.5 text-[11px] text-white/50 font-medium">
-              <Sparkles size={11} className="text-rose-300/70" />
-              <span>OnCampus Series</span>
+      {/* Content */}
+      <div className={`relative flex flex-col ${posterUrl ? "mt-auto" : ""}`}>
+        <div className="flex items-center justify-between gap-2">
+          {customTag && (
+            <span className="inline-flex min-w-0 items-center gap-2 font-mono text-[9.5px] uppercase tracking-[0.18em] text-zinc-400">
+              <span className="h-3 w-0.5 shrink-0 rounded-full bg-[#f20089]" />
+              <span className="truncate">{customTag}</span>
             </span>
           )}
-
           <span
-            className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-medium backdrop-blur-md transition-all ${
-              isOnSpotLive
-                ? "bg-amber-500/[0.12] border border-amber-500/35 text-amber-300 shadow-[0_0_12px_rgba(245,158,11,0.2)]"
-                : isClosed
-                ? "bg-rose-500/[0.1] border border-rose-500/25 text-rose-300"
-                : event.registrationStatus === "extended"
-                ? "bg-amber-500/[0.1] border border-amber-500/25 text-amber-300 shadow-[0_0_12px_rgba(245,158,11,0.15)]"
-                : "bg-emerald-500/[0.1] border border-emerald-500/25 text-emerald-400 shadow-[0_0_12px_rgba(16,185,129,0.15)]"
-            }`}
+            className={`inline-flex shrink-0 items-center gap-1.5 rounded-md border border-white/10 bg-[#0c0c10]/80 px-2 py-1 text-[10.5px] font-medium leading-none backdrop-blur-md ${status.tone}`}
           >
-            {isOnSpotLive ? (
-              <span className="relative flex h-1.5 w-1.5 shrink-0">
-                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75" />
-                <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-amber-400 shadow-[0_0_6px_rgba(251,191,36,0.9)]" />
-              </span>
-            ) : isClosed ? (
-              <span className="h-1.5 w-1.5 rounded-full bg-rose-400/80 shrink-0" />
+            {isClosed ? (
+              <Lock size={10} className="shrink-0 text-zinc-500" />
             ) : (
-              <span className="relative flex h-1.5 w-1.5 shrink-0">
-                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-60" />
-                <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-emerald-400 shadow-[0_0_6px_rgba(52,211,153,0.8)]" />
+              <span className="relative flex h-1.5 w-1.5">
+                {status.pulse && (
+                  <span className={`absolute inline-flex h-full w-full animate-ping rounded-full opacity-60 ${status.dot}`} />
+                )}
+                <span className={`relative inline-flex h-1.5 w-1.5 rounded-full ${status.dot}`} />
               </span>
             )}
-            <span>
-              {isOnSpotLive
-                ? "On-Spot Live"
-                : isClosed
-                ? "Registrations Closed"
-                : event.registrationStatus === "extended"
-                ? "Extended"
-                : "Registrations Open"}
-            </span>
+            {status.label}
           </span>
         </div>
 
-        {/* Title */}
         <h3
-          className="font-serif text-base sm:text-lg font-bold tracking-tight text-white group-hover:text-rose-200 transition-colors leading-snug drop-shadow-[0_2px_12px_rgba(0,0,0,0.8)] line-clamp-2"
+          className="mt-2.5 font-serif text-[19px] font-bold leading-[1.2] tracking-tight text-zinc-50 line-clamp-2"
           style={{ fontFamily: "'IM Fell Double Pica', Georgia, serif" }}
         >
           {event.title}
         </h3>
 
-        {/* Description - 2 lines for clean balanced spacing */}
-        {event.description && (
-          <p className="text-[11px] text-white/80 line-clamp-2 leading-relaxed font-sans font-medium">
-            {event.description}
-          </p>
+        {/* The poster already carries the pitch, so the blurb only shows on plain cards */}
+        {!posterUrl && event.description && (
+          <p className="mt-2 text-[11.5px] leading-relaxed text-zinc-400 line-clamp-2">{event.description}</p>
         )}
 
-        {/* Meta Tiles Grid */}
-        <div className="grid grid-cols-1 gap-1.5 pt-0.5">
-          {/* Tile 1: Event Schedule */}
-          <div className="bg-white/[0.05] border border-white/10 rounded-xl px-2.5 py-1.5 flex items-center gap-2 text-[11px] text-white font-medium backdrop-blur-md">
-            <Calendar size={12} className="text-rose-300 shrink-0" />
-            <span className="truncate">{dateLabel}</span>
+        {/* When / Where */}
+        <dl className="mt-3.5 grid grid-cols-2 gap-x-3 border-t border-white/[0.08] pt-3">
+          <div className="min-w-0">
+            <dt className="flex items-center gap-1.5 font-mono text-[9px] uppercase tracking-[0.16em] text-zinc-500">
+              <Calendar size={10} className="shrink-0" />
+              When
+            </dt>
+            <dd className="mt-1 truncate text-[12px] font-medium text-zinc-100">{schedule.day}</dd>
+            {schedule.time && <dd className="mt-0.5 text-[10.5px] leading-snug text-zinc-400">{schedule.time}</dd>}
           </div>
+          <div className="min-w-0">
+            <dt className="flex items-center gap-1.5 font-mono text-[9px] uppercase tracking-[0.16em] text-zinc-500">
+              <MapPin size={10} className="shrink-0" />
+              Where
+            </dt>
+            <dd className="mt-1 text-[12px] font-medium leading-snug text-zinc-100 line-clamp-2">{event.venue || "Venue TBA"}</dd>
+            <dd className="mt-0.5 inline-flex items-center gap-1 whitespace-nowrap text-[10.5px] text-zinc-400">
+              <Users size={10} className="shrink-0" />
+              {minReq}–{maxReq} per team
+            </dd>
+          </div>
+        </dl>
 
-          {/* Tile 2: Venue & Roster */}
-          <div className="bg-white/[0.05] border border-white/10 rounded-xl px-2.5 py-1.5 flex items-center justify-between text-[11px] text-white font-medium backdrop-blur-md">
-            <span className="flex items-center gap-1.5 truncate">
-              <MapPin size={12} className="text-rose-300 shrink-0" />
-              <span className="truncate">{event.venue || "SV Auditorium"}</span>
+        {hasCountdown && (
+          <div className="mt-3 flex items-center justify-between rounded-lg border border-white/[0.08] bg-white/[0.03] px-2.5 py-1.5">
+            <span className="inline-flex items-center gap-1.5 font-mono text-[9px] uppercase tracking-[0.16em] text-zinc-500">
+              <Timer size={10} className="shrink-0" />
+              Closes in
             </span>
-            <span className="flex items-center gap-1 shrink-0 text-white/70 text-[10px] font-mono">
-              <Users size={11} className="text-rose-300 shrink-0" />
-              <span>{minReq}–{maxReq} Members</span>
+            <span className="font-mono text-[10.5px] font-semibold tabular-nums text-zinc-200">
+              {countdown.countdownText}
             </span>
           </div>
+        )}
 
-          {/* Tile 3: Registration Deadline & Reverse Countdown Timer */}
-          <div
-            className={`rounded-xl px-2.5 py-1.5 flex items-center justify-between text-[11px] font-medium backdrop-blur-md transition-all ${
-              isClosed
-                ? "bg-white/[0.03] border border-white/10 text-white/60"
-                : "bg-rose-500/[0.08] border border-rose-500/25 text-white shadow-[0_0_15px_rgba(242,0,137,0.1)]"
-            }`}
-          >
-            <div className="flex items-center gap-1.5 truncate min-w-0">
-              <Clock size={12} className={isClosed ? "text-white/40 shrink-0" : "text-rose-400 shrink-0"} />
-              <div className="flex flex-col truncate">
-                <span className="text-[9px] uppercase tracking-wider text-white/50 font-mono leading-none">
-                  Deadline
-                </span>
-                <span className="text-[11px] font-semibold text-white/90 truncate leading-tight pt-0.5">
-                  {countdown.formattedDeadline}
-                </span>
-              </div>
-            </div>
-
-            <div className="shrink-0 pl-1.5">
-              {isClosed ? (
-                <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[9px] font-mono font-semibold bg-rose-500/10 border border-rose-500/20 text-rose-300">
-                  Closed
-                </span>
-              ) : countdown.hasDeadline ? (
-                <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[10px] font-mono font-bold tracking-wider bg-rose-500/20 border border-rose-400/40 text-rose-200 shadow-sm">
-                  <Timer size={10} className="text-rose-300 shrink-0 animate-pulse" />
-                  <span className="tabular-nums">{countdown.countdownText}</span>
-                </span>
-              ) : (
-                <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[9px] font-mono font-semibold bg-emerald-500/10 border border-emerald-500/20 text-emerald-400">
-                  Active
-                </span>
-              )}
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* CTA Button Row */}
-      <div className="pt-2 border-t border-white/10">
         <button
           type="button"
           onClick={handleAction}
-          className="w-full flex items-center justify-between rounded-full bg-white hover:bg-neutral-100 px-4 py-2.5 text-[11px] font-bold text-neutral-950 uppercase tracking-wider shadow-[0_4px_20px_rgba(255,255,255,0.2)] hover:shadow-[0_0_25px_rgba(255,255,255,0.45)] transition-all hover:scale-[1.02] cursor-pointer"
+          className="mt-4 flex w-full items-center justify-between rounded-full bg-white px-4 py-2.5 text-[11px] font-bold uppercase tracking-[0.14em] text-neutral-950 transition-colors hover:bg-zinc-200 cursor-pointer"
         >
-          <span>{isClosed ? "VIEW EVENT DETAILS" : "VIEW EVENT & REGISTER"}</span>
-          <ArrowRight size={13} className="text-neutral-950" />
+          <span>{isClosed ? "View Details" : "View & Register"}</span>
+          <ArrowRight size={14} className="transition-transform group-hover:translate-x-0.5" />
         </button>
       </div>
     </article>
@@ -416,11 +393,15 @@ const Carousel3D = memo(
     isCarouselActive: boolean;
     onSelectEvent?: (event: PublicEvent) => void;
   }) => {
-    const isScreenSizeSm = useMediaQuery("(max-width: 640px)");
-    // Flatten cylinder curve for full-screen span ("bhara bhara")
-    const cylinderWidth = isScreenSizeSm ? 1800 : 3100;
+    const viewportWidth = useViewportWidth();
     const faceCount = cards.length;
-    const faceWidth = cylinderWidth / faceCount;
+    // Phones: each face is ~74% of the viewport (+16px face padding), capped so the
+    // perspective-enlarged front card still fits the stage. Desktop keeps the wide ring.
+    const faceWidth =
+      viewportWidth <= 640
+        ? Math.min(300, Math.round(viewportWidth * 0.74) + 16)
+        : 3100 / faceCount;
+    const cylinderWidth = faceWidth * faceCount;
     const radius = cylinderWidth / (2 * Math.PI);
     const rotation = useMotionValue(0);
     const startRotation = useRef(0);
@@ -433,7 +414,7 @@ const Carousel3D = memo(
 
     return (
       <div
-        className="flex min-h-[480px] sm:min-h-[500px] items-center justify-center bg-transparent py-1 select-none"
+        className="flex min-h-[500px] items-center justify-center bg-transparent py-1 select-none"
         style={{
           perspective: "2400px",
           transformStyle: "preserve-3d",
@@ -493,6 +474,8 @@ const Carousel3D = memo(
               className="absolute flex h-full origin-center items-center justify-center p-2"
               style={{
                 width: `${Math.min(350, faceWidth)}px`,
+                backfaceVisibility: "hidden",
+                WebkitBackfaceVisibility: "hidden",
                 transform: `rotateY(${
                   i * (360 / faceCount)
                 }deg) translateZ(${radius}px)`,
@@ -606,7 +589,7 @@ export function ThreeDPhotoCarousel({
   }, [events]);
 
   return (
-    <div className="relative min-h-[480px] sm:min-h-[500px] w-full overflow-visible my-1">
+    <div className="relative min-h-[500px] w-full overflow-visible my-1">
       <Carousel3D
         cards={cards}
         isCarouselActive={isCarouselActive}

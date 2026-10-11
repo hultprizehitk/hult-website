@@ -62,6 +62,7 @@ export async function PUT(req: Request, { params }: RouteParams) {
       "venue",
       "description",
       "link",
+      "posterUrl",
       "isPublished",
       "order",
       "registrationStatus",

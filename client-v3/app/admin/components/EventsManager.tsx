@@ -116,6 +116,7 @@ export default function EventsManager() {
     venue: "",
     description: "",
     link: "",
+    posterUrl: "",
     isPublished: true,
     order: 0,
     registrationStatus: "open" as "open" | "closed" | "extended" | "upcoming",
@@ -209,6 +210,7 @@ export default function EventsManager() {
           venue: found.venue,
           description: found.description,
           link: found.link || "",
+          posterUrl: found.posterUrl || "",
           isPublished: found.isPublished,
           order: found.order || 0,
           registrationStatus: found.registrationStatus || "open",
@@ -847,6 +849,19 @@ export default function EventsManager() {
                     placeholder="Leave blank to use default portal registration (/register)"
                     value={eventFormData.link}
                     onChange={(e) => setEventFormData({ ...eventFormData, link: e.target.value })}
+                    className="w-full rounded-2xl border border-white/15 bg-[#16161d] px-4 py-2.5 text-white placeholder-white/40 outline-none focus:border-white/50 focus:ring-1 focus:ring-white/20 shadow-inner transition-all"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-white/70 font-semibold mb-1">
+                    Poster Image
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="/events/hult-ascend.png or https://..."
+                    value={eventFormData.posterUrl}
+                    onChange={(e) => setEventFormData({ ...eventFormData, posterUrl: e.target.value })}
                     className="w-full rounded-2xl border border-white/15 bg-[#16161d] px-4 py-2.5 text-white placeholder-white/40 outline-none focus:border-white/50 focus:ring-1 focus:ring-white/20 shadow-inner transition-all"
                   />
                 </div>
@@ -1589,6 +1604,7 @@ export default function EventsManager() {
                   venue: "",
                   description: "",
                   link: "",
+                  posterUrl: "",
                   isPublished: true,
                   order: events.length,
                   registrationStatus: "open",

@@ -41,6 +41,7 @@ export interface EventItem {
   venue: string;
   description: string;
   link?: string;
+  posterUrl?: string;
   isPublished: boolean;
   checkinEnabled?: boolean;
   onSpotRegistrationEnabled?: boolean;
@@ -99,6 +100,7 @@ export interface PublicEvent {
   venue?: string;
   description?: string;
   link?: string;
+  posterUrl?: string;
   registrationStatus?: "open" | "closed" | "extended" | "upcoming";
   registrationDeadline?: string;
   checkinEnabled?: boolean;
