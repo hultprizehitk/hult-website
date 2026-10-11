@@ -418,8 +418,10 @@ body {
   }
 }
 
+/* "backwards" (not "both") so no transform lingers after the animation:
+   a retained transform would trap position:fixed modals inside the container. */
 .animate-fadeIn {
-  animation: fadeIn 0.6s ease-out both;
+  animation: fadeIn 0.6s ease-out backwards;
 }
 
 @layer base {
