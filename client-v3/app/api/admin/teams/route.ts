@@ -382,24 +382,6 @@ export async function POST(req: Request) {
     event.registeredTeamsCount = event.registeredTeams.length;
     await event.save();
 
-    // Synchronize User profile records with on-spot flag
-    if (isOnSpot) {
-      if (newTeam.lead.email) {
-        await User.updateOne(
-          { email: newTeam.lead.email },
-          { $set: { isOnSpotRegistered: true, onSpotRegisteredAt: checkInTime } }
-        );
-      }
-      for (const m of membersList) {
-        if (m.email) {
-          await User.updateOne(
-            { email: m.email },
-            { $set: { isOnSpotRegistered: true, onSpotRegisteredAt: checkInTime } }
-          );
-        }
-      }
-    }
-
     await logAdminAction({
       adminEmail: session?.user?.email || "admin",
       adminName: session?.user?.name || "Admin",

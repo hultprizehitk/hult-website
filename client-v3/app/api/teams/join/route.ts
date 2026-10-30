@@ -222,16 +222,11 @@ export async function POST(req: Request) {
       }
     }
 
-    // 9. Synchronize phone, roll, and on-spot tag to User profile
-    const userUpdate: Record<string, unknown> = { phone: cleanPhone, roll: cleanRoll };
-    if (isOnSpot) {
-      userUpdate.isOnSpotRegistered = true;
-      userUpdate.onSpotRegisteredAt = new Date();
-    }
+    // 9. Synchronize phone and roll to User profile (on-spot is tracked on the team only)
     if (userInDb) {
       await User.updateOne(
         { email: userEmail },
-        { $set: userUpdate }
+        { $set: { phone: cleanPhone, roll: cleanRoll } }
       );
     }
 
