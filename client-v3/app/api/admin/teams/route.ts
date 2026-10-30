@@ -166,6 +166,8 @@ export async function GET(req: Request) {
             registeredTeamsCount: totalTeamsCount,
             checkinEnabled: Boolean(event.checkinEnabled),
             onSpotRegistrationEnabled: Boolean(event.onSpotRegistrationEnabled),
+            minTeamMembers: event.minTeamMembers || 3,
+            maxTeamMembers: event.maxTeamMembers || 5,
           },
           teams: allTeams,
         },
@@ -243,7 +245,6 @@ export async function POST(req: Request) {
       leadPhone,
       department,
       roll,
-      membersCount,
       members,
       status,
     } = body;
@@ -261,6 +262,66 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Event not found" }, { status: 404 });
     }
 
+    // Stage walk-in registrations default to on-spot unless explicitly specified
+    const isOnSpot = body.isOnSpot !== undefined ? Boolean(body.isOnSpot) : true;
+
+    // On-spot & walk-in teams registered at venue are automatically checked in
+    const isCheckedIn = body.checkedIn !== undefined ? Boolean(body.checkedIn) : true;
+    const checkInTime = isCheckedIn ? new Date() : undefined;
+
+    const cleanLeadEmail = String(leadEmail).trim().toLowerCase();
+    const membersList = (Array.isArray(members) ? members : [])
+      .filter((m: { name?: unknown; email?: unknown }) => String(m?.name || "").trim() && String(m?.email || "").trim())
+      .map((m: { name?: unknown; email?: unknown; phone?: unknown; department?: unknown; roll?: unknown }) => ({
+        name: String(m.name || "").trim(),
+        email: String(m.email || "").trim().toLowerCase(),
+        phone: String(m.phone || "").trim(),
+        department: String(m.department || department || "General").trim(),
+        roll: String(m.roll || "").trim(),
+        checkedIn: isCheckedIn,
+        checkedInAt: checkInTime,
+        isOnSpot: isOnSpot,
+        joinedAt: new Date(),
+      }));
+
+    // Walk-in teams are submitted immediately, so they must meet the same roster rules as online submission
+    const minMembers = event.minTeamMembers || 3;
+    const maxMembers = event.maxTeamMembers || 5;
+    const totalMembers = 1 + membersList.length;
+    if (totalMembers < minMembers || totalMembers > maxMembers) {
+      return NextResponse.json(
+        {
+          error: `Team must have ${minMembers}-${maxMembers} members including the leader. Currently ${totalMembers}.`,
+        },
+        { status: 400 }
+      );
+    }
+
+    const rosterEmails = [cleanLeadEmail, ...membersList.map((m) => m.email)];
+    if (new Set(rosterEmails).size !== rosterEmails.length) {
+      return NextResponse.json({ error: "Each team member must have a unique email." }, { status: 400 });
+    }
+
+    if (event.maxTeams && event.registeredTeamsCount >= event.maxTeams) {
+      return NextResponse.json({ error: "Event registration is at full capacity." }, { status: 400 });
+    }
+
+    const conflictTeam = await Team.findOne({
+      eventId: event._id,
+      $or: [{ leadEmail: { $in: rosterEmails } }, { "members.email": { $in: rosterEmails } }],
+    })
+      .select("teamName leadEmail members.email")
+      .lean();
+    if (conflictTeam) {
+      const takenEmail = rosterEmails.find(
+        (e) => conflictTeam.leadEmail === e || (conflictTeam.members || []).some((m) => m.email === e)
+      );
+      return NextResponse.json(
+        { error: `${takenEmail} is already registered in team "${conflictTeam.teamName}" for this event.` },
+        { status: 400 }
+      );
+    }
+
     let code = generateTeamCode();
     let attempts = 0;
     while (attempts < 10) {
@@ -269,31 +330,6 @@ export async function POST(req: Request) {
       code = generateTeamCode();
       attempts++;
     }
-
-    // Determine on-spot / walk-in status:
-    // If explicitly specified in body.isOnSpot, or event onSpotRegistrationEnabled is true,
-    // or if created via stage walk-in registration (defaults to on-spot)
-    const isOnSpot = body.isOnSpot !== undefined
-      ? Boolean(body.isOnSpot)
-      : Boolean(event.onSpotRegistrationEnabled || true);
-
-    // On-spot & walk-in teams registered at venue are automatically checked in
-    const isCheckedIn = body.checkedIn !== undefined ? Boolean(body.checkedIn) : true;
-    const checkInTime = isCheckedIn ? new Date() : undefined;
-
-    const membersList = Array.isArray(members)
-      ? members.map((m: { name?: unknown; email?: unknown; phone?: unknown; department?: unknown; roll?: unknown }) => ({
-          name: String(m.name || "").trim(),
-          email: String(m.email || "").trim().toLowerCase(),
-          phone: String(m.phone || "").trim(),
-          department: String(m.department || department || "General").trim(),
-          roll: String(m.roll || "").trim(),
-          checkedIn: isCheckedIn,
-          checkedInAt: checkInTime,
-          isOnSpot: isOnSpot,
-          joinedAt: new Date(),
-        }))
-      : [];
 
     const newTeam = await Team.create({
       eventId: event._id,
@@ -310,8 +346,8 @@ export async function POST(req: Request) {
         checkedInAt: checkInTime,
         isOnSpot: isOnSpot,
       },
-      leadEmail: leadEmail.trim().toLowerCase(),
-      membersCount: Number(membersCount) || (1 + membersList.length),
+      leadEmail: cleanLeadEmail,
+      membersCount: totalMembers,
       department: department?.trim() || "General",
       members: membersList,
       status: status || "confirmed",

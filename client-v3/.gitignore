@@ -45,3 +45,7 @@ next-env.d.ts
 bun.lock
 package-lock.json
 pnpm-lock.yaml
+# generated certificate previews (contain participant names)
+/scripts/certificates-out/
+# personal-use-only font license, do not redistribute
+/scripts/assets/AnastasiaScript-PersonalUse.ttf

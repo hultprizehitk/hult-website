@@ -109,6 +109,8 @@ interface EventItem {
   checkinEnabled?: boolean;
   onSpotRegistrationEnabled?: boolean;
   maxTeams: number;
+  minTeamMembers?: number;
+  maxTeamMembers?: number;
   registeredTeamsCount: number;
   registeredTeams?: RegisteredTeam[];
 }
@@ -153,6 +155,8 @@ export default function LiveEventManager({ isMasterAdmin: propIsMasterAdmin }: L
 
   const isCheckinActive = Boolean(eventMeta?.checkinEnabled ?? selectedEvent?.checkinEnabled);
   const isOnSpotActive = Boolean(eventMeta?.onSpotRegistrationEnabled ?? selectedEvent?.onSpotRegistrationEnabled);
+  const walkInMinMembers = eventMeta?.minTeamMembers || 3;
+  const walkInMaxMembers = eventMeta?.maxTeamMembers || 5;
 
   // Filter & Search
   const [searchQuery, setSearchQuery] = useState("");
@@ -591,6 +595,14 @@ export default function LiveEventManager({ isMasterAdmin: propIsMasterAdmin }: L
     }
 
     const validMembers = newTeam.members.filter((m) => m.name.trim() && m.email.trim());
+    const totalMembers = validMembers.length + 1;
+    if (totalMembers < walkInMinMembers || totalMembers > walkInMaxMembers) {
+      showToast(
+        `Team must have ${walkInMinMembers}-${walkInMaxMembers} members including the leader. Currently ${totalMembers}.`,
+        "error"
+      );
+      return;
+    }
 
     try {
       const res = await fetch("/api/admin/teams", {
@@ -1964,7 +1976,17 @@ export default function LiveEventManager({ isMasterAdmin: propIsMasterAdmin }: L
                     variant="default"
                     size="sm"
                     className="rounded-lg text-xs font-[family-name:var(--font-google-sans)]"
-                    onClick={() => setShowAddTeamModal(true)}
+                    onClick={() => {
+                      // Offer one slot per allowed teammate, keeping anything already typed
+                      setNewTeam((prev) => ({
+                        ...prev,
+                        members: Array.from(
+                          { length: walkInMaxMembers - 1 },
+                          (_, i) => prev.members[i] || { name: "", email: "", phone: "", department: "", roll: "" }
+                        ),
+                      }));
+                      setShowAddTeamModal(true);
+                    }}
                   >
                     <Plus className="h-3.5 w-3.5" />
                     Register Walk-In Team
@@ -2311,9 +2333,14 @@ export default function LiveEventManager({ isMasterAdmin: propIsMasterAdmin }: L
                   </div>
 
                   <div className="rounded-2xl border border-white/15 bg-[#16161d] p-4 space-y-3 shadow-inner">
-                    <span className="text-xs font-bold text-white uppercase tracking-wider font-mono">
-                      Team Members (Optional)
-                    </span>
+                    <div className="flex items-center justify-between gap-2">
+                      <span className="text-xs font-bold text-white uppercase tracking-wider font-mono">
+                        Team Members
+                      </span>
+                      <span className="text-[10px] font-mono text-white/50">
+                        {walkInMinMembers}-{walkInMaxMembers} incl. leader
+                      </span>
+                    </div>
 
                     {newTeam.members.map((member, idx) => (
                       <div key={idx} className="grid grid-cols-1 sm:grid-cols-2 gap-2">
