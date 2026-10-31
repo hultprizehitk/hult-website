@@ -2,6 +2,8 @@ import NextAuth from "next-auth";
 import Google from "next-auth/providers/google";
 import { connectDB } from "@/lib/mongodb";
 import User from "@/models/User";
+import Team from "@/models/Team";
+import Event from "@/models/Event";
 import { parseHeritageEmail } from "@/lib/heritage-parser";
 import { isSuperAdminEmail, isAdminRole } from "@/lib/admin-check";
 import type { UserRole } from "@/types/user";
@@ -14,6 +16,29 @@ if (process.env.NODE_ENV === "production") {
   }
   if (!process.env.AUTH_URL || process.env.AUTH_URL.includes("localhost")) {
     process.env.AUTH_URL = "https://www.hultprizehitk.live";
+  }
+}
+
+async function syncRosterName(email: string, name: string) {
+  try {
+    await Team.updateMany({ leadEmail: email }, { $set: { "lead.name": name } });
+    await Team.updateMany(
+      { "members.email": email },
+      { $set: { "members.$[m].name": name } },
+      { arrayFilters: [{ "m.email": email }] }
+    );
+    await Event.updateMany(
+      { "registeredTeams.leadEmail": email },
+      { $set: { "registeredTeams.$[t].leadName": name } },
+      { arrayFilters: [{ "t.leadEmail": email }] }
+    );
+    await Event.updateMany(
+      { "registeredTeams.members.email": email },
+      { $set: { "registeredTeams.$[].members.$[m].name": name } },
+      { arrayFilters: [{ "m.email": email }] }
+    );
+  } catch (err) {
+    console.error("[Auth] Failed to sync roster name:", err);
   }
 }
 
@@ -118,6 +143,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
             };
             if (user.image) updates.image = user.image;
             if (parsed.fullName) updates.name = parsed.fullName;
+            const nameChanged = Boolean(parsed.fullName) && parsed.fullName !== dbUser.name;
 
             if (!dbUser.welcomeEmailSent) {
               updates.welcomeEmailSent = true;
@@ -146,6 +172,8 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
 
             await User.updateOne({ _id: dbUser._id }, updates);
             Object.assign(dbUser, updates);
+            // Rosters keep a copy of the name from when the team was formed; refresh it once the real name is known
+            if (nameChanged) await syncRosterName(email, parsed.fullName);
           }
 
           user.id = dbUser._id.toString();

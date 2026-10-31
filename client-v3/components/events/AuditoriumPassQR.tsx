@@ -3,17 +3,9 @@
 import React, { useState } from "react";
 import { useSession } from "next-auth/react";
 import { QRCodeSVG } from "qrcode.react";
-import {
-  ShieldCheck,
-  User,
-  CheckCircle2,
-  Maximize2,
-  X,
-  MapPin,
-  Calendar,
-  Lock,
-  Sparkles,
-} from "lucide-react";
+import { Maximize2, QrCode, X } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import StatusBadge from "@/components/ui/StatusBadge";
 
 interface TeamMemberInfo {
   name: string;
@@ -117,190 +109,102 @@ export default function AuditoriumPassQR({
   });
 
   return (
-    <div className="relative rounded-2xl border border-white/15 bg-gradient-to-br from-[#161224]/95 via-[#0e0a19]/95 to-[#08060f]/98 backdrop-blur-2xl p-4.5 sm:p-5 shadow-[0_20px_50px_rgba(0,0,0,0.85),inset_0_1px_0_rgba(255,255,255,0.12)] space-y-4 select-none overflow-hidden">
-      {/* Subtle iridescent top border glow */}
-      <div className="pointer-events-none absolute inset-x-0 top-0 h-[1.5px] bg-gradient-to-r from-transparent via-[#f20089]/60 to-transparent" />
-
-      {/* Header Row */}
-      <div className="flex items-center justify-between gap-3 flex-wrap pb-3 border-b border-white/10">
-        <div className="flex items-center gap-2">
-          <div className="h-7 w-7 rounded-lg bg-[#f20089]/15 border border-[#f20089]/35 flex items-center justify-center text-[#f20089] shadow-[0_0_12px_rgba(242,0,137,0.25)]">
-            <Sparkles size={14} />
-          </div>
+    <div className="select-none rounded-2xl border border-white/10 bg-gradient-to-b from-brand/[0.08] to-white/[0.02]">
+      <div className="flex items-start justify-between gap-3 border-b border-white/10 px-5 py-4">
+        <div className="flex items-center gap-3">
+          <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-brand/15 text-pink-300">
+            <QrCode size={18} />
+          </span>
           <div>
-            <div className="flex items-center gap-1.5">
-              <span className="text-xs font-bold text-white tracking-wider uppercase font-mono">
-                Auditorium Entry Pass
-              </span>
-              <span className="inline-flex items-center px-1.5 py-0.2 rounded text-[8.5px] font-mono font-bold uppercase tracking-wider bg-[#f20089]/20 text-rose-300 border border-[#f20089]/30">
-                Official
-              </span>
-            </div>
-            <p className="text-[10px] text-white/50 font-sans">
-              Scan at the entrance desk for real-time check-in
-            </p>
+            <h4 className="text-sm font-semibold text-white">Entry pass</h4>
+            <p className="mt-0.5 text-xs text-white/45">Show this QR at the venue desk.</p>
           </div>
         </div>
-
-        {/* Live Check-In Status Indicator */}
         {isCheckedIn ? (
-          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10.5px] font-semibold bg-emerald-500/[0.12] border border-emerald-500/35 text-emerald-300 shadow-[0_0_12px_rgba(16,185,129,0.2)]">
-            <CheckCircle2 size={12} className="text-emerald-400 shrink-0" />
-            <span>Checked In at Venue</span>
-          </span>
+          <StatusBadge tone="success">Checked in</StatusBadge>
         ) : (
-          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10.5px] font-semibold bg-amber-500/[0.1] border border-amber-500/30 text-amber-300 shadow-[0_0_10px_rgba(245,158,11,0.15)]">
-            <span className="relative flex h-2 w-2 shrink-0">
-              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75" />
-              <span className="relative inline-flex rounded-full h-2 w-2 bg-amber-400" />
-            </span>
-            <span>Ready for Desk Scan</span>
-          </span>
+          <StatusBadge tone="neutral">Not checked in</StatusBadge>
         )}
       </div>
 
-      {/* Main Pass Body: Side-by-Side (QR + Credentials) */}
-      <div className="grid grid-cols-1 sm:grid-cols-12 gap-4.5 items-center">
-        {/* Left: Compact, High-Contrast QR Code */}
-        <div className="sm:col-span-5 flex flex-col items-center justify-center">
-          <div
-            className="relative p-2.5 bg-white rounded-xl shadow-xl border border-white/80 group cursor-pointer hover:scale-[1.02] transition-transform"
-            onClick={() => setFullscreenOpen(true)}
-            title="Click to view fullscreen QR pass"
-          >
-            <QRCodeSVG
-              value={qrPayload}
-              size={136}
-              level="H"
-              includeMargin={false}
-              className="w-full h-auto max-w-[136px]"
-            />
-            <div className="absolute inset-0 bg-black/45 opacity-0 group-hover:opacity-100 backdrop-blur-[1px] rounded-lg flex items-center justify-center transition-opacity text-white text-[11px] font-semibold gap-1">
-              <Maximize2 size={13} />
-              <span>Enlarge</span>
-            </div>
-          </div>
-          <button
-            type="button"
-            onClick={() => setFullscreenOpen(true)}
-            className="text-[9.5px] font-mono text-white/50 hover:text-white/80 pt-1.5 tracking-wider inline-flex items-center gap-1 cursor-pointer transition-colors"
-          >
-            <Maximize2 size={10} />
-            <span>TAP TO ENLARGE</span>
-          </button>
-        </div>
+      <div className="flex flex-col gap-5 p-5 sm:flex-row sm:items-center">
+        <button
+          type="button"
+          onClick={() => setFullscreenOpen(true)}
+          className="group relative shrink-0 cursor-pointer self-center rounded-xl bg-white p-2.5"
+          aria-label="Enlarge QR pass"
+        >
+          <QRCodeSVG value={qrPayload} size={128} level="H" includeMargin={false} />
+          <span className="absolute inset-0 flex items-center justify-center gap-1 rounded-xl bg-black/50 text-xs font-medium text-white opacity-0 transition-opacity group-hover:opacity-100">
+            <Maximize2 size={13} />
+            Enlarge
+          </span>
+        </button>
 
-        {/* Right: Clean, Personal Participant Credentials */}
-        <div className="sm:col-span-7 flex flex-col justify-between gap-2.5 text-left min-w-0">
-          {/* Participant Name & Role */}
-          <div className="space-y-0.5 min-w-0">
-            <div className="flex items-center gap-1.5 flex-wrap">
-              <h4 className="text-base sm:text-lg font-bold text-white tracking-tight truncate">
-                {participantName}
-              </h4>
-              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[9px] font-mono font-bold uppercase tracking-wider bg-white/10 text-white/90 shrink-0">
-                {isLeader ? (
-                  <ShieldCheck size={10} className="text-[#f20089]" />
-                ) : (
-                  <User size={10} className="text-white/60" />
-                )}
-                <span>{participantRole}</span>
-              </span>
-            </div>
-            <p className="text-xs text-white/70 font-mono truncate">
-              {participantEmail}
+        <div className="min-w-0 flex-1 space-y-3">
+          <div className="min-w-0">
+            <p className="truncate text-base font-semibold text-white">{participantName}</p>
+            <p className="truncate text-xs text-white/50">
+              {[participantRole, participantRoll, participantDept].filter(Boolean).join(" · ")}
             </p>
-            {participantRoll && (
-              <p className="text-[11px] text-white/50 font-mono">
-                Roll: <span className="text-white/80 font-semibold">{participantRoll}</span>
-                {participantDept ? ` · ${participantDept}` : ""}
-              </p>
-            )}
           </div>
-
-          {/* Team & Venue Snapshot Cards */}
-          <div className="grid grid-cols-2 gap-2 pt-2 border-t border-white/10">
-            <div className="bg-white/[0.03] border border-white/10 rounded-xl p-2 min-w-0">
-              <span className="text-[8.5px] uppercase font-mono text-white/40 block leading-tight">
-                Team
-              </span>
-              <span className="text-[11.5px] font-bold text-white truncate block pt-0.5">
-                {team.teamName}
-              </span>
-              <span className="text-[10px] font-mono font-extrabold text-[#f20089] block tracking-wider">
-                {team.teamCode}
-              </span>
+          <dl className="grid grid-cols-2 gap-3 text-sm">
+            <div className="min-w-0">
+              <dt className="text-xs text-white/45">Team</dt>
+              <dd className="mt-0.5 truncate text-white">{team.teamName}</dd>
+              <dd className="truncate font-mono text-xs text-pink-300">{team.teamCode}</dd>
             </div>
-
-            <div className="bg-white/[0.03] border border-white/10 rounded-xl p-2 min-w-0">
-              <span className="text-[8.5px] uppercase font-mono text-white/40 block leading-tight">
-                Venue
-              </span>
-              <div className="flex items-center gap-1 text-[11.5px] font-bold text-white truncate pt-0.5">
-                <MapPin size={11} className="text-rose-400 shrink-0" />
-                <span className="truncate">{venue}</span>
-              </div>
-              <span className="text-[9.5px] font-mono text-white/50 block truncate pt-0.5">
+            <div className="min-w-0">
+              <dt className="text-xs text-white/45">Venue</dt>
+              <dd className="mt-0.5 truncate text-white">{venue}</dd>
+              <dd className="truncate text-xs text-white/50">
                 {(date || "Sep 30, 2026, 2:00 PM")
                   .replace(/12:00\s*PM/gi, "2:00 PM")
                   .split("·")[0]
                   .trim()}
-              </span>
+              </dd>
             </div>
-          </div>
+          </dl>
+          <Button variant="outline" size="sm" onClick={() => setFullscreenOpen(true)}>
+            <Maximize2 />
+            Enlarge QR
+          </Button>
         </div>
       </div>
 
-      {/* Fullscreen Popup Modal for Ultra-Fast Scanning at Desk */}
+      {/* Fullscreen QR for fast scanning at the desk */}
       {fullscreenOpen && (
         <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/90 backdrop-blur-xl p-4 animate-fadeIn"
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/90 p-4 backdrop-blur-xl animate-fadeIn"
           onClick={() => setFullscreenOpen(false)}
         >
           <div
-            className="relative max-w-sm w-full bg-[#120f1f] border border-white/20 rounded-3xl p-6 flex flex-col items-center gap-4 text-center shadow-2xl"
+            className="relative flex w-full max-w-sm flex-col items-center gap-5 rounded-2xl border border-white/10 bg-[#121118] p-6 text-center"
             onClick={(e) => e.stopPropagation()}
           >
-            <button
-              type="button"
+            <Button
+              variant="ghost"
+              size="icon-sm"
+              className="absolute right-3 top-3"
               onClick={() => setFullscreenOpen(false)}
-              className="absolute top-4 right-4 p-2 rounded-full bg-white/10 hover:bg-white/20 text-white transition-all cursor-pointer"
-              title="Close pass"
+              aria-label="Close pass"
             >
-              <X size={18} />
-            </button>
+              <X />
+            </Button>
 
-            <div className="space-y-1 pt-1">
-              <span className="text-[9.5px] font-mono font-bold tracking-widest uppercase text-[#f20089]">
-                {eventName}
-              </span>
-              <h4 className="font-serif text-xl font-bold text-white">
-                {participantName}
-              </h4>
-              <p className="text-xs font-mono text-white/60">
-                Team {team.teamName} · <span className="text-[#f20089] font-bold">{team.teamCode}</span>
+            <div className="space-y-1 pt-2">
+              <p className="text-xs text-white/50">{eventName}</p>
+              <h4 className="text-lg font-semibold text-white">{participantName}</h4>
+              <p className="text-sm text-white/60">
+                {team.teamName} · <span className="font-mono">{team.teamCode}</span>
               </p>
             </div>
 
-            {/* High-Resolution QR */}
-            <div className="p-3 bg-white rounded-2xl shadow-2xl border-4 border-white">
-              <QRCodeSVG
-                value={qrPayload}
-                size={220}
-                level="H"
-                includeMargin={false}
-              />
+            <div className="rounded-xl bg-white p-3">
+              <QRCodeSVG value={qrPayload} size={220} level="H" includeMargin={false} />
             </div>
 
-            <div className="space-y-1">
-              <p className="text-xs font-mono text-white/80">
-                Present this screen at the SV Auditorium desk scanner
-              </p>
-              <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-mono font-semibold bg-white/5 border border-white/15 text-white/70">
-                <Lock size={10} className="text-emerald-400" />
-                <span>Personal Entry Credential</span>
-              </span>
-            </div>
+            <p className="text-xs text-white/50">Show this screen at the {venue} desk.</p>
           </div>
         </div>
       )}

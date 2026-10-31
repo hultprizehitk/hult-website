@@ -31,6 +31,8 @@ export const buttonVariants = cva(
       variant: {
         default:
           "border-white/20 bg-white text-neutral-900 shadow-sm hover:bg-neutral-100 hover:text-black active:bg-neutral-200",
+        brand:
+          "border-brand/60 bg-brand text-white shadow-sm hover:bg-brand/90 active:bg-brand/80",
         destructive:
           "border-rose-500/40 bg-rose-600 text-white shadow-sm hover:bg-rose-500 active:bg-rose-700",
         "destructive-outline":

@@ -1,26 +1,17 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import Link from "next/link";
-import {
-  ArrowLeft,
-  Calendar,
-  MapPin,
-  Users,
-  ExternalLink,
-  Share2,
-  Check,
-  Layers,
-  ShieldCheck,
-  CheckCircle2,
-  Gavel,
-  Clock,
-  Timer,
-  Zap,
-} from "lucide-react";
+import { ArrowLeft, ExternalLink, Share2, Check, CalendarDays, MapPin, Users, Clock } from "lucide-react";
 import type { PublicEvent } from "@/types";
+import { Button } from "@/components/ui/button";
+import StatusBadge from "@/components/ui/StatusBadge";
+import { detailLabelClass } from "@/components/ui/styles";
 import { useCountdown } from "@/lib/countdown";
 import EventRegistrationModal from "@/components/events/EventRegistrationModal";
+
+// Controls that sit directly on the hero photo need their own dark backing for contrast
+const floatingControlClass =
+  "inline-flex h-9 cursor-pointer items-center gap-2 rounded-lg border border-white/15 bg-black/45 px-3.5 text-sm text-white/85 backdrop-blur-md transition-colors hover:bg-black/60 hover:text-white";
 
 interface EventInsideViewProps {
   event: PublicEvent;
@@ -158,169 +149,92 @@ export default function EventInsideView({
 
   return (
     <div className="relative w-full max-w-7xl xl:max-w-[1400px] mx-auto flex flex-col gap-6 text-white font-sans animate-fadeIn">
-      {/* Top Back Navigation Breadcrumb */}
-      <nav className="flex items-center justify-between gap-4 flex-wrap mb-1" aria-label="Event navigation">
-        <button
-          type="button"
-          onClick={onBack}
-          className="inline-flex items-center gap-2 rounded-full bg-gradient-to-r from-white/[0.08] via-white/[0.05] to-white/[0.02] hover:from-white/[0.15] hover:to-white/[0.08] border border-white/20 hover:border-rose-400/40 backdrop-blur-2xl px-5 py-2.5 text-xs font-semibold tracking-wider text-white hover:scale-105 transition-all shadow-[0_8px_25px_rgba(0,0,0,0.6),inset_0_1px_0_rgba(255,255,255,0.15)] cursor-pointer"
-        >
-          <ArrowLeft size={14} className="text-rose-300" />
-          <span className="uppercase">Back to Events</span>
+      {/* Top Navigation */}
+      <nav className="flex items-center justify-between gap-3" aria-label="Event navigation">
+        <button type="button" onClick={onBack} className={floatingControlClass}>
+          <ArrowLeft size={15} />
+          All events
         </button>
-
-        <div className="flex items-center gap-2 text-xs font-medium text-white/80 uppercase tracking-widest bg-gradient-to-r from-[#1c182a]/90 via-[#130f21]/90 to-[#0b0914]/90 border border-white/15 hover:border-white/25 backdrop-blur-2xl px-4 py-2 rounded-full shadow-[0_8px_25px_rgba(0,0,0,0.5),inset_0_1px_0_rgba(255,255,255,0.12)]">
-          <Link href="/events" onClick={onBack} className="hover:text-rose-300 transition-colors">
-            Events
-          </Link>
-          <span className="text-rose-400/60 font-mono">/</span>
-          <span className="text-white font-bold max-w-[200px] truncate">
-            {event.title}
-          </span>
-        </div>
+        <button type="button" onClick={handleShare} className={floatingControlClass}>
+          {copied ? <Check size={15} className="text-emerald-400" /> : <Share2 size={15} />}
+          {copied ? "Link copied" : "Share"}
+        </button>
       </nav>
 
       {/* 2x2 Matrix Grid */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-7 items-stretch">
         {/* Cell [1,1]: Hero Event Card */}
-        <article className="relative rounded-3xl bg-[#0c0a12]/85 backdrop-blur-2xl border border-white/15 p-6 md:p-8 shadow-2xl overflow-hidden flex flex-col justify-between">
+        <article className="relative rounded-3xl bg-[#0c0a12]/85 backdrop-blur-2xl border border-white/15 p-6 md:p-8 shadow-2xl overflow-hidden">
           <div className="pointer-events-none absolute top-0 inset-x-0 h-[35%] bg-gradient-to-b from-white/10 to-transparent z-[1]" aria-hidden="true" />
 
           <div className="relative z-[2] flex flex-col gap-6">
-            {/* Status Badges */}
-            <div className="flex items-center gap-2.5 flex-wrap">
+            {/* Status Line */}
+            <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
               {event.tag && event.tag.trim().toLowerCase() !== "flagship" && (
-                <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-white/[0.06] border border-white/15 text-white/85 backdrop-blur-md shadow-sm">
-                  {event.tag}
-                </span>
+                <span className="text-sm text-white/50">{event.tag}</span>
               )}
-
               {isOnSpotLive ? (
-                <span className="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-semibold bg-amber-500/[0.12] border border-amber-500/35 text-amber-300 shadow-[0_0_16px_rgba(245,158,11,0.2)] backdrop-blur-md">
-                  <span className="relative flex h-2 w-2 shrink-0">
-                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75" />
-                    <span className="relative inline-flex rounded-full h-2 w-2 bg-amber-400 shadow-[0_0_8px_rgba(251,191,36,0.9)]" />
-                  </span>
-                  <Zap size={12} className="text-amber-300 shrink-0" />
-                  <span>On-Spot Registration Live</span>
-                </span>
+                <StatusBadge tone="warning">On-spot registration live</StatusBadge>
               ) : isRegistrationClosed ? (
-                <span className="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-medium bg-rose-500/[0.08] border border-rose-500/20 text-rose-300/90 backdrop-blur-md">
-                  <span className="inline-flex rounded-full h-2 w-2 bg-rose-400/80 shrink-0" />
-                  <span>Registrations Closed</span>
-                </span>
+                <StatusBadge tone="danger">Registration closed</StatusBadge>
               ) : event.registrationStatus === "extended" ? (
-                <span className="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-medium bg-amber-500/[0.08] border border-amber-500/25 text-amber-300 shadow-[0_0_15px_rgba(245,158,11,0.12)] backdrop-blur-md">
-                  <span className="relative flex h-2 w-2 shrink-0">
-                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-60" />
-                    <span className="relative inline-flex rounded-full h-2 w-2 bg-amber-400 shadow-[0_0_8px_rgba(251,191,36,0.8)]" />
-                  </span>
-                  <span>Extended Deadline</span>
-                </span>
+                <StatusBadge tone="warning">Deadline extended</StatusBadge>
               ) : (
-                <span className="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-medium bg-emerald-500/[0.08] border border-emerald-500/25 text-emerald-400 shadow-[0_0_15px_rgba(16,185,129,0.12)] backdrop-blur-md">
-                  <span className="relative flex h-2 w-2 shrink-0">
-                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-60" />
-                    <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-400 shadow-[0_0_8px_rgba(52,211,153,0.8)]" />
-                  </span>
-                  <span>Registrations Open</span>
-                </span>
+                <StatusBadge tone="success">Registration open</StatusBadge>
               )}
-
-              <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium bg-white/[0.05] border border-white/12 text-white/80 backdrop-blur-md shadow-sm">
-                <Users size={12} className="text-rose-300/80 shrink-0" />
-                <span>Team: {minMembers}–{maxMembers} Members</span>
-              </span>
             </div>
 
             {/* Event Title */}
-            <h1 className="font-serif text-3xl sm:text-4xl md:text-5xl font-bold tracking-tight text-white drop-shadow-[0_2px_24px_rgba(255,255,255,0.18)]">
+            <h1 className="font-serif text-3xl sm:text-4xl md:text-5xl font-bold tracking-tight text-white">
               {event.title}
             </h1>
 
-            {/* Meta Grid */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
-              <div className="bg-white/5 border border-white/10 rounded-2xl p-3.5 flex flex-col justify-between gap-1 shadow-md">
-                <span className="flex items-center gap-2 text-[10px] font-bold tracking-widest uppercase text-white/60">
-                  <Calendar size={13} className="text-rose-300/90 shrink-0" />
-                  <span>Schedule</span>
-                </span>
-                <span className="text-xs sm:text-sm font-semibold text-white">
+            {/* Event Details */}
+            <dl className="grid grid-cols-2 gap-x-6 gap-y-5 rounded-2xl border border-white/10 bg-white/[0.03] p-5 xl:grid-cols-4">
+              <div className="min-w-0">
+                <dt className={detailLabelClass}>
+                  <CalendarDays size={14} className="text-sky-300" />
+                  Date
+                </dt>
+                <dd className="mt-1 text-sm font-medium text-white">
                   {formatDateRange(event.startDate, event.endDate, event.date)}
-                </span>
+                </dd>
               </div>
-
-              <div className="bg-white/5 border border-white/10 rounded-2xl p-3.5 flex flex-col justify-between gap-1 shadow-md">
-                <span className="flex items-center gap-2 text-[10px] font-bold tracking-widest uppercase text-white/60">
-                  <MapPin size={13} className="text-rose-300/90 shrink-0" />
-                  <span>Venue</span>
-                </span>
-                <span className="text-xs sm:text-sm font-semibold text-white">
-                  {event.venue || "SV Auditorium"}
-                </span>
+              <div className="min-w-0">
+                <dt className={detailLabelClass}>
+                  <MapPin size={14} className="text-pink-300" />
+                  Venue
+                </dt>
+                <dd className="mt-1 text-sm font-medium text-white">{event.venue || "SV Auditorium"}</dd>
               </div>
-
-              <div className="bg-white/5 border border-white/10 rounded-2xl p-3.5 flex flex-col justify-between gap-1 shadow-md">
-                <span className="flex items-center gap-2 text-[10px] font-bold tracking-widest uppercase text-white/60">
-                  <Users size={13} className="text-rose-300/90 shrink-0" />
-                  <span>Roster Size</span>
-                </span>
-                <span className="text-xs sm:text-sm font-bold text-white">
-                  {minMembers}–{maxMembers} Members / Team
-                </span>
+              <div className="min-w-0">
+                <dt className={detailLabelClass}>
+                  <Users size={14} className="text-violet-300" />
+                  Team size
+                </dt>
+                <dd className="mt-1 text-sm font-medium text-white">
+                  {minMembers}–{maxMembers} members
+                </dd>
               </div>
-
-              <div
-                className={`rounded-2xl p-3.5 flex flex-col justify-between gap-2 shadow-md transition-all ${
-                  isOnSpotLive
-                    ? "bg-amber-500/[0.08] border border-amber-500/30 text-white shadow-[0_0_15px_rgba(245,158,11,0.15)]"
-                    : isRegistrationClosed
-                    ? "bg-white/5 border border-white/10 text-white/70"
-                    : "bg-rose-500/[0.08] border border-rose-500/25 text-white shadow-[0_0_15px_rgba(242,0,137,0.12)]"
-                }`}
-              >
-                <span className="flex items-center gap-1.5 text-[10px] font-bold tracking-widest uppercase text-white/60">
-                  <Clock size={13} className={isOnSpotLive ? "text-amber-400 shrink-0" : isRegistrationClosed ? "text-white/40 shrink-0" : "text-rose-400 shrink-0"} />
-                  <span>{isOnSpotLive ? "On-Spot Window" : "Deadline"}</span>
-                  {isOnSpotLive ? (
-                    <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse ml-auto" />
-                  ) : !isRegistrationClosed && countdown.hasDeadline ? (
-                    <span className="w-1.5 h-1.5 rounded-full bg-rose-400 animate-pulse ml-auto" />
-                  ) : null}
-                </span>
-
-                <div className="flex flex-col gap-1.5 min-w-0">
-                  <span className="text-xs sm:text-sm font-semibold text-white leading-snug">
-                    {isOnSpotLive ? "Venue Registration Active" : countdown.formattedDeadline}
-                  </span>
-                  {isOnSpotLive ? (
-                    <div className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[10px] font-mono font-bold bg-amber-500/20 border border-amber-400/40 text-amber-300 w-fit shadow-sm">
-                      <Zap size={10} className="text-amber-400 shrink-0 animate-pulse" />
-                      <span className="tracking-wide">Live at Venue</span>
-                    </div>
-                  ) : !isRegistrationClosed && countdown.hasDeadline ? (
-                    <div className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[10px] font-mono font-bold bg-rose-500/15 border border-rose-400/30 text-rose-300 w-fit shadow-sm">
-                      <Timer size={10} className="text-rose-400 shrink-0 animate-pulse" />
-                      <span className="tabular-nums tracking-wide">{countdown.countdownText}</span>
-                    </div>
-                  ) : isRegistrationClosed ? (
-                    <span className="text-[10px] font-mono text-white/40">
-                      Registration Closed
-                    </span>
-                  ) : null}
-                </div>
+              <div className="min-w-0">
+                <dt className={detailLabelClass}>
+                  <Clock size={14} className="text-amber-300" />
+                  {isOnSpotLive ? "Registration" : "Deadline"}
+                </dt>
+                <dd className="mt-1 text-sm font-medium text-white">
+                  {isOnSpotLive ? "Open at venue" : countdown.formattedDeadline}
+                </dd>
+                {!isOnSpotLive && !isRegistrationClosed && countdown.hasDeadline && (
+                  <dd className="mt-0.5 text-xs tabular-nums text-amber-300/90">{countdown.countdownText}</dd>
+                )}
               </div>
-            </div>
+            </dl>
 
             {/* About Event Description */}
             {event.description && (
-              <div className="flex flex-col gap-2 pt-3 border-t border-white/10">
-                <span className="text-[11px] font-bold tracking-widest uppercase text-white/60">
-                  Executive Brief
-                </span>
-                <p className="text-xs sm:text-sm leading-relaxed text-white/80">
-                  {event.description}
-                </p>
+              <div>
+                <h2 className="text-xs text-white/45">About</h2>
+                <p className="mt-2 text-sm leading-relaxed text-white/75">{event.description}</p>
               </div>
             )}
           </div>
@@ -337,86 +251,56 @@ export default function EventInsideView({
         {/* Cell [2,1]: Competition Rounds */}
         {hasRounds && (
           <section
-            className="relative rounded-3xl bg-[#0c0a12]/85 backdrop-blur-2xl border border-white/15 p-6 md:p-8 shadow-2xl overflow-hidden flex flex-col justify-between"
+            className="relative rounded-3xl bg-[#0c0a12]/85 backdrop-blur-2xl border border-white/15 p-6 md:p-8 shadow-2xl overflow-hidden"
             aria-label="Competition Rounds"
           >
             <div className="pointer-events-none absolute top-0 inset-x-0 h-[35%] bg-gradient-to-b from-white/10 to-transparent z-[1]" aria-hidden="true" />
 
             <div className="relative z-[2] flex flex-col gap-5">
-              {/* Header */}
-              <div className="flex items-center justify-between gap-3 flex-wrap border-b border-white/10 pb-4">
-                <div className="flex items-center gap-2.5">
-                  <div className="p-2 rounded-xl bg-white/5 border border-white/10 text-rose-300">
-                    <Layers size={16} />
-                  </div>
-                  <div>
-                    <h2 className="text-lg sm:text-xl font-bold text-white font-[family-name:var(--font-google-sans)]">
-                      Competition Rounds
-                    </h2>
-                    <p className="text-[11px] font-mono text-white/50 uppercase tracking-wider">
-                      {event.rounds?.length} Progressive Stages
-                    </p>
-                  </div>
-                </div>
-
-                <span className="px-3 py-1 rounded-full text-xs font-medium bg-white/[0.06] border border-white/12 text-white/70">
-                  Stage Timeline
+              <div className="flex items-baseline justify-between gap-3">
+                <h2 className="text-xl font-semibold tracking-tight text-white">Competition rounds</h2>
+                <span className="text-sm text-white/45">
+                  {event.rounds?.length} {event.rounds?.length === 1 ? "round" : "rounds"}
                 </span>
               </div>
 
-              {/* Rounds Cards */}
-              <div className="flex flex-col gap-4">
+              <ol className="flex flex-col gap-3">
                 {event.rounds?.map((rnd) => (
-                  <div
-                    key={rnd.roundNumber}
-                    className="rounded-2xl border border-white/10 bg-white/[0.03] hover:bg-white/[0.05] p-5 flex flex-col gap-3 transition-colors"
-                  >
-                    <div className="flex items-center justify-between gap-3 flex-wrap">
-                      <div className="flex items-center gap-2.5">
-                        <span className="px-2.5 py-0.5 rounded-full bg-[#f20089]/15 border border-[#f20089]/30 text-[#f20089] text-xs font-medium tracking-wide">
-                          Round {rnd.roundNumber < 10 ? `0${rnd.roundNumber}` : rnd.roundNumber}
+                  <li key={rnd.roundNumber} className="rounded-2xl border border-white/10 bg-white/[0.03] p-5">
+                    <div className="flex items-baseline justify-between gap-3">
+                      <h3 className="text-sm font-semibold text-white">
+                        <span className="mr-2 font-mono text-pink-400">
+                          {String(rnd.roundNumber).padStart(2, "0")}
                         </span>
-                        <h3 className="text-sm sm:text-base font-bold text-white">
-                          {rnd.title}
-                        </h3>
-                      </div>
-                      <span className="text-xs text-white/60 bg-white/[0.05] px-2.5 py-1 rounded-full border border-white/10">
-                        {rnd.type}
-                      </span>
+                        {rnd.title}
+                      </h3>
+                      {rnd.type && <span className="shrink-0 text-xs text-white/45">{rnd.type}</span>}
                     </div>
 
                     {rnd.description && (
-                      <p className="text-xs text-white/80 leading-relaxed">
-                        {rnd.description}
-                      </p>
+                      <p className="mt-2 text-sm leading-relaxed text-white/70">{rnd.description}</p>
                     )}
 
                     {rnd.details && rnd.details.length > 0 && (
-                      <ul className="grid grid-cols-1 gap-2 pt-1">
+                      <ul className="mt-3 space-y-1.5">
                         {rnd.details.map((detail, idx) => (
-                          <li
-                            key={idx}
-                            className="flex items-start gap-2 text-xs text-white/70"
-                          >
-                            <CheckCircle2
-                              size={13}
-                              className="text-rose-400 mt-0.5 shrink-0"
-                            />
+                          <li key={idx} className="flex items-start gap-2.5 text-sm text-white/60">
+                            <span className="mt-2 h-1 w-1 shrink-0 rounded-full bg-pink-400/70" aria-hidden="true" />
                             <span>{detail}</span>
                           </li>
                         ))}
                       </ul>
                     )}
-                  </div>
+                  </li>
                 ))}
-              </div>
+              </ol>
             </div>
           </section>
         )}
 
         {/* Cell [2,2]: Rules & Eligibility Guidelines */}
         <section
-          className={`relative rounded-3xl bg-[#0c0a12]/85 backdrop-blur-2xl border border-white/15 p-6 md:p-8 shadow-2xl overflow-hidden flex flex-col justify-between ${
+          className={`relative rounded-3xl bg-[#0c0a12]/85 backdrop-blur-2xl border border-white/15 p-6 md:p-8 shadow-2xl overflow-hidden ${
             !hasRounds ? "lg:col-span-2" : ""
           }`}
           aria-label="Rules and Eligibility"
@@ -424,63 +308,18 @@ export default function EventInsideView({
           <div className="pointer-events-none absolute top-0 inset-x-0 h-[35%] bg-gradient-to-b from-white/10 to-transparent z-[1]" aria-hidden="true" />
 
           <div className="relative z-[2] flex flex-col gap-5">
-            {/* Header */}
-            <div className="flex items-center justify-between gap-3 flex-wrap border-b border-white/10 pb-4">
-              <div className="flex items-center gap-2.5">
-                <div className="p-2 rounded-xl bg-white/5 border border-white/10 text-rose-300">
-                  <ShieldCheck size={16} />
-                </div>
-                <div>
-                  <h2 className="text-lg sm:text-xl font-bold text-white font-[family-name:var(--font-google-sans)]">
-                    Rules &amp; Eligibility
-                  </h2>
-                  <p className="text-[11px] font-mono text-white/50 uppercase tracking-wider">
-                    Official Tournament Protocol
-                  </p>
-                </div>
-              </div>
-
-              <button
-                type="button"
-                onClick={handleShare}
-                className="inline-flex items-center gap-1.5 rounded-full bg-white/10 hover:bg-white/20 border border-white/15 px-4 py-2 text-xs font-semibold text-white transition-all cursor-pointer"
-              >
-                {copied ? (
-                  <>
-                    <Check size={13} className="text-emerald-400" />
-                    <span className="text-emerald-300">Link Copied!</span>
-                  </>
-                ) : (
-                  <>
-                    <Share2 size={13} />
-                    <span>Share Event</span>
-                  </>
-                )}
-              </button>
-            </div>
+            <h2 className="text-xl font-semibold tracking-tight text-white">Rules &amp; eligibility</h2>
 
             {/* Rules Categories or Fallback Guidelines */}
             {hasRules ? (
-              <div className="flex flex-col gap-4">
+              <div className="flex flex-col gap-3">
                 {event.rules?.map((cat, idx) => (
-                  <div
-                    key={idx}
-                    className="rounded-2xl border border-white/10 bg-white/[0.03] p-5 flex flex-col gap-3"
-                  >
-                    <div className="flex items-center gap-2 text-white">
-                      <Gavel size={14} className="text-rose-400" />
-                      <h3 className="text-xs font-bold uppercase tracking-wider font-mono">
-                        {cat.title}
-                      </h3>
-                    </div>
-
-                    <ul className="space-y-2">
+                  <div key={idx} className="rounded-2xl border border-white/10 bg-white/[0.03] p-5">
+                    <h3 className="text-sm font-semibold text-white">{cat.title}</h3>
+                    <ul className="mt-3 space-y-2">
                       {cat.items.map((item, itemIdx) => (
-                        <li
-                          key={itemIdx}
-                          className="flex items-start gap-2.5 text-xs text-white/75 leading-relaxed"
-                        >
-                          <span className="w-1.5 h-1.5 rounded-full bg-rose-400/80 mt-1.5 shrink-0" />
+                        <li key={itemIdx} className="flex items-start gap-2.5 text-sm leading-relaxed text-white/70">
+                          <span className="mt-2 h-1 w-1 shrink-0 rounded-full bg-pink-400/70" aria-hidden="true" />
                           <span>{item}</span>
                         </li>
                       ))}
@@ -489,36 +328,28 @@ export default function EventInsideView({
                 ))}
               </div>
             ) : (
-              <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-5 flex flex-col gap-3">
-                <h3 className="text-xs font-bold text-white/90 uppercase tracking-wider font-mono">
-                  Participant Guidelines
-                </h3>
-                <ul className="text-xs text-white/70 space-y-2">
-                  <li className="flex items-start gap-2">
-                    <span className="w-1.5 h-1.5 rounded-full bg-rose-400/80 mt-1.5 shrink-0" />
+              <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-5">
+                <h3 className="text-sm font-semibold text-white">Participant guidelines</h3>
+                <ul className="mt-3 space-y-2 text-sm leading-relaxed text-white/70">
+                  <li className="flex items-start gap-2.5">
+                    <span className="mt-2 h-1 w-1 shrink-0 rounded-full bg-pink-400/70" aria-hidden="true" />
                     <span>Open to enrolled students of institutions under the Heritage Group.</span>
                   </li>
-                  <li className="flex items-start gap-2">
-                    <span className="w-1.5 h-1.5 rounded-full bg-rose-400/80 mt-1.5 shrink-0" />
+                  <li className="flex items-start gap-2.5">
+                    <span className="mt-2 h-1 w-1 shrink-0 rounded-full bg-pink-400/70" aria-hidden="true" />
                     <span>Teams must consist of {minMembers} to {maxMembers} members.</span>
                   </li>
-                  <li className="flex items-start gap-2">
-                    <span className="w-1.5 h-1.5 rounded-full bg-rose-400/80 mt-1.5 shrink-0" />
+                  <li className="flex items-start gap-2.5">
+                    <span className="mt-2 h-1 w-1 shrink-0 rounded-full bg-pink-400/70" aria-hidden="true" />
                     <span>Each participant may belong to only one registered roster.</span>
                   </li>
                   {countdown.hasDeadline && (
-                    <li className="flex items-start gap-2">
-                      <span className="w-1.5 h-1.5 rounded-full bg-rose-400/80 mt-1.5 shrink-0" />
-                      <span className="flex items-center gap-2 flex-wrap">
-                        <span>Registration Deadline:</span>
-                        <strong className="text-rose-300 font-semibold">
-                          {countdown.formattedDeadline}
-                        </strong>
+                    <li className="flex items-start gap-2.5">
+                      <span className="mt-2 h-1 w-1 shrink-0 rounded-full bg-pink-400/70" aria-hidden="true" />
+                      <span>
+                        Registration deadline: <span className="text-white">{countdown.formattedDeadline}</span>
                         {!isClosed && (
-                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-mono font-bold bg-rose-500/20 border border-rose-400/40 text-rose-200">
-                            <Timer size={10} className="text-rose-300 shrink-0 animate-pulse" />
-                            <span className="tabular-nums">{countdown.countdownText}</span>
-                          </span>
+                          <span className="ml-2 tabular-nums text-white/45">{countdown.countdownText}</span>
                         )}
                       </span>
                     </li>
@@ -528,36 +359,20 @@ export default function EventInsideView({
             )}
 
             {/* Action Navigation Row */}
-            <div className="flex items-center justify-between gap-3 flex-wrap pt-3 border-t border-white/10">
-              <button
-                type="button"
-                onClick={onBack}
-                className="inline-flex items-center gap-2 rounded-full bg-gradient-to-r from-white/[0.08] via-white/[0.05] to-white/[0.02] hover:from-white/[0.15] hover:to-white/[0.08] border border-white/20 hover:border-rose-400/40 backdrop-blur-2xl px-5 py-2.5 text-xs font-semibold text-white transition-all cursor-pointer shadow-[0_8px_25px_rgba(0,0,0,0.6),inset_0_1px_0_rgba(255,255,255,0.15)]"
-              >
-                <ArrowLeft size={13} className="text-rose-300" />
-                <span>Back to All Events</span>
-              </button>
+            <div className="flex items-center justify-between gap-3 flex-wrap pt-4 border-t border-white/10">
+              <Button variant="ghost" size="sm" className="-ml-2.5" onClick={onBack}>
+                <ArrowLeft />
+                All events
+              </Button>
 
-              <div className="flex items-center gap-3 flex-wrap">
-                {event.link && (
-                  <a
-                    href={event.link}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="rounded-full bg-white/10 hover:bg-white/20 border border-white/20 px-5 py-2.5 text-xs font-semibold text-white transition-all cursor-pointer inline-flex items-center gap-1.5"
-                  >
-                    <span>Portal Form</span>
-                    <ExternalLink size={13} />
+              {event.link && (
+                <Button asChild variant="outline" size="sm">
+                  <a href={event.link} target="_blank" rel="noopener noreferrer">
+                    Portal form
+                    <ExternalLink />
                   </a>
-                )}
-
-                {isRegistrationClosed && (
-                  <span className="rounded-full bg-rose-500/[0.08] border border-rose-500/20 px-4 py-2 text-xs font-medium text-rose-300/80 inline-flex items-center gap-1.5">
-                    <span className="inline-flex rounded-full h-1.5 w-1.5 bg-rose-400/80 shrink-0" />
-                    <span>Registrations Closed</span>
-                  </span>
-                )}
-              </div>
+                </Button>
+              )}
             </div>
           </div>
         </section>
@@ -565,4 +380,3 @@ export default function EventInsideView({
     </div>
   );
 }
-

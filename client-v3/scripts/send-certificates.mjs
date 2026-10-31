@@ -38,7 +38,42 @@ const NAME_FONTS = {
   "anastasia-script": { file: "AnastasiaScript-PersonalUse.ttf", label: "Anastasia Script", maxSize: 60, baselineY: 935 },
   "philosopher": { file: "Philosopher-Regular.ttf", label: "Philosopher", maxSize: 84, baselineY: 925 },
 };
-const DEFAULT_FONT = "gilda-display";
+const DEFAULT_FONT = "anastasia-script";
+
+// Certificate names keyed by email. Roster names were built from the email address, which can't hold
+// spaces ("gaurav.kumardubey" -> "Gaurav Kumardubey"); sign-in now stores the real Google name instead.
+const NAME_CORRECTIONS = {
+  "amartya.kumarmondal.ds29@heritageit.edu.in": "Amartya Kumar Mondal",
+  "gaurav.kumardubey.me29@heritageit.edu.in": "Gaurav Kumar Dubey",
+  "sheikh.tazimrahman.me29@heritageit.edu.in": "Sheikh Tazim Rahman",
+  "piyush.kumarsingh.me29@heritageit.edu.in": "Piyush Kumar Singh",
+  "aryantiwari.cse29@heritageit.edu.in": "Aryan Tiwari",
+  "anik.kumarkundu.csbs29@heritageit.edu.in": "Anik Kumar Kundu",
+  "anuj.kumarchourasia.cse30@heritageit.edu.in": "Anuj Kumar Chourasia",
+  "suparna.kantidey.bt29@heritageit.edu.in": "Suparna Kanti Dey",
+  "raj.nandinirai.aiml29@heritageit.edu.in": "Raj Nandini Rai",
+  "aditya.kumarroy.iotcs30@heritageit.edu.in": "Aditya Kumar Roy",
+  "harshit.kumarrai.cse30@heritageit.edu.in": "Harshit Kumar Rai",
+  "mayur.kumarjaiswal.cse30@heritageit.edu.in": "Mayur Kumar Jaiswal",
+  "arit.kumardas.bt29@heritageit.edu.in": "Arit Kumar Das",
+  "roshni.barighosh.bt29@heritageit.edu.in": "Roshni Bari Ghosh",
+  "shaikh.junaidulhaque.cse30@heritageit.edu.in": "Shaikh Junaidul Haque",
+  "soham.kumardas.cse30@heritageit.edu.in": "Soham Kumar Das",
+  "sagnik.duttamazumder.ee29@heritageit.edu.in": "Sagnik Dutta Mazumder",
+  "indra.pratapsaha.ee29@heritageit.edu.in": "Indra Pratap Saha",
+  "abhirup.kumarbera.me29@heritageit.edu.in": "Abhirup Kumar Bera",
+  "manindra.nathseth.iotcs29@heritageit.edu.in": "Manindra Nath Seth",
+  "yuvraj.kumarsingh.cse29@heritageit.edu.in": "Yuvraj Kumar Singh",
+  "md.faizanqamar.ds29@heritageit.edu.in": "Md Faizan Qamar",
+  "prince.kumarsony.cse30@heritageit.edu.in": "Prince Kumar Sony",
+  "soham.kumaryadav.cse30@heritageit.edu.in": "Soham Kumar Yadav",
+  "samarth.kumargupta.cse30@heritageit.edu.in": "Samarth Kumar Gupta",
+  "divyanshuraj.cse28@heritageit.edu.in": "Divyanshu Raj",
+  "udayaditya.roymoulick.ds29@heritageit.edu.in": "Udayaditya Roy Moulick",
+  "vikash.kumarsaw.aiml30@heritageit.edu.in": "Vikash Kumar Saw",
+  "rohit.kumarshaw.ds29@heritageit.edu.in": "Rohit Kumar Shaw",
+  "sudipta.kumarnayak.ece28@heritageit.edu.in": "Sudipta Kumar Nayak",
+};
 
 // Name placement, measured on the 2000x1414 template: the blank line spans x 149-1051 at y 955,
 // and "is awarded to" above it ends at y 828.
@@ -321,7 +356,7 @@ async function getParticipants(db) {
     for (const { person, isLead } of people) {
       if (!person?.checkedIn) continue;
       const email = (person.email || "").trim().toLowerCase();
-      const name = (person.name || "").trim();
+      const name = NAME_CORRECTIONS[email] || (person.name || "").trim();
       if (!email.includes("@") || !name || byEmail.has(email)) continue;
       byEmail.set(email, {
         name,
@@ -365,6 +400,8 @@ async function main() {
   const isBroadcast = process.argv.includes("--broadcast");
   const testIdx = process.argv.indexOf("--test");
   const testEmail = testIdx > -1 ? (process.argv[testIdx + 1] || "").trim().toLowerCase() : null;
+  const onlyIdx = process.argv.indexOf("--only");
+  const onlyEmail = onlyIdx > -1 ? (process.argv[onlyIdx + 1] || "").trim().toLowerCase() : null;
   const fontIdx = process.argv.indexOf("--font");
   const fontKey = fontIdx > -1 ? process.argv[fontIdx + 1] : DEFAULT_FONT;
   const font = NAME_FONTS[fontKey];
@@ -379,7 +416,7 @@ async function main() {
     console.error("MONGODB_URI not found");
     process.exit(1);
   }
-  if ((isBroadcast || testEmail !== null) && !gPass) {
+  if ((isBroadcast || testEmail !== null || onlyEmail !== null) && !gPass) {
     console.error("Error: GOOGLE_WORKSPACE_APP_PASSWORD is not set in .env.local");
     process.exit(1);
   }
@@ -396,7 +433,23 @@ async function main() {
   const participants = await getParticipants(db);
   console.log(`Found ${participants.length} checked-in participants for ${EVENT_TITLE}. Name font: ${font.label}`);
 
-  if (testEmail !== null) {
+  if (onlyEmail !== null) {
+    // The real certificate email (no test prefix) to one participant, recorded like a broadcast send
+    const p = participants.find((x) => x.email === onlyEmail);
+    if (!p) {
+      console.error(`${onlyEmail} is not a checked-in participant of ${EVENT_TITLE}.`);
+    } else if (p.certificateSent && !process.argv.includes("--force")) {
+      console.log(`${p.name} <${p.email}> was already sent a certificate. Add --force to send it again.`);
+    } else {
+      try {
+        await sendTo(template, font, p, p.email);
+        await markCertificateSent(db, p);
+        console.log(`  -> Sent to ${p.name} <${p.email}>`);
+      } catch (err) {
+        console.error(`  -> FAILED for ${p.email}:`, err.message);
+      }
+    }
+  } else if (testEmail !== null) {
     console.log("==========================================================");
     console.log(`  TEST MODE: SENDING ONE CERTIFICATE TO ${testEmail}`);
     console.log("==========================================================");

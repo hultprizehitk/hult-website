@@ -52,12 +52,34 @@ export function getAcademicYearOfStudy(passingYear: string): string {
   return "4th Year";
 }
 
-export function parseHeritageEmail(email: string, fallbackName?: string | null): ParsedStudentInfo {
+/**
+ * Title-cases words that arrive all lower- or upper-case ("aryan tiwari", "GAURAV KUMAR DUBEY"),
+ * keeping deliberate mixed casing such as "McDonald".
+ */
+export function normalizePersonName(name: string): string {
+  return name
+    .replace(/\s+/g, " ")
+    .trim()
+    .split(" ")
+    .map((w) =>
+      w === w.toLowerCase() || w === w.toUpperCase() ? w.charAt(0).toUpperCase() + w.slice(1).toLowerCase() : w
+    )
+    .join(" ");
+}
+
+/**
+ * Derives branch/year from a Heritage email. The name comes from `knownName` (Google profile or stored
+ * name) when given: the email local part can't hold spaces, so "gaurav.kumardubey" would read as
+ * "Gaurav Kumardubey". The email-derived name is only a fallback.
+ */
+export function parseHeritageEmail(email: string, knownName?: string | null): ParsedStudentInfo {
+  const realName = knownName ? normalizePersonName(knownName) : "";
+
   if (!email || !email.includes("@")) {
     return {
-      firstName: fallbackName || "Student",
-      lastName: "",
-      fullName: fallbackName || "Heritage Student",
+      firstName: realName.split(" ")[0] || "Student",
+      lastName: realName.split(" ").slice(1).join(" "),
+      fullName: realName || "Heritage Student",
       branchCode: "HITK",
       branchName: "Heritage Institute of Technology",
       passingYear: "2028",
@@ -103,9 +125,10 @@ export function parseHeritageEmail(email: string, fallbackName?: string | null):
           .join(" ")
       : "";
 
-  const firstName = rawFirst ? capitalize(rawFirst) : fallbackName?.split(" ")[0] || "Student";
-  const lastName = rawLast ? capitalize(rawLast) : fallbackName?.split(" ").slice(1).join(" ") || "";
-  const fullName = lastName ? `${firstName} ${lastName}` : firstName;
+  const emailName = [capitalize(rawFirst), capitalize(rawLast)].filter(Boolean).join(" ");
+  const fullName = realName || emailName || "Student";
+  const [firstName, ...rest] = fullName.split(" ");
+  const lastName = rest.join(" ");
 
   const branchName = BRANCH_MAP[branchCode] || `${branchCode} Department`;
   const finalYear = passingYear || "2028";
